@@ -4,9 +4,10 @@
 
 <p class="hero-tagline">
 The gap between "my kernel runs" and "my kernel saturates the tensor cores" is
-exactly the size of this book. Eleven chapters that start at the H100 die and
-end at a multi-node SuperPOD — every one with ASCII diagrams, worked examples
-with concrete numbers, and compileable code with full test harnesses.
+exactly the size of this book. Thirteen chapters that start at the H100 die and
+end with a profiler telling you which of your assumptions was wrong — every one
+with ASCII diagrams, worked examples with concrete numbers, and code you can
+read line by line.
 </p>
 
 > **Verified on:** CUDA 12.x + Hopper GPU (`sm_90a`).
@@ -20,10 +21,12 @@ just the machine. Chapters 2–3 give you the instruction-level vocabulary
 (clusters, inline PTX, state spaces, `mbarrier`). Chapters 4–5 are about
 getting bytes into shared memory efficiently. Chapters 6–7 are the tensor
 cores. Chapters 8–10 put it together into real warp-specialized kernels.
-Chapter 11 leaves the single GPU behind.
+Chapter 11 leaves the single GPU behind. Chapters 12–13 are the payoff: one
+production kernel that uses everything at once, and the tool that measures it.
 
 If you already write CUDA and want the Hopper-specific parts, start at
-Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order.
+Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order. If you
+have a slow kernel in front of you right now, start at Chapter 13.
 
 ## Contents
 
@@ -130,6 +133,30 @@ Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in ord
     inter-node bottleneck, the SuperPOD, rail networks and SHARP, InfiniBand
     leaf/spine/core, UVA and peer access, SLURM and PMIx, NCCL and the big six
     collectives, and data / tensor / pipeline / expert parallelism.
+
+-   :material-rocket-launch:{ .lg .middle } __Part VII — Putting It to Work__
+
+    ---
+
+    **[12. FlashAttention-3 on the H100](12-flashattention-3.md)**
+
+    Why attention is memory-bound and how fusing it crosses the ridge point;
+    the online softmax recurrence worked by hand; then the three Hopper
+    techniques — producer/consumer warp specialization, ping-pong scheduling,
+    and 2-stage intra-warpgroup pipelining — that take it from 35% to 75% of
+    peak. Causal masking and load balance, and the FP8 path: block
+    quantization, the K-major transpose of V, and Hadamard incoherent
+    processing.
+
+    **[13. Profiling with Nsight Compute](13-nsight-compute.md)**
+
+    Getting `ncu` to run, including the permission error that stops most
+    first attempts; replay and what it does to your program; Speed of Light
+    triage; the roofline chart and which ceiling actually applies on Hopper;
+    sectors per request and bank conflicts; every warp stall reason mapped to
+    the chapter that explains it; occupancy and why chasing it is wrong; the
+    metric naming scheme; SASS and stall sampling; and four worked diagnoses
+    from symptom to fix.
 
 </div>
 

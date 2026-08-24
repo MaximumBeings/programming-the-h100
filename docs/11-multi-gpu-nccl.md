@@ -3173,26 +3173,12 @@ Code Component → Concept It Demonstrates
 
 ---
 
-> **The end of the book — and where to go from here**
+> **Next — Chapter 12: FlashAttention-3 on the H100**
 >
-> That is the whole path: from a single H100 die in Chapter 1 to a multi-node
-> SuperPOD here. You have the descriptor API, the tensor core instructions, the
-> pipeline primitives, and the collective operations that production training and
-> inference are assembled from.
->
-> Two subjects this book deliberately leaves out, both worth your time next:
->
-> **FlashAttention-3.** The clearest demonstration of every primitive from
-> Chapters 4–9 working at once — online softmax, causal masking, and a
-> warp-specialised pipeline running near peak tensor core utilisation. Read the
-> paper (Shah et al., 2024) first, then the implementation alongside Chapter 9's
-> ping-pong architecture.
->
-> **Nsight Compute.** This book reasons about performance; Nsight measures it.
-> Its roofline view maps directly onto Chapter 8 §1, its memory chart onto
-> Chapter 1's hierarchy, and its warp state breakdown tells you which of the
-> stalls described here is actually costing you cycles.
->
-> Beyond those, CUTLASS is the reference implementation of nearly every technique
-> in Parts IV and V. Its `sm90` GEMM kernels are worth reading now that the
-> vocabulary is familiar.
+> Part VII is the payoff. Chapter 12 takes every primitive in this book —
+> descriptors, mbarrier pipelines, warp specialisation, `wgmma`, FP8 — and puts
+> them into one kernel doing one job: attention, at 75% of the H100's peak. The
+> online softmax recurrence that makes tiling possible, the three techniques that
+> close the gap from FlashAttention-2's 35%, and the FP8 path with its layout
+> constraints and outlier problem.
+

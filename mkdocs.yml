@@ -125,3 +125,6 @@ nav:
       - 10. Stream-K Scheduling & Multi-Kernel Launch: 10-stream-k-scheduling.md
   - Part VI — Scaling Out:
       - 11. Multi-GPU Systems, NCCL & Distributed Training: 11-multi-gpu-nccl.md
+  - Part VII — Putting It to Work:
+      - 12. FlashAttention-3 on the H100: 12-flashattention-3.md
+      - 13. Profiling with Nsight Compute: 13-nsight-compute.md
