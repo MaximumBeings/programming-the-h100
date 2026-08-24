@@ -385,6 +385,28 @@
   
 
       
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="12-flashattention-3/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Part VII — Putting It to Work
+
+        </a>
+      </li>
+    
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -1250,6 +1272,127 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1349,9 +1492,10 @@
 <h2 id="a-hardware-level-companion-guide-to-nvidia-hopper">A hardware-level companion guide to NVIDIA Hopper<a class="headerlink" href="#a-hardware-level-companion-guide-to-nvidia-hopper" title="Permanent link">&para;</a></h2>
 <p class="hero-tagline">
 The gap between "my kernel runs" and "my kernel saturates the tensor cores" is
-exactly the size of this book. Eleven chapters that start at the H100 die and
-end at a multi-node SuperPOD — every one with ASCII diagrams, worked examples
-with concrete numbers, and compileable code with full test harnesses.
+exactly the size of this book. Thirteen chapters that start at the H100 die and
+end with a profiler telling you which of your assumptions was wrong — every one
+with ASCII diagrams, worked examples with concrete numbers, and code you can
+read line by line.
 </p>
 
 <blockquote>
@@ -1365,9 +1509,11 @@ just the machine. Chapters 2–3 give you the instruction-level vocabulary
 (clusters, inline PTX, state spaces, <code>mbarrier</code>). Chapters 4–5 are about
 getting bytes into shared memory efficiently. Chapters 6–7 are the tensor
 cores. Chapters 8–10 put it together into real warp-specialized kernels.
-Chapter 11 leaves the single GPU behind.</p>
+Chapter 11 leaves the single GPU behind. Chapters 12–13 are the payoff: one
+production kernel that uses everything at once, and the tool that measures it.</p>
 <p>If you already write CUDA and want the Hopper-specific parts, start at
-Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order.</p>
+Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order. If you
+have a slow kernel in front of you right now, start at Chapter 13.</p>
 <h2 id="contents">Contents<a class="headerlink" href="#contents" title="Permanent link">&para;</a></h2>
 <div class="grid cards">
 <ul>
@@ -1450,6 +1596,26 @@ dependent launch, and tuning the overlap window.</p>
 inter-node bottleneck, the SuperPOD, rail networks and SHARP, InfiniBand
 leaf/spine/core, UVA and peer access, SLURM and PMIx, NCCL and the big six
 collectives, and data / tensor / pipeline / expert parallelism.</p>
+</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m13.13 22.19-1.63-3.83c1.57-.58 3.04-1.36 4.4-2.27zM5.64 12.5l-3.83-1.63 6.1-2.77C7 9.46 6.22 10.93 5.64 12.5M21.61 2.39S16.66.269 11 5.93c-2.19 2.19-3.5 4.6-4.35 6.71-.28.75-.09 1.57.46 2.13l2.13 2.12c.55.56 1.37.74 2.12.46A19.1 19.1 0 0 0 18.07 13c5.66-5.66 3.54-10.61 3.54-10.61m-7.07 7.07c-.78-.78-.78-2.05 0-2.83s2.05-.78 2.83 0c.77.78.78 2.05 0 2.83s-2.05.78-2.83 0m-5.66 7.07-1.41-1.41zM6.24 22l3.64-3.64c-.34-.09-.67-.24-.97-.45L4.83 22zM2 22h1.41l4.77-4.76-1.42-1.41L2 20.59zm0-2.83 4.09-4.08c-.21-.3-.36-.62-.45-.97L2 17.76z"/></svg></span> <strong>Part VII — Putting It to Work</strong></p>
+<hr />
+<p><strong><a href="12-flashattention-3/">12. FlashAttention-3 on the H100</a></strong></p>
+<p>Why attention is memory-bound and how fusing it crosses the ridge point;
+the online softmax recurrence worked by hand; then the three Hopper
+techniques — producer/consumer warp specialization, ping-pong scheduling,
+and 2-stage intra-warpgroup pipelining — that take it from 35% to 75% of
+peak. Causal masking and load balance, and the FP8 path: block
+quantization, the K-major transpose of V, and Hadamard incoherent
+processing.</p>
+<p><strong><a href="13-nsight-compute/">13. Profiling with Nsight Compute</a></strong></p>
+<p>Getting <code>ncu</code> to run, including the permission error that stops most
+first attempts; replay and what it does to your program; Speed of Light
+triage; the roofline chart and which ceiling actually applies on Hopper;
+sectors per request and bank conflicts; every warp stall reason mapped to
+the chapter that explains it; occupancy and why chasing it is wrong; the
+metric naming scheme; SASS and stall sampling; and four worked diagnoses
+from symptom to fix.</p>
 </li>
 </ul>
 </div>
