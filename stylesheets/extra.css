@@ -6,6 +6,68 @@
   --md-code-font: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 }
 
+/* ------------------------------------------------------------------
+   Neutral header
+
+   Material derives the browser's `theme-color` from the computed
+   background of .md-header, which is why a coloured header tints
+   Safari's toolbar. Painting the header neutral keeps the browser
+   chrome grey in both themes while green stays the accent for links,
+   active nav items and the TOC marker.
+   ------------------------------------------------------------------ */
+
+:root {
+  --h100-header-bg: #f2f3f5;
+  --h100-header-fg: #1c1e21;
+  --h100-header-line: rgba(0, 0, 0, 0.10);
+  --h100-header-field: rgba(0, 0, 0, 0.06);
+}
+
+[data-md-color-scheme="slate"] {
+  --h100-header-bg: #1b1d24;
+  --h100-header-fg: #e8eaed;
+  --h100-header-line: rgba(255, 255, 255, 0.12);
+  --h100-header-field: rgba(255, 255, 255, 0.08);
+}
+
+.md-header,
+.md-tabs {
+  background-color: var(--h100-header-bg);
+  color: var(--h100-header-fg);
+}
+
+.md-header {
+  box-shadow: none;
+  border-bottom: 1px solid var(--h100-header-line);
+}
+
+.md-tabs {
+  border-bottom: 1px solid var(--h100-header-line);
+}
+
+/* Search field needs its own contrast once the header is light. */
+.md-search__form,
+.md-search__form:hover {
+  background-color: var(--h100-header-field);
+}
+
+.md-search__input,
+.md-search__icon,
+.md-search__options .md-icon {
+  color: var(--h100-header-fg);
+}
+
+.md-search__input::placeholder {
+  color: var(--h100-header-fg);
+  opacity: 0.55;
+}
+
+/* Mobile drawer header, so the small screens match. */
+.md-nav--primary .md-nav__title[for="__drawer"] {
+  background-color: var(--h100-header-bg);
+  color: var(--h100-header-fg);
+}
+
 /* Give the long technical chapters a little more room to breathe. */
 .md-grid {
   max-width: 68rem;
