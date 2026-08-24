@@ -2752,9 +2752,30 @@
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on any H100 or B200 instance.</p>
 </blockquote>
 <p><strong>What this covers:</strong> Everything from Lesson 5 — the cp.async.bulk instruction family and how it differs from Ampere's cp.async, tensor-aware vs raw (linear) bulk copies, all instruction variants and state space combinations, completion mechanisms (mbarrier vs bulk_group), L2 cache hinting (evict_first/last/normal) for both loads and stores, the createpolicy descriptor, unstructured and structured copy operands, TMA multicast across a cluster, the ctaMask, shared memory layout for dynamic SMEM with TMA, prefetching with cp.async.bulk.prefetch, and cp.reduce.async for hardware-accelerated atomic tile reductions. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.</p>
+<p><strong>How to read this chapter.</strong> Chapter 4 built the descriptor. This chapter is
+the other half: <code>cp.async.bulk</code>, the instruction that actually uses it, and the
+family of variants around it.</p>
+<p>The split is worth holding onto. Chapter 4 was host-side setup — done once,
+before the kernel launches. Everything here happens inside the kernel, on the
+device, in the inner loop. If Chapter 4 was "describe the tensor", this is "go
+and get me a tile."</p>
+<p>Four movements. Sections 1–3 introduce the instruction family and the one
+distinction that organises all of it — whether a copy is <em>tensor-aware</em> or just
+a fast <code>memcpy</code>. Sections 4–7 cover the parts you choose per copy: the
+<code>.tensor</code> modifier, state spaces, load modes, and how you find out the copy has
+finished. Section 8 covers L2 cache hinting, which is separate from everything
+else and easy to skip past — don't, it's cheap performance. Sections 9–14 are
+the concrete variants, from raw byte copies up to multicast and hardware
+reductions.</p>
+<p>For a first pass, read §1–§3 and §7. Completion mechanisms are what you will
+actually spend debugging time on.</p>
 <hr />
 <h2 id="before-you-start-hardware-setup-installation">★ BEFORE YOU START — Hardware, Setup &amp; Installation<a class="headerlink" href="#before-you-start-hardware-setup-installation" title="Permanent link">&para;</a></h2>
+<p><code>cp.async.bulk</code> is Hopper-only — Ampere's <code>cp.async</code> is a different and much
+weaker instruction, as §2 explains at length. No A100 fallback here. Skip ahead
+if you already have an H100 set up.</p>
 <h3 id="what-hardware-can-you-use">What Hardware Can You Use?<a class="headerlink" href="#what-hardware-can-you-use" title="Permanent link">&para;</a></h3>
+<p><code>sm_90a</code> or later, with the trailing <code>a</code>.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Hardware Compatibility Matrix
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -2771,6 +2792,7 @@
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    All code sections (§4+) require sm_90a or sm_100a.
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-lambda-labs">Cloud GPU Rental — Lambda Labs<a class="headerlink" href="#cloud-gpu-rental-lambda-labs" title="Permanent link">&para;</a></h3>
+<p>Usually the cheapest hourly H100.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Lambda Labs Setup (H100)
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
@@ -2781,6 +2803,7 @@
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  5. Compile: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out &amp;&amp; ./out
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-aws">Cloud GPU Rental — AWS<a class="headerlink" href="#cloud-gpu-rental-aws" title="Permanent link">&para;</a></h3>
+<p><code>p5</code> is H100; <code>p4d</code> is A100 and has none of this.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>AWS p5 Setup (H100)
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -2791,6 +2814,8 @@
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  A100 (p4d): use sm_80. cp.async.bulk sections will NOT work.
 </span></code></pre></div>
 <h3 id="hopper-vs-blackwell-what-changes">Hopper vs Blackwell — What Changes<a class="headerlink" href="#hopper-vs-blackwell-what-changes" title="Permanent link">&para;</a></h3>
+<p>Read once if you are on Blackwell. The instruction family carries over; the
+compile flag changes.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Hopper (sm_90a) vs Blackwell (sm_100a) — cp.async.bulk Differences
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -2832,6 +2857,14 @@
 </ol>
 <hr />
 <h2 id="1-cpasyncbulk">1 — cp.async.bulk<a class="headerlink" href="#1-cpasyncbulk" title="Permanent link">&para;</a></h2>
+<p>The instruction, introduced plainly before any syntax.</p>
+<p><code>cp.async.bulk</code> copies a block of data from one place to another and returns
+immediately, leaving the work to the TMA engine. "Bulk" is the operative word:
+this is not a load that one thread issues on behalf of itself, it is a request
+for a whole tile, issued once, by one thread, for the entire block.</p>
+<p>§1.1 covers what it does; §1.2 covers the hardware doing it — worth reading,
+because knowing the TMA is a separate engine on a separate path is what makes
+the fences and completion mechanisms later in the chapter make sense.</p>
 <h3 id="11-what-cpasyncbulk-is">1.1 What cp.async.bulk Is<a class="headerlink" href="#11-what-cpasyncbulk-is" title="Permanent link">&para;</a></h3>
 <p><code>cp.async.bulk</code> is a family of PTX instructions that perform hardware-accelerated, fully asynchronous bulk memory transfers on Hopper GPUs. The key word is <strong>bulk</strong>: unlike Ampere's <code>cp.async</code> which handled one 16-byte chunk at a time and required thread involvement for every chunk, <code>cp.async.bulk</code> can transfer an entire tile — hundreds or thousands of bytes — with a single instruction from a single thread.</p>
 <p>The transfers are offloaded entirely to the TMA (Tensor Memory Accelerator) hardware engine, which runs completely independently of the SM's compute pipeline. Once the instruction is issued, the SM is free. No threads are involved in the actual data movement whatsoever.</p>
@@ -2886,6 +2919,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="2-cpasync-ampere-vs-cpasyncbulk-hopper">2 — cp.async (Ampere) vs cp.async.bulk (Hopper)<a class="headerlink" href="#2-cpasync-ampere-vs-cpasyncbulk-hopper" title="Permanent link">&para;</a></h2>
+<p>If you have written Ampere code, this section is the one that will change your
+mental model — the two instructions share a name prefix and almost nothing else.</p>
+<p>Ampere's <code>cp.async</code> still required every thread to compute its own address and
+issue its own copy. The asynchrony was real but shallow: the threads were
+freed from <em>waiting</em>, not from <em>working</em>. Hopper's <code>cp.async.bulk</code> is a true
+offload — one thread hands over a descriptor and the entire block's worth of
+address generation happens in hardware.</p>
+<p>§2.3's comparison table is the fastest way to see the difference if you'd rather
+not read the argument.</p>
 <h3 id="21-the-architecture-difference">2.1 The Architecture Difference<a class="headerlink" href="#21-the-architecture-difference" title="Permanent link">&para;</a></h3>
 <p>To appreciate cp.async.bulk, you need to understand what Ampere's cp.async required of threads — and why it was still not good enough for true full overlap of compute and memory.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Ampere cp.async — Thread Involvement Required
@@ -2926,6 +2968,8 @@
 </span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>  └──────────────┴────────────────────────────────────────────────┘
 </span></code></pre></div>
 <h3 id="22-hopper-cpasyncbulk-true-offload">2.2 Hopper cp.async.bulk — True Offload<a class="headerlink" href="#22-hopper-cpasyncbulk-true-offload" title="Permanent link">&para;</a></h3>
+<p>The Hopper path drawn out. Note how little the issuing thread does compared with
+the Ampere diagram above.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Hopper cp.async.bulk — One Instruction, Zero Thread Involvement
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -2970,6 +3014,8 @@
 </span><span id="__span-7-42"><a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a>  These freed instruction slots go directly to Tensor Core utilization.
 </span></code></pre></div>
 <h3 id="23-side-by-side-comparison-table">2.3 Side-by-Side Comparison Table<a class="headerlink" href="#23-side-by-side-comparison-table" title="Permanent link">&para;</a></h3>
+<p>The two instructions in one table, if you want the summary rather than the
+reasoning.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cp.async (Ampere) vs cp.async.bulk (Hopper) — Full Comparison
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
@@ -2990,6 +3036,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="3-instruction-layout">3 — Instruction Layout<a class="headerlink" href="#3-instruction-layout" title="Permanent link">&para;</a></h2>
+<p>Now the syntax. <code>cp.async.bulk</code> is a long chain of dot-separated modifiers, and
+this section provides the map.</p>
+<p>The first fork is the one to internalise: with <code>.tensor</code>, the copy is
+descriptor-driven and coordinate-addressed — the subject of Chapter 4. Without
+it, the copy is a flat run of bytes with no notion of shape at all. Those two
+families have different operands and different use cases, and almost every other
+modifier depends on which one you're in.</p>
 <h3 id="31-the-two-instruction-families">3.1 The Two Instruction Families<a class="headerlink" href="#31-the-two-instruction-families" title="Permanent link">&para;</a></h3>
 <p>cp.async.bulk has two top-level variants depending on whether you are working with structured (tensor-described) data or raw linear bytes:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>cp.async.bulk — Two Major Forms
@@ -3033,6 +3086,8 @@
 </span><span id="__span-9-39"><a id="__codelineno-9-39" name="__codelineno-9-39" href="#__codelineno-9-39"></a>  └──────────┘            └───────┘ └──────────┘           └───────┘
 </span></code></pre></div>
 <h3 id="32-full-instruction-template-every-field-explained">3.2 Full Instruction Template — Every Field Explained<a class="headerlink" href="#32-full-instruction-template-every-field-explained" title="Permanent link">&para;</a></h3>
+<p>Every field of the instruction, in order. Come back to this whenever a variant
+in §9 or §10 has a modifier you don't recognise.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Full Instruction Template (Tensor Form)
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
@@ -3081,6 +3136,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="4-tensor-aware-copies">4 — Tensor-Aware Copies<a class="headerlink" href="#4-tensor-aware-copies" title="Permanent link">&para;</a></h2>
+<p>What the <code>.tensor</code> modifier actually buys, stated in one place.</p>
+<p>With it, you no longer supply an address. You supply a <em>coordinate</em> — "the tile
+at row 128, column 256" — and the descriptor from Chapter 4 supplies everything
+else: the strides, the bounds checking, the swizzled destination layout.</p>
+<p>That is a bigger shift than it sounds. Bounds checking in particular stops being
+code you write and becomes a property of the descriptor, which is why TMA GEMM
+kernels have no edge-case branches.</p>
 <h3 id="41-the-tensor-modifier-why-it-changes-everything">4.1 The .tensor Modifier — Why It Changes Everything<a class="headerlink" href="#41-the-tensor-modifier-why-it-changes-everything" title="Permanent link">&para;</a></h3>
 <p>Adding <code>.tensor</code> to <code>cp.async.bulk</code> transforms a simple memory copy into a <strong>smart, descriptor-driven transfer</strong> that understands your data's structure. This is the switch that enables TMA to use the cuTensorMap descriptor created in Lesson 4.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>With .tensor vs Without .tensor
@@ -3132,6 +3194,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="5-state-spaces">5 — State Spaces<a class="headerlink" href="#5-state-spaces" title="Permanent link">&para;</a></h2>
+<p>Where a copy can start and where it can end, using the state-space vocabulary
+from Chapter 2 §7.</p>
+<p>Not every combination exists. Global to shared is the common case — that is the
+prefetch in your pipeline. Shared to global is the epilogue. Shared to
+shared::cluster is the DSMEM path from Chapter 2. The table here is worth
+scanning once so you know which of your ideas the hardware will actually
+support.</p>
 <h3 id="51-source-and-destination-state-spaces">5.1 Source and Destination State Spaces<a class="headerlink" href="#51-source-and-destination-state-spaces" title="Permanent link">&para;</a></h3>
 <p>The state space fields in the instruction tell TMA where to read from and where to write to. This is the same state space concept from Lesson 2, but now applied to bulk hardware transfers.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>State Space Combinations — All Valid Options
@@ -3178,6 +3247,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="6-load-modes">6 — Load Modes<a class="headerlink" href="#6-load-modes" title="Permanent link">&para;</a></h2>
+<p>Two ways of interpreting the coordinates you hand a tensor copy.</p>
+<p><code>.tile</code> (§6.1) is the ordinary one: fetch a dense rectangular box. This is what
+GEMM uses and probably what you want.</p>
+<p><code>im2col</code> (§6.2) is a genuine surprise — dedicated hardware for convolution. The
+classic im2col transform expands overlapping convolution windows into a matrix,
+and normally costs you a separate pass over memory plus the memory to hold the
+result. In this mode the TMA performs the transform as it copies, so the
+expansion never exists in memory at all.</p>
 <h3 id="61-tile-the-standard-load-mode">6.1 tile — The Standard Load Mode<a class="headerlink" href="#61-tile-the-standard-load-mode" title="Permanent link">&para;</a></h3>
 <p>The <code>.tile</code> mode (the default for most uses) tells TMA to fetch a dense rectangular box of data. The coordinates you provide specify the top-left corner; the cuTensorMap's boxDim specifies the size. TMA fetches every element within that box, following the strides in the descriptor.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>.tile Mode — Dense Rectangular Fetch
@@ -3255,6 +3332,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="7-completion-mechanisms">7 — Completion Mechanisms<a class="headerlink" href="#7-completion-mechanisms" title="Permanent link">&para;</a></h2>
+<p>The section to read carefully, because this is where async pipelines actually go
+wrong.</p>
+<p>Having issued a copy that returns immediately, you need to know when the data
+has landed. There are two mechanisms and they differ in precision.</p>
+<p><code>mbarrier::complete_tx::bytes</code> (§7.1) is the fine-grained one: the TMA
+decrements a barrier's transaction count as bytes arrive, exactly as Chapter 3
+§10.2 described. It is the right choice for production pipelines, and it is what
+Chapters 8 and 9 are built on. <code>bulk_group</code> (§7.2) is the lightweight
+alternative — batch-level rather than byte-level, cheaper, and enough when you
+don't need the precision.</p>
 <h3 id="71-mbarriercomplete_txbytes-fine-grained-tracking">7.1 mbarrier::complete_tx::bytes — Fine-Grained Tracking<a class="headerlink" href="#71-mbarriercomplete_txbytes-fine-grained-tracking" title="Permanent link">&para;</a></h3>
 <p>The <code>mbarrier::complete_tx::bytes</code> completion mechanism ties the async copy directly to an mbarrier object. As TMA delivers bytes to the destination, it automatically decrements the mbarrier's pending transaction count. When all bytes arrive (count hits zero), the barrier phase flips and waiting threads are released.</p>
 <p>This is the <strong>recommended mechanism</strong> for production kernels because it provides precise byte-level tracking and integrates perfectly with the mbarrier pipeline from Lesson 3.</p>
@@ -3344,6 +3431,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="8-l2-cache-hinting">8 — L2 Cache Hinting<a class="headerlink" href="#8-l2-cache-hinting" title="Permanent link">&para;</a></h2>
+<p>A self-contained section about something most kernels leave on the table.</p>
+<p>Every TMA fetch passes through L2 on its way to shared memory, and by default
+the hardware decides how long it stays there. But you usually know better than
+the hardware: a tile you will re-read next iteration should stay; a tile you
+will never touch again should be evicted immediately so it stops crowding out
+data that matters. L2 is shared by all 132 SMs, so this is not a private
+decision.</p>
+<p>§8.2 covers <code>createpolicy</code>, which packs your intent into a 64-bit descriptor.
+§8.3 gives concrete recipes by workload — the fastest route if you want the
+benefit without the theory.</p>
 <h3 id="81-why-l2-cache-hinting-exists">8.1 Why L2 Cache Hinting Exists<a class="headerlink" href="#81-why-l2-cache-hinting-exists" title="Permanent link">&para;</a></h3>
 <p>When TMA fetches data from HBM, the data passes through the L2 cache on its way to shared memory. By default, L2 evicts data using a standard replacement policy (LRU-like). But you can give the hardware hints about how long to keep the data in L2, based on your access pattern.</p>
 <p>This matters because the L2 cache is a shared resource (all SMs compete for it). Holding data in L2 longer than necessary evicts other useful data and hurts performance. Evicting data too quickly means re-fetching from HBM on the next access.</p>
@@ -3445,6 +3542,8 @@
 </span><span id="__span-18-54"><a id="__codelineno-18-54" name="__codelineno-18-54" href="#__codelineno-18-54"></a>  // but are immediately evicted → keeps L2 clean for inputs.
 </span></code></pre></div>
 <h3 id="83-practical-l2-hinting-strategy">8.3 Practical L2 Hinting Strategy<a class="headerlink" href="#83-practical-l2-hinting-strategy" title="Permanent link">&para;</a></h3>
+<p>Recipes by workload. If you read nothing else in this section, read this — it
+tells you which hint to use for GEMM, for streaming, and for attention.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>L2 Hinting Strategy for Common Workloads
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
@@ -3488,6 +3587,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="9-unstructured-raw-copies">9 — Unstructured (Raw) Copies<a class="headerlink" href="#9-unstructured-raw-copies" title="Permanent link">&para;</a></h2>
+<p><code>cp.async.bulk</code> without <code>.tensor</code>: a hardware-accelerated <code>memcpy</code> that knows
+nothing about shape.</p>
+<p>No descriptor, no coordinates, no bounds checking, no swizzling — just a source,
+a destination, and a byte count. That sounds like a downgrade, and for tiles it
+is. But plenty of things you need to move are genuinely flat: weight vectors,
+lookup tables, scratch buffers. For those, the descriptor machinery is pure
+overhead and this is the right instruction.</p>
 <h3 id="91-cpasyncbulk-without-tensor-linear-byte-copies">9.1 cp.async.bulk Without .tensor — Linear Byte Copies<a class="headerlink" href="#91-cpasyncbulk-without-tensor-linear-byte-copies" title="Permanent link">&para;</a></h3>
 <p>Raw <code>cp.async.bulk</code> (without <code>.tensor</code>) is essentially a hardware-accelerated <code>memcpy</code>. It treats memory as a flat stream of bytes and copies a specified number of bytes from source to destination. No descriptor needed, no dimension knowledge.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>Unstructured Copy Variants — All State Space Combinations
@@ -3578,7 +3684,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="10-structured-tensor-copies-all-variants">10 — Structured (Tensor) Copies — All Variants<a class="headerlink" href="#10-structured-tensor-copies-all-variants" title="Permanent link">&para;</a></h2>
+<p>The tensor-aware forms, one per direction, with full operand lists.</p>
+<p>This is reference material rather than narrative — §10.1 is the load you will
+write in every pipeline prologue, §10.2 the store you will write in every
+epilogue. Read them once to see the shape, then come back when you need the
+exact operand order.</p>
 <h3 id="101-structured-load-global-to-shared-standard">10.1 Structured Load — Global to Shared (Standard)<a class="headerlink" href="#101-structured-load-global-to-shared-standard" title="Permanent link">&para;</a></h3>
+<p>The workhorse: the instruction at the top of every TMA pipeline.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>Structured Copy: Global → Shared::CTA (Standard Load)
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
@@ -3621,6 +3733,8 @@
 </span><span id="__span-21-40"><a id="__codelineno-21-40" name="__codelineno-21-40" href="#__codelineno-21-40"></a>  // Data is written with 128B swizzle applied automatically.
 </span></code></pre></div>
 <h3 id="102-structured-store-shared-to-global">10.2 Structured Store — Shared to Global<a class="headerlink" href="#102-structured-store-shared-to-global" title="Permanent link">&para;</a></h3>
+<p>The reverse, for epilogues. Note that stores complete differently from loads —
+there is no barrier to wait on, so you use <code>bulk_group</code> from §7.2.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>Structured Copy: Shared::CTA → Global (Store / Write-back)
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
@@ -3667,6 +3781,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="11-tma-multicast">11 — TMA Multicast<a class="headerlink" href="#11-tma-multicast" title="Permanent link">&para;</a></h2>
+<p>The optimisation Chapter 2 §3 promised, now with the actual mechanism.</p>
+<p>The setup: several blocks in a cluster all need the same tile. Fetched
+separately that is N trips to HBM for one tile's worth of data. Multicast makes
+it one fetch that lands in all N blocks' shared memory simultaneously.</p>
+<p>The complication is in the bookkeeping, and §11.3 is where the real content is.
+Each participating block has its own mbarrier, and every one of them has to be
+set up correctly before the copy is issued — get this wrong and the kernel
+hangs rather than producing wrong numbers, which is at least an honest failure.</p>
 <h3 id="111-the-problem-multicast-solves">11.1 The Problem Multicast Solves<a class="headerlink" href="#111-the-problem-multicast-solves" title="Permanent link">&para;</a></h3>
 <p>In GEMM kernels, multiple thread blocks need the SAME tile of matrix A (one tile of A is multiplied against different tiles of B by different blocks). Without multicast, each block independently fetches that same tile from HBM — redundant bandwidth waste proportional to the cluster size.</p>
 <p>TMA multicast solves this by fetching from HBM ONCE and delivering the data to ALL specified blocks simultaneously via the L2 → cluster crossbar path.</p>
@@ -3822,6 +3944,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="12-dynamic-shared-memory-layout-with-tma">12 — Dynamic Shared Memory Layout with TMA<a class="headerlink" href="#12-dynamic-shared-memory-layout-with-tma" title="Permanent link">&para;</a></h2>
+<p>A practical section about a problem you will hit the first time your tiles
+outgrow 48 KB and you have to switch to <code>extern __shared__</code>.</p>
+<p>With dynamic shared memory there is no compiler to lay out your variables — you
+get one flat array and place everything by hand. TMA makes that fussier than
+usual, because mbarriers need 8-byte alignment and TMA destinations need 128,
+and getting either wrong is a silent misalignment rather than an error.</p>
+<p>The template here is worth copying verbatim.</p>
 <h3 id="121-the-problem-with-dynamic-smem-and-tma">12.1 The Problem with Dynamic SMEM and TMA<a class="headerlink" href="#121-the-problem-with-dynamic-smem-and-tma" title="Permanent link">&para;</a></h3>
 <p>When using dynamic shared memory (<code>extern __shared__ char smem[]</code>), you must manually lay out the mbarrier object and data tile within the shared memory region. TMA requires the data destination to be 128-byte aligned (for swizzling), and the mbarrier must be 8-byte aligned. Getting the layout wrong causes subtle corruption.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>Dynamic Shared Memory Layout for TMA — The Right Way
@@ -3879,6 +4008,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="13-cpasyncbulkprefetch">13 — cp.async.bulk.prefetch<a class="headerlink" href="#13-cpasyncbulkprefetch" title="Permanent link">&para;</a></h2>
+<p>A hint rather than a copy: start pulling this data from HBM into L2, but don't
+put it anywhere yet.</p>
+<p>The use case is the start of a pipeline, where you have nothing to overlap the
+first real fetch with. Prefetching a few tiles ahead warms L2 so those fetches
+land in cache rather than going the full distance to HBM.</p>
+<p>It is a hint, so it can be dropped. Treat it as an optimisation, never as a
+guarantee that data will be there.</p>
 <h3 id="131-prefetching-warming-the-l2-cache">13.1 Prefetching — Warming the L2 Cache<a class="headerlink" href="#131-prefetching-warming-the-l2-cache" title="Permanent link">&para;</a></h3>
 <p><code>cp.async.bulk.prefetch</code> is a hint instruction that tells the memory system to start fetching data from HBM into the L2 cache without writing it to shared memory yet. When the actual <code>cp.async.bulk.tensor</code> load is issued shortly after, the data is already in L2 — avoiding the full HBM latency.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>cp.async.bulk.prefetch — How It Works
@@ -3940,6 +4076,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="14-cpreduceasync">14 — cp.reduce.async<a class="headerlink" href="#14-cpreduceasync" title="Permanent link">&para;</a></h2>
+<p>The last variant, and the one that does more than move data.</p>
+<p>Instead of overwriting the destination, <code>cp.reduce.async</code> combines with it —
+adding, taking a maximum, ANDing — element by element, in hardware, as the
+tile is written back. The alternative is reading the destination into
+registers, combining, and writing it back, which costs a round trip and needs
+atomics to be safe.</p>
+<p>This is what split-K GEMM wants, where many blocks accumulate partial results
+into the same output tile. Chapter 10's Stream-K scheduling leans on it
+directly.</p>
 <h3 id="141-what-cpreduceasync-does">14.1 What cp.reduce.async Does<a class="headerlink" href="#141-what-cpreduceasync-does" title="Permanent link">&para;</a></h3>
 <p><code>cp.reduce.async</code> extends TMA beyond simple copies to perform <strong>hardware-accelerated atomic reductions</strong>. Instead of copying a tile of data from SMEM to global memory and adding to an existing global accumulator (which would require thread-driven atomics), cp.reduce.async offloads the entire tile reduction to TMA hardware.</p>
 <p>TMA reads the tile from SMEM, applies the reduction operation to each element against the corresponding element in global memory, and writes the result back — all atomically, all in the background.</p>
@@ -3976,6 +4121,8 @@
 </span><span id="__span-28-31"><a id="__codelineno-28-31" name="__codelineno-28-31" href="#__codelineno-28-31"></a>  └── Overlaps perfectly with the next compute phase
 </span></code></pre></div>
 <h3 id="142-cpreduceasync-full-instruction-reference">14.2 cp.reduce.async — Full Instruction Reference<a class="headerlink" href="#142-cpreduceasync-full-instruction-reference" title="Permanent link">&para;</a></h3>
+<p>Every operation and type combination. Note that the supported set is narrower
+than you might expect — check here before designing around a reduction.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>cp.reduce.async — All Variants and Operands
 </span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>
@@ -4053,6 +4200,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="15-putting-it-all-together">15 — Putting It All Together<a class="headerlink" href="#15-putting-it-all-together" title="Permanent link">&para;</a></h2>
+<p>Two complete programs. §15.1 is the standard pipeline shape: a <code>cp.async.bulk</code>
+load, an mbarrier wait, and L2 hinting applied — the three things from §7 and §8
+working together. §15.2 covers the output side, pairing a TMA store with
+<code>cp.reduce.async</code>.</p>
+<p>Between them they contain the copy machinery that every kernel in Chapters 8
+through 10 assumes you already have.</p>
 <h3 id="151-full-example-cpasyncbulk-with-mbarrier-and-l2-hinting">15.1 Full Example: cp.async.bulk with mbarrier and L2 Hinting<a class="headerlink" href="#151-full-example-cpasyncbulk-with-mbarrier-and-l2-hinting" title="Permanent link">&para;</a></h3>
 <p><strong>Manual Worked Example Before the Code:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Scenario: Load 4096 bytes (1024 FP32 values) from global memory to SMEM
@@ -4379,7 +4532,11 @@
 </span></code></pre></div>
 <hr />
 <h2 id="16-quick-reference">16 — Quick Reference<a class="headerlink" href="#16-quick-reference" title="Permanent link">&para;</a></h2>
+<p>The chapter as cards. The <em>Multicast Checklist</em> and the <em>Dynamic SMEM Layout
+Template</em> are the two worth keeping to hand — both describe setups where one
+missing step causes a hang rather than an error.</p>
 <h3 id="cpasyncbulk-instruction-family">cp.async.bulk Instruction Family<a class="headerlink" href="#cpasyncbulk-instruction-family" title="Permanent link">&para;</a></h3>
+<p>Every variant in one table, organised by whether it's tensor-aware.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>Instruction Variant                     Use Case
 </span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>cp.async.bulk.shared::cta.global...     Linear load: HBM → SMEM
@@ -4392,12 +4549,15 @@
 </span><span id="__span-36-10"><a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a>cp.reduce.async.bulk.global.shared::cta...       Atomic tile reduction
 </span></code></pre></div>
 <h3 id="completion-mechanism-comparison">Completion Mechanism Comparison<a class="headerlink" href="#completion-mechanism-comparison" title="Permanent link">&para;</a></h3>
+<p>mbarrier versus bulk_group, side by side. The rule of thumb: mbarrier for
+loads you'll pipeline, bulk_group for stores.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>Mechanism                 Granularity   Blocking?  Overhead  Best For
 </span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>mbarrier::complete_tx::bytes  Per byte  Optional   Medium    Production pipelines
 </span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>bulk_group / commit+wait      Per group  Yes (wait) Low      Simple load-compute-store
 </span></code></pre></div>
 <h3 id="l2-cache-hinting-guide">L2 Cache Hinting Guide<a class="headerlink" href="#l2-cache-hinting-guide" title="Permanent link">&para;</a></h3>
+<p>Which policy for which access pattern, in one card.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>Data Pattern                   Policy           PTX
 </span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>Reused weights/embeddings       evict_last       createpolicy...evict_last...
@@ -4406,6 +4566,8 @@
 </span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>General / unknown pattern       evict_normal     (default — no createpolicy needed)
 </span></code></pre></div>
 <h3 id="multicast-checklist">Multicast Checklist<a class="headerlink" href="#multicast-checklist" title="Permanent link">&para;</a></h3>
+<p>Run through this before debugging a hung multicast. It is almost always an
+mbarrier that wasn't initialised on every participating block.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>Before using multicast, verify ALL of these:
 </span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>  □ barrier.cluster.arrive + barrier.cluster.wait before any DSMEM op
 </span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>  □ Every participating CTA inits its OWN mbarrier at the SAME SMEM offset
@@ -4417,6 +4579,8 @@
 </span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a>  □ All CTAs spin on THEIR OWN local mbarrier (same offset, different SM)
 </span></code></pre></div>
 <h3 id="dynamic-smem-layout-template">Dynamic SMEM Layout Template<a class="headerlink" href="#dynamic-smem-layout-template" title="Permanent link">&para;</a></h3>
+<p>Copy this rather than reinventing it — the alignment requirements are easy to
+get subtly wrong.</p>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="k">extern</span><span class="w"> </span><span class="n">__shared__</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">smem</span><span class="p">[];</span>
 </span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>
 </span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="c1">// Alignment calculation:</span>
@@ -4432,6 +4596,7 @@
 </span><span id="__span-40-13"><a id="__codelineno-40-13" name="__codelineno-40-13" href="#__codelineno-40-13"></a><span class="c1">// Kernel launch: &lt;&lt;&lt;grid, block, TILE_OFF + TILE_BYTES&gt;&gt;&gt;</span>
 </span></code></pre></div>
 <h3 id="cpreduceasync-supported-operations">cp.reduce.async Supported Operations<a class="headerlink" href="#cpreduceasync-supported-operations" title="Permanent link">&para;</a></h3>
+<p>The operation and type matrix. Narrower than you'd expect.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>Type    Operations
 </span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>.f16    .add
@@ -4446,6 +4611,8 @@
 </span><span id="__span-41-12"><a id="__codelineno-41-12" name="__codelineno-41-12" href="#__codelineno-41-12"></a>.b64    .and, .or, .xor
 </span></code></pre></div>
 <h3 id="common-mistakes-and-fixes">Common Mistakes and Fixes<a class="headerlink" href="#common-mistakes-and-fixes" title="Permanent link">&para;</a></h3>
+<p>Read before debugging. Note which entries cause hangs and which cause wrong
+data — that distinction tells you where to look first.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>Mistake                                 Symptom              Fix
 </span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>──────────────────────────────────────────────────────────────────────────────
 </span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>tile_addr not 128B-aligned with swizzle Silent corruption    Use TILE_OFF=128 calculation

@@ -2762,9 +2762,30 @@
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on any H100 or B200 instance.</p>
 </blockquote>
 <p><strong>What this covers:</strong> Everything from Lesson 4 — what TMA is and why it exists, how descriptors replace manual address calculation, the full <code>cuTensorMapEncodeTiled()</code> API (all 12 parameters explained with worked examples), data types, tensor rank and global dimensions, stride semantics, box dimensions, swizzling (32B/64B/128B) and bank-conflict elimination with the XOR formula, interleaving for non-linear layouts (16B and 32B modes), L2 promotion policies for prefetching, and out-of-bounds fill behavior. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.</p>
+<p><strong>How to read this chapter.</strong> Chapter 1 introduced the TMA as the piece of
+hardware that fetches tiles while your threads compute. This chapter is about
+the object you hand it: the <strong>descriptor</strong>, a small struct built once on the host
+that tells the TMA the shape of your tensor, the size of the tile you want, and
+how to lay it out in shared memory once it arrives.</p>
+<p>Almost everything here happens <em>before</em> the kernel runs. The next chapter covers
+the instruction that uses the descriptor; this one covers getting the descriptor
+right — which is where the real difficulty lives, because a malformed descriptor
+does not raise an error. It copies the wrong bytes.</p>
+<p>The chapter runs in four movements. Sections 1–3 explain what a descriptor is
+and why it replaces address arithmetic. Sections 4–8 walk the twelve parameters
+of <code>cuTensorMapEncodeTiled()</code> one at a time — this is the reference core.
+Sections 9–11 are about shared-memory layout: bank conflicts, swizzling, and
+interleaving. Sections 12–13 cover two optional behaviours that cost nothing to
+enable and are easy to overlook.</p>
+<p>If you only read part of this chapter, read §7 and §8. Dimension ordering and
+stride units are the two places where nearly every first descriptor goes wrong.</p>
 <hr />
 <h2 id="before-you-start-hardware-setup-installation">★ BEFORE YOU START — Hardware, Setup &amp; Installation<a class="headerlink" href="#before-you-start-hardware-setup-installation" title="Permanent link">&para;</a></h2>
+<p>The TMA is Hopper hardware, so there is no A100 fallback for this chapter. If
+you already have an H100 and a working <code>nvcc</code>, skip to the Table of Contents.</p>
 <h3 id="what-hardware-can-you-use">What Hardware Can You Use?<a class="headerlink" href="#what-hardware-can-you-use" title="Permanent link">&para;</a></h3>
+<p><code>sm_90a</code> or later. The trailing <code>a</code> is required — plain <code>sm_90</code> will not give
+you the TMA instructions.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Hardware Compatibility Matrix
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -2786,6 +2807,7 @@
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            SM is COMPLETELY FREE. TMA runs independently. Zero thread cost.
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-lambda-labs">Cloud GPU Rental — Lambda Labs<a class="headerlink" href="#cloud-gpu-rental-lambda-labs" title="Permanent link">&para;</a></h3>
+<p>Usually the cheapest hourly H100.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Lambda Labs Setup (H100)
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
@@ -2796,6 +2818,7 @@
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  5. Compile any example: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-aws">Cloud GPU Rental — AWS<a class="headerlink" href="#cloud-gpu-rental-aws" title="Permanent link">&para;</a></h3>
+<p><code>p5</code> is the H100 family; <code>p4d</code> is A100 and has no TMA.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>AWS p5 Setup (H100)
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -2807,6 +2830,8 @@
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  For A100 (p4d): use sm_80. TMA / cuTensorMap sections will NOT work.
 </span></code></pre></div>
 <h3 id="hopper-vs-blackwell-what-changes">Hopper vs Blackwell — What Changes<a class="headerlink" href="#hopper-vs-blackwell-what-changes" title="Permanent link">&para;</a></h3>
+<p>Read once if you are on a B100 or B200. The descriptor API carries over
+essentially unchanged; only the compile flag differs.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Hopper (sm_90a) vs Blackwell (sm_100a) — TMA Differences
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -2827,6 +2852,8 @@
 </span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>  PORTING: Change -arch=sm_90a to -arch=sm_100a. Done.
 </span></code></pre></div>
 <h3 id="how-to-compile-and-run-each-example">How to Compile and Run Each Example<a class="headerlink" href="#how-to-compile-and-run-each-example" title="Permanent link">&para;</a></h3>
+<p>The compile/run box format used throughout the chapter. Every code block comes
+with one, so you can copy a file out and build it without guessing flags.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>═══════════════════════════════════════════════════════
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  FILE:    examples/exNN_name.cu
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 exNN_name.cu -o exNN
@@ -2856,6 +2883,16 @@
 </ol>
 <hr />
 <h2 id="1-what-is-tma">1 — What Is TMA<a class="headerlink" href="#1-what-is-tma" title="Permanent link">&para;</a></h2>
+<p>Start with the problem before the machinery.</p>
+<p>Copying a 2D tile out of a large matrix sounds trivial and is not. Every thread
+has to compute its own source address from a row, a column, and a stride; check
+whether that address falls off the edge of the tensor; and issue its own load.
+For a 64×64 tile that is thousands of instructions spent on arithmetic that has
+nothing to do with your algorithm.</p>
+<p>The TMA is a dedicated hardware unit that does all of it. One thread issues one
+instruction, and the copy happens in the background. §1.1 covers the problem,
+§1.2 what the unit can do, and §1.3 the property that matters most — it is
+genuinely asynchronous, which is what makes real pipelining possible.</p>
 <h3 id="11-the-problem-tma-solves">1.1 The Problem TMA Solves<a class="headerlink" href="#11-the-problem-tma-solves" title="Permanent link">&para;</a></h3>
 <p>To understand why TMA (Tensor Memory Accelerator) exists, you need to understand the bottleneck it eliminates. On every pre-Hopper GPU — and even on Ampere with <code>cp.async</code> — moving data from global memory (HBM) into shared memory required active thread involvement. Threads had to compute the source address of every chunk they wanted to copy, issue the copy instruction, and manage the pipeline manually.</p>
 <p>This created a fundamental coupling: the SM (Streaming Multiprocessor) — the unit that does compute — was tethered to the data-movement operation. Even if the copy was "asynchronous" (as in Ampere's <code>cp.async</code>), threads still had to touch every 16-byte chunk and compute its address. The SM's instruction issue slots were consumed by housekeeping rather than arithmetic.</p>
@@ -2981,6 +3018,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="2-how-descriptors-replace-address-calculation">2 — How Descriptors Replace Address Calculation<a class="headerlink" href="#2-how-descriptors-replace-address-calculation" title="Permanent link">&para;</a></h2>
+<p>The conceptual shift, and it is worth pausing on because everything else follows
+from it.</p>
+<p>Ordinarily, "where is element [i][j]" is a calculation your threads perform,
+over and over, at run time. A descriptor turns that into a <em>declaration</em> made
+once: here is the tensor's shape, here are its strides, here is the tile size I
+want. From then on, you ask for a tile by coordinate — "give me the tile at row
+128, column 256" — and the hardware works out the addresses.</p>
+<p>§2.2's framing is the useful one: the descriptor is a job specification, not a
+pointer.</p>
 <h3 id="21-the-old-way-manual-address-computation">2.1 The Old Way — Manual Address Computation<a class="headerlink" href="#21-the-old-way-manual-address-computation" title="Permanent link">&para;</a></h3>
 <p>In pre-TMA code, every memory access required threads to compute the exact byte address of each element they wanted. For a 2D matrix tile, this meant computing <code>base + row * stride + col * element_size</code> for every thread, every iteration, every tile. This computation is simple but consumes instruction slots and registers.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Manual Address Computation — What Threads Had to Do
@@ -3072,6 +3118,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="3-cutensormap-the-descriptor-object">3 — cuTensorMap — The Descriptor Object<a class="headerlink" href="#3-cutensormap-the-descriptor-object" title="Permanent link">&para;</a></h2>
+<p>The concrete type. A <code>CUtensorMap</code> is a 128-byte opaque struct — you never read
+its fields directly, you fill it through an API and pass it to the kernel.</p>
+<p>Two practical constraints appear here and both cause real bugs: it must be
+64-byte aligned, and it should be built once on the host rather than
+reconstructed per launch. §3.2 covers which encode function to use, since there
+is more than one and <code>EncodeTiled</code> is the one this chapter is about.</p>
 <h3 id="31-the-cutensormap-type">3.1 The CUtensorMap Type<a class="headerlink" href="#31-the-cutensormap-type" title="Permanent link">&para;</a></h3>
 <p><code>CUtensorMap</code> is a fixed-size opaque struct defined by NVIDIA. It is exactly 128 bytes and encodes all the information the TMA hardware needs to perform an autonomous data transfer.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>CUtensorMap — Physical Properties
@@ -3140,7 +3192,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="4-cutensormapencodetiled-all-12-parameters">4 — cuTensorMapEncodeTiled — All 12 Parameters<a class="headerlink" href="#4-cutensormapencodetiled-all-12-parameters" title="Permanent link">&para;</a></h2>
+<p>The heart of the chapter. Twelve parameters, and getting any one of them wrong
+gives you a kernel that runs and produces wrong data.</p>
+<p>§4.1 shows the whole signature at once so you can see the shape of it. §4.2 is
+the more valuable half: a complete worked example that fills in all twelve for a
+real tensor, with the arithmetic shown. Read the worked example first if the
+bare signature looks impenetrable — it usually does.</p>
+<p>Sections 5 through 8 then take the parameters in groups.</p>
 <h3 id="41-function-signature-complete-view">4.1 Function Signature — Complete View<a class="headerlink" href="#41-function-signature-complete-view" title="Permanent link">&para;</a></h3>
+<p>All twelve parameters in one place. Don't try to absorb it — skim it for shape,
+then read the worked example that follows.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>cuTensorMapEncodeTiled — All 12 Parameters
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
@@ -3256,6 +3317,11 @@
 </span></code></pre></div>
 <hr />
 <h2 id="5-data-types">5 — Data Types<a class="headerlink" href="#5-data-types" title="Permanent link">&para;</a></h2>
+<p>The first parameter, and the simplest: what one element of your tensor is.</p>
+<p>The list is worth a glance rather than a study, with one thing to notice — the
+element size implied here is what every byte-based parameter later in the
+descriptor gets measured against. Pick the wrong type and your strides are
+silently wrong by a factor of two.</p>
 <h3 id="51-cutensormapdatatype-complete-reference">5.1 CUtensorMapDataType — Complete Reference<a class="headerlink" href="#51-cutensormapdatatype-complete-reference" title="Permanent link">&para;</a></h3>
 <p>The data type parameter tells the TMA engine the size and interpretation of each element. TMA uses this to calculate transfer sizes and ensure correct alignment.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Data Types — All Options with Properties
@@ -3324,6 +3390,11 @@
 </span></code></pre></div>
 <hr />
 <h2 id="6-tensor-rank-and-global-address">6 — Tensor Rank and Global Address<a class="headerlink" href="#6-tensor-rank-and-global-address" title="Permanent link">&para;</a></h2>
+<p>Two parameters that look obvious and each carry a trap.</p>
+<p><strong>Rank</strong> (§6.1) is the number of dimensions, not the mathematical rank from
+linear algebra — a full-rank 2D matrix and a degenerate one both have
+<code>tensorRank = 2</code>. <strong>globalAddress</strong> (§6.2) points at element zero, must be
+16-byte aligned, and is the origin every tile coordinate is measured from.</p>
 <h3 id="61-tensorrank-number-of-dimensions">6.1 tensorRank — Number of Dimensions<a class="headerlink" href="#61-tensorrank-number-of-dimensions" title="Permanent link">&para;</a></h3>
 <p>Tensor rank in TMA is the number of dimensions of your data tensor. This is <strong>not</strong> the mathematical rank (from linear algebra) — it is simply the number of indices needed to address a single element.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Tensor Rank — Practical Examples
@@ -3417,6 +3488,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="7-global-dimensions-and-strides">7 — Global Dimensions and Strides<a class="headerlink" href="#7-global-dimensions-and-strides" title="Permanent link">&para;</a></h2>
+<p>This is the section where most first descriptors break, and the cause is always
+one of two things.</p>
+<p>The first is <strong>ordering</strong>. TMA expects dimensions innermost-first — the fastest-
+varying dimension comes first in the array, which is the reverse of how you
+would write the shape in NumPy or PyTorch. The second is <strong>units</strong>: <code>globalDim</code>
+is counted in elements, <code>globalStrides</code> in <em>bytes</em>. Mixing them up produces a
+descriptor that reads real memory at the wrong spacing, so you get plausible
+numbers from the wrong locations.</p>
+<p>Read both subsections carefully, and check your first descriptor against the
+worked example rather than against your intuition.</p>
 <h3 id="71-globaldim-tensor-shape-in-elements">7.1 globalDim — Tensor Shape in Elements<a class="headerlink" href="#71-globaldim-tensor-shape-in-elements" title="Permanent link">&para;</a></h3>
 <p><code>globalDim</code> is an array specifying the number of elements in each dimension. It has <code>tensorRank</code> entries. The ordering is <strong>innermost to outermost</strong> (index 0 = fastest-varying dimension).</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>globalDim — Detailed Specification
@@ -3516,6 +3597,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="8-box-dimensions-and-element-strides">8 — Box Dimensions and Element Strides<a class="headerlink" href="#8-box-dimensions-and-element-strides" title="Permanent link">&para;</a></h2>
+<p>Having described the tensor, you now describe the tile you want out of it.</p>
+<p><strong>boxDim</strong> (§8.1) is the tile size, in elements, in the same innermost-first
+order as §7 — and it is what determines how much shared memory each copy needs.
+<strong>elementStrides</strong> (§8.2) lets the TMA skip elements as it reads, taking every
+second or every fourth value. That is a niche feature, and for most work you
+will set it to all ones and move on.</p>
 <h3 id="81-boxdim-the-tile-size">8.1 boxDim — The Tile Size<a class="headerlink" href="#81-boxdim-the-tile-size" title="Permanent link">&para;</a></h3>
 <p><code>boxDim</code> specifies how many elements TMA fetches per dimension in each call. This is the tile size — the chunk of data that lands in shared memory when you issue <code>cp.async.bulk.tensor</code>.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>boxDim — Tile Dimensions in Elements
@@ -3612,6 +3699,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="9-shared-memory-and-bank-conflicts">9 — Shared Memory and Bank Conflicts<a class="headerlink" href="#9-shared-memory-and-bank-conflicts" title="Permanent link">&para;</a></h2>
+<p>The chapter changes subject here. Sections 9 through 11 are not about the source
+tensor at all — they are about how the tile gets <em>arranged</em> once it lands in
+shared memory.</p>
+<p>This section is the setup for that, and it recaps the bank-conflict material
+from Chapter 1 §13.3 in the detail you need for §10. The short version: shared
+memory is 32 independent banks, a warp can hit all 32 in one cycle, and any two
+threads wanting different addresses in the same bank are serialised.</p>
+<p>If Chapter 1's version is still fresh, skim to §10.</p>
 <h3 id="91-shared-memory-banks-the-hardware-reality">9.1 Shared Memory Banks — The Hardware Reality<a class="headerlink" href="#91-shared-memory-banks-the-hardware-reality" title="Permanent link">&para;</a></h3>
 <p>Before explaining swizzling (§10), you need a solid understanding of why bank conflicts happen. This section gives you the mental model that makes swizzling's XOR formula intuitive.</p>
 <p>Shared memory is physically divided into 32 banks. Each bank is an independently readable/writable memory array, 4 bytes wide. The 32 banks allow 32 threads (one warp) to perform 32 simultaneous independent accesses — one per bank — with no conflict. This is the ideal case.</p>
@@ -3662,6 +3757,8 @@
 </span><span id="__span-21-45"><a id="__codelineno-21-45" name="__codelineno-21-45" href="#__codelineno-21-45"></a>  the same bank maps to DIFFERENT physical banks.
 </span></code></pre></div>
 <h3 id="92-why-32-banks-exist">9.2 Why 32 Banks Exist<a class="headerlink" href="#92-why-32-banks-exist" title="Permanent link">&para;</a></h3>
+<p>Why the number is 32 and not something else — it lines up with the warp size and
+with a 128-byte cache line, which is not a coincidence.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>32 Banks — The Design Rationale
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
@@ -3689,6 +3786,17 @@
 </span></code></pre></div>
 <hr />
 <h2 id="10-swizzling">10 — Swizzling<a class="headerlink" href="#10-swizzling" title="Permanent link">&para;</a></h2>
+<p>The fix, and the most important section in the chapter after §7.</p>
+<p>A naive tile layout puts every column of a matrix into a single bank, which
+turns a column read into a 32-way conflict. Swizzling scrambles the layout as
+the TMA writes — XORing part of the row index into the address — so that a
+column spreads across all 32 banks instead.</p>
+<p>The crucial part is that the TMA does this <em>for free</em>, in hardware, on the way
+in. You enable it in the descriptor and never think about it again — except in
+Chapter 6 §11, where you have to reproduce the same XOR to read the tile back
+out.</p>
+<p>§10.2 covers 128B swizzle, which is the right default for FP16 and BF16 GEMM.
+§10.3 covers the narrower modes and when they apply.</p>
 <h3 id="101-what-swizzling-is-the-intuition">10.1 What Swizzling Is — The Intuition<a class="headerlink" href="#101-what-swizzling-is-the-intuition" title="Permanent link">&para;</a></h3>
 <p>Swizzling is an address-mapping function applied to the bytes as TMA writes them to shared memory. Instead of writing element (y, x) to the "obvious" address <code>base + y * row_bytes + x * element_size</code>, TMA applies an XOR operation to the address bits, shuffling which bank each element lands in.</p>
 <p>The key insight: swizzling rearranges data so that elements which would conflict (map to the same bank in a naive layout) are spread across different banks. From the thread's perspective, they still access the same logical coordinates. The XOR is invisible — the hardware applies it consistently so reads and writes see the same mapping.</p>
@@ -3777,6 +3885,8 @@
 </span><span id="__span-24-43"><a id="__codelineno-24-43" name="__codelineno-24-43" href="#__codelineno-24-43"></a>  adjacent rows.
 </span></code></pre></div>
 <h3 id="103-64b-and-32b-swizzle-when-to-use-each">10.3 64B and 32B Swizzle — When to Use Each<a class="headerlink" href="#103-64b-and-32b-swizzle-when-to-use-each" title="Permanent link">&para;</a></h3>
+<p>The narrower modes. You need these when your tile's row is too short for 128B
+swizzle to be legal — the mode has to divide evenly into the row.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>64B Swizzle
 </span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
@@ -3828,6 +3938,8 @@
 </span><span id="__span-25-49"><a id="__codelineno-25-49" name="__codelineno-25-49" href="#__codelineno-25-49"></a>      In that case, the wider swizzle would permute addresses beyond your tile.
 </span></code></pre></div>
 <h3 id="104-setting-up-swizzle-in-the-descriptor">10.4 Setting Up Swizzle in the Descriptor<a class="headerlink" href="#104-setting-up-swizzle-in-the-descriptor" title="Permanent link">&para;</a></h3>
+<p>The enumeration values. Note them down: Chapter 6's descriptor has its own
+swizzle field, and the two must agree.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>Swizzle Enumeration Values
 </span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
@@ -3855,6 +3967,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="11-interleaving">11 — Interleaving<a class="headerlink" href="#11-interleaving" title="Permanent link">&para;</a></h2>
+<p>A specialised feature with one clear use case: image data.</p>
+<p>Deep learning frameworks often store feature maps as NCHW, where the channel
+values for a single pixel are scattered far apart in memory. Convolution wants
+them adjacent. Interleave mode lets the TMA gather from that non-linear layout
+and deposit a linearised tile in shared memory.</p>
+<p>If you are writing GEMM, skip this section. If you are writing convolution, note
+§11.2 — interleave and swizzle are coupled, and only certain combinations are
+legal.</p>
 <h3 id="111-what-interleaving-is-and-why-it-exists">11.1 What Interleaving Is and Why It Exists<a class="headerlink" href="#111-what-interleaving-is-and-why-it-exists" title="Permanent link">&para;</a></h3>
 <p>Most deep learning frameworks store image and feature map data in NCHW (batch × channel × height × width) format for convolutions. But NVIDIA's cuDNN and TensorRT often prefer formats like NC8HWC8, where channels are "interleaved" in groups of 8. This means data for 8 channels is stored together before moving to the next spatial position.</p>
 <p>TMA's interleave parameter allows loading from such non-linear global layouts and reconstructing a linearized tile in shared memory, without any software de-interleaving step.</p>
@@ -3910,6 +4030,8 @@
 </span><span id="__span-27-50"><a id="__codelineno-27-50" name="__codelineno-27-50" href="#__codelineno-27-50"></a>    Coupling: MUST use swizzle = CU_TENSOR_MAP_SWIZZLE_32B with this mode.
 </span></code></pre></div>
 <h3 id="112-interleave-swizzle-coupling">11.2 Interleave + Swizzle Coupling<a class="headerlink" href="#112-interleave-swizzle-coupling" title="Permanent link">&para;</a></h3>
+<p>The combinations that are legal. 32B interleave requires 32B swizzle — this is a
+hardware constraint, not a recommendation.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>The Coupling Requirement — 32B Interleave Must Use 32B Swizzle
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
@@ -3946,6 +4068,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="12-l2-promotion">12 — L2 Promotion<a class="headerlink" href="#12-l2-promotion" title="Permanent link">&para;</a></h2>
+<p>A free optimisation that most people never enable.</p>
+<p>When the TMA pulls a tile out of HBM, it can be told to drag a larger block into
+L2 along with it. If your next tile is adjacent — and in a tiled GEMM it almost
+always is — that next fetch then hits L2 instead of going to HBM.</p>
+<p>Costs nothing, requires one descriptor field, and is worth a measurable amount
+on any kernel with a predictable access pattern.</p>
 <h3 id="121-what-l2-promotion-does">12.1 What L2 Promotion Does<a class="headerlink" href="#121-what-l2-promotion-does" title="Permanent link">&para;</a></h3>
 <p>When TMA fetches data from HBM, it can optionally pre-fetch a larger block into the L2 cache than strictly required for the current tile. This is called L2 promotion — the fetch is "promoted" to a larger size.</p>
 <p>The motivation: HBM is organized in 128-byte cache lines. If you request only 32 bytes, the hardware still reads the entire 128-byte line from DRAM but only caches 32 bytes. You've wasted 75% of the DRAM bandwidth. By promoting to 128B, you ensure the full cache line is used, reducing redundant DRAM accesses for subsequent tiles that touch nearby data.</p>
@@ -3984,6 +4112,8 @@
 </span><span id="__span-29-33"><a id="__codelineno-29-33" name="__codelineno-29-33" href="#__codelineno-29-33"></a>  └──────────────────────────────────────────────────────────────┘
 </span></code></pre></div>
 <h3 id="122-l2-promotion-options-complete-reference">12.2 L2 Promotion Options — Complete Reference<a class="headerlink" href="#122-l2-promotion-options-complete-reference" title="Permanent link">&para;</a></h3>
+<p>The four settings. Larger promotion helps sequential access and hurts random
+access, for the obvious reason.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>L2 Promotion Enumeration — All Options
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
@@ -4033,6 +4163,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="13-out-of-bounds-fill">13 — Out-of-Bounds Fill<a class="headerlink" href="#13-out-of-bounds-fill" title="Permanent link">&para;</a></h2>
+<p>The last parameter, and the one that quietly deletes a whole class of code from
+your kernel.</p>
+<p>Real matrix dimensions are rarely multiples of your tile size, so the tiles at
+the edges hang over the end of the tensor. Ordinarily you would guard every
+access with a bounds check. The TMA does it in hardware instead: out-of-range
+elements arrive as zeros, at no cost, with no branch.</p>
+<p>That is not a convenience feature — it is the reason TMA GEMM kernels have no
+edge-case code path at all.</p>
 <h3 id="131-oob-fill-handling-tile-edge-cases">13.1 OOB Fill — Handling Tile Edge Cases<a class="headerlink" href="#131-oob-fill-handling-tile-edge-cases" title="Permanent link">&para;</a></h3>
 <p>When a tile extends beyond the boundary of the global tensor, TMA can automatically fill the out-of-bounds regions with a constant value. This eliminates the need for software boundary-check code in kernels — a significant simplification for tiled algorithms where the last tile may be partially out of bounds.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>OOB Fill — Visual Explanation
@@ -4064,6 +4202,8 @@
 </span><span id="__span-31-27"><a id="__codelineno-31-27" name="__codelineno-31-27" href="#__codelineno-31-27"></a>  └── Corner tiles (both extents exceed matrix dimensions simultaneously)
 </span></code></pre></div>
 <h3 id="132-oob-fill-options">13.2 OOB Fill Options<a class="headerlink" href="#132-oob-fill-options" title="Permanent link">&para;</a></h3>
+<p>Zero-fill or leave-unchanged. Zero is almost always what a GEMM wants, since
+zeros contribute nothing to a dot product.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>OOB Fill Enumeration
 </span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
@@ -4121,6 +4261,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="14-putting-it-all-together">14 — Putting It All Together<a class="headerlink" href="#14-putting-it-all-together" title="Permanent link">&para;</a></h2>
+<p>Two complete programs. §14.1 builds a descriptor for a 2D tensor and performs a
+real TMA copy; §14.2 does the same for a 3D tensor, where the dimension-ordering
+rule from §7 stops being merely theoretical.</p>
+<p>Both begin with a hand-worked computation of every parameter before the code
+appears. That is the habit worth taking away: compute the descriptor by hand,
+then check the code against your arithmetic — not the other way round.</p>
 <h3 id="141-full-example-cutensormap-setup-and-tma-copy">14.1 Full Example: cuTensorMap Setup and TMA Copy<a class="headerlink" href="#141-full-example-cutensormap-setup-and-tma-copy" title="Permanent link">&para;</a></h3>
 <p><strong>Manual Worked Example Before the Code:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>Setup: 1024×512 matrix of FP32. Load 64×32 tiles (64 cols × 32 rows).
@@ -4629,7 +4775,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="15-quick-reference">15 — Quick Reference<a class="headerlink" href="#15-quick-reference" title="Permanent link">&para;</a></h2>
+<p>The chapter as cards. Two of these are worth more than the others: <em>Dimension
+Ordering</em> is the rule that catches everyone, and <em>Common Mistakes</em> is a list of
+failures that produce wrong data rather than error messages.</p>
 <h3 id="cutensormapencodetiled-parameter-summary">cuTensorMapEncodeTiled Parameter Summary<a class="headerlink" href="#cutensormapencodetiled-parameter-summary" title="Permanent link">&para;</a></h3>
+<p>All twelve parameters on one card, with units. The units column is the one to
+check.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>Parameter        Type                      Notes
 </span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>──────────────────────────────────────────────────────────────────────────────
 </span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>tensorMap        CUtensorMap*              Output. Must be 128B aligned.
@@ -4646,6 +4797,8 @@
 </span><span id="__span-39-14"><a id="__codelineno-39-14" name="__codelineno-39-14" href="#__codelineno-39-14"></a>oobFill          CUtensorMapFloatOOBfill   NONE or NAN_REQUEST_ZERO_FMA.
 </span></code></pre></div>
 <h3 id="dimension-ordering-the-critical-rule">Dimension Ordering — The Critical Rule<a class="headerlink" href="#dimension-ordering-the-critical-rule" title="Permanent link">&para;</a></h3>
+<p>Innermost dimension first — the reverse of NumPy and PyTorch shape notation.
+This single card prevents most descriptor bugs.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>TMA uses INNERMOST-FIRST ordering (opposite of NumPy/C):
 </span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>
 </span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>  Matrix [rows=R][cols=C]:
@@ -4659,6 +4812,8 @@
 </span><span id="__span-40-11"><a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a>  MNEMONIC: "TMA counts from the inside out."
 </span></code></pre></div>
 <h3 id="swizzle-selection-guide">Swizzle Selection Guide<a class="headerlink" href="#swizzle-selection-guide" title="Permanent link">&para;</a></h3>
+<p>Which swizzle mode for which tile width. When in doubt with BF16 or FP16, it is
+128B.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>Use Case                            Recommended Swizzle
 </span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>──────────────────────────────────────────────────────────────────────
 </span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>FP16/BF16 GEMM (inner ≥ 64 elem)   SWIZZLE_128B  ★ default
@@ -4670,6 +4825,7 @@
 </span><span id="__span-41-9"><a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>No bank-conflict concerns           SWIZZLE_NONE
 </span></code></pre></div>
 <h3 id="l2-promotion-selection-guide">L2 Promotion Selection Guide<a class="headerlink" href="#l2-promotion-selection-guide" title="Permanent link">&para;</a></h3>
+<p>Which promotion size suits which access pattern.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>Use Case                            L2 Promotion
 </span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>──────────────────────────────────────────────────────────────────────
 </span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>Dense FP16/BF16/FP32 GEMM          L2_128B  ★ standard default
@@ -4678,6 +4834,7 @@
 </span><span id="__span-42-6"><a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a>Sparse / embedding lookups          NONE (avoid over-fetching)
 </span></code></pre></div>
 <h3 id="oob-fill-decision">OOB Fill Decision<a class="headerlink" href="#oob-fill-decision" title="Permanent link">&para;</a></h3>
+<p>Zero versus no-fill, in one line.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>Condition                                      Recommendation
 </span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>──────────────────────────────────────────────────────────────────────
 </span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>Tiles always within tensor bounds (grid aligned)  NONE (fastest)
@@ -4685,6 +4842,8 @@
 </span><span id="__span-43-5"><a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a>Integer tensor core operations                    NONE (handle in SW)
 </span></code></pre></div>
 <h3 id="common-mistakes-and-fixes">Common Mistakes and Fixes<a class="headerlink" href="#common-mistakes-and-fixes" title="Permanent link">&para;</a></h3>
+<p>Worth reading before you debug anything. Every entry compiles cleanly and
+returns the wrong data.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>Mistake                               Symptom              Fix
 </span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>globalDim in outermost-first order   Wrong elements loaded  Reverse: [0]=innermost
