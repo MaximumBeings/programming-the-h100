@@ -3049,6 +3049,11 @@
 <strong>Prerequisites:</strong> Basic understanding of parallel computing concepts (threads, memory hierarchy).</p>
 </blockquote>
 <p><strong>What this covers:</strong> Every architectural concept in Lesson 1 — the TMA unit, asynchronous execution, Tensor Cores, the memory hierarchy from HBM3 through L2/L1 to registers, the SM microarchitecture (quadrants, warp schedulers, dispatch units, SFUs, LSUs), NVLink 4.0, shared memory banking, swizzling, and how thread blocks are distributed across SMs. Each section includes ASCII diagrams, worked examples with concrete numbers, and practical implications for kernel design.</p>
+<p><strong>How to read this chapter.</strong> Most sections open with a boxed ASCII diagram or a
+specification block. Those boxes are the reference material; the prose around
+them tells you what to look at and why it matters. On a first pass, read the
+prose and skim the boxes — you can come back for the exact numbers when a later
+chapter needs them. Nothing here requires you to write code yet.</p>
 <hr />
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ol>
@@ -3074,7 +3079,17 @@
 </ol>
 <hr />
 <h2 id="1-the-big-picture">1 — The Big Picture<a class="headerlink" href="#1-the-big-picture" title="Permanent link">&para;</a></h2>
+<p>Before any code, you need a mental picture of what kind of machine this is. This
+section gives you two things: the H100's raw numbers, and the one idea that
+separates Hopper from every GPU before it. If you remember nothing else from
+this chapter, remember §1.2.</p>
 <h3 id="11-h100-at-a-glance">1.1 H100 at a Glance<a class="headerlink" href="#11-h100-at-a-glance" title="Permanent link">&para;</a></h3>
+<p>Here is the whole chip on a single card. Don't try to memorise it — skim it now
+and come back whenever a later section mentions a number you want to place.
+Three lines matter most for kernel work: <strong>132 SMs</strong> (how many independent
+processors you are programming), <strong>3.35 TB/s</strong> of HBM3 bandwidth (how fast you
+can feed them), and <strong>228 KB of shared memory per SM</strong> (how much data you can
+stage right next to the compute).</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>NVIDIA H100 (Hopper Architecture)
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>══════════════════════════════════════════════════════════════════
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -3132,6 +3147,15 @@
 <p>This is why pipelined kernels (GEMMs, attention) can approach the theoretical roofline on the H100 — you fetch tile i+1 while computing tile i.</p>
 <hr />
 <h2 id="2-asynchronous-execution-the-tma">2 — Asynchronous Execution &amp; The TMA<a class="headerlink" href="#2-asynchronous-execution-the-tma" title="Permanent link">&para;</a></h2>
+<p>Section 1 claimed the H100 is asynchronous. This section makes that concrete.</p>
+<p>The idea in one sentence: on older GPUs, threads had to fetch their own data and
+then sit and wait for it; on the H100 a dedicated piece of hardware — the
+<strong>Tensor Memory Accelerator</strong>, or TMA — does the fetching while those threads
+keep computing.</p>
+<p>We build up to it in four steps: what "asynchronous" means for a copy (§2.1),
+what the TMA actually is (§2.2), a worked example where one TMA instruction
+replaces roughly twenty thousand (§2.3), and the price you pay for all this —
+bookkeeping (§2.4).</p>
 <h3 id="21-synchronous-vs-asynchronous-copies">2.1 Synchronous vs Asynchronous Copies<a class="headerlink" href="#21-synchronous-vs-asynchronous-copies" title="Permanent link">&para;</a></h3>
 <p>A <strong>synchronous copy</strong> blocks the issuing thread (or warp) until the data arrives. The thread cannot execute any other instruction until the copy completes. Simple mental model: after the instruction, the data is ready.</p>
 <p>An <strong>asynchronous copy</strong> only <em>starts</em> the transfer. The issuing thread can immediately continue doing other work — computing on previously loaded data, managing bookkeeping, etc. The thread later checks a barrier or fence to know when the copy has finished.</p>
@@ -3196,6 +3220,10 @@
 </span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>  SM cores freed for actual compute
 </span></code></pre></div>
 <h3 id="23-tma-descriptor-concrete-example">2.3 TMA Descriptor — Concrete Example<a class="headerlink" href="#23-tma-descriptor-concrete-example" title="Permanent link">&para;</a></h3>
+<p>The previous section described the TMA in the abstract. Here is the same copy
+written both ways, with real numbers, so you can watch the instruction count
+collapse. Read the traditional block first and count what each thread has to do;
+then read the TMA block.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Scenario: Copy a 64×64 tile of BF16 from a [4096, 4096] matrix
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>starting at row=128, col=256
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
@@ -3259,6 +3287,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="3-4th-generation-tensor-cores">3 — 4th Generation Tensor Cores<a class="headerlink" href="#3-4th-generation-tensor-cores" title="Permanent link">&para;</a></h2>
+<p>Almost all of the H100's advertised performance lives in its tensor cores. A
+CUDA core does one multiply-add at a time; a tensor core does an entire small
+matrix multiply in one operation, which is where the 10–100× gap comes from.</p>
+<p>This section covers what they do (§3.1), the new Hopper unit of work called a
+<em>warp group</em> (§3.2), the trick of agreeing to skip zeros (§3.3), and the number
+formats they accept (§3.4). You don't need to write tensor core code yet —
+Chapters 6 and 7 do that. Here you only need to know what the hardware offers.</p>
 <h3 id="31-what-tensor-cores-do">3.1 What Tensor Cores Do<a class="headerlink" href="#31-what-tensor-cores-do" title="Permanent link">&para;</a></h3>
 <p>Tensor Cores are specialized matrix-multiply-accumulate (MMA) units. While CUDA cores process one FMA (fused multiply-add) per cycle per core, a Tensor Core processes an entire small matrix multiply in one operation.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>CUDA Core (FP32):
@@ -3303,6 +3338,9 @@
 </span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>    This is mandatory — WGMMA expects packed operands.
 </span></code></pre></div>
 <h3 id="33-structured-sparsity">3.3 Structured Sparsity<a class="headerlink" href="#33-structured-sparsity" title="Permanent link">&para;</a></h3>
+<p>Sparsity is a way of buying throughput by agreeing not to store some of your
+numbers. The hardware supports exactly one pattern — "2:4" — and the payoff is
+simple: the tensor core reads half as much data, so it runs about twice as fast.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Structured Sparsity (2:4 pattern):
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
@@ -3323,6 +3361,10 @@
 </span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>  This is why the H100 spec says 1,979 TFLOPS (FP8, sparse).
 </span></code></pre></div>
 <h3 id="34-precision-comparison">3.4 Precision Comparison<a class="headerlink" href="#34-precision-comparison" title="Permanent link">&para;</a></h3>
+<p>Lower precision buys throughput: the fewer bits per number, the more numbers a
+tensor core can chew through per cycle. This table is the menu. The pattern to
+notice is that halving the bit width roughly doubles the FLOPs — which is the
+entire reason FP8 exists.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Precision       Bits   Range              Tensor Core FLOPS/cycle   Use Case
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>─────────────────────────────────────────────────────────────────────────────
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>FP64            64     ±10^308            64/SM                     Scientific
@@ -3340,7 +3382,17 @@
 </span></code></pre></div>
 <hr />
 <h2 id="4-the-full-gpu-die">4 — The Full GPU Die<a class="headerlink" href="#4-the-full-gpu-die" title="Permanent link">&para;</a></h2>
+<p>Now we zoom out and look at the whole chip as a floor plan. Nearly everything
+covered in the rest of this chapter is one of the boxes below, so it's worth a
+minute here to see how the pieces sit relative to each other.</p>
+<p>The rough shape: memory around the edges, 132 processors (SMs) in the middle
+grouped into eight clusters, a large cache shared between them, and a hardware
+scheduler deciding which processor runs what.</p>
 <h3 id="41-top-level-block-diagram">4.1 Top-Level Block Diagram<a class="headerlink" href="#41-top-level-block-diagram" title="Permanent link">&para;</a></h3>
+<p>Read this from the outside in. Data either arrives at the bottom (over PCIe from
+the CPU) or already lives at the top (in the HBM3 memory stacks). The SMs in the
+middle are where your code actually runs, and the L2 cache between them is the
+shared staging area that essentially all traffic passes through.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>H100 SXM5 Die — Top Level
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>══════════════════════════════════════════════════════════════════════════
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
@@ -3428,7 +3480,18 @@
 </span></code></pre></div>
 <hr />
 <h2 id="5-hbm3-memory-system">5 — HBM3 Memory System<a class="headerlink" href="#5-hbm3-memory-system" title="Permanent link">&para;</a></h2>
+<p>HBM3 is the GPU's main memory — the 80 GB your tensors live in. It is
+enormously wide (5,120 bits) and enormously fast in aggregate (3.35 TB/s), and
+also, relative to the compute, enormously slow: roughly 500 cycles to answer a
+request.</p>
+<p>That tension — huge bandwidth, terrible latency — is the reason the rest of the
+chip is shaped the way it is. Caches exist to shrink the number of requests that
+have to travel this far; the TMA exists so you don't have to wait on the ones
+that do.</p>
 <h3 id="51-physical-organization">5.1 Physical Organization<a class="headerlink" href="#51-physical-organization" title="Permanent link">&para;</a></h3>
+<p>The part to take away is the bandwidth ladder at the bottom of the diagram:
+about 33 TB/s right next to the SM, 12 TB/s at L2, 3.35 TB/s at HBM. Every step
+further from the compute costs you roughly 3×.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>HBM3 — High Bandwidth Memory, 3rd Generation
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
@@ -3456,6 +3519,8 @@
 </span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a>  This is WHY the memory hierarchy exists: each level filters traffic.
 </span></code></pre></div>
 <h3 id="52-why-5120-bit-bus-width-matters-for-tma">5.2 Why 5120-bit Bus Width Matters for TMA<a class="headerlink" href="#52-why-5120-bit-bus-width-matters-for-tma" title="Permanent link">&para;</a></h3>
+<p>A number like "5,120-bit bus" only becomes useful once you convert it into how
+long your tile actually takes to arrive. That's what this does.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Bus width: 5120 bits = 640 bytes
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>TMA can move 128 bytes of data at once in a single transaction.
@@ -3474,7 +3539,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="6-l2-cache">6 — L2 Cache<a class="headerlink" href="#6-l2-cache" title="Permanent link">&para;</a></h2>
+<p>The L2 is a 50 MB staging area shared by every SM, and essentially all traffic
+to and from HBM passes through it.</p>
+<p>Two facts about it drive real kernel performance: it is organised into 128-byte
+lines made of four 32-byte <strong>sectors</strong>, and it charges you per <em>sector touched</em>,
+not per useful byte. That single detail is what "coalescing" means, and it is
+why two kernels that move the same amount of data can differ by 32× in speed.</p>
 <h3 id="61-structure-and-behavior">6.1 Structure and Behavior<a class="headerlink" href="#61-structure-and-behavior" title="Permanent link">&para;</a></h3>
+<p>Four behaviours are described below. The first two — sectors, and the penalty
+for scattered access — are the ones you'll actively think about while writing
+kernels. The last two happen for you, for free.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>L2 Cache — 50 MB Unified
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
@@ -3517,6 +3591,8 @@
 </span><span id="__span-14-40"><a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>     This is critical for scatter/atomic operations.
 </span></code></pre></div>
 <h3 id="62-worked-example-l2-sector-math">6.2 Worked Example — L2 Sector Math<a class="headerlink" href="#62-worked-example-l2-sector-math" title="Permanent link">&para;</a></h3>
+<p>Same amount of data, two access patterns, a 32× difference in cost. Work through
+both by hand — this is probably the most valuable arithmetic in the chapter.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Scenario: A warp of 32 threads each loads a float (4 bytes)
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>          from consecutive addresses starting at address 0x1000.
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
@@ -3550,7 +3626,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="7-gpcs-graphics-processing-clusters">7 — GPCs — Graphics Processing Clusters<a class="headerlink" href="#7-gpcs-graphics-processing-clusters" title="Permanent link">&para;</a></h2>
+<p>The 132 SMs are not a flat pool. They are grouped into eight <strong>Graphics
+Processing Clusters</strong> of 18 SMs each.</p>
+<p>For most of GPU history this grouping was invisible to programmers. On Hopper it
+stopped being invisible, because <em>thread block clusters</em> — groups of blocks that
+can read each other's shared memory — only work within a single GPC. This is a
+short section, but it is the reason cluster sizes cap out where they do.</p>
 <h3 id="71-gpc-internal-structure">7.1 GPC Internal Structure<a class="headerlink" href="#71-gpc-internal-structure" title="Permanent link">&para;</a></h3>
+<p>One GPC, drawn out. The pieces to notice: the 18 SMs, their pairing into TPCs,
+and the DSMEM interconnect that lets SMs read one another's shared memory
+directly — without going out to L2 and back.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>GPC — Graphics Processing Cluster
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
@@ -3590,6 +3675,8 @@
 </span><span id="__span-16-37"><a id="__codelineno-16-37" name="__codelineno-16-37" href="#__codelineno-16-37"></a>  Cross-GPC communication must go through L2 or global memory.
 </span></code></pre></div>
 <h3 id="72-why-gpcs-matter-for-kernel-design">7.2 Why GPCs Matter for Kernel Design<a class="headerlink" href="#72-why-gpcs-matter-for-kernel-design" title="Permanent link">&para;</a></h3>
+<p>The practical consequence of everything above: how large can a cluster be, and
+what does each size cost you in synchronisation?</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>Implication for Thread Block Clusters:
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>═══════════════════════════════════════
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
@@ -3607,7 +3694,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="8-nvlink-40">8 — NVLink 4.0<a class="headerlink" href="#8-nvlink-40" title="Permanent link">&para;</a></h2>
+<p>Everything so far has been inside a single GPU. NVLink is the wire <em>between</em>
+GPUs — 900 GB/s of it, roughly seven times what PCIe offers.</p>
+<p>You won't program NVLink directly in this chapter (Chapter 11 does that). What
+matters here is its speed relative to PCIe and HBM, because that ratio is what
+decides where to put your model once it stops fitting on one card.</p>
 <h3 id="81-physical-specifications">8.1 Physical Specifications<a class="headerlink" href="#81-physical-specifications" title="Permanent link">&para;</a></h3>
+<p>The one piece of physics worth knowing is PAM4 signalling: by using four voltage
+levels on the wire instead of two, each symbol carries two bits instead of one —
+doubling the data rate without raising the clock.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>NVLink 4.0 — GPU-to-GPU Interconnect
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
@@ -3638,6 +3733,8 @@
 </span><span id="__span-18-28"><a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>    remote GPU memory without SM intervention.
 </span></code></pre></div>
 <h3 id="82-multi-gpu-topology">8.2 Multi-GPU Topology<a class="headerlink" href="#82-multi-gpu-topology" title="Permanent link">&para;</a></h3>
+<p>Eight GPUs, each able to reach every other at full speed. The bandwidth
+comparison at the bottom is the part to remember.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>DGX H100 Node (8 GPUs, fully connected via NVSwitch)
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
@@ -3672,6 +3769,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="9-the-streaming-multiprocessor-sm">9 — The Streaming Multiprocessor (SM)<a class="headerlink" href="#9-the-streaming-multiprocessor-sm" title="Permanent link">&para;</a></h2>
+<p>This is the heart of the chapter. The SM is the unit that actually runs your
+code: one thread block lands on one SM and stays there until it finishes.</p>
+<p>The next several sections take the SM apart layer by layer — the four quadrants
+inside it (§10), how each quadrant decides which warp to run (§11), the
+arithmetic units they feed (§12), the shared memory they all share (§13), and
+the registers each thread owns (§14). The diagram below is the map for all of
+them.</p>
 <h3 id="91-sm-overview">9.1 SM Overview<a class="headerlink" href="#91-sm-overview" title="Permanent link">&para;</a></h3>
 <p>The SM is the fundamental execution unit of the GPU. It receives thread blocks from the GigaThread Engine and executes them to completion.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>H100 SM — Internal Architecture
@@ -3723,6 +3827,10 @@
 </span></code></pre></div>
 <hr />
 <h2 id="10-sm-quadrants-smsps">10 — SM Quadrants (SMSPs)<a class="headerlink" href="#10-sm-quadrants-smsps" title="Permanent link">&para;</a></h2>
+<p>An SM is not one processor — it is four, and they schedule independently.</p>
+<p>This matters for a reason you can act on immediately: if your block size isn't a
+multiple of 128 threads, some of those four sit idle. §10.2 shows exactly how
+that waste happens.</p>
 <h3 id="101-quadrant-breakdown">10.1 Quadrant Breakdown<a class="headerlink" href="#101-quadrant-breakdown" title="Permanent link">&para;</a></h3>
 <p>Each SM is divided into 4 identical subdivisions. Each quadrant is an independently scheduling unit:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>Single Quadrant (SMSP) — Detailed View
@@ -3782,6 +3890,7 @@
 </span><span id="__span-21-55"><a id="__codelineno-21-55" name="__codelineno-21-55" href="#__codelineno-21-55"></a>      4 Warp Schedulers (16 warps each → 64 warps/SM max)
 </span></code></pre></div>
 <h3 id="102-why-4-quadrants">10.2 Why 4 Quadrants?<a class="headerlink" href="#102-why-4-quadrants" title="Permanent link">&para;</a></h3>
+<p>Here is the practical payoff of knowing the SM is four things rather than one.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>Thread Block Distribution Example:
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>═══════════════════════════════════
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
@@ -3809,7 +3918,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="11-warp-schedulers-dispatch">11 — Warp Schedulers &amp; Dispatch<a class="headerlink" href="#11-warp-schedulers-dispatch" title="Permanent link">&para;</a></h2>
+<p>Threads on a GPU do not run individually. They run in locked groups of 32 called
+<strong>warps</strong>, and the hardware's entire latency-hiding strategy is to keep many
+warps resident and switch between them the moment one stalls.</p>
+<p>This section explains what a warp is (§11.1), how the scheduler picks one each
+cycle (§11.2), and a hardware limit most people never hear about — dispatch
+ports (§11.3).</p>
 <h3 id="111-what-is-a-warp">11.1 What is a Warp?<a class="headerlink" href="#111-what-is-a-warp" title="Permanent link">&para;</a></h3>
+<p>Start here if <em>warp</em> is a new word. A warp is simply the granularity at which
+the hardware thinks: 32 threads that fetch one instruction and execute it
+together, in lockstep.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>Warp = 32 Threads
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
@@ -3837,6 +3955,8 @@
 </span><span id="__span-23-25"><a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a>    └── Hardware sweet spot for SIMT execution
 </span></code></pre></div>
 <h3 id="112-warp-scheduler-operation">11.2 Warp Scheduler Operation<a class="headerlink" href="#112-warp-scheduler-operation" title="Permanent link">&para;</a></h3>
+<p>Five steps, every cycle, in every quadrant. The reason the whole machine is
+built this way is the sentence at the bottom of the block.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>Warp Scheduler — Per-Cycle Operation
 </span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
@@ -3872,6 +3992,9 @@
 </span><span id="__span-24-33"><a id="__codelineno-24-33" name="__codelineno-24-33" href="#__codelineno-24-33"></a>  for a load, warps 1-15 can be executing compute.
 </span></code></pre></div>
 <h3 id="113-the-dispatch-unit-and-dispatch-ports">11.3 The Dispatch Unit and Dispatch Ports<a class="headerlink" href="#113-the-dispatch-unit-and-dispatch-ports" title="Permanent link">&para;</a></h3>
+<p>This is the one part of the SM that no occupancy calculator will show you, and
+it explains why "the SM has 128 FP32 cores and 64 INT32 units" does not mean a
+single warp can use both in the same cycle.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>Dispatch Ports — The Bottleneck You Don't See
 </span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
@@ -3912,7 +4035,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="12-execution-units-deep-dive">12 — Execution Units Deep Dive<a class="headerlink" href="#12-execution-units-deep-dive" title="Permanent link">&para;</a></h2>
+<p>The five kinds of arithmetic hardware inside each quadrant, one at a time.</p>
+<p>Most of this is reference material — skim it now and come back. The two
+subsections that will actually change how you write code are §12.2 (integer work
+runs in parallel with floating-point, so address arithmetic is effectively free)
+and §12.5 (load/store units, and coalescing).</p>
 <h3 id="121-fp32-cuda-cores">12.1 FP32 CUDA Cores<a class="headerlink" href="#121-fp32-cuda-cores" title="Permanent link">&para;</a></h3>
+<p>The default workhorse. Anything that isn't a matrix multiply ends up here.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>FP32 CUDA Cores
 </span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
@@ -3931,6 +4060,9 @@
 </span><span id="__span-26-16"><a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a>    └── Any FP32 work that doesn't map to tensor cores
 </span></code></pre></div>
 <h3 id="122-int32-units">12.2 INT32 Units<a class="headerlink" href="#122-int32-units" title="Permanent link">&para;</a></h3>
+<p>The important claim here is the one in capitals: integer and floating-point work
+proceed at the same time, on separate datapaths. This is why the address
+arithmetic in a tiled loop costs you almost nothing.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>INT32 Units
 </span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>
@@ -3956,6 +4088,8 @@
 </span><span id="__span-27-23"><a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a>    Both execute in the SAME cycle (different warps or instructions).
 </span></code></pre></div>
 <h3 id="123-fp64-units">12.3 FP64 Units<a class="headerlink" href="#123-fp64-units" title="Permanent link">&para;</a></h3>
+<p>Double precision. On the H100 it runs at deliberately half the FP32 rate — this
+chip was designed for machine learning, not for simulation.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>FP64 Units
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
@@ -3977,6 +4111,9 @@
 </span><span id="__span-28-19"><a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a>    The absolute FP64 throughput is higher because the clock is higher.
 </span></code></pre></div>
 <h3 id="124-special-function-units-sfus">12.4 Special Function Units (SFUs)<a class="headerlink" href="#124-special-function-units-sfus" title="Permanent link">&para;</a></h3>
+<p>When your code calls <code>exp()</code> or <code>sqrt()</code>, it does not run a software routine.
+These units approximate the answer in hardware, trading a little accuracy for a
+great deal of speed.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Special Function Units (SFUs)
 </span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>
@@ -4007,6 +4144,9 @@
 </span><span id="__span-29-28"><a id="__codelineno-29-28" name="__codelineno-29-28" href="#__codelineno-29-28"></a>  on the CUDA cores, which would take ~20+ instructions.
 </span></code></pre></div>
 <h3 id="125-loadstore-units-lsus">12.5 Load/Store Units (LSUs)<a class="headerlink" href="#125-loadstore-units-lsus" title="Permanent link">&para;</a></h3>
+<p>Read this one twice. Coalescing — how well the 32 addresses in a warp merge into
+cache-line requests — is the single biggest lever on memory performance in most
+kernels, and this is where it happens.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Load/Store Units (LSUs)
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
@@ -4050,7 +4190,17 @@
 </span></code></pre></div>
 <hr />
 <h2 id="13-unified-shared-memory-l1-cache">13 — Unified Shared Memory + L1 Cache<a class="headerlink" href="#13-unified-shared-memory-l1-cache" title="Permanent link">&para;</a></h2>
+<p>Shared memory is the scratchpad you manage by hand: 228 KB per SM, roughly 100×
+quicker to reach than HBM, and the place your tiles live while the tensor cores
+work on them.</p>
+<p>This section covers how much of it you get (§13.1), how large to make your tiles
+(§13.2), the one easy way to accidentally make it 32× slower (§13.3–§13.4), and
+the fix for that (§13.5).</p>
 <h3 id="131-the-configurable-split">13.1 The Configurable Split<a class="headerlink" href="#131-the-configurable-split" title="Permanent link">&para;</a></h3>
+<p>Shared memory and the L1 data cache are the same 256 KB of silicon, split
+however you ask for it. More shared memory suits tiled algorithms that stage
+data deliberately; more L1 suits irregular access patterns you can't predict
+ahead of time.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>Unified Shared Memory / L1 Data Cache
 </span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>
@@ -4086,6 +4236,8 @@
 </span><span id="__span-31-33"><a id="__codelineno-31-33" name="__codelineno-31-33" href="#__codelineno-31-33"></a>  Beyond 48 KB: must use dynamic shared memory (extern __shared__)
 </span></code></pre></div>
 <h3 id="132-optimal-tile-sizing">13.2 Optimal Tile Sizing<a class="headerlink" href="#132-optimal-tile-sizing" title="Permanent link">&para;</a></h3>
+<p>Bigger tiles are not automatically better. Here is how to think about the
+tradeoff in both directions.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>Practical Tile Size Guidelines for GEMMs:
 </span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
@@ -4109,6 +4261,9 @@
 </span><span id="__span-32-21"><a id="__codelineno-32-21" name="__codelineno-32-21" href="#__codelineno-32-21"></a>    Still within the 228 KB limit with room for L1 cache
 </span></code></pre></div>
 <h3 id="133-bank-conflicts">13.3 Bank Conflicts<a class="headerlink" href="#133-bank-conflicts" title="Permanent link">&para;</a></h3>
+<p>Shared memory is fast because it is split into 32 independent <strong>banks</strong> that can
+all be read in the same cycle. It stops being fast the instant two threads want
+different addresses that happen to live in the same bank.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>Shared Memory Banks
 </span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
@@ -4134,6 +4289,8 @@
 </span><span id="__span-33-23"><a id="__codelineno-33-23" name="__codelineno-33-23" href="#__codelineno-33-23"></a>    → serialized: N-way conflict takes N cycles
 </span></code></pre></div>
 <h3 id="134-worked-example-bank-conflict">13.4 Worked Example — Bank Conflict<a class="headerlink" href="#134-worked-example-bank-conflict" title="Permanent link">&para;</a></h3>
+<p>The worst case, worked out. A perfectly reasonable-looking access — read one
+column of a matrix — collapses to a thirty-second of full speed.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>Scenario: 32 threads load column 0 of a 64×64 BF16 matrix
 </span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>stored row-major in shared memory.
 </span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>
@@ -4157,6 +4314,9 @@
 </span><span id="__span-34-21"><a id="__codelineno-34-21" name="__codelineno-34-21" href="#__codelineno-34-21"></a>This is EXACTLY why swizzling exists.
 </span></code></pre></div>
 <h3 id="135-swizzling-the-fix-for-bank-conflicts">13.5 Swizzling — The Fix for Bank Conflicts<a class="headerlink" href="#135-swizzling-the-fix-for-bank-conflicts" title="Permanent link">&para;</a></h3>
+<p>The fix is to scramble where each row starts, so that a column no longer lands
+in a single bank. That is swizzling — and the good news at the end is that the
+TMA can apply it for you on the way in.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>Swizzling — Rearranging Data Layout to Avoid Conflicts
 </span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>
@@ -4199,7 +4359,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="14-registers">14 — Registers<a class="headerlink" href="#14-registers" title="Permanent link">&para;</a></h2>
+<p>Registers are the fastest storage on the chip and the scarcest: 256 KB per SM,
+divided among every thread resident there.</p>
+<p>The tension running through this section is that using more registers per thread
+makes each thread faster, but lets fewer threads run at once — and past a
+certain point that trade goes badly.</p>
 <h3 id="141-register-file-specifications">14.1 Register File Specifications<a class="headerlink" href="#141-register-file-specifications" title="Permanent link">&para;</a></h3>
+<p>The specifications, plus the packing rules. Note that FP16 stores two values per
+register and FP8 stores four — which is why tensor core operands have to be
+packed before you hand them over.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>Register File
 </span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>
@@ -4223,6 +4391,9 @@
 </span><span id="__span-36-21"><a id="__codelineno-36-21" name="__codelineno-36-21" href="#__codelineno-36-21"></a>    └── Pointers: 2 registers (64-bit address)
 </span></code></pre></div>
 <h3 id="142-occupancy-limiting">14.2 Occupancy Limiting<a class="headerlink" href="#142-occupancy-limiting" title="Permanent link">&para;</a></h3>
+<p>The tradeoff in numbers. Watch for the cliff: because the compiler allocates
+registers in fixed-size chunks, two extra registers per thread can cost you an
+entire warp's worth of occupancy.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>Register Pressure — The Silent Performance Killer
 </span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>
@@ -4256,6 +4427,7 @@
 </span><span id="__span-37-31"><a id="__codelineno-37-31" name="__codelineno-37-31" href="#__codelineno-37-31"></a>    A small change in code can push you over a boundary.
 </span></code></pre></div>
 <h3 id="143-register-spilling">14.3 Register Spilling<a class="headerlink" href="#143-register-spilling" title="Permanent link">&para;</a></h3>
+<p>What happens when you lose that fight, and how to notice that you have.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>What Happens When You Run Out of Registers
 </span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>
@@ -4283,6 +4455,8 @@
 </span><span id="__span-38-25"><a id="__codelineno-38-25" name="__codelineno-38-25" href="#__codelineno-38-25"></a>    └── Restructure code to reduce live variables
 </span></code></pre></div>
 <h3 id="144-wgmma-register-layout">14.4 WGMMA Register Layout<a class="headerlink" href="#144-wgmma-register-layout" title="Permanent link">&para;</a></h3>
+<p>A forward reference to Chapters 6 and 7. Tensor cores are particular about where
+their operands live, and the rules are not symmetric between A, B, and C.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>WGMMA Register Layout Requirements
 </span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>
@@ -4314,7 +4488,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="15-instruction-caches-l0-l1">15 — Instruction Caches (L0 &amp; L1)<a class="headerlink" href="#15-instruction-caches-l0-l1" title="Permanent link">&para;</a></h2>
+<p>Instructions have to be fetched too, and the same caching logic applies to them
+as to data. There are two levels.</p>
+<p>The only practical takeaway is at the end of §15.1: unrolling a loop too
+aggressively can push your inner loop out of the tiny L0 cache and cost you more
+than the unrolling saved.</p>
 <h3 id="151-l0-instruction-cache">15.1 L0 Instruction Cache<a class="headerlink" href="#151-l0-instruction-cache" title="Permanent link">&para;</a></h3>
+<p>A very small buffer, private to each quadrant, whose entire job is to hold your
+inner loop so the scheduler never waits on an instruction fetch.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>L0 Instruction Cache — Per-Quadrant Micro-Buffer
 </span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>
@@ -4340,6 +4521,7 @@
 </span><span id="__span-40-23"><a id="__codelineno-40-23" name="__codelineno-40-23" href="#__codelineno-40-23"></a>    └── Solution: balance unrolling vs. L0 cache pressure
 </span></code></pre></div>
 <h3 id="152-l1-instruction-cache">15.2 L1 Instruction Cache<a class="headerlink" href="#152-l1-instruction-cache" title="Permanent link">&para;</a></h3>
+<p>The larger backstop behind L0, shared by all four quadrants.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>L1 Instruction Cache — Shared Across SM
 </span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>
@@ -4369,7 +4551,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="16-thread-block-distribution">16 — Thread Block Distribution<a class="headerlink" href="#16-thread-block-distribution" title="Permanent link">&para;</a></h2>
+<p>This section closes the loop between the code you write — <code>kernel&lt;&lt;&lt;grid,
+block&gt;&gt;&gt;</code> — and the hardware you've just been reading about.</p>
+<p>Two questions get answered: how one block is placed on an SM and split into
+warps (§16.1), and how many blocks can share an SM at once (§16.2). That second
+number is what people mean when they say <em>occupancy</em>.</p>
 <h3 id="161-how-ctas-land-on-sms">16.1 How CTAs Land on SMs<a class="headerlink" href="#161-how-ctas-land-on-sms" title="Permanent link">&para;</a></h3>
+<p>Follow one thread block from the scheduler through to execution. The step that
+surprises most people is step 4: the warps of a single block are spread across
+all four quadrants rather than kept together — which is why <code>__syncthreads()</code>
+needs real barrier hardware behind it.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>Thread Block (CTA) → SM Assignment
 </span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>
@@ -4405,6 +4596,8 @@
 </span><span id="__span-42-33"><a id="__codelineno-42-33" name="__codelineno-42-33" href="#__codelineno-42-33"></a>     thread block has reached the barrier.
 </span></code></pre></div>
 <h3 id="162-multiple-ctas-per-sm">16.2 Multiple CTAs Per SM<a class="headerlink" href="#162-multiple-ctas-per-sm" title="Permanent link">&para;</a></h3>
+<p>Occupancy in one worked example. Whichever resource runs out first — warp slots,
+registers, or shared memory — is the one that sets your limit.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>Multiple CTAs Running Concurrently on One SM
 </span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>
@@ -4431,6 +4624,9 @@
 </span></code></pre></div>
 <hr />
 <h2 id="17-pcie-50-host-interface">17 — PCIe 5.0 Host Interface<a class="headerlink" href="#17-pcie-50-host-interface" title="Permanent link">&para;</a></h2>
+<p>The last link, and by a wide margin the slowest: the connection back to the CPU.
+There is not much to design here, only one rule to internalise, and the
+bandwidth comparison below makes it obvious.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>PCIe 5.0 — CPU ↔ GPU Connection
 </span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a>
@@ -4458,7 +4654,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="18-putting-it-all-together">18 — Putting It All Together<a class="headerlink" href="#18-putting-it-all-together" title="Permanent link">&para;</a></h2>
+<p>Everything in this chapter, assembled into the path a single GEMM tile actually
+takes: from host memory into HBM, up through L2 into shared memory, into
+registers, through the tensor cores, and back out again.</p>
+<p>If the individual sections felt disconnected, this is where they join up.</p>
 <h3 id="181-complete-data-flow">18.1 Complete Data Flow<a class="headerlink" href="#181-complete-data-flow" title="Permanent link">&para;</a></h3>
+<p>Read the five steps in order, then read the note at the bottom — the entire point
+is that steps 2 and 4 are happening at the same time, for different tiles.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>Data Flow Through the H100 — End to End
 </span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>══════════════════════════════════════════════════════════════════
 </span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a>
@@ -4511,6 +4713,9 @@
 </span><span id="__span-45-50"><a id="__codelineno-45-50" name="__codelineno-45-50" href="#__codelineno-45-50"></a>    This is the fundamental performance trick of the H100.
 </span></code></pre></div>
 <h3 id="182-memory-hierarchy-summary">18.2 Memory Hierarchy Summary<a class="headerlink" href="#182-memory-hierarchy-summary" title="Permanent link">&para;</a></h3>
+<p>The hierarchy on one card. The right-hand columns are the ones worth
+internalising: each level down costs roughly an order of magnitude more latency
+and 10× more energy per access.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>H100 Memory Hierarchy — Bandwidth vs Capacity
 </span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>══════════════════════════════════════════════════════════
 </span><span id="__span-46-3"><a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>
@@ -4537,6 +4742,9 @@
 </span></code></pre></div>
 <hr />
 <h2 id="19-quick-reference-tables">19 — Quick Reference Tables<a class="headerlink" href="#19-quick-reference-tables" title="Permanent link">&para;</a></h2>
+<p>Nothing new here — these are the numbers from the chapter collected in one place
+so you can come back to them without re-reading. The last block, the three laws,
+is this entire chapter compressed to nine lines.</p>
 <h3 id="execution-unit-counts-sxm5-132-sms">Execution Unit Counts (SXM5, 132 SMs)<a class="headerlink" href="#execution-unit-counts-sxm5-132-sms" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>Unit                Per Quadrant    Per SM     Total GPU
 </span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>──────────────────────────────────────────────────────────
