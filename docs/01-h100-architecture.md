@@ -6,6 +6,12 @@
 
 **What this covers:** Every architectural concept in Lesson 1 — the TMA unit, asynchronous execution, Tensor Cores, the memory hierarchy from HBM3 through L2/L1 to registers, the SM microarchitecture (quadrants, warp schedulers, dispatch units, SFUs, LSUs), NVLink 4.0, shared memory banking, swizzling, and how thread blocks are distributed across SMs. Each section includes ASCII diagrams, worked examples with concrete numbers, and practical implications for kernel design.
 
+**How to read this chapter.** Most sections open with a boxed ASCII diagram or a
+specification block. Those boxes are the reference material; the prose around
+them tells you what to look at and why it matters. On a first pass, read the
+prose and skim the boxes — you can come back for the exact numbers when a later
+chapter needs them. Nothing here requires you to write code yet.
+
 ---
 
 ## Table of Contents
@@ -34,7 +40,19 @@
 
 ## 1 — The Big Picture
 
+Before any code, you need a mental picture of what kind of machine this is. This
+section gives you two things: the H100's raw numbers, and the one idea that
+separates Hopper from every GPU before it. If you remember nothing else from
+this chapter, remember §1.2.
+
 ### 1.1 H100 at a Glance
+
+Here is the whole chip on a single card. Don't try to memorise it — skim it now
+and come back whenever a later section mentions a number you want to place.
+Three lines matter most for kernel work: **132 SMs** (how many independent
+processors you are programming), **3.35 TB/s** of HBM3 bandwidth (how fast you
+can feed them), and **228 KB of shared memory per SM** (how much data you can
+stage right next to the compute).
 
 ```
 NVIDIA H100 (Hopper Architecture)
@@ -101,6 +119,18 @@ This is why pipelined kernels (GEMMs, attention) can approach the theoretical ro
 ---
 
 ## 2 — Asynchronous Execution & The TMA
+
+Section 1 claimed the H100 is asynchronous. This section makes that concrete.
+
+The idea in one sentence: on older GPUs, threads had to fetch their own data and
+then sit and wait for it; on the H100 a dedicated piece of hardware — the
+**Tensor Memory Accelerator**, or TMA — does the fetching while those threads
+keep computing.
+
+We build up to it in four steps: what "asynchronous" means for a copy (§2.1),
+what the TMA actually is (§2.2), a worked example where one TMA instruction
+replaces roughly twenty thousand (§2.3), and the price you pay for all this —
+bookkeeping (§2.4).
 
 ### 2.1 Synchronous vs Asynchronous Copies
 
@@ -176,6 +206,11 @@ After TMA (H100):
 
 ### 2.3 TMA Descriptor — Concrete Example
 
+The previous section described the TMA in the abstract. Here is the same copy
+written both ways, with real numbers, so you can watch the instruction count
+collapse. Read the traditional block first and count what each thread has to do;
+then read the TMA block.
+
 ```
 Scenario: Copy a 64×64 tile of BF16 from a [4096, 4096] matrix
 starting at row=128, col=256
@@ -247,6 +282,15 @@ Async Pipeline Pattern (double-buffering):
 
 ## 3 — 4th Generation Tensor Cores
 
+Almost all of the H100's advertised performance lives in its tensor cores. A
+CUDA core does one multiply-add at a time; a tensor core does an entire small
+matrix multiply in one operation, which is where the 10–100× gap comes from.
+
+This section covers what they do (§3.1), the new Hopper unit of work called a
+*warp group* (§3.2), the trick of agreeing to skip zeros (§3.3), and the number
+formats they accept (§3.4). You don't need to write tensor core code yet —
+Chapters 6 and 7 do that. Here you only need to know what the hardware offers.
+
 ### 3.1 What Tensor Cores Do
 
 Tensor Cores are specialized matrix-multiply-accumulate (MMA) units. While CUDA cores process one FMA (fused multiply-add) per cycle per core, a Tensor Core processes an entire small matrix multiply in one operation.
@@ -300,6 +344,10 @@ WGMMA — Warp Group Matrix Multiply Accumulate
 
 ### 3.3 Structured Sparsity
 
+Sparsity is a way of buying throughput by agreeing not to store some of your
+numbers. The hardware supports exactly one pattern — "2:4" — and the payoff is
+simple: the tensor core reads half as much data, so it runs about twice as fast.
+
 ```
 Structured Sparsity (2:4 pattern):
 ══════════════════════════════════════════════════════════
@@ -323,6 +371,11 @@ Structured Sparsity (2:4 pattern):
 
 ### 3.4 Precision Comparison
 
+Lower precision buys throughput: the fewer bits per number, the more numbers a
+tensor core can chew through per cycle. This table is the menu. The pattern to
+notice is that halving the bit width roughly doubles the FLOPs — which is the
+entire reason FP8 exists.
+
 ```
 Precision       Bits   Range              Tensor Core FLOPS/cycle   Use Case
 ─────────────────────────────────────────────────────────────────────────────
@@ -344,7 +397,20 @@ and E5M2 for backward, auto-scaling to prevent overflow.
 
 ## 4 — The Full GPU Die
 
+Now we zoom out and look at the whole chip as a floor plan. Nearly everything
+covered in the rest of this chapter is one of the boxes below, so it's worth a
+minute here to see how the pieces sit relative to each other.
+
+The rough shape: memory around the edges, 132 processors (SMs) in the middle
+grouped into eight clusters, a large cache shared between them, and a hardware
+scheduler deciding which processor runs what.
+
 ### 4.1 Top-Level Block Diagram
+
+Read this from the outside in. Data either arrives at the bottom (over PCIe from
+the CPU) or already lives at the top (in the HBM3 memory stacks). The SMs in the
+middle are where your code actually runs, and the L2 cache between them is the
+shared staging area that essentially all traffic passes through.
 
 ```
 H100 SXM5 Die — Top Level
@@ -441,7 +507,21 @@ GigaThread Engine — Kernel Launch Flow
 
 ## 5 — HBM3 Memory System
 
+HBM3 is the GPU's main memory — the 80 GB your tensors live in. It is
+enormously wide (5,120 bits) and enormously fast in aggregate (3.35 TB/s), and
+also, relative to the compute, enormously slow: roughly 500 cycles to answer a
+request.
+
+That tension — huge bandwidth, terrible latency — is the reason the rest of the
+chip is shaped the way it is. Caches exist to shrink the number of requests that
+have to travel this far; the TMA exists so you don't have to wait on the ones
+that do.
+
 ### 5.1 Physical Organization
+
+The part to take away is the bandwidth ladder at the bottom of the diagram:
+about 33 TB/s right next to the SM, 12 TB/s at L2, 3.35 TB/s at HBM. Every step
+further from the compute costs you roughly 3×.
 
 ```
 HBM3 — High Bandwidth Memory, 3rd Generation
@@ -473,6 +553,9 @@ HBM3 — High Bandwidth Memory, 3rd Generation
 
 ### 5.2 Why 5120-bit Bus Width Matters for TMA
 
+A number like "5,120-bit bus" only becomes useful once you convert it into how
+long your tile actually takes to arrive. That's what this does.
+
 ```
 Bus width: 5120 bits = 640 bytes
 
@@ -495,7 +578,19 @@ At ~1.8 GHz memory clock:
 
 ## 6 — L2 Cache
 
+The L2 is a 50 MB staging area shared by every SM, and essentially all traffic
+to and from HBM passes through it.
+
+Two facts about it drive real kernel performance: it is organised into 128-byte
+lines made of four 32-byte **sectors**, and it charges you per *sector touched*,
+not per useful byte. That single detail is what "coalescing" means, and it is
+why two kernels that move the same amount of data can differ by 32× in speed.
+
 ### 6.1 Structure and Behavior
+
+Four behaviours are described below. The first two — sectors, and the penalty
+for scattered access — are the ones you'll actively think about while writing
+kernels. The last two happen for you, for free.
 
 ```
 L2 Cache — 50 MB Unified
@@ -542,6 +637,9 @@ L2 Cache — 50 MB Unified
 
 ### 6.2 Worked Example — L2 Sector Math
 
+Same amount of data, two access patterns, a 32× difference in cost. Work through
+both by hand — this is probably the most valuable arithmetic in the chapter.
+
 ```
 Scenario: A warp of 32 threads each loads a float (4 bytes)
           from consecutive addresses starting at address 0x1000.
@@ -579,7 +677,19 @@ This is why coalescing matters so much.
 
 ## 7 — GPCs — Graphics Processing Clusters
 
+The 132 SMs are not a flat pool. They are grouped into eight **Graphics
+Processing Clusters** of 18 SMs each.
+
+For most of GPU history this grouping was invisible to programmers. On Hopper it
+stopped being invisible, because *thread block clusters* — groups of blocks that
+can read each other's shared memory — only work within a single GPC. This is a
+short section, but it is the reason cluster sizes cap out where they do.
+
 ### 7.1 GPC Internal Structure
+
+One GPC, drawn out. The pieces to notice: the 18 SMs, their pairing into TPCs,
+and the DSMEM interconnect that lets SMs read one another's shared memory
+directly — without going out to L2 and back.
 
 ```
 GPC — Graphics Processing Cluster
@@ -623,6 +733,9 @@ GPC — Graphics Processing Cluster
 
 ### 7.2 Why GPCs Matter for Kernel Design
 
+The practical consequence of everything above: how large can a cluster be, and
+what does each size cost you in synchronisation?
+
 ```
 Implication for Thread Block Clusters:
 ═══════════════════════════════════════
@@ -644,7 +757,18 @@ Implication for Thread Block Clusters:
 
 ## 8 — NVLink 4.0
 
+Everything so far has been inside a single GPU. NVLink is the wire *between*
+GPUs — 900 GB/s of it, roughly seven times what PCIe offers.
+
+You won't program NVLink directly in this chapter (Chapter 11 does that). What
+matters here is its speed relative to PCIe and HBM, because that ratio is what
+decides where to put your model once it stops fitting on one card.
+
 ### 8.1 Physical Specifications
+
+The one piece of physics worth knowing is PAM4 signalling: by using four voltage
+levels on the wire instead of two, each symbol carries two bits instead of one —
+doubling the data rate without raising the clock.
 
 ```
 NVLink 4.0 — GPU-to-GPU Interconnect
@@ -678,6 +802,9 @@ NVLink 4.0 — GPU-to-GPU Interconnect
 ```
 
 ### 8.2 Multi-GPU Topology
+
+Eight GPUs, each able to reach every other at full speed. The bandwidth
+comparison at the bottom is the part to remember.
 
 ```
 DGX H100 Node (8 GPUs, fully connected via NVSwitch)
@@ -716,6 +843,15 @@ DGX H100 Node (8 GPUs, fully connected via NVSwitch)
 ---
 
 ## 9 — The Streaming Multiprocessor (SM)
+
+This is the heart of the chapter. The SM is the unit that actually runs your
+code: one thread block lands on one SM and stays there until it finishes.
+
+The next several sections take the SM apart layer by layer — the four quadrants
+inside it (§10), how each quadrant decides which warp to run (§11), the
+arithmetic units they feed (§12), the shared memory they all share (§13), and
+the registers each thread owns (§14). The diagram below is the map for all of
+them.
 
 ### 9.1 SM Overview
 
@@ -773,6 +909,12 @@ H100 SM — Internal Architecture
 ---
 
 ## 10 — SM Quadrants (SMSPs)
+
+An SM is not one processor — it is four, and they schedule independently.
+
+This matters for a reason you can act on immediately: if your block size isn't a
+multiple of 128 threads, some of those four sit idle. §10.2 shows exactly how
+that waste happens.
 
 ### 10.1 Quadrant Breakdown
 
@@ -838,6 +980,8 @@ Single Quadrant (SMSP) — Detailed View
 
 ### 10.2 Why 4 Quadrants?
 
+Here is the practical payoff of knowing the SM is four things rather than one.
+
 ```
 Thread Block Distribution Example:
 ═══════════════════════════════════
@@ -869,7 +1013,19 @@ Thread Block Distribution Example:
 
 ## 11 — Warp Schedulers & Dispatch
 
+Threads on a GPU do not run individually. They run in locked groups of 32 called
+**warps**, and the hardware's entire latency-hiding strategy is to keep many
+warps resident and switch between them the moment one stalls.
+
+This section explains what a warp is (§11.1), how the scheduler picks one each
+cycle (§11.2), and a hardware limit most people never hear about — dispatch
+ports (§11.3).
+
 ### 11.1 What is a Warp?
+
+Start here if *warp* is a new word. A warp is simply the granularity at which
+the hardware thinks: 32 threads that fetch one instruction and execute it
+together, in lockstep.
 
 ```
 Warp = 32 Threads
@@ -900,6 +1056,9 @@ Warp = 32 Threads
 ```
 
 ### 11.2 Warp Scheduler Operation
+
+Five steps, every cycle, in every quadrant. The reason the whole machine is
+built this way is the sentence at the bottom of the block.
 
 ```
 Warp Scheduler — Per-Cycle Operation
@@ -938,6 +1097,10 @@ Warp Scheduler — Per-Cycle Operation
 ```
 
 ### 11.3 The Dispatch Unit and Dispatch Ports
+
+This is the one part of the SM that no occupancy calculator will show you, and
+it explains why "the SM has 128 FP32 cores and 64 INT32 units" does not mean a
+single warp can use both in the same cycle.
 
 ```
 Dispatch Ports — The Bottleneck You Don't See
@@ -983,7 +1146,16 @@ Dispatch Ports — The Bottleneck You Don't See
 
 ## 12 — Execution Units Deep Dive
 
+The five kinds of arithmetic hardware inside each quadrant, one at a time.
+
+Most of this is reference material — skim it now and come back. The two
+subsections that will actually change how you write code are §12.2 (integer work
+runs in parallel with floating-point, so address arithmetic is effectively free)
+and §12.5 (load/store units, and coalescing).
+
 ### 12.1 FP32 CUDA Cores
+
+The default workhorse. Anything that isn't a matrix multiply ends up here.
 
 ```
 FP32 CUDA Cores
@@ -1005,6 +1177,10 @@ FP32 CUDA Cores
 ```
 
 ### 12.2 INT32 Units
+
+The important claim here is the one in capitals: integer and floating-point work
+proceed at the same time, on separate datapaths. This is why the address
+arithmetic in a tiled loop costs you almost nothing.
 
 ```
 INT32 Units
@@ -1034,6 +1210,9 @@ INT32 Units
 
 ### 12.3 FP64 Units
 
+Double precision. On the H100 it runs at deliberately half the FP32 rate — this
+chip was designed for machine learning, not for simulation.
+
 ```
 FP64 Units
 ══════════════════════════════════════════════════════════
@@ -1057,6 +1236,10 @@ FP64 Units
 ```
 
 ### 12.4 Special Function Units (SFUs)
+
+When your code calls `exp()` or `sqrt()`, it does not run a software routine.
+These units approximate the answer in hardware, trading a little accuracy for a
+great deal of speed.
 
 ```
 Special Function Units (SFUs)
@@ -1090,6 +1273,10 @@ Special Function Units (SFUs)
 ```
 
 ### 12.5 Load/Store Units (LSUs)
+
+Read this one twice. Coalescing — how well the 32 addresses in a warp merge into
+cache-line requests — is the single biggest lever on memory performance in most
+kernels, and this is where it happens.
 
 ```
 Load/Store Units (LSUs)
@@ -1138,7 +1325,20 @@ Load/Store Units (LSUs)
 
 ## 13 — Unified Shared Memory + L1 Cache
 
+Shared memory is the scratchpad you manage by hand: 228 KB per SM, roughly 100×
+quicker to reach than HBM, and the place your tiles live while the tensor cores
+work on them.
+
+This section covers how much of it you get (§13.1), how large to make your tiles
+(§13.2), the one easy way to accidentally make it 32× slower (§13.3–§13.4), and
+the fix for that (§13.5).
+
 ### 13.1 The Configurable Split
+
+Shared memory and the L1 data cache are the same 256 KB of silicon, split
+however you ask for it. More shared memory suits tiled algorithms that stage
+data deliberately; more L1 suits irregular access patterns you can't predict
+ahead of time.
 
 ```
 Unified Shared Memory / L1 Data Cache
@@ -1178,6 +1378,9 @@ Unified Shared Memory / L1 Data Cache
 
 ### 13.2 Optimal Tile Sizing
 
+Bigger tiles are not automatically better. Here is how to think about the
+tradeoff in both directions.
+
 ```
 Practical Tile Size Guidelines for GEMMs:
 ══════════════════════════════════════════════════════════
@@ -1203,6 +1406,10 @@ Practical Tile Size Guidelines for GEMMs:
 ```
 
 ### 13.3 Bank Conflicts
+
+Shared memory is fast because it is split into 32 independent **banks** that can
+all be read in the same cycle. It stops being fast the instant two threads want
+different addresses that happen to live in the same bank.
 
 ```
 Shared Memory Banks
@@ -1232,6 +1439,9 @@ Shared Memory Banks
 
 ### 13.4 Worked Example — Bank Conflict
 
+The worst case, worked out. A perfectly reasonable-looking access — read one
+column of a matrix — collapses to a thirty-second of full speed.
+
 ```
 Scenario: 32 threads load column 0 of a 64×64 BF16 matrix
 stored row-major in shared memory.
@@ -1257,6 +1467,10 @@ This is EXACTLY why swizzling exists.
 ```
 
 ### 13.5 Swizzling — The Fix for Bank Conflicts
+
+The fix is to scramble where each row starts, so that a column no longer lands
+in a single bank. That is swizzling — and the good news at the end is that the
+TMA can apply it for you on the way in.
 
 ```
 Swizzling — Rearranging Data Layout to Avoid Conflicts
@@ -1304,7 +1518,18 @@ Swizzling — Rearranging Data Layout to Avoid Conflicts
 
 ## 14 — Registers
 
+Registers are the fastest storage on the chip and the scarcest: 256 KB per SM,
+divided among every thread resident there.
+
+The tension running through this section is that using more registers per thread
+makes each thread faster, but lets fewer threads run at once — and past a
+certain point that trade goes badly.
+
 ### 14.1 Register File Specifications
+
+The specifications, plus the packing rules. Note that FP16 stores two values per
+register and FP8 stores four — which is why tensor core operands have to be
+packed before you hand them over.
 
 ```
 Register File
@@ -1331,6 +1556,10 @@ Register File
 ```
 
 ### 14.2 Occupancy Limiting
+
+The tradeoff in numbers. Watch for the cliff: because the compiler allocates
+registers in fixed-size chunks, two extra registers per thread can cost you an
+entire warp's worth of occupancy.
 
 ```
 Register Pressure — The Silent Performance Killer
@@ -1368,6 +1597,8 @@ Register Pressure — The Silent Performance Killer
 
 ### 14.3 Register Spilling
 
+What happens when you lose that fight, and how to notice that you have.
+
 ```
 What Happens When You Run Out of Registers
 ══════════════════════════════════════════════════════════
@@ -1397,6 +1628,9 @@ What Happens When You Run Out of Registers
 ```
 
 ### 14.4 WGMMA Register Layout
+
+A forward reference to Chapters 6 and 7. Tensor cores are particular about where
+their operands live, and the rules are not symmetric between A, B, and C.
 
 ```
 WGMMA Register Layout Requirements
@@ -1433,7 +1667,17 @@ WGMMA Register Layout Requirements
 
 ## 15 — Instruction Caches (L0 & L1)
 
+Instructions have to be fetched too, and the same caching logic applies to them
+as to data. There are two levels.
+
+The only practical takeaway is at the end of §15.1: unrolling a loop too
+aggressively can push your inner loop out of the tiny L0 cache and cost you more
+than the unrolling saved.
+
 ### 15.1 L0 Instruction Cache
+
+A very small buffer, private to each quadrant, whose entire job is to hold your
+inner loop so the scheduler never waits on an instruction fetch.
 
 ```
 L0 Instruction Cache — Per-Quadrant Micro-Buffer
@@ -1462,6 +1706,8 @@ L0 Instruction Cache — Per-Quadrant Micro-Buffer
 ```
 
 ### 15.2 L1 Instruction Cache
+
+The larger backstop behind L0, shared by all four quadrants.
 
 ```
 L1 Instruction Cache — Shared Across SM
@@ -1496,7 +1742,19 @@ L1 Instruction Cache — Shared Across SM
 
 ## 16 — Thread Block Distribution
 
+This section closes the loop between the code you write — `kernel<<<grid,
+block>>>` — and the hardware you've just been reading about.
+
+Two questions get answered: how one block is placed on an SM and split into
+warps (§16.1), and how many blocks can share an SM at once (§16.2). That second
+number is what people mean when they say *occupancy*.
+
 ### 16.1 How CTAs Land on SMs
+
+Follow one thread block from the scheduler through to execution. The step that
+surprises most people is step 4: the warps of a single block are spread across
+all four quadrants rather than kept together — which is why `__syncthreads()`
+needs real barrier hardware behind it.
 
 ```
 Thread Block (CTA) → SM Assignment
@@ -1536,6 +1794,9 @@ Thread Block (CTA) → SM Assignment
 
 ### 16.2 Multiple CTAs Per SM
 
+Occupancy in one worked example. Whichever resource runs out first — warp slots,
+registers, or shared memory — is the one that sets your limit.
+
 ```
 Multiple CTAs Running Concurrently on One SM
 ══════════════════════════════════════════════════════════
@@ -1565,6 +1826,10 @@ Multiple CTAs Running Concurrently on One SM
 ---
 
 ## 17 — PCIe 5.0 Host Interface
+
+The last link, and by a wide margin the slowest: the connection back to the CPU.
+There is not much to design here, only one rule to internalise, and the
+bandwidth comparison below makes it obvious.
 
 ```
 PCIe 5.0 — CPU ↔ GPU Connection
@@ -1597,7 +1862,16 @@ PCIe 5.0 — CPU ↔ GPU Connection
 
 ## 18 — Putting It All Together
 
+Everything in this chapter, assembled into the path a single GEMM tile actually
+takes: from host memory into HBM, up through L2 into shared memory, into
+registers, through the tensor cores, and back out again.
+
+If the individual sections felt disconnected, this is where they join up.
+
 ### 18.1 Complete Data Flow
+
+Read the five steps in order, then read the note at the bottom — the entire point
+is that steps 2 and 4 are happening at the same time, for different tiles.
 
 ```
 Data Flow Through the H100 — End to End
@@ -1654,6 +1928,10 @@ Data Flow Through the H100 — End to End
 
 ### 18.2 Memory Hierarchy Summary
 
+The hierarchy on one card. The right-hand columns are the ones worth
+internalising: each level down costs roughly an order of magnitude more latency
+and 10× more energy per access.
+
 ```
 H100 Memory Hierarchy — Bandwidth vs Capacity
 ══════════════════════════════════════════════════════════
@@ -1683,6 +1961,10 @@ H100 Memory Hierarchy — Bandwidth vs Capacity
 ---
 
 ## 19 — Quick Reference Tables
+
+Nothing new here — these are the numbers from the chapter collected in one place
+so you can come back to them without re-reading. The last block, the three laws,
+is this entire chapter compressed to nine lines.
 
 ### Execution Unit Counts (SXM5, 132 SMs)
 
