@@ -1,0 +1,112 @@
+/* ------------------------------------------------------------------
+   Programming the H100 — theme overrides
+   ------------------------------------------------------------------ */
+
+:root {
+  --md-code-font: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+/* Give the long technical chapters a little more room to breathe. */
+.md-grid {
+  max-width: 68rem;
+}
+
+/* ------------------------------------------------------------------
+   Code blocks
+   Many chapters contain wide ASCII / box-drawing diagrams inside plain
+   fences. Tighten the type so a full 78-column diagram fits, keep the
+   line-height even so box characters join up, and always allow the
+   block to scroll on its own instead of the page.
+   ------------------------------------------------------------------ */
+
+.md-typeset pre > code {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  overflow-x: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+.md-typeset code {
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+.md-typeset pre {
+  tab-size: 4;
+}
+
+/* Inline code: slightly toned down so PTX mnemonics don't shout. */
+.md-typeset :not(pre) > code {
+  font-size: 0.80em;
+  padding: 0.12em 0.36em;
+  border-radius: 0.2rem;
+}
+
+/* ------------------------------------------------------------------
+   Headings — the source chapters use "## N — Topic" section titles.
+   A subtle rule makes the section boundaries easy to scan.
+   ------------------------------------------------------------------ */
+
+.md-typeset h2 {
+  margin-top: 2.2em;
+  padding-top: 0.4em;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  font-weight: 600;
+}
+
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* The chapters already separate sections with a horizontal rule; don't draw a
+   second line right under it. */
+.md-typeset hr + h2 {
+  border-top: none;
+  margin-top: 1.2em;
+  padding-top: 0;
+}
+
+/* The line directly under each chapter H1 is the "Lesson N Companion
+   Guide" deck line; render it as a subtitle rather than a section head. */
+.md-typeset h1 + h2 {
+  border-top: none;
+  margin-top: -0.6em;
+  padding-top: 0;
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--md-default-fg-color--light);
+}
+
+/* ------------------------------------------------------------------
+   Tables — the quick-reference sections are dense.
+   ------------------------------------------------------------------ */
+
+.md-typeset table:not([class]) {
+  font-size: 0.72rem;
+}
+
+.md-typeset table:not([class]) th {
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------
+   Landing page
+   ------------------------------------------------------------------ */
+
+.hero-tagline {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--md-default-fg-color--light);
+  border-left: 3px solid var(--md-accent-fg-color);
+  padding-left: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.md-typeset .grid.cards > ul > li {
+  border-radius: 0.4rem;
+}
+
+/* Blockquote "Verified on:" callouts at the top of each chapter. */
+.md-typeset blockquote {
+  border-left-color: var(--md-accent-fg-color);
+}
