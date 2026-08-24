@@ -7,9 +7,31 @@
 
 **What this covers:** Everything from Lesson 3 — the philosophy of asynchronicity and latency hiding, blocking vs non-blocking operations, the Generic vs Async proxy memory model, read-after-write and write-after-read hazards, memory fences (acquire/release/cross-proxy), the mbarrier primitive (init, arrive, expect_tx, try_wait, test_wait, arrive_drop), barrier reuse with phase flipping, WAR hazard prevention, barrier.cluster for cross-block synchronization, cp.async.bulk commit/wait groups, and named barriers. Each section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
+**How to read this chapter.** Chapter 1 said the H100 hides memory latency by
+letting the TMA fetch data in the background. This chapter is about the bill that
+arrives with that gift: once a copy happens *behind your back*, you need a way to
+know when it has finished — and a way to stop the compiler and the hardware from
+helpfully reordering things around it.
+
+The chapter comes in four movements. Sections 1–4 build the case for asynchrony
+from first principles, with no PTX at all. Sections 5–7 introduce the memory
+model you need before you can reason about it: proxies, hazards, and fences.
+Sections 8–13 are the core — `mbarrier`, the Hopper primitive that every
+production pipeline is built on, taken apart instruction by instruction.
+Sections 14–16 cover three related primitives you'll meet in real kernels.
+
+If you are impatient, read §5–§7 and then §8–§9. Those four sections contain the
+mental model; the rest is detail you can look up.
+
 ---
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
+
+A short preamble on where to run the examples. The `mbarrier` and
+`cp.async.bulk` instructions in this chapter were introduced with Hopper, so
+unlike the earlier chapters there is no meaningful A100 fallback — you need an
+H100 (`sm_90a`) or a B200. If you already have one and a working `nvcc`, skip
+ahead to the Table of Contents.
 
 ### What Hardware Can You Use?
 
@@ -37,6 +59,8 @@ Hardware Compatibility Matrix
 
 ### Cloud GPU Rental — Lambda Labs
 
+Usually the cheapest way to get an hour on an H100 without a corporate account.
+
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -63,6 +87,9 @@ ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
 
 ### Cloud GPU Rental — AWS
 
+The alternative if you already have AWS set up. Note that `p5` is the H100
+family; `p4d` is A100 and will not run this chapter's examples.
+
 ```
 AWS p5 Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -79,6 +106,10 @@ AWS p5 Setup (H100)
 ```
 
 ### Hopper vs Blackwell — What Changes for This Lesson
+
+Read this once if you are on a B100 or B200. The short answer is that everything
+in this chapter carries over unchanged — `mbarrier` is not going anywhere — and
+only the compile flag differs.
 
 ```
 Hopper (sm_90a) vs Blackwell (sm_100a) — Async/Barrier Differences
@@ -142,6 +173,18 @@ Each code section has a compile/run box:
 ---
 
 ## 1 — The Synchronous World
+
+Before explaining the solution, this section makes sure you feel the problem.
+
+Every instruction a processor executes falls into one of two categories: it
+either *does* something with data it already has, or it *fetches* data it
+doesn't. On a CPU those two costs are within an order of magnitude of each
+other. On a GPU they are not remotely close — arithmetic takes a handful of
+cycles, a trip to HBM takes around five hundred.
+
+§1.1 draws that distinction; §1.2 shows the only two ways out of it. There is no
+code here, and it's worth reading slowly — everything else in the chapter is
+machinery in service of this one idea.
 
 ### 1.1 Doing vs Fetching — The Two Fundamental Operations
 
@@ -231,6 +274,15 @@ Latency Hiding — The Async Solution
 
 ## 2 — Asynchronicity
 
+The core idea, stated in its most general form: separate the moment you *ask*
+for something from the moment you *use* it.
+
+That sounds obvious written down, but it has a sharp consequence. Between the
+request and the result there is now a window in which the data is neither absent
+nor present — in flight. Every difficulty in the rest of this chapter comes from
+that window: how you know it has closed, and what you're forbidden from doing
+while it's open.
+
 ### 2.1 Decoupling Request from Result
 
 The fundamental mechanism of asynchronicity is that issuing an operation and receiving its result are separate events, potentially separated by large amounts of time (and other useful work). The three-stage pattern is universal:
@@ -295,6 +347,14 @@ The Three-Stage Async Pattern
 ---
 
 ## 3 — Blocking vs Non-Blocking Operations
+
+The same distinction, now in the vocabulary you'll see in the PTX manual.
+
+A **blocking** operation doesn't return until the work is done. A **non-blocking**
+one returns immediately and leaves you holding a promise. §3.1 makes the case
+that blocking is often perfectly fine — not everything needs to be asynchronous,
+and asynchrony you don't need is pure complexity. §3.2 covers the case where it
+isn't fine, which on this hardware is most of the interesting ones.
 
 ### 3.1 Blocking Operations — When Sequential Is Fine
 
@@ -370,6 +430,16 @@ Non-Blocking Operations — Characteristics
 ---
 
 ## 4 — Asynchrony in GPUs
+
+Now the general idea gets specific to this machine.
+
+§4.1 puts numbers on the mismatch: how many arithmetic operations an H100 SM can
+retire in the time one HBM request takes to come back. The ratio is the reason
+async on a GPU is not a technique you reach for when convenient but the default
+way the machine is meant to be driven.
+
+§4.2 names the two distinct problems it solves — hiding latency, and freeing the
+SM's threads from doing address arithmetic — which are often conflated.
 
 ### 4.1 The Speed Mismatch — Why Async Is Not Optional
 
@@ -474,6 +544,19 @@ The Two Problems
 
 ## 5 — Proxies in CUDA
 
+This section introduces the single most under-explained term in the CUDA memory
+model, and skipping it will make Sections 6 and 7 incomprehensible.
+
+A **proxy** is simply *who* is performing a memory access. When your thread
+executes a load, that's the **generic proxy**. When the TMA engine moves a tile
+in the background, that's the **async proxy** — a completely separate piece of
+hardware, taking a different path through the memory system.
+
+The consequence is the part that matters: two proxies touching the same address
+do not automatically see each other's work. Not because of a bug, but because
+they are physically different agents on different paths. Everything in §6 and §7
+exists to bridge that gap.
+
 ### 5.1 What Is a Proxy?
 
 The term "proxy" in CUDA's memory model refers to the **agent** performing a memory operation. This is one of the least-taught but most critical concepts for understanding why memory hazards occur and how fences fix them.
@@ -529,6 +612,11 @@ The Two Proxies
 
 ### 5.2 Why Two Proxies Exist — The Hardware Reality
 
+The previous section described the two proxies as an abstraction. Here is the
+physical reason they are distinct: trace the two paths through the diagram below
+and notice that the generic proxy goes through L1 while the async proxy does
+not.
+
 ```
 Hardware Memory Paths — Why the Proxies Differ
 ══════════════════════════════════════════════════════════════════════
@@ -570,6 +658,16 @@ Hardware Memory Paths — Why the Proxies Differ
 ---
 
 ## 6 — Memory Hazards
+
+Two concrete ways the proxy split will corrupt your data if you don't intervene.
+
+A **RAW** hazard (§6.1) is writing something with your thread and then having the
+TMA read it before your write has become visible — the TMA fetches stale data.
+A **WAR** hazard (§6.2) is the mirror image: the TMA overwrites a buffer while
+your thread is still reading the old contents out of it.
+
+Both are timing-dependent, which means both will pass your tests on a small
+input and fail in production. Learn to recognise the shapes.
 
 ### 6.1 Read-After-Write (RAW) Hazard
 
@@ -673,6 +771,18 @@ Write-After-Read (WAR) Hazard — Visual Explanation
 ---
 
 ## 7 — Fences
+
+A fence is how you tell the hardware "do not reorder across this line."
+
+There are three you need, and they come in a natural pairing. A **release**
+fence (§7.2) is used by whoever produces data: it guarantees everything written
+before it is visible before the signal that says it's ready. An **acquire**
+fence (§7.3) is used by whoever consumes it: it guarantees nothing is read early.
+And a **cross-proxy** fence (§7.4) is the one specific to this chapter — it
+bridges the generic and async proxies from §5.
+
+§7.1 also introduces **scope**, which is the knob that decides how much a fence
+costs: ordering within a block is cheap, ordering across the whole GPU is not.
 
 ### 7.1 What Is a Fence and Why Do We Need One?
 
@@ -838,6 +948,18 @@ Cross-Proxy Fence — When and Why
 
 ## 8 — mbarrier — The Core Primitive
 
+Here is the payoff. Everything from §5 to §7 was setup for this.
+
+An `mbarrier` is a small object you place in shared memory that answers one
+question: *has the thing I'm waiting for happened yet?* What makes it more than
+an ordinary barrier is that hardware can signal it. The TMA, having finished
+depositing a tile, decrements the barrier itself — no thread has to poll, no
+thread has to wait around to be told.
+
+This is the primitive that every H100 GEMM, every FlashAttention kernel, and
+every CUTLASS pipeline is built on. §8.1 covers what it is; §8.2 covers creating
+one, including the arrival count that trips up most first attempts.
+
 ### 8.1 What Is mbarrier?
 
 The mbarrier (memory barrier) is the H100's hardware-accelerated synchronization primitive. It lives in **shared memory** (not registers) and tracks the completion of asynchronous memory transactions.
@@ -951,6 +1073,14 @@ mbarrier.init — Syntax and Semantics
 ---
 
 ## 9 — The mbarrier Pipeline — Step by Step
+
+The five-step sequence that essentially every TMA kernel on this hardware
+follows. If you learn one pattern from this chapter, learn this one.
+
+§9.2 covers the instruction that surprises people: `mbarrier.arrive.expect_tx`
+does two jobs at once — it registers an arrival *and* declares how many bytes
+are about to show up. That second job is what lets the TMA close the barrier on
+its own.
 
 ### 9.1 Overview of the Full Pipeline
 
@@ -1076,6 +1206,18 @@ mbarrier.arrive.expect_tx — Manual Worked Example
 
 ## 10 — Phase and Transaction Count
 
+An `mbarrier` tracks two independent things, and confusing them is the most
+common source of hangs.
+
+The **phase** (§10.1) is a single bit that says which *generation* of use the
+barrier is in. It flips every time the barrier completes, and it exists so a
+barrier can be reused in a loop without you having to reinitialise it. The
+**transaction count** (§10.2) tracks bytes rather than threads — it's how the
+barrier knows a TMA copy has fully landed and not just started.
+
+Threads move the phase. The TMA moves the transaction count. The barrier
+completes when both are satisfied.
+
 ### 10.1 Phase — The Barrier's Reuse Bit
 
 The phase bit is a single bit that distinguishes one "generation" of barrier use from the next. It flips automatically every time the barrier completes. This allows you to reuse the same mbarrier object for multiple rounds without re-initializing it.
@@ -1188,6 +1330,15 @@ Transaction Count — Manual Worked Example with Two Copies
 ---
 
 ## 11 — mbarrier.try_wait and test_wait
+
+Three ways to ask "is it ready yet", differing in what happens when the answer
+is no.
+
+`try_wait` (§11.1) puts the warp to sleep and lets the scheduler run someone
+else. `test_wait` (§11.2) returns immediately either way, which is what you want
+if you have useful work to do while waiting. And `try_wait.acquire` (§11.3) is
+`try_wait` plus the acquire fence from §7.3 folded in — which, as the subsection
+title says, is the version you should actually be writing in production code.
 
 ### 11.1 mbarrier.try_wait.parity — Non-Blocking Wait
 
@@ -1356,6 +1507,13 @@ mbarrier.try_wait.parity.acquire — Why This Is Important
 
 ## 12 — mbarrier Reuse Pattern
 
+A barrier inside a pipeline loop gets used over and over, and reusing it
+correctly is fiddlier than it looks — this is where the phase bit from §10.1
+earns its keep.
+
+Read the pattern here carefully and then reuse it verbatim. Hand-rolled variants
+of this loop are a reliable source of kernels that hang on the third iteration.
+
 ### 12.1 The Correct Reuse Pattern
 
 Properly reusing an mbarrier barrier across multiple pipeline iterations is one of the most important patterns in H100 programming. The key insight is that the barrier automatically resets its thread arrival count on completion, and the phase bit automatically flips. You only need to track the phase in a local register.
@@ -1419,6 +1577,17 @@ mbarrier Reuse — Step-by-Step Pattern
 ---
 
 ## 13 — WAR Hazards and mbarrier.arrive
+
+Back to the write-after-read hazard from §6.2, now with the tools to fix it.
+
+The problem: in a double-buffered pipeline, the producer wants to refill a slot
+as soon as possible, but must not do so while the consumer is still reading it.
+The solution is a second barrier pointing the other way — the consumer signals
+"I'm done with this slot" using a bare `mbarrier.arrive` (§13.2), which
+registers an arrival without waiting for anything.
+
+That two-barrier handshake is the backbone of every real pipeline you'll write,
+and Chapter 9 opens by building on exactly this.
 
 ### 13.1 The Write-After-Read Problem in Pipelines
 
@@ -1593,6 +1762,14 @@ mbarrier.inval — Formal Invalidation
 
 ## 14 — barrier.cluster — Cross-Block Synchronization
 
+`__syncthreads()` synchronises the threads of one block. Once Chapter 2's
+clusters enter the picture, you need something that synchronises across blocks —
+and that is a different instruction with a different cost.
+
+§14.1 explains why the old primitive can't be stretched to cover this; §14.2
+covers the split arrive/wait form, which lets you do useful work in the gap
+between announcing that you've arrived and waiting for everyone else.
+
 ### 14.1 Why barrier.cluster Is Needed
 
 `__syncthreads()` synchronizes within a single thread block. It cannot coordinate blocks in different SMs, even if they are in the same cluster. `barrier.cluster` fills this gap — it synchronizes ALL blocks in a thread block cluster.
@@ -1645,6 +1822,10 @@ barrier.cluster vs __syncthreads — Scope Comparison
 
 ### 14.2 barrier.cluster.arrive and barrier.cluster.wait
 
+Note that this is deliberately two instructions rather than one. Splitting
+arrive from wait gives you a window in which to do independent work while the
+rest of the cluster catches up.
+
 ```
 Two Instructions, One Barrier
 ══════════════════════════════════════════════════════════════════════
@@ -1695,6 +1876,18 @@ Two Instructions, One Barrier
 
 ## 15 — cp.async.bulk Groups — Commit and Wait
 
+A second, lighter-weight completion mechanism, and an alternative to `mbarrier`
+for the cases that don't need its precision.
+
+The model is a queue: you issue some copies, `commit_group` draws a line under
+them (§15.2), and `wait_group<N>` waits until all but the newest N batches have
+landed (§15.3). That "all but N" phrasing is what makes it useful — it's how you
+express "keep two loads in flight at all times" in a single instruction.
+
+§15.4 covers the `.read` variant, which waits for a weaker condition — the
+source has been read, not the destination written — and is precisely what you
+need for the WAR hazards of §13.
+
 ### 15.1 Grouping Async Copies for Pipeline Control
 
 When you issue multiple `cp.async.bulk` operations, you can group them into batches using commit/wait. This allows you to express "wait for the N most recently committed groups to complete" rather than waiting for every individual copy.
@@ -1740,6 +1933,9 @@ cp.async.bulk Groups — The Mental Model
 
 ### 15.2 cp.async.bulk.commit_group
 
+The instruction that draws a line under the copies issued so far and turns them
+into one countable batch.
+
 ```
 cp.async.bulk.commit_group — Batching Copies
 ══════════════════════════════════════════════════════════════════════
@@ -1767,6 +1963,10 @@ cp.async.bulk.commit_group — Batching Copies
 ```
 
 ### 15.3 cp.async.bulk.wait_group — Waiting for N Groups
+
+The counterpart. Read the `N` carefully: it is how many groups you are willing
+to leave *outstanding*, not how many to wait for — which is backwards from most
+people's first guess.
 
 ```
 cp.async.bulk.wait_group<N> — Selective Wait
@@ -1827,6 +2027,10 @@ cp.async.bulk.wait_group<N> — Selective Wait
 
 ### 15.4 cp.async.bulk.wait_group.read — For WAR Hazard Prevention
 
+A weaker and therefore faster wait. It tells you the copy has finished *reading*
+its source, which is all you need before overwriting that source — you don't
+have to wait for the destination write to land.
+
 ```
 cp.async.bulk.wait_group.read — The Read Variant
 ══════════════════════════════════════════════════════════════════════
@@ -1849,6 +2053,16 @@ cp.async.bulk.wait_group.read — The Read Variant
 ---
 
 ## 16 — Named Barriers
+
+The last primitive, and the one that makes warp specialisation possible.
+
+`__syncthreads()` is all-or-nothing: every warp in the block waits for every
+other. But in a producer/consumer kernel, the warps loading data and the warps
+computing on it don't want to rendezvous with each other on every iteration —
+that would destroy the overlap you built the pipeline for.
+
+Named barriers let you carve the block into groups that synchronise
+independently. Chapter 8's warp-specialised kernels rest on this.
 
 ### 16.1 What Are Named Barriers?
 
@@ -1916,6 +2130,13 @@ Named Barriers vs __syncthreads — Capabilities
 ---
 
 ## 17 — Putting It All Together
+
+Two complete, runnable programs. The first (§17.1) walks the five-step pipeline
+from §9 end to end. The second (§17.2) builds the two-barrier handshake from §13
+— the pattern that shows up again, at production scale, in Chapter 9.
+
+Both open with a hand-worked trace of the barrier state so you can predict the
+output before you compile.
 
 ### 17.1 Full Example: Basic mbarrier + TMA Simulation
 
@@ -2436,7 +2657,14 @@ int main() {
 
 ## 18 — Quick Reference
 
+The chapter as reference cards. The two pattern blocks at the end are the ones
+worth keeping open in another window the first few times you write a pipeline of
+your own.
+
 ### mbarrier Instruction Reference
+
+Every `mbarrier` instruction in one table, with what each one does to the phase
+and the transaction count.
 
 ```
 Instruction                                          Purpose
@@ -2452,6 +2680,9 @@ mbarrier.arrive_drop.release...b64 _, [addr]        Arrive + permanently drop co
 
 ### Phase and Transaction Count Rules
 
+Section 10 condensed. When a kernel hangs, the bug is almost always one of these
+rules.
+
 ```
 Rule                                         Notes
 ──────────────────────────────────────────────────────────────────────────
@@ -2466,6 +2697,8 @@ Barrier completes when BOTH counts = 0      Thread arrivals AND tx bytes
 
 ### Fence and Proxy Reference
 
+Which fence to reach for, given who is producing and who is consuming.
+
 ```
 Fence Type                    PTX                          When to Use
 ──────────────────────────────────────────────────────────────────────────
@@ -2476,6 +2709,9 @@ try_wait built-in acquire     try_wait.parity.acquire       Use this; avoids sep
 ```
 
 ### Synchronization Primitive Comparison
+
+All the primitives in this chapter side by side — scope, cost, and what each one
+is actually for.
 
 ```
 Primitive            Scope       Blocking?  Counts        Use Case
@@ -2488,6 +2724,8 @@ cp.async.bulk.wait_group CTA     Yes        Groups         Bulk copy batch contr
 ```
 
 ### The Producer/Consumer mbarrier Pattern
+
+The canonical loop. Copy this rather than reconstructing it from memory.
 
 ```
 INIT (once):
@@ -2507,6 +2745,9 @@ EACH TILE:
 ```
 
 ### cp.async.bulk Group Pattern
+
+The §15 equivalent, for pipelines that don't need the full precision of
+`mbarrier`.
 
 ```
 // Issue copies (uncommitted):

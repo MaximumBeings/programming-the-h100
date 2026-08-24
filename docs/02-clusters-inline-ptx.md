@@ -1,9 +1,28 @@
 # Clusters, Inline PTX, Data Types & Pointers
 ## Lesson 2 Companion Guide — Programming the H100 & Beyond
 
+**How to read this chapter.** It is long, and it is really three chapters
+stacked together. Sections 1–3 are about *clusters* — the new level of the CUDA
+hierarchy that lets thread blocks read each other's shared memory. Sections 4–6
+are about *inline PTX* — how to drop below CUDA C++ and write GPU assembly by
+hand. Sections 7–16 are the *vocabulary* those first two halves assume: state
+spaces, PTX types, packed formats, byte addressing, and the address-conversion
+instructions that glue them together.
+
+You do not have to read it in order. If you are here because a CUTLASS kernel
+threw an `asm()` block at you, start at §5. If you are here for clusters, read
+§1–3 and stop. Each section opens with a short orientation like this one, and
+sections marked ★ are complete runnable programs rather than reference material.
+
 ---
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
+
+Everything in this chapter compiles and runs, so this preamble settles where you
+are going to run it. The short version: an H100 (`sm_90a`) runs every example;
+an A100 or a consumer card runs everything except the cluster and DSMEM sections
+(§1–3), which need Hopper hardware. If you already have a machine and a working
+`nvcc`, skip to the Table of Contents.
 
 ### What Hardware Can You Use?
 
@@ -107,6 +126,11 @@ AWS p5 Setup Instructions (H100)
 
 ### Local Setup (Desktop GPU)
 
+If you have a Hopper or Ada card in your own machine, this is the fastest path —
+no hourly billing, no SSH. Note the `-arch` flag at the bottom: it must match
+your card, and getting it wrong is the most common reason an example refuses to
+compile.
+
 ```
 Local CUDA Installation (Ubuntu 22.04)
 ══════════════════════════════════════════════════════════════════════
@@ -131,6 +155,11 @@ Local CUDA Installation (Ubuntu 22.04)
 ```
 
 ### Hopper vs Blackwell — What Changes in the Code?
+
+If you are running on a B100 or B200 rather than an H100, read this once. Almost
+nothing in this chapter changes — the PTX syntax, the constraints, the state
+spaces, and the cluster API are all identical. What changes is the compile flag
+and a handful of instruction names.
 
 ```
 Hopper (sm_90a) vs Blackwell (sm_100a) — Code Differences
@@ -213,6 +242,20 @@ Throughout this guide, each code block has a compile/run box like this:
 ---
 
 ## 1 — Thread Block Clusters
+
+For fifteen years CUDA had exactly three levels: threads, blocks, grids. Hopper
+adds a fourth — the **cluster**, a small group of thread blocks that the hardware
+guarantees to co-schedule on neighbouring SMs, and which can therefore read one
+another's shared memory directly.
+
+That one capability is the whole point. Before clusters, two blocks that needed
+to exchange data had no choice but to write it to global memory and read it back
+— roughly a thousand cycles of round trip. Inside a cluster it costs tens.
+
+This section builds the idea up in layers: where clusters sit in the hierarchy
+(§1.1), the problem they were invented to solve (§1.2), what the hardware
+actually does (§1.3), how to choose a size (§1.4), the two ways to declare one in
+code (§1.5–§1.6), and the PTX registers underneath the C++ API (§1.7).
 
 ### 1.1 The Extended CUDA Hierarchy
 
@@ -890,6 +933,20 @@ int main() {
 
 ## 2 — Distributed Shared Memory
 
+Section 1 kept saying that blocks in a cluster can read each other's shared
+memory. DSMEM — Distributed Shared Memory — is the hardware that makes that
+true.
+
+The name misleads people, so it's worth stating plainly up front: DSMEM is **not**
+a pool of memory that blocks share. Each block still owns its own private shared
+memory. What DSMEM adds is a fast interconnect *between* SMs in a GPC, plus an
+addressing scheme that lets one block name a location inside another block's
+scratchpad.
+
+§2.1 covers the architecture, §2.2 the question you'll actually want answered:
+how much bandwidth do you get out of it, and when is it worth using instead of
+just going to global memory?
+
 ### 2.1 DSMEM Architecture
 
 Distributed Shared Memory is the hardware feature that makes clusters useful. It's easy to misunderstand what DSMEM actually is, so let's be precise: DSMEM is **not** a new type of memory or a new pool of SRAM. It is the existing per-SM shared memory, extended with a hardware interconnect that allows one SM to access another SM's shared memory — but only within the same cluster.
@@ -999,6 +1056,16 @@ Bandwidth Analysis — DSMEM vs Global Memory
 
 ## 3 — TMA Multicast with DSMEM
 
+Here is the first place clusters pay for themselves in a real kernel.
+
+In a tiled GEMM, every block in a cluster typically needs the *same* tile of the
+A matrix. Without clusters, each block fetches its own copy from HBM — four
+blocks, four identical fetches, four times the bandwidth. TMA multicast lets one
+fetch land in all of them at once.
+
+This is a short section with one idea in it, but it is the idea that makes
+clusters worth the complexity for GEMM and attention kernels.
+
 ### 3.1 The Multicast Optimization
 
 TMA (Tensor Memory Accelerator) is the H100's hardware unit for copying large tiles of data from global memory (HBM) to shared memory without involving the CPU or the thread warps. TMA multicast extends this by allowing a SINGLE HBM fetch to be delivered to MULTIPLE SMs simultaneously.
@@ -1077,6 +1144,18 @@ TMA Multicast — Bandwidth Savings Diagram
 ---
 
 ## 4 — PTX — Parallel Thread Execution
+
+We now switch topics entirely. The rest of this chapter is about writing GPU
+assembly.
+
+PTX is the intermediate language `nvcc` emits before the real machine code
+(SASS). It sits at roughly the same level as LLVM IR or Java bytecode: stable,
+documented, and portable across GPU generations in a way SASS is not.
+
+§4.1 explains where PTX sits in the compilation pipeline. §4.2 answers the
+question you should be asking — why bother, when CUDA C++ works fine? The honest
+answer is that some Hopper instructions have no C++ form at all, and the ones
+you'll want most (`wgmma`, TMA, `mbarrier`) are among them.
 
 ### 4.1 What is PTX?
 
@@ -1185,6 +1264,18 @@ The PTX Features That Matter Most for H100 Programming
 ---
 
 ## 5 — Inline PTX Assembly
+
+This is the section to bookmark. `asm()` is how PTX gets into an otherwise
+ordinary CUDA C++ kernel, and its syntax — inherited from GCC — is famously
+unfriendly on first contact.
+
+The mechanism is simpler than it looks. You write an instruction string with
+placeholders (`%0`, `%1`, …), then tell the compiler which C++ variables fill
+those placeholders and whether each one is being read or written. The compiler
+handles register allocation; you handle the contract.
+
+Get that contract wrong and the failures are silent — wrong answers rather than
+compile errors — which is why the next section is devoted entirely to the rules.
 
 ### 5.1 The asm() Statement
 
@@ -1945,6 +2036,19 @@ int main() {
 
 ## 6 — PTX Operands, Constraints & Clobbers
 
+Everything that goes wrong with inline PTX goes wrong here, in the little
+strings between the colons.
+
+Four things to get right, one per subsection: picking a constraint letter that
+matches the register width the instruction expects (§6.1), knowing which
+placeholder number refers to which variable — outputs are numbered first, which
+catches everyone once (§6.2), telling the compiler when an output register gets
+written before the inputs are finished with (§6.3), and declaring scratch
+registers that don't correspond to any C++ variable (§6.4).
+
+None of these produce a compile error when you get them wrong. They produce
+plausible-looking numbers that happen to be incorrect.
+
 ### 6.1 The Constraint System — Deep Dive
 
 The constraint system is the trickiest part of inline PTX for newcomers. The errors you get when you use the wrong constraint are often cryptic compilation failures or, worse, silent incorrect results. This section gives you the mental model to get it right every time.
@@ -2224,6 +2328,19 @@ Constraints:
 ---
 
 ## 7 — State Spaces in CUDA/PTX
+
+In C++, memory is memory: you have a pointer, you dereference it. GPUs do not
+work that way. A GPU address is meaningless until you also say *which kind* of
+memory it refers to — registers, shared, global, local, constant, or parameter.
+That label is called a **state space**, and every PTX load and store carries one.
+
+This matters for three reasons: the wrong state space silently produces wrong
+results, the same numeric address means different things in different spaces,
+and the performance difference between the fastest and slowest space is roughly
+five hundred to one.
+
+§7.1 maps them all out; §7.2–§7.5 take them one at a time, in rough order of how
+often you'll touch them.
 
 ### 7.1 Overview — What Are State Spaces?
 
@@ -2884,6 +3001,14 @@ int main() {
 
 ## 8 — Data Types in PTX
 
+PTX is strongly typed, and it wears its types on the outside: every instruction
+names the type it operates on as a suffix — `add.u32`, `mul.f16x2`, `ld.global.b64`.
+
+The underlying registers, though, are just 32 bits of storage. The suffix is not
+a description of what's in the register; it is an instruction to the hardware
+about how to *interpret* those bits for this one operation. Getting comfortable
+with that distinction is most of what this section is for.
+
 ### 8.1 Fundamental Types — The Type System
 
 PTX is a strongly typed assembly language. Every instruction specifies the type it operates on as a suffix (e.g., `.u32`, `.f32`, `.b32`). This is different from x86 assembly, where the register name implies the size but not the type interpretation.
@@ -2957,6 +3082,16 @@ PTX Type System — Categories and Interpretations
 ---
 
 ## 9 — Deep Learning Data Types
+
+This section is less about syntax and more about numerics — why machine learning
+abandoned FP32 and what it got in exchange.
+
+Three questions get answered: what the formats actually look like bit by bit
+(§9.1), why BF16 beat FP16 for training despite being strictly less precise
+(§9.2), and how FP8 can possibly work when its maximum representable value is
+448 (§9.3). The answer to the second is range, and the answer to the third is
+scaling — but the details are worth reading, because they explain design
+decisions you'll meet again in Chapter 7.
 
 ### 9.1 Format Comparison — The Full Picture
 
@@ -3155,6 +3290,14 @@ FP8 Training Strategy — Automatic Scaling
 
 ## 10 — Packed Data Types
 
+A GPU register is 32 bits wide. An FP16 value is 16. Rather than waste half of
+every register, the hardware packs two FP16 values into one register — or four
+FP8 values — and provides instructions that operate on both halves at once.
+
+This is not merely an optimisation you can skip. Tensor cores *require* packed
+operands: hand `wgmma` unpacked data and it will read the bits anyway and give
+you nonsense. Chapters 6 and 7 assume you have this section internalised.
+
 ### 10.1 Packing Multiple Values in One Register
 
 GPU registers are 32 bits wide. For 16-bit types like FP16 and BF16, this means we can pack two values into a single register and operate on both simultaneously. This is SIMD (Single Instruction, Multiple Data) within a register — one instruction does the work of two.
@@ -3250,6 +3393,14 @@ Step 4: Unpack
 
 ## 11 — Memory Addresses & Byte Addressing
 
+A short but load-bearing section. In C++, `ptr + 1` moves forward by
+`sizeof(*ptr)` bytes and the compiler does the arithmetic for you. In PTX there
+is no such courtesy: addresses are raw byte counts and every offset you compute
+must be scaled by hand.
+
+Almost every "why is my inline PTX reading garbage" bug traces back to a missing
+multiply by the element size.
+
 ### 11.1 The Address Model — Everything Is Bytes
 
 Both CPU and GPU use byte addressing. The "address" of a value is always the distance in bytes from the start of the addressable space. When you write `ptr + 1` in C++, the actual byte offset depends on the pointer's type — the compiler multiplies by `sizeof(*ptr)` automatically.
@@ -3323,6 +3474,16 @@ Byte Addressing — How GPU Memory Works
 ---
 
 ## 12 — Shared Memory Banks — Programming Perspective
+
+Chapter 1 introduced bank conflicts from the hardware's side. This section is
+the programmer's side: the formula for working out which bank an address lands
+in (§12.1), and the two standard ways to escape a conflict once you've found one
+(§12.2).
+
+The two fixes are padding — trivially simple, wastes memory, and interferes with
+TMA's alignment requirements — and swizzling, which costs nothing at runtime but
+requires you to think in XOR. Both are shown side by side so you can see why
+production kernels almost always choose the second.
 
 ### 12.1 Bank Assignment Formula — The Math
 
@@ -3461,6 +3622,14 @@ Fixing Bank Conflicts — Padding and Swizzling
 
 ## 13 — Pointers & State Spaces
 
+Sections 13 through 16 form a single short arc: how addresses get converted
+between state spaces, and why you would ever need to do it.
+
+Start here, with Unified Virtual Addressing. UVA is the reason a plain C++
+pointer works no matter which kind of memory it points at: the state space is
+encoded in the pointer's high bits, and the hardware decodes it on every access.
+Convenient — and, as the next section shows, not free.
+
 ### 13.1 Unified Virtual Addressing (UVA)
 
 UVA maps all GPU memory spaces into a single 64-bit virtual address space. The high bits of any pointer tell the hardware which physical subsystem to route the access to. This is why a single `float*` in CUDA C++ can point to global memory, shared memory, or constant memory — the hardware figures out which one at dereference time by inspecting the address bits.
@@ -3490,6 +3659,14 @@ UVA Address Space — How Regions Are Tagged
 ---
 
 ## 14 — Generic vs State-Space Pointers
+
+Two kinds of address, and the difference matters more than it first appears.
+
+A **generic** pointer is the ordinary C++ kind: 64 bits, tagged with its state
+space, works everywhere, costs a few cycles per access while the hardware decodes
+the tag. A **state-space** pointer is a bare integer — usually 32 bits for shared
+memory — with no tag at all. It is what PTX instructions actually want, it is
+half the size, and dereferencing it as a C++ pointer will crash.
 
 ### 14.1 Generic Pointers (Default)
 
@@ -3530,6 +3707,14 @@ Generic vs State-Space — Side-by-Side
 
 ## 15 — cvta — Convert To Address
 
+`cvta` — "convert to address" — is the instruction that moves between the two
+pointer forms from §14. Strip the tag to get a raw shared-memory offset, or add
+it back to get a pointer C++ can use.
+
+You will type `__cvta_generic_to_shared()` more than almost any other intrinsic
+in this book: every TMA copy, every `mbarrier` operation, and every `ldmatrix`
+in later chapters begins with one.
+
 ### 15.1 What cvta Does
 
 `cvta` strips or adds the state-space tag bits, converting between 64-bit generic addresses and state-space-specific offsets.
@@ -3559,6 +3744,15 @@ cvta — Complete Reference
 ---
 
 ## 16 — mapa & Cluster-Wide Memory
+
+The last piece of address plumbing, and the one that closes the loop back to
+§1–3.
+
+`mapa` takes an address inside *your* block's shared memory and rewrites it to
+point at the same offset inside *another* block's shared memory in your cluster.
+That is the concrete mechanism behind everything DSMEM promised: the remote
+block's scratchpad, addressable as if it were a slightly further-away part of
+your own.
 
 ### 16.1 What mapa Does
 
@@ -3598,6 +3792,14 @@ mapa — Address Translation for Cross-Block SMEM
 ---
 
 ## 17 — Putting It All Together
+
+Two complete programs that use most of the chapter at once — clusters, inline
+PTX, state spaces, address conversion, and packed types in the same kernel.
+
+Both open with a hand-worked trace before the code: real bit patterns, computed
+by hand, so you can check the program's output against arithmetic you did
+yourself. Working through the trace first is worth the ten minutes; it is the
+difference between reading the code and being able to debug it.
 
 ### 17.1 Full Example: PTX Pointers & Packed Types
 
@@ -4115,7 +4317,15 @@ int main() {
 
 ## 18 — Quick Reference
 
+Nothing new below — this is the chapter compressed into cards you can come back
+to without re-reading. The last one, the Five Commandments, is the section worth
+re-reading before you write any inline PTX of your own; every rule in it
+corresponds to a bug class that fails silently.
+
 ### Inline PTX Syntax Cheat Sheet
+
+The whole `asm()` contract on one card: syntax, constraint letters, and
+modifiers.
 
 ```
 Full syntax:
@@ -4151,6 +4361,9 @@ When to use volatile:
 
 ### State Space Quick Reference
 
+Section 7 in one table — including the latency column, which is the one to
+remember.
+
 ```
 Space           PTX Qualifier        CUDA C++           Scope    Speed
 ──────────────────────────────────────────────────────────────────────
@@ -4164,6 +4377,9 @@ Parameter       .param               kernel args         Kernel   1-2 cycles
 ```
 
 ### Address Conversion Functions
+
+Sections 15 and 16 in one place: every conversion you can perform, and what type
+comes back.
 
 ```
 Intrinsic                              Direction              Result
@@ -4181,6 +4397,9 @@ PTX:
 ```
 
 ### Data Type Quick Reference
+
+Every PTX type you'll meet in this book, with its C++ equivalent, its constraint
+letter, and where the tensor cores will accept it.
 
 ```
 PTX Type   Bits  C++ Type          Constraint  Tensor Core Use
@@ -4201,6 +4420,8 @@ PTX Type   Bits  C++ Type          Constraint  Tensor Core Use
 
 ### Cluster Quick Reference
 
+The cluster API and its underlying PTX registers, side by side.
+
 ```
 Concept                C++ API                       PTX Register
 ────────────────────────────────────────────────────────────────────
@@ -4218,6 +4439,9 @@ Grid must be multiple of cluster dimensions.
 ```
 
 ### The Five Commandments of Inline PTX
+
+If you keep one page from this chapter, keep this one. Each rule below maps to a
+failure mode that produces wrong answers rather than error messages.
 
 ```
 1. ALWAYS USE volatile FOR SIDE EFFECTS
@@ -4246,6 +4470,14 @@ Grid must be multiple of cluster dimensions.
 ---
 
 ## ★ Final Comprehensive Example
+
+The capstone. Two blocks in a cluster each load a slice of an array into their
+own shared memory, then reach across into their partner's shared memory to
+combine the two — a vector add distributed across two SMs, written with the
+address conversions from §15 and §16 and the cluster machinery from §1.
+
+If you can read this kernel and predict its output before running it, you have
+this chapter.
 
 This final example combines clusters, PTX basics, state spaces, pointers, and data types in one kernel. It is the capstone of the guide.
 
