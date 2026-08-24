@@ -2356,5 +2356,10 @@ CUtensorMap not 128B aligned        Silent corruption      Use alignas(128)
 
 ---
 
-> **What's Next — Lesson 5 Preview:**
-> Lesson 5 covers: Warp Group Matrix Multiply-Accumulate (WGMMA) — the register layout for A, B, and C/D matrices, the wgmma.mma_async PTX instruction and its descriptor, integrating WGMMA with TMA and mbarrier in a double-buffered pipeline, reading and writing the accumulator tile, and building a complete pipelined GEMM kernel that saturates H100 compute throughput.
+> **Next — Chapter 5: cp.async.bulk, TMA Transfers & L2 Cache Hinting**
+>
+> You have built the descriptor; Chapter 5 covers the instruction that uses it.
+> Tensor-aware versus raw copies, every state-space combination, the two
+> completion mechanisms (`mbarrier` and `bulk_group`), L2 eviction hints, TMA
+> multicast across a cluster, prefetching, and hardware-accelerated reductions
+> with `cp.reduce.async`.

@@ -3173,5 +3173,26 @@ Code Component → Concept It Demonstrates
 
 ---
 
-> **What's Next — Lesson 6 Preview:**
-> Lesson 6 covers: the TMA descriptor API in full (tensor maps, swizzle modes, im2col, multicast), wgmma.mma_async instruction layouts for all GEMM shapes (m64n{64,128,256}k16), ldmatrix/stmatrix for register-to-SMEM movement, the complete FlashAttention-3 kernel architecture on H100 (causal masking, online softmax, two-pass accumulation), FP8 training mechanics (per-tensor scaling, delayed scaling, amax history), and profiling with Nsight Compute (roofline view, memory chart, warp state breakdown, bottleneck diagnosis).
+> **The end of the book — and where to go from here**
+>
+> That is the whole path: from a single H100 die in Chapter 1 to a multi-node
+> SuperPOD here. You have the descriptor API, the tensor core instructions, the
+> pipeline primitives, and the collective operations that production training and
+> inference are assembled from.
+>
+> Two subjects this book deliberately leaves out, both worth your time next:
+>
+> **FlashAttention-3.** The clearest demonstration of every primitive from
+> Chapters 4–9 working at once — online softmax, causal masking, and a
+> warp-specialised pipeline running near peak tensor core utilisation. Read the
+> paper (Shah et al., 2024) first, then the implementation alongside Chapter 9's
+> ping-pong architecture.
+>
+> **Nsight Compute.** This book reasons about performance; Nsight measures it.
+> Its roofline view maps directly onto Chapter 8 §1, its memory chart onto
+> Chapter 1's hierarchy, and its warp state breakdown tells you which of the
+> stalls described here is actually costing you cycles.
+>
+> Beyond those, CUTLASS is the reference implementation of nearly every technique
+> in Parts IV and V. Its `sm90` GEMM kernels are worth reading now that the
+> vocabulary is familiar.

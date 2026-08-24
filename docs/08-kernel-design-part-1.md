@@ -1911,3 +1911,12 @@ int main() {
     return all_ok ? 0 : 1;
 }
 ```
+
+---
+
+> **Next — Chapter 9: Pipelines, Epilogues & Persistent Scheduling**
+>
+> This chapter's numbering runs straight on into the next one: Chapter 9 picks up
+> at §9 with the two-barrier handshake, then covers ABA ambiguity and phase bits,
+> cooperative versus ping-pong pipeline architectures, the six-stage epilogue
+> fusion lifecycle, persistent scheduling, and rasterisation for L2 locality.

@@ -2419,5 +2419,10 @@ Recommended swizzle: 2-4 for most GEMMs on H100 (L2=50MB)
 
 ---
 
-> **What's Next — Lesson 4 Preview:**
-> Lesson 4 covers: the TMA descriptor API in full detail (tensor maps, swizzle modes, box descriptors), wgmma.mma_async instruction formats and register layouts (m64n128k16 and friends), ldmatrix and stmatrix for SMEM-to-register tensor core data movement, the complete Flash Attention 3 kernel architecture on H100, and how to profile and diagnose compute-bound kernels with Nsight Compute.
+> **Next — Chapter 10: Stream-K Scheduling & Multi-Kernel Launch**
+>
+> Chapter 9 built one efficient kernel. Chapter 10 asks how to keep all 132 SMs
+> busy when the tile count refuses to divide evenly among them: Stream-K work
+> decomposition, the lock array and deterministic reduction, and the launch
+> protocols — GDC and programmatic dependent launch — that overlap one kernel's
+> tail with the next kernel's head.

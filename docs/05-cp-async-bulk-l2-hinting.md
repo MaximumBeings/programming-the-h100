@@ -2131,5 +2131,9 @@ cp.async.bulk.prefetch with barrier     API error           Prefetch has no barr
 
 ---
 
-> **What's Next — Lesson 6 Preview:**
-> Lesson 6 covers: Warp Group Matrix Multiply-Accumulate (WGMMA) — the wgmma.mma_async PTX instruction, A/B/C register tile layouts, the SMEM descriptor format for WGMMA operands, integrating WGMMA with cp.async.bulk in a double-buffered pipeline, reading the accumulator tile back from registers, epilogue scaling and writing output via cp.async.bulk store, and a complete pipelined GEMM kernel achieving near-peak H100 throughput.
+> **Next — Chapter 6: WGMMA — Warp Group Matrix Multiply-Accumulate**
+>
+> Data movement is done. Chapter 6 begins the arithmetic: the shift from warp to
+> warp group, why `wgmma.mma_async` is non-blocking, the four-stage pipeline,
+> `ldmatrix` with swizzle-correct addressing, and the 64-bit WGMMA descriptor
+> field by field.

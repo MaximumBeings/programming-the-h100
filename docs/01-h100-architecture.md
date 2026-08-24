@@ -2039,4 +2039,10 @@ Tensor Core throughput:
 
 ---
 
-> **What's Next:** Lesson 2 covers Thread Block Clusters, Distributed Shared Memory, PTX inline assembly, data types, pointers, and state spaces — the programming model that unlocks the hardware described here.
+> **Next — Chapter 2: Clusters, Inline PTX, Data Types & Pointers**
+>
+> You now know what the hardware is. Chapter 2 covers the programming model that
+> reaches it: thread block clusters and distributed shared memory, inline PTX
+> assembly, state spaces, the deep-learning number formats, and the
+> address-conversion instructions (`cvta`, `mapa`) that later chapters lean on
+> constantly.

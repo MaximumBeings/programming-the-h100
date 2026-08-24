@@ -1952,5 +1952,9 @@ GDC Instruction Summary
 
 ---
 
-> **What's Next — Lesson 5 Preview:**
-> Lesson 5 covers: the TMA descriptor API in full detail (tensor maps, swizzle modes, box and im2col descriptors), `wgmma.mma_async` instruction formats and register layouts (m64n128k16 variants), `ldmatrix` and `stmatrix` for SMEM-to-register tensor core data movement, complete Flash Attention 3 kernel architecture on H100, and how to diagnose and fix common register pressure, shared memory bank conflict, and L2 thrashing issues with Nsight Compute.
+> **Next — Chapter 11: Multi-GPU Systems, NCCL & Distributed Training**
+>
+> The final chapter leaves the single GPU behind: NVLink and NVSwitch topology,
+> the DGX H100 node and the SuperPOD, InfiniBand rail networks, SLURM and PMIx,
+> NCCL's six collective primitives, and the four parallelism strategies — data,
+> tensor, pipeline, and expert.

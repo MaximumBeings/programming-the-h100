@@ -4796,5 +4796,9 @@ int main() {
 
 ---
 
-> **What's Next — Lesson 3 Preview:**
-> Lesson 3 covers: the TMA descriptor API in detail, mbarrier-based async synchronization (arrive/wait pairs), wgmma.mma_async tensor core programming, software pipelining with double-buffering, and a full pipelined GEMM kernel that fuses all of these into a production-grade implementation on the H100.
+> **Next — Chapter 3: Asynchronicity, Barriers & the mbarrier Pipeline**
+>
+> With the vocabulary in place, Chapter 3 takes on the consequence of asynchrony:
+> once the TMA fetches data behind your back, you need a way to know when it has
+> landed. It covers the generic/async proxy model, RAW and WAR hazards, fences,
+> and `mbarrier` — the primitive every pipeline in this book is built on.

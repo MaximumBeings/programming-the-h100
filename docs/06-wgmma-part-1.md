@@ -2037,5 +2037,9 @@ SBO/LBO encoded in bytes not /16 units    Wrong SMEM navigation Divide by 16 bef
 
 ---
 
-> **What's Next — Lesson 7 Preview:**
-> Lesson 7 brings everything together into a complete, production-grade pipelined GEMM kernel — combining TMA (cp.async.bulk.tensor), mbarrier double-buffering (data_bar + release_bar for WAR prevention), wgmma.mma_async with software pipelining, ldmatrix for A tile loading with swizzle-correct addressing, the epilogue (scaling, stmatrix, TMA store), and Nsight Compute profiling to verify the kernel achieves near-peak H100 throughput. We will also examine how FlashAttention-3 applies these same primitives to implement online softmax with full tensor core utilization.
+> **Next — Chapter 7: WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse**
+>
+> Chapter 6 issued one `wgmma` correctly. Chapter 7 turns it into a fast kernel:
+> commit/wait groups and what actually overlaps, `stmatrix` for the epilogue, FP8
+> with its scaling discipline and the FP22 accumulation pitfall, and 2:4
+> structured sparsity.

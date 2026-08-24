@@ -2764,5 +2764,10 @@ cp.async.bulk.wait_group 1;   // all groups except the 1 most recent are done
 
 ---
 
-> **What's Next — Lesson 4 Preview:**
-> Lesson 4 covers: building a complete pipelined GEMM kernel on H100 from scratch — TMA descriptor setup and launch, WGMMA tile layout and register file organization, the full double-buffered pipeline combining mbarrier (data arrival) + mbarrier (WAR prevention) + wgmma + cp.async.bulk, epilogue scaling and output writing, and profiling with Nsight Compute to verify pipeline efficiency.
+> **Next — Chapter 4: cuTensorMap, TMA & Swizzling**
+>
+> Chapter 3 gave you the synchronisation. Chapter 4 gives you the copy — or
+> rather its setup: the TMA descriptor, all twelve parameters of
+> `cuTensorMapEncodeTiled()`, the dimension-ordering and stride-unit rules that
+> break most first attempts, and swizzling to keep the arriving tile free of bank
+> conflicts.
