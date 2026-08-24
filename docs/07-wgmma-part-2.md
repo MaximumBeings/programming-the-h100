@@ -7,11 +7,34 @@
 
 **What this covers:** Everything from Lesson 7 — commit/wait group mechanics for overlapping wgmma with data preparation (the pipeline-friendly API), wgmma.fence dual roles (group boundary + register hazard control), stmatrix for cooperative accumulator writeback (address phase, register layout, x1/x2/x4 variants, FP32 vs FP16 accumulator paths), the FP8 paradigm shift (E4M3 vs E5M2 formats, scaling factors, packed types e4m3x2/x4, the cvt.satfinite quantization instruction, K-major layout requirement, precision pitfalls with large K), and Sparse WGMMA (2:4 structured sparsity, sp-meta register, sp-sel thread selector, metadata packing for FP16/BF16/FP8/TF32). Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
+**How to read this chapter.** Chapter 6 got a single `wgmma` instruction to
+issue correctly. This one is about everything that turns that instruction into a
+fast kernel — and about the two ways Hopper lets you go faster still.
+
+There are four independent parts, and they can be read in any order. Sections
+1–5 are about **pipelining**: commit and wait groups, and what actually overlaps
+with what. Sections 6–8 are about the **epilogue** — getting results out of the
+accumulator registers and back into shared memory with `stmatrix`. Sections 9–14
+are about **FP8**, which is less a data type than a small numerical discipline
+you have to adopt. Sections 15–17 are about **structured sparsity**.
+
+If you are here to make an existing wgmma kernel faster, read §1–§5. If you are
+here because your epilogue is transposing your matrix, read §6–§8. If you are
+here for FP8, start at §9 and read straight through to §14 — especially §14,
+which documents a hardware behaviour that is not in the official numbers.
+
 ---
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
+Same requirements as Chapter 6: Hopper or later, compiled for `sm_90a`. The FP8
+and sparse sections have no pre-Hopper equivalent at all. Skip ahead if you
+already have a machine set up.
+
 ### What Hardware Can You Use?
+
+`sm_90a` or `sm_100a`. The trailing `a` matters — without it the wgmma
+instructions are silently unavailable.
 
 ```
 Hardware Compatibility Matrix
@@ -38,6 +61,8 @@ Hardware Compatibility Matrix
 
 ### Cloud GPU Rental — Lambda Labs
 
+Usually the cheapest hourly H100.
+
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -51,6 +76,8 @@ Lambda Labs Setup (H100)
 
 ### Cloud GPU Rental — AWS
 
+`p5` is the H100 family. `p4d` is A100 and cannot run this chapter.
+
 ```
 AWS p5 Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -63,6 +90,9 @@ AWS p5 Setup (H100)
 ```
 
 ### Hopper vs Blackwell — What Changes
+
+Read once if you are on Blackwell. Everything here still runs; Blackwell simply
+adds a newer tensor core generation alongside it.
 
 ```
 Hopper (sm_90a) vs Blackwell (sm_100a) — Lesson 7 Differences
@@ -113,6 +143,17 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — Lesson 7 Differences
 ---
 
 ## 1 — WGMMA Groups
+
+Chapter 6 §5 made the essential point: `wgmma.mma_async` returns immediately and
+leaves the tensor cores working in the background. This section asks the obvious
+follow-up — how do you find out when they're done?
+
+The answer is not "wait for instruction number seven." The hardware does not
+track individual wgmma instructions; it tracks *batches* of them. You draw a
+line under a set of instructions, and then you wait on the batch.
+
+That indirection is what makes deep pipelining possible, and it is what §2 and
+§3 are about.
 
 ### 1.1 Why Grouping Exists — The Tracking Problem
 
@@ -174,6 +215,13 @@ The Tracking Problem — Why Individual Wait Would Be Slow
 
 ## 2 — wgmma.commit_group
 
+The instruction that draws the line. Everything issued since the last
+`commit_group` becomes one countable batch.
+
+It does not wait, it does not synchronise, and it costs essentially nothing — it
+is pure bookkeeping. The mental model that helps: you are pushing a marker onto
+a queue.
+
 ### 2.1 What commit_group Does
 
 `wgmma.commit_group.sync.aligned` closes the currently open batch of wgmma operations and makes them trackable as a single named unit (a "group"). Any `wgmma.mma_async` calls issued AFTER this point belong to the NEXT group.
@@ -233,6 +281,16 @@ wgmma.commit_group — Mechanics
 ---
 
 ## 3 — wgmma.wait_group
+
+The other half, and the one with the counter-intuitive argument.
+
+`wgmma.wait_group<N>` waits until at most **N** groups remain outstanding — not
+until N groups have completed. So `wait_group<0>` means "wait for everything",
+and `wait_group<1>` means "let one batch stay in flight."
+
+That second form is the whole point. Keeping one group running while you prepare
+the next is how you stop the tensor cores from ever going idle, and picking N is
+the main tuning knob in a wgmma kernel.
 
 ### 3.1 What wait_group Does
 
@@ -297,6 +355,17 @@ wgmma.wait_group — The Synchronization Point
 ---
 
 ## 4 — The Commit/Wait Pipeline — What Actually Overlaps
+
+It is easy to write a commit/wait pipeline that looks right and overlaps
+nothing. This section is about telling the two apart.
+
+The question to keep asking is: between issuing the math and waiting for it,
+what work is there that does not touch the accumulator registers? Loading the
+next tile qualifies. Computing the next set of descriptors qualifies. Reading
+`D` does not — that is exactly what you are waiting for.
+
+The timeline diagrams here are worth the time; they show where the cycles
+actually go.
 
 ### 4.1 The Complete Overlap Pattern
 
@@ -363,6 +432,18 @@ The Pipelined wgmma Pattern — Complete Timeline
 ---
 
 ## 5 — wgmma.fence — Dual Role Review
+
+`wgmma.fence` has appeared several times now, in slightly different roles, so
+this section consolidates it.
+
+It does two distinct jobs. It marks a **group boundary** — the point where one
+batch of wgmma instructions ends. And it controls **register hazards** — telling
+the hardware that your threads have finished writing the accumulator registers
+the tensor core is about to claim.
+
+Most misplaced fences come from thinking about only one of those jobs at a time.
+Read this before you go debugging a pipeline that produces intermittently wrong
+results.
 
 ### 5.1 The Two Things wgmma.fence Controls
 
@@ -434,6 +515,18 @@ wgmma.fence.sync.aligned — Complete Role Summary
 
 ## 6 — stmatrix — Writing Accumulators Back to SMEM
 
+The epilogue problem, stated plainly.
+
+When `wait_group<0>` returns, your answer exists — scattered across 128 threads'
+registers in a layout the hardware chose. Getting it into shared memory as a
+coherent tile with ordinary stores would mean every thread computing an
+irregular address, and 128 threads colliding on 32 memory banks while they do
+it.
+
+`stmatrix` is the hardware's answer: threads hand over registers, the hardware
+works out where each element belongs. It is `ldmatrix` (Chapter 6, §9) run
+backwards, deliberately so.
+
 ### 6.1 Why stmatrix Exists — The Scatter Problem
 
 After `wgmma.wait_group<0>` completes, the D matrix elements are scattered across 128 threads' registers in the hardware-defined wgmma output layout. This layout is highly non-contiguous — each thread holds elements from multiple non-adjacent rows and columns.
@@ -489,6 +582,17 @@ stmatrix — The Scatter Operation
 ---
 
 ## 7 — stmatrix — Address and Register Phases
+
+Like `ldmatrix`, `stmatrix` runs in two phases — and they are the *same* two
+phases, which is the useful part.
+
+§7.1 covers the address phase: which threads supply addresses, and what those
+addresses mean. §7.2 covers the register phase: the striped layout each thread's
+registers must be in.
+
+The symmetry with `ldmatrix` is intentional and worth leaning on. If you can
+read a tile in with one, you can write it out with the other using the same
+address arithmetic.
 
 ### 7.1 Phase 1: Address Responsibility
 
@@ -614,6 +718,17 @@ stmatrix Register Source — The Striped Layout
 
 ## 8 — stmatrix and FP32 Accumulators — The Conversion Requirement
 
+And here is the catch that trips up every first epilogue.
+
+`stmatrix` handles 16-bit and 8-bit elements. It has no 32-bit form. But your
+accumulator is FP32, because that is what wgmma accumulates in. So the two do
+not connect directly — you must convert down to BF16 or FP16 first, in
+registers, before `stmatrix` will take your data.
+
+That is usually fine, since you probably wanted to store BF16 anyway. But it has
+to be a deliberate step in your epilogue, and the section covers what the
+conversion costs and where to put it.
+
 ### 8.1 The FP32 Problem — stmatrix Only Supports 16-bit
 
 `stmatrix` only supports `.b16` (16-bit) and `.b8` (8-bit) element types. It has no `.b32` (32-bit) variant. This creates a critical divergence in the epilogue path depending on whether your wgmma used FP32 or FP16 accumulators.
@@ -677,6 +792,17 @@ stmatrix and FP32 — The Conversion Requirement
 
 ## 9 — FP8 — The Paradigm Shift
 
+The chapter changes subject here. Sections 9 through 14 are about FP8.
+
+The headline is simple: half the bits, twice the tensor core throughput, half
+the memory traffic. The reason it is a "paradigm shift" rather than just another
+dtype is what comes with it. BF16 was close enough to FP32 that you could mostly
+swap it in and carry on. FP8 is not: with a maximum representable value of 448,
+ordinary neural network activations overflow it immediately.
+
+So FP8 is not a type you adopt. It is a type plus a scaling discipline, and
+§10–§14 build that discipline up piece by piece.
+
 ### 9.1 Why FP8 Matters
 
 FP8 represents the same kind of paradigm shift for AI inference and training that BF16 represented in 2020. By halving the bit width of FP16 (from 16 bits to 8 bits), FP8 delivers roughly double the tensor core throughput and halves memory bandwidth requirements for the matrix multiply operations that dominate AI workloads.
@@ -721,6 +847,17 @@ FP8 Impact on H100 Throughput
 
 ## 10 — FP8 Formats — E4M3 vs E5M2
 
+There are two FP8 formats, and the split tells you something about what floating
+point actually buys you.
+
+With only eight bits to spend, you must choose between **range** and
+**precision**. E4M3 spends more bits on the mantissa: finer resolution, maximum
+value 448. E5M2 spends more on the exponent: coarser, but reaching to 57,344.
+
+§10.1 reviews IEEE 754 briefly if the sign/exponent/mantissa split isn't fresh.
+§10.2 explains why both formats exist — forward passes and backward passes want
+different things, and the Transformer Engine switches between them accordingly.
+
 ### 10.1 IEEE 754 Floating Point Review
 
 Before diving into FP8, it helps to review how floating point numbers are encoded. Every floating point number has three fields: sign, exponent, and mantissa. The key tradeoff in any reduced-precision format is how to split the available bits between exponent (which controls dynamic range) and mantissa (which controls precision).
@@ -755,6 +892,9 @@ Floating Point Format Review — Sign, Exponent, Mantissa
 ```
 
 ### 10.2 E4M3 vs E5M2 — Different Tools for Different Phases
+
+The practical division: E4M3 forward, E5M2 backward. The reason is that
+gradients span a far wider range than activations, and range is what E5M2 buys.
 
 ```
 E4M3 vs E5M2 — Why Two Formats Exist
@@ -815,6 +955,14 @@ E4M3 vs E5M2 — Why Two Formats Exist
 ---
 
 ## 11 — FP8 Packed Types
+
+The same packing story from Chapter 2 §10, now at its most extreme: four FP8
+values in a single 32-bit register.
+
+The reason is worth stating, because it explains a lot of GPU memory behaviour.
+The memory system never fetches less than a 32-byte sector. Request one FP8
+byte and you have paid for thirty-two. Packing is how you make sure the other
+thirty-one are useful to you.
 
 ### 11.1 Why Packing Is Necessary
 
@@ -879,6 +1027,19 @@ FP8 Packed Types — x2 and x4
 ---
 
 ## 12 — FP8 Quantization — cvt.satfinite
+
+How data actually becomes FP8 — and it is not a cast.
+
+§12.1 covers `cvt.satfinite`, the conversion instruction, and specifically the
+`satfinite` part: values too large to represent clamp to the maximum rather than
+becoming infinity. That saturation is a deliberate design choice, and it is what
+makes FP8 survivable at all.
+
+§12.2 covers scaling factors, which is the real content of this section.
+Multiply your tensor by a scale before converting, divide it back out after —
+so that its actual range lands inside FP8's tiny window instead of clipping.
+Getting that scale right, per tensor and per step, is what the Transformer
+Engine automates.
 
 ### 12.1 Converting to FP8 — The Quantization Step
 
@@ -1001,7 +1162,17 @@ Scaling Factors — The Core Curriculum of FP8
 
 ## 13 — FP8 WGMMA — Instruction and Layout Rules
 
+FP8 imposes constraints that BF16 does not, and this is where they get stated.
+
+§13.1 gives the instruction form — note `k32`, twice the K depth of BF16, since
+each element is half the size. §13.2 covers the operand paths, and contains the
+rule to remember: for FP8, the layout requirements are stricter than you are
+used to. A K-major layout that was optional before becomes mandatory here.
+
 ### 13.1 The FP8 WGMMA Instruction
+
+The instruction form. `k32` rather than `k16` — the K depth doubles because the
+elements halve.
 
 ```
 FP8 WGMMA — Complete Instruction Form
@@ -1036,6 +1207,9 @@ FP8 WGMMA — Complete Instruction Form
 ```
 
 ### 13.2 A Operand: Registers (RS) vs Descriptor (SS) for FP8
+
+The two paths for getting `A` in, and the layout each one demands. This is
+stricter than the BF16 case in Chapter 6 §7.
 
 ```
 FP8 A Loading — SS vs RS Path on Hopper
@@ -1105,6 +1279,18 @@ FP8 A Loading — SS vs RS Path on Hopper
 
 ## 14 — FP8 Precision Pitfalls — K-Slicing
 
+The most valuable section in the chapter, and the one you will not find in the
+documentation.
+
+FP8 wgmma is specified as accumulating in FP32. Measured on real H100 silicon,
+it does not — the effective accumulator behaves closer to 22 bits of mantissa
+than 32. For short K it makes no difference. For long K it compounds, and your
+GEMM quietly loses precision as the reduction gets deeper.
+
+The fix is **K-slicing**: break the reduction into chunks, and promote to real
+FP32 between them. This section shows how to decide chunk size, and what it
+costs. If you are shipping FP8 inference, read this one twice.
+
 ### 14.1 The "FP22" Accumulation Issue
 
 Even though FP8 wgmma is documented as using an FP32 accumulator, empirical measurements on H100 reveal that the actual effective accumulation precision is closer to what might be called "FP22" — approximately 8-bit exponent and 13-bit mantissa, rather than FP32's 23-bit mantissa. This means the lowest FP32 mantissa bits may be lost during long dot products.
@@ -1170,6 +1356,17 @@ FP8 Precision Pitfalls — Accumulation Depth
 
 ## 15 — Sparse WGMMA — 2:4 Structured Sparsity
 
+The last subject, and the second way to double throughput.
+
+The bargain is this: if you can arrange for exactly two of every four
+consecutive elements in `A` to be zero, the hardware will store only the
+non-zeros and run the multiply at twice the rate. Half the data read, half the
+work done, same answer.
+
+The catch is bookkeeping. The tensor core needs to know *which* two of each four
+survived, and that information has to be encoded and handed over alongside the
+values — which is what §16 and §17 are for.
+
 ### 15.1 What Sparse WGMMA Is
 
 Sparse WGMMA is a variant where matrix A is **structured sparse**: for every group of 4 consecutive elements in each row, exactly 2 are zero. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.
@@ -1229,6 +1426,15 @@ The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. Th
 ---
 
 ## 16 — sp-meta — The Metadata Register
+
+Where the "which two" information lives.
+
+`sp-meta` is a register holding two bits per quartet, naming the positions of
+the surviving elements. Two bits, four positions, two survivors — exactly enough
+to reconstruct the original layout, and no more.
+
+The encoding is fiddly and differs by data type. Work through the worked example
+rather than trusting your reading of the table.
 
 ### 16.1 What sp-meta Encodes
 
@@ -1303,6 +1509,14 @@ sp-meta — Packing Sparsity Indices
 
 ## 17 — sp-sel — The Thread Selector
 
+The last piece, and the least intuitive.
+
+Metadata is not supplied by every thread — it comes from one designated thread
+per group, and `sp-sel` is the compile-time constant that says which. It is
+essentially a plumbing detail, but a wrong `sp-sel` means the hardware reads
+metadata from a thread that never wrote any, and the result is wrong numbers
+rather than an error.
+
 ### 17.1 What sp-sel Does
 
 `sp-sel` (sparsity selector) is a compile-time constant (0 or 1) that tells the hardware which threads within each group of 4 consecutive threads are responsible for providing the metadata register. It exists because not all 128 threads in the warp group need to provide unique metadata — only specific "contributor" threads are read.
@@ -1361,6 +1575,14 @@ sp-sel — Thread Metadata Responsibility
 ---
 
 ## 18 — Putting It All Together
+
+One complete kernel that uses most of the chapter at once: a pipelined `wgmma`
+loop with commit/wait groups from §1–§5, and an `stmatrix` epilogue from
+§6–§8.
+
+This is the closest thing in the book to the inner loop of a real CUTLASS GEMM.
+Chapters 8 and 9 take it the rest of the way, adding warp specialisation and a
+fused epilogue on top of exactly this structure.
 
 ### 18.1 Full Example: Pipelined wgmma with commit/wait and stmatrix Epilogue
 
@@ -1660,7 +1882,14 @@ int main() {
 
 ## 19 — Quick Reference
 
+The chapter as reference cards. As in Chapter 6, the *Common Mistakes* card at
+the end is worth reading even though nothing in it is new — these are the bugs
+that compile cleanly.
+
 ### wgmma Group API
+
+Commit and wait in one card. Remember that `N` is how many groups may remain
+outstanding, not how many to wait for.
 
 ```
 Instruction                              Purpose
@@ -1675,6 +1904,8 @@ N>1: keep multiple groups in flight → deep pipeline (rare)
 ```
 
 ### stmatrix Reference
+
+The instruction forms, and the reminder that there is no 32-bit variant.
 
 ```
 Variant                                  Data    Output   Use Case
@@ -1692,6 +1923,8 @@ FP32 accumulators: stmatrix has NO .f32 variant!
 
 ### FP8 Formats at a Glance
 
+E4M3 and E5M2 side by side — bit layout, range, and which phase each one is for.
+
 ```
 Format   Bits  E  M  Max Value  Best For              Notes
 ──────────────────────────────────────────────────────────────────────────
@@ -1705,6 +1938,8 @@ e5m2x4   32    —  —  —          Storage, transport            4 E5M2 packe
 
 ### FP8 Quantization Instructions
 
+The conversion instructions, with their saturation behaviour.
+
 ```
 Instruction                                   Input   Output    Notes
 ──────────────────────────────────────────────────────────────────────────
@@ -1715,6 +1950,9 @@ cvt.rn.satfinite.e4m3x2.f32    fp8, f32, f32  2×f32  e4m3x2   2 FP32 → 2 FP8 
 ```
 
 ### Sparse WGMMA sp-sel and sp-meta Rules
+
+Sections 16 and 17 condensed. The encoding table is the part to check against
+rather than recall.
 
 ```
 Precision     Sparsity  K/op  sp-sel   sp-meta cycle       Loop unroll
@@ -1731,6 +1969,9 @@ For FP8/INT8: all threads contribute → sp-sel MUST be 0.
 
 ### wgmma.fence Placement Checklist
 
+Section 5 as a checklist. Run through it when a pipeline produces intermittently
+wrong results.
+
 ```
   □ BEFORE the first wgmma.mma_async in any new warpgroup sequence
   □ AFTER the last wgmma.mma_async (and after wait_group<0>) before reading d[]
@@ -1744,6 +1985,9 @@ For FP8/INT8: all threads contribute → sp-sel MUST be 0.
 ```
 
 ### Common Mistakes and Fixes
+
+Each entry is a bug that produces wrong numbers rather than an error message.
+Check here before reaching for a profiler.
 
 ```
 Mistake                                    Symptom              Fix

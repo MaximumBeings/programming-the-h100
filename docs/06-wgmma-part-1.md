@@ -7,11 +7,39 @@
 
 **What this covers:** Everything from Lesson 6 — the four key innovations in Hopper's tensor core model, the paradigm shift from warp to warp group as the unit of execution, how wgmma.mma_async works and why it is non-blocking, the WGMMA pipeline (fence → load → compute → collect), the full instruction syntax and all qualifier meanings (.sync, .aligned, scale_d, imm-scale, imm-trans), operand location rules (A in registers vs SMEM, B always in SMEM, D always in registers), ldmatrix for loading A tiles (address phase, register phase, swizzle addressing, x1/x2/x4 vectorization), the 64-bit WGMMA descriptor (base address, LBO, SBO, matrix base offset, swizzle mode bits), all supported tile shapes for BF16/FP16/TF32/FP8/INT8, register layout and output accumulator structure, and stmatrix for writing results back. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
+**How to read this chapter.** This is where the book stops moving data around
+and starts doing arithmetic with it. `wgmma` is the instruction that drives
+Hopper's tensor cores, and it is the single most demanding piece of the Hopper
+ISA: it is asynchronous, it is issued by 128 threads acting as one, and it
+insists that its operands be laid out in memory in a very particular way.
+
+The chapter has four movements. Sections 1–3 are conceptual — what changed in
+Hopper, what a *warp group* is, and the four-stage shape every wgmma kernel
+takes. Sections 4–7 cover the instruction itself and the rules it enforces.
+Sections 8–11 deal with getting operands into the right registers, which is
+where most of the real difficulty lives. Sections 12–14 cover the descriptor —
+the 64-bit word that tells the tensor core how to walk shared memory.
+
+Two pieces of advice. First, do not try to write a wgmma kernel until you have
+read §12 and §13; the descriptor is where nearly all first attempts fail.
+Second, this chapter assumes Chapter 2's packed types and address conversion,
+and Chapter 4's swizzling. If §11 stops making sense, that is where to go back
+to.
+
 ---
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
+Unlike the earlier chapters, there is no fallback hardware here. `wgmma` exists
+only on Hopper and later — an A100 will not compile a single example in this
+chapter. If you already have an H100 with a working `nvcc`, skip to the Table of
+Contents.
+
 ### What Hardware Can You Use?
+
+The short version: `sm_90a` or `sm_100a`, nothing older. Note the trailing `a`
+— it is not optional. Compiling for plain `sm_90` silently drops the wgmma
+instructions.
 
 ```
 Hardware Compatibility Matrix
@@ -37,6 +65,8 @@ Hardware Compatibility Matrix
 
 ### Cloud GPU Rental — Lambda Labs
 
+Usually the cheapest hourly H100.
+
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -50,6 +80,8 @@ Lambda Labs Setup (H100)
 
 ### Cloud GPU Rental — AWS
 
+The `p5` family is H100; `p4d` is A100 and will not work for this chapter.
+
 ```
 AWS p5 Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -62,6 +94,11 @@ AWS p5 Setup (H100)
 ```
 
 ### Hopper vs Blackwell — What Changes
+
+Worth reading once if you are on a B100 or B200. Blackwell keeps `wgmma`
+working but adds a successor instruction family (`tcgen05`) with a different
+layout, so code written here runs — it simply is not the fastest thing available
+on that chip.
 
 ```
 Hopper (sm_90a) vs Blackwell (sm_100a) — WGMMA Differences
@@ -110,6 +147,16 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — WGMMA Differences
 ---
 
 ## 1 — Four Key Innovations
+
+Start with why Hopper's tensor cores needed a new instruction at all.
+
+Ampere's `mma.sync` worked, and worked well. But it was synchronous, it was
+issued per warp, and it required both operands to be sitting in registers —
+which meant threads spent much of their time shuffling data into place rather
+than computing. Hopper changes all four of those things at once.
+
+This section names the four changes. Everything else in the chapter is a
+consequence of one of them, so it is worth reading before the details start.
 
 ### 1.1 What Changed in Hopper's Tensor Cores
 
@@ -173,6 +220,19 @@ The Four Hopper MMA Innovations — What Each Fixes
 
 ## 2 — Warp to Warp Group
 
+The first and most disorienting of those four changes: the unit of execution
+gets bigger.
+
+For a decade the warp — 32 threads — was the atom of NVIDIA GPU execution. On
+Hopper, `wgmma` is issued by a **warp group**: four consecutive warps, 128
+threads, acting as a single instruction issuer. Not four cooperating warps —
+one instruction, issued once, on behalf of all of them.
+
+This has practical consequences you'll feel immediately. Block sizes want to be
+multiples of 128. Divergence between the four warps is not merely slow, it is
+illegal. And the output matrix is spread across all 128 threads rather than 32,
+which is what §8 is about.
+
 ### 2.1 What Is a Warp Group?
 
 A **warp group** is a set of 4 consecutive warps within a thread block that are fused together by the hardware for wgmma execution. A warp has 32 threads; a warp group has 4 × 32 = **128 threads**. The warp group is the new fundamental unit of tensor core computation on Hopper.
@@ -216,6 +276,9 @@ Warp Group — Structure and Execution
 ```
 
 ### 2.2 How the Warp Scheduler Fuses Warps
+
+What the hardware is actually doing underneath the abstraction — and why the
+four warps must be consecutive and must arrive together.
 
 ```
 Warp Fusion — What Happens at the Hardware Level
@@ -263,6 +326,13 @@ Warp Fusion — What Happens at the Hardware Level
 ---
 
 ## 3 — The WGMMA Pipeline
+
+Before any syntax, the shape. Every wgmma kernel ever written follows the same
+four stages: **fence → load → compute → collect**.
+
+Learn this sequence now, because the next four sections are each an expansion of
+one stage of it, and the ordering is not negotiable — the fence exists precisely
+to stop the compiler from rearranging what follows.
 
 ### 3.1 The Four-Stage Pipeline
 
@@ -322,6 +392,19 @@ The WGMMA Pipeline — Four Stages
 ---
 
 ## 4 — wgmma.fence.sync.aligned — The Register Barrier
+
+Stage one of the pipeline, and the instruction most often misunderstood.
+
+The name suggests a general-purpose memory fence. It is not. `wgmma.fence`
+orders **register** access — it tells the hardware that the accumulator
+registers your threads have been writing are now finished with, and the tensor
+core may take them over. It does nothing at all about shared memory; if you need
+your SMEM writes visible to wgmma, you need a different fence entirely (Chapter
+3, §7.4).
+
+§4.2 introduces commit and wait groups, which work exactly like the
+`cp.async.bulk` groups from Chapter 3 §15 — but for arithmetic rather than
+copies. Chapter 7 takes them much further.
 
 ### 4.1 What wgmma.fence Does — and What It Does NOT Do
 
@@ -433,6 +516,14 @@ wgmma.commit_group and wgmma.wait_group — Batching Math Ops
 
 ## 5 — wgmma.mma_async — The Core Instruction
 
+The instruction itself. It computes `D = A × B + C` on a tile, and the `_async`
+suffix carries the whole story: it returns immediately, having merely *handed
+the work over* to the tensor cores.
+
+That is what makes overlap possible — and what makes the accumulator registers
+untouchable until you have waited. Reading `D` before `wgmma.wait_group` returns
+does not give you a partial result; it gives you garbage, silently.
+
 ### 5.1 What wgmma.mma_async Does
 
 `wgmma.mma_async` is the core tensor core instruction for Hopper. It computes a matrix multiply-accumulate (MMA) operation: **D = A × B + C**, where D and C are in thread registers, A can be in registers or SMEM, and B is always in SMEM. The operation is **asynchronous** — the instruction is issued, the hardware accepts it into a queue, and the thread immediately continues. The actual computation happens in the background on dedicated tensor core hardware.
@@ -473,6 +564,16 @@ wgmma.mma_async — The Computation It Performs
 ---
 
 ## 6 — Instruction Qualifiers
+
+A `wgmma` instruction is a long chain of dot-separated qualifiers, and each one
+is load-bearing. This section takes them in three groups.
+
+§6.1 covers `.sync` and `.aligned` — the promises you make about all 128 threads
+arriving together. §6.2 covers the shape and dtype, which are not free
+parameters: only specific `m×n×k` combinations exist per precision, and §14
+lists them all. §6.3 covers the immediate operands, including `scale_d`, the
+flag that decides whether this instruction accumulates onto `D` or overwrites it
+— the difference between a working K-loop and a wrong answer.
 
 ### 6.1 .sync and .aligned — What They Enforce
 
@@ -633,6 +734,17 @@ The Immediate Operands — Scale and Transpose
 
 ## 7 — Operand Locations
 
+A short section with one hard rule in it, and it constrains your entire kernel
+design.
+
+`B` must live in shared memory. Always. There is no register path for it. `A`
+may live in either registers or shared memory, and `C`/`D` are always in
+registers, distributed across the warp group.
+
+That asymmetry is why the rest of this chapter splits the way it does: §8–§11
+are about the register path for `A`, and §12–§13 are about the shared-memory
+path used by `B` and, optionally, `A`.
+
 ### 7.1 Where A, B, C/D Must Live
 
 ```
@@ -690,6 +802,18 @@ Operand Location Rules — Where Data Must Reside
 ---
 
 ## 8 — The D Register Operand — Output Layout
+
+Where the answer ends up — and it is not anywhere convenient.
+
+The output tile is scattered across all 128 threads of the warp group, and each
+thread holds a set of non-contiguous elements chosen by the hardware, not by
+you. You cannot pick this layout, and you cannot ignore it: any epilogue you
+write has to either work in that layout or move data out of it, which is what
+`stmatrix` (§15) is for.
+
+Work through the worked example here rather than skimming it. Knowing which
+element lives in which thread's register is the difference between an epilogue
+that works and one that transposes your matrix by accident.
 
 ### 8.1 How Output Elements Are Distributed Across Threads
 
@@ -757,6 +881,18 @@ D Register Distribution — m64n128k16 FP32 Example
 
 ## 9 — A in Registers — ldmatrix
 
+If `A` is going into registers, you cannot get it there with an ordinary load.
+
+The reason is the layout from §8: the tensor core expects each thread to hold a
+specific, scattered set of elements, and reproducing that pattern with
+`ld.shared` would mean every thread computing its own irregular address and
+issuing several loads. `ldmatrix` is a single instruction that reads an 8×8 tile
+out of shared memory and deals the elements to the right threads in hardware.
+
+§9.2 covers the `x1`/`x2`/`x4` variants — how many tiles to fetch per
+instruction. Bigger is generally better, for the usual reason: fewer
+instructions, fewer addresses.
+
 ### 9.1 Why ldmatrix Exists
 
 When matrix A is loaded into registers for reuse, you can't use a normal `ld.shared` instruction. That's because the tensor core expects A data in a very specific **fragmented layout** across the 32 lanes of a warp. This layout does not correspond to any simple linear ordering of elements.
@@ -801,6 +937,9 @@ ldmatrix — What It Does
 
 ### 9.2 ldmatrix Vectorization — x1, x2, x4
 
+One, two, or four 8×8 tiles per instruction. The choice affects how many threads
+must supply an address, which is the subject of the next section.
+
 ```
 x1, x2, x4 — How Many 8×8 Matrices to Load
 ══════════════════════════════════════════════════════════════════════
@@ -843,6 +982,18 @@ x1, x2, x4 — How Many 8×8 Matrices to Load
 ---
 
 ## 10 — ldmatrix — Address and Register Phases
+
+`ldmatrix` does two quite different things in sequence, and separating them in
+your head is the key to getting the address arithmetic right.
+
+In the **address phase**, a subset of threads each supply one address — the
+start of one row of one 8×8 tile. In the **register phase**, the hardware
+redistributes the fetched data across all 32 threads according to the fixed
+tensor core layout.
+
+The consequence that catches people: the thread that provides an address is
+usually not the thread that receives that data. The two phases have nothing to
+do with each other.
 
 ### 10.1 The Two-Phase Execution
 
@@ -911,6 +1062,15 @@ ldmatrix — The Two-Phase Execution Model
 ---
 
 ## 11 — Swizzle Address Calculation
+
+Now the two hard parts meet. The tile in shared memory was written by the TMA
+with swizzling applied (Chapter 4, §10) — so the address a thread must hand to
+`ldmatrix` is not the naive `row × stride + col`. It is that, XORed.
+
+This is the single most error-prone calculation in the chapter, and it fails in
+the worst possible way: the kernel runs, produces numbers, and the numbers are
+wrong. Work the formula through by hand on the example given before trusting any
+code you write against it.
 
 ### 11.1 Computing the SMEM Address for ldmatrix
 
@@ -996,6 +1156,17 @@ Swizzle Address Formula — How the XOR Works
 
 ## 12 — The WGMMA Descriptor
 
+The other operand path. Where `A`-in-registers needed `ldmatrix`, operands read
+straight from shared memory need a **descriptor** — a single 64-bit integer that
+tells the tensor core everything about the tile's layout.
+
+If the TMA descriptor from Chapter 4 felt like a lot of parameters packed into
+one object, this is the same idea one level down: base address, two strides, an
+offset, and the swizzle mode, all bit-packed into one register.
+
+§12.1 explains what it encodes; §12.2 builds one step by step. Get this wrong
+and wgmma reads the correct memory in the wrong order — again, silently.
+
 ### 12.1 What the Descriptor Is
 
 The WGMMA descriptor is a **64-bit integer** (stored in a register) that encodes everything wgmma needs to find and read a matrix tile from shared memory. It replaces the need for threads to compute element addresses at runtime — the hardware interprets the descriptor and generates all required SMEM accesses internally.
@@ -1050,6 +1221,10 @@ WGMMA Descriptor — 64-Bit Layout
 ```
 
 ### 12.2 Building the Descriptor
+
+The bit-packing, field by field. Note that the address fields are *shifted* —
+descriptors store encoded values, not raw byte offsets, and forgetting the shift
+is the classic first bug.
 
 ```
 Descriptor Construction — Step by Step
@@ -1115,7 +1290,21 @@ Descriptor Construction — Step by Step
 
 ## 13 — Descriptor Fields — LBO, SBO, Base Offset, Swizzle
 
+The two stride fields inside the descriptor have famously unhelpful names, so
+here is the plain version before you read the details.
+
+**LBO** (§13.1) is how far to jump to reach the next element along the tile's
+leading dimension. **SBO** (§13.2) is how far to jump along the other one. Which
+is which depends on whether your tile is row- or column-major, which is why the
+names are abstract rather than saying "row" and "column".
+
+§13.3 covers the remaining fields, including the swizzle mode bits — which must
+match the swizzle the TMA actually applied when it wrote the tile. A mismatch
+here is not caught by anything.
+
 ### 13.1 LBO — Leading Byte Offset
+
+The stride along the leading dimension — the one that varies fastest in memory.
 
 ```
 LBO (Leading Byte Offset) — Navigating the Leading Dimension
@@ -1148,6 +1337,9 @@ LBO (Leading Byte Offset) — Navigating the Leading Dimension
 
 ### 13.2 SBO — Stride Byte Offset
 
+The stride along the other dimension. The worked example is the fastest way to
+see which of the two you need.
+
 ```
 SBO (Stride Byte Offset) — Navigating the Non-Leading Dimension
 ══════════════════════════════════════════════════════════════════════
@@ -1176,6 +1368,9 @@ SBO (Stride Byte Offset) — Navigating the Non-Leading Dimension
 ```
 
 ### 13.3 Matrix Base Offset and Swizzle Mode Bits
+
+The remaining fields. The swizzle bits must agree with what the TMA did when it
+wrote this tile — Chapter 4, §10 — and nothing checks that they do.
 
 ```
 Matrix Base Offset and Swizzle Mode
@@ -1217,7 +1412,17 @@ Matrix Base Offset and Swizzle Mode
 
 ## 14 — All Supported Tile Shapes
 
+Reference material, but reference material with a rule hidden in it: the tile
+shape is not a free parameter. `M` is always 64. `K` is fixed by the precision
+— 16 for BF16/FP16, 8 for TF32, 32 for FP8 and INT8. Only `N` is genuinely
+yours to choose.
+
+Skim the four tables now to absorb that pattern, then come back when you need a
+specific instruction name.
+
 ### 14.1 BF16 and FP16 — k16 Variants
+
+The most common case, and the one to read if you only read one.
 
 ```
 BF16 / FP16 Tile Shapes — m64nXk16
@@ -1254,6 +1459,8 @@ BF16 / FP16 Tile Shapes — m64nXk16
 
 ### 14.2 TF32 — k8 Variants
 
+Half the K depth, because each element is twice the width.
+
 ```
 TF32 Tile Shapes — m64nXk8
 ══════════════════════════════════════════════════════════════════════
@@ -1281,6 +1488,9 @@ TF32 Tile Shapes — m64nXk8
 ```
 
 ### 14.3 FP8 — k32 Variants
+
+Double the K depth, for the same reason in reverse. Chapter 7 covers FP8 in
+depth.
 
 ```
 FP8 Tile Shapes — m64nXk32
@@ -1312,6 +1522,8 @@ FP8 Tile Shapes — m64nXk32
 
 ### 14.4 INT8 and UINT8 — k32 Variants
 
+The integer path, mostly used for quantized inference.
+
 ```
 INT8 / UINT8 Tile Shapes — m64nXk32 Integer
 ══════════════════════════════════════════════════════════════════════
@@ -1339,6 +1551,18 @@ INT8 / UINT8 Tile Shapes — m64nXk32 Integer
 ---
 
 ## 15 — stmatrix — Writing Results Back to SMEM
+
+The mirror image of `ldmatrix`, and the answer to the problem §8 raised.
+
+Your results are scattered across 128 threads in the tensor core's layout.
+Writing them out with ordinary stores would mean 128 threads each computing an
+irregular address and fighting over shared memory banks. `stmatrix` reverses
+`ldmatrix`: threads hand over their registers, the hardware works out where each
+element belongs.
+
+This section is the introduction. Chapter 7 §6–§8 covers it properly, including
+the awkward fact that `stmatrix` has no 32-bit variant while your accumulator is
+FP32.
 
 ### 15.1 Why stmatrix Exists
 
@@ -1390,6 +1614,14 @@ stmatrix — The Inverse of ldmatrix
 ---
 
 ## 16 — Putting It All Together
+
+One complete program that builds a real WGMMA descriptor and validates every
+field of it against hand-computed values.
+
+The validation is the point. A descriptor is an opaque 64-bit integer, and a
+wrong one produces plausible-looking wrong answers rather than an error — so the
+habit worth taking from this section is checking the bits before trusting the
+math.
 
 ### 16.1 Full Example: WGMMA Descriptor Construction and Validation
 
@@ -1686,7 +1918,13 @@ int main() {
 
 ## 17 — Quick Reference
 
+The chapter as reference cards. The last one, *Common Mistakes and Fixes*, is
+worth reading in full even though nothing in it is new — every entry is a
+failure mode that produces wrong numbers instead of an error message.
+
 ### wgmma.mma_async Instruction Syntax
+
+Every qualifier in order, with what each one does.
 
 ```
 Full syntax:
@@ -1706,6 +1944,8 @@ Qualifiers:
 
 ### Operand Location Rules
 
+Section 7 on one line: B in SMEM, always.
+
 ```
 Operand    Location Options         Notes
 ──────────────────────────────────────────────────────────────────────────
@@ -1716,6 +1956,9 @@ C/D        Registers ONLY           Always; D written back via stmatrix
 ```
 
 ### wgmma.fence — When to Call It
+
+The placement rules. When in doubt, the answer is "before the first wgmma of a
+group, after any register writes to the accumulator."
 
 ```
 Call wgmma.fence.sync.aligned:
@@ -1731,6 +1974,9 @@ Do NOT confuse with:
 
 ### D Register Count Formula
 
+How many registers your accumulator will occupy — worth computing before you
+choose an `N`, since this is what drives occupancy.
+
 ```
 D_REGS_per_thread = (M × N) / num_threads = (64 × N) / 128 = N / 2
 
@@ -1740,6 +1986,8 @@ For FP16 acc: actual register count = D_REGS_per_thread / 2 (pairs packed as FP1
 ```
 
 ### Tile Shapes by Precision
+
+Section 14 condensed to one card.
 
 ```
 Precision    Shape          K    D type   Notes
@@ -1755,6 +2003,9 @@ N range for INT8: 8 to 224 in multiples of 8 (28 valid values)
 
 ### WGMMA Descriptor Bit Layout
 
+The 64-bit word, field by field. Keep this one open while writing descriptor
+code.
+
 ```
 Bits     Field                  Encoding
 ──────────────────────────────────────────────────────────────────────────
@@ -1767,6 +2018,9 @@ Bits     Field                  Encoding
 ```
 
 ### Common Mistakes and Fixes
+
+Read this before debugging anything. Each entry corresponds to a bug that
+compiles cleanly and returns wrong numbers.
 
 ```
 Mistake                                   Symptom              Fix
