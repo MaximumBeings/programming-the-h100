@@ -4485,8 +4485,11 @@ Check here before reaching for a profiler.</p>
 </span></code></pre></div>
 <hr />
 <blockquote>
-<p><strong>What's Next — Lesson 8 Preview:</strong>
-Lesson 8 brings the entire series together with a complete, profiled, production-grade pipelined GEMM kernel — integrating TMA multicast (Lesson 5), double-buffered mbarrier pipelines (Lesson 3), wgmma.mma_async with the full commit/wait group API (this lesson), ldmatrix for A tile loading with swizzle-correct addressing (Lesson 6), and a full epilogue via stmatrix and TMA store. We will also examine how FlashAttention-3 applies these same primitives to implement multi-head attention with online softmax at near-peak H100 tensor core utilization.</p>
+<p><strong>Next — Chapter 8: Kernel Design, Warp Specialization &amp; Pipelining</strong></p>
+<p>Part V assembles everything so far into real kernels. Chapter 8 opens with the
+roofline model — deciding whether a kernel is compute- or memory-bound before
+optimising it — then covers producer/consumer warp specialisation, <code>setmaxnreg</code>
+for dynamic register allocation, and multi-stage circular buffering.</p>
 </blockquote>
 
 

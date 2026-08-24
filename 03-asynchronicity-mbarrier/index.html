@@ -5497,8 +5497,12 @@ is actually for.</p>
 </span></code></pre></div>
 <hr />
 <blockquote>
-<p><strong>What's Next — Lesson 4 Preview:</strong>
-Lesson 4 covers: building a complete pipelined GEMM kernel on H100 from scratch — TMA descriptor setup and launch, WGMMA tile layout and register file organization, the full double-buffered pipeline combining mbarrier (data arrival) + mbarrier (WAR prevention) + wgmma + cp.async.bulk, epilogue scaling and output writing, and profiling with Nsight Compute to verify pipeline efficiency.</p>
+<p><strong>Next — Chapter 4: cuTensorMap, TMA &amp; Swizzling</strong></p>
+<p>Chapter 3 gave you the synchronisation. Chapter 4 gives you the copy — or
+rather its setup: the TMA descriptor, all twelve parameters of
+<code>cuTensorMapEncodeTiled()</code>, the dimension-ordering and stride-unit rules that
+break most first attempts, and swizzling to keep the arriving tile free of bank
+conflicts.</p>
 </blockquote>
 
 

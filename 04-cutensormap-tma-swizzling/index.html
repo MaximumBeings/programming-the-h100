@@ -4856,8 +4856,12 @@ returns the wrong data.</p>
 </span></code></pre></div>
 <hr />
 <blockquote>
-<p><strong>What's Next — Lesson 5 Preview:</strong>
-Lesson 5 covers: Warp Group Matrix Multiply-Accumulate (WGMMA) — the register layout for A, B, and C/D matrices, the wgmma.mma_async PTX instruction and its descriptor, integrating WGMMA with TMA and mbarrier in a double-buffered pipeline, reading and writing the accumulator tile, and building a complete pipelined GEMM kernel that saturates H100 compute throughput.</p>
+<p><strong>Next — Chapter 5: cp.async.bulk, TMA Transfers &amp; L2 Cache Hinting</strong></p>
+<p>You have built the descriptor; Chapter 5 covers the instruction that uses it.
+Tensor-aware versus raw copies, every state-space combination, the two
+completion mechanisms (<code>mbarrier</code> and <code>bulk_group</code>), L2 eviction hints, TMA
+multicast across a cluster, prefetching, and hardware-accelerated reductions
+with <code>cp.reduce.async</code>.</p>
 </blockquote>
 
 
