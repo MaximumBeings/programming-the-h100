@@ -1,0 +1,127 @@
+site_name: Programming the H100
+site_description: >-
+  A hardware-level companion guide to the NVIDIA Hopper architecture — from the
+  H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines
+  and WGMMA tensor cores, up to warp-specialized kernel design and multi-GPU NCCL.
+site_author: Oluwaseyi Awoga
+
+# ---------------------------------------------------------------------------
+# Change these two lines to match your own GitHub repository before deploying.
+# ---------------------------------------------------------------------------
+site_url: https://maximumbeings.github.io/programming-the-h100/
+repo_url: https://github.com/maximumbeings/programming-the-h100
+repo_name: maximumbeings/programming-the-h100
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; Oluwaseyi Awoga
+
+theme:
+  name: material
+  language: en
+  icon:
+    logo: material/chip
+    repo: fontawesome/brands/github
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - toc.follow
+    - search.highlight
+    - search.share
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: green
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: green
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.betterem
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+hooks:
+  - hooks/fix_anchors.py
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/maximumbeings
+  generator: true
+
+nav:
+  - Home: index.md
+  - Part I — The Machine:
+      - 1. NVIDIA H100 GPU Architecture: 01-h100-architecture.md
+  - Part II — The Instruction Layer:
+      - 2. Clusters, Inline PTX, Data Types & Pointers: 02-clusters-inline-ptx.md
+      - 3. Asynchronicity, Barriers & the mbarrier Pipeline: 03-asynchronicity-mbarrier.md
+  - Part III — Moving Data:
+      - 4. cuTensorMap, TMA & Swizzling: 04-cutensormap-tma-swizzling.md
+      - 5. cp.async.bulk, TMA Transfers & L2 Cache Hinting: 05-cp-async-bulk-l2-hinting.md
+  - Part IV — Tensor Cores:
+      - 6. WGMMA — Warp Group Matrix Multiply-Accumulate: 06-wgmma-part-1.md
+      - 7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse: 07-wgmma-part-2.md
+  - Part V — Kernel Design:
+      - 8. Kernel Design, Warp Specialization & Pipelining: 08-kernel-design-part-1.md
+      - 9. Pipelines, Epilogues & Persistent Scheduling: 09-kernel-design-part-2.md
+      - 10. Stream-K Scheduling & Multi-Kernel Launch: 10-stream-k-scheduling.md
+  - Part VI — Scaling Out:
+      - 11. Multi-GPU Systems, NCCL & Distributed Training: 11-multi-gpu-nccl.md
