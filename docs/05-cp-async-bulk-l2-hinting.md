@@ -7,11 +7,38 @@
 
 **What this covers:** Everything from Lesson 5 — the cp.async.bulk instruction family and how it differs from Ampere's cp.async, tensor-aware vs raw (linear) bulk copies, all instruction variants and state space combinations, completion mechanisms (mbarrier vs bulk_group), L2 cache hinting (evict_first/last/normal) for both loads and stores, the createpolicy descriptor, unstructured and structured copy operands, TMA multicast across a cluster, the ctaMask, shared memory layout for dynamic SMEM with TMA, prefetching with cp.async.bulk.prefetch, and cp.reduce.async for hardware-accelerated atomic tile reductions. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
+**How to read this chapter.** Chapter 4 built the descriptor. This chapter is
+the other half: `cp.async.bulk`, the instruction that actually uses it, and the
+family of variants around it.
+
+The split is worth holding onto. Chapter 4 was host-side setup — done once,
+before the kernel launches. Everything here happens inside the kernel, on the
+device, in the inner loop. If Chapter 4 was "describe the tensor", this is "go
+and get me a tile."
+
+Four movements. Sections 1–3 introduce the instruction family and the one
+distinction that organises all of it — whether a copy is *tensor-aware* or just
+a fast `memcpy`. Sections 4–7 cover the parts you choose per copy: the
+`.tensor` modifier, state spaces, load modes, and how you find out the copy has
+finished. Section 8 covers L2 cache hinting, which is separate from everything
+else and easy to skip past — don't, it's cheap performance. Sections 9–14 are
+the concrete variants, from raw byte copies up to multicast and hardware
+reductions.
+
+For a first pass, read §1–§3 and §7. Completion mechanisms are what you will
+actually spend debugging time on.
+
 ---
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
+`cp.async.bulk` is Hopper-only — Ampere's `cp.async` is a different and much
+weaker instruction, as §2 explains at length. No A100 fallback here. Skip ahead
+if you already have an H100 set up.
+
 ### What Hardware Can You Use?
+
+`sm_90a` or later, with the trailing `a`.
 
 ```
 Hardware Compatibility Matrix
@@ -32,6 +59,8 @@ Hardware Compatibility Matrix
 
 ### Cloud GPU Rental — Lambda Labs
 
+Usually the cheapest hourly H100.
+
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -45,6 +74,8 @@ Lambda Labs Setup (H100)
 
 ### Cloud GPU Rental — AWS
 
+`p5` is H100; `p4d` is A100 and has none of this.
+
 ```
 AWS p5 Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -57,6 +88,9 @@ AWS p5 Setup (H100)
 ```
 
 ### Hopper vs Blackwell — What Changes
+
+Read once if you are on Blackwell. The instruction family carries over; the
+compile flag changes.
 
 ```
 Hopper (sm_90a) vs Blackwell (sm_100a) — cp.async.bulk Differences
@@ -103,6 +137,17 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — cp.async.bulk Differences
 ---
 
 ## 1 — cp.async.bulk
+
+The instruction, introduced plainly before any syntax.
+
+`cp.async.bulk` copies a block of data from one place to another and returns
+immediately, leaving the work to the TMA engine. "Bulk" is the operative word:
+this is not a load that one thread issues on behalf of itself, it is a request
+for a whole tile, issued once, by one thread, for the entire block.
+
+§1.1 covers what it does; §1.2 covers the hardware doing it — worth reading,
+because knowing the TMA is a separate engine on a separate path is what makes
+the fences and completion mechanisms later in the chapter make sense.
 
 ### 1.1 What cp.async.bulk Is
 
@@ -169,6 +214,18 @@ TMA Engine — What It Does Internally
 
 ## 2 — cp.async (Ampere) vs cp.async.bulk (Hopper)
 
+If you have written Ampere code, this section is the one that will change your
+mental model — the two instructions share a name prefix and almost nothing else.
+
+Ampere's `cp.async` still required every thread to compute its own address and
+issue its own copy. The asynchrony was real but shallow: the threads were
+freed from *waiting*, not from *working*. Hopper's `cp.async.bulk` is a true
+offload — one thread hands over a descriptor and the entire block's worth of
+address generation happens in hardware.
+
+§2.3's comparison table is the fastest way to see the difference if you'd rather
+not read the argument.
+
 ### 2.1 The Architecture Difference
 
 To appreciate cp.async.bulk, you need to understand what Ampere's cp.async required of threads — and why it was still not good enough for true full overlap of compute and memory.
@@ -213,6 +270,9 @@ Ampere cp.async — Thread Involvement Required
 ```
 
 ### 2.2 Hopper cp.async.bulk — True Offload
+
+The Hopper path drawn out. Note how little the issuing thread does compared with
+the Ampere diagram above.
 
 ```
 Hopper cp.async.bulk — One Instruction, Zero Thread Involvement
@@ -261,6 +321,9 @@ Hopper cp.async.bulk — One Instruction, Zero Thread Involvement
 
 ### 2.3 Side-by-Side Comparison Table
 
+The two instructions in one table, if you want the summary rather than the
+reasoning.
+
 ```
 cp.async (Ampere) vs cp.async.bulk (Hopper) — Full Comparison
 ══════════════════════════════════════════════════════════════════════
@@ -284,6 +347,15 @@ cp.async (Ampere) vs cp.async.bulk (Hopper) — Full Comparison
 ---
 
 ## 3 — Instruction Layout
+
+Now the syntax. `cp.async.bulk` is a long chain of dot-separated modifiers, and
+this section provides the map.
+
+The first fork is the one to internalise: with `.tensor`, the copy is
+descriptor-driven and coordinate-addressed — the subject of Chapter 4. Without
+it, the copy is a flat run of bytes with no notion of shape at all. Those two
+families have different operands and different use cases, and almost every other
+modifier depends on which one you're in.
 
 ### 3.1 The Two Instruction Families
 
@@ -332,6 +404,9 @@ cp.async.bulk — Two Major Forms
 ```
 
 ### 3.2 Full Instruction Template — Every Field Explained
+
+Every field of the instruction, in order. Come back to this whenever a variant
+in §9 or §10 has a modifier you don't recognise.
 
 ```
 Full Instruction Template (Tensor Form)
@@ -384,6 +459,16 @@ Full Instruction Template (Tensor Form)
 ---
 
 ## 4 — Tensor-Aware Copies
+
+What the `.tensor` modifier actually buys, stated in one place.
+
+With it, you no longer supply an address. You supply a *coordinate* — "the tile
+at row 128, column 256" — and the descriptor from Chapter 4 supplies everything
+else: the strides, the bounds checking, the swizzled destination layout.
+
+That is a bigger shift than it sounds. Bounds checking in particular stops being
+code you write and becomes a property of the descriptor, which is why TMA GEMM
+kernels have no edge-case branches.
 
 ### 4.1 The .tensor Modifier — Why It Changes Everything
 
@@ -442,6 +527,15 @@ With .tensor vs Without .tensor
 
 ## 5 — State Spaces
 
+Where a copy can start and where it can end, using the state-space vocabulary
+from Chapter 2 §7.
+
+Not every combination exists. Global to shared is the common case — that is the
+prefetch in your pipeline. Shared to global is the epilogue. Shared to
+shared::cluster is the DSMEM path from Chapter 2. The table here is worth
+scanning once so you know which of your ideas the hardware will actually
+support.
+
 ### 5.1 Source and Destination State Spaces
 
 The state space fields in the instruction tell TMA where to read from and where to write to. This is the same state space concept from Lesson 2, but now applied to bulk hardware transfers.
@@ -493,6 +587,17 @@ State Space Combinations — All Valid Options
 ---
 
 ## 6 — Load Modes
+
+Two ways of interpreting the coordinates you hand a tensor copy.
+
+`.tile` (§6.1) is the ordinary one: fetch a dense rectangular box. This is what
+GEMM uses and probably what you want.
+
+`im2col` (§6.2) is a genuine surprise — dedicated hardware for convolution. The
+classic im2col transform expands overlapping convolution windows into a matrix,
+and normally costs you a separate pass over memory plus the memory to hold the
+result. In this mode the TMA performs the transform as it copies, so the
+expansion never exists in memory at all.
 
 ### 6.1 tile — The Standard Load Mode
 
@@ -581,6 +686,19 @@ im2col Mode — Hardware Convolution Acceleration
 ---
 
 ## 7 — Completion Mechanisms
+
+The section to read carefully, because this is where async pipelines actually go
+wrong.
+
+Having issued a copy that returns immediately, you need to know when the data
+has landed. There are two mechanisms and they differ in precision.
+
+`mbarrier::complete_tx::bytes` (§7.1) is the fine-grained one: the TMA
+decrements a barrier's transaction count as bytes arrive, exactly as Chapter 3
+§10.2 described. It is the right choice for production pipelines, and it is what
+Chapters 8 and 9 are built on. `bulk_group` (§7.2) is the lightweight
+alternative — batch-level rather than byte-level, cheaper, and enough when you
+don't need the precision.
 
 ### 7.1 mbarrier::complete_tx::bytes — Fine-Grained Tracking
 
@@ -681,6 +799,19 @@ bulk_group — How It Works
 ---
 
 ## 8 — L2 Cache Hinting
+
+A self-contained section about something most kernels leave on the table.
+
+Every TMA fetch passes through L2 on its way to shared memory, and by default
+the hardware decides how long it stays there. But you usually know better than
+the hardware: a tile you will re-read next iteration should stay; a tile you
+will never touch again should be evicted immediately so it stops crowding out
+data that matters. L2 is shared by all 132 SMs, so this is not a private
+decision.
+
+§8.2 covers `createpolicy`, which packs your intent into a 64-bit descriptor.
+§8.3 gives concrete recipes by workload — the fastest route if you want the
+benefit without the theory.
 
 ### 8.1 Why L2 Cache Hinting Exists
 
@@ -793,6 +924,9 @@ createpolicy — Building the Cache Descriptor
 
 ### 8.3 Practical L2 Hinting Strategy
 
+Recipes by workload. If you read nothing else in this section, read this — it
+tells you which hint to use for GEMM, for streaming, and for attention.
+
 ```
 L2 Hinting Strategy for Common Workloads
 ══════════════════════════════════════════════════════════════════════
@@ -839,6 +973,15 @@ L2 Hinting Strategy for Common Workloads
 ---
 
 ## 9 — Unstructured (Raw) Copies
+
+`cp.async.bulk` without `.tensor`: a hardware-accelerated `memcpy` that knows
+nothing about shape.
+
+No descriptor, no coordinates, no bounds checking, no swizzling — just a source,
+a destination, and a byte count. That sounds like a downgrade, and for tiles it
+is. But plenty of things you need to move are genuinely flat: weight vectors,
+lookup tables, scratch buffers. For those, the descriptor machinery is pure
+overhead and this is the right instruction.
 
 ### 9.1 cp.async.bulk Without .tensor — Linear Byte Copies
 
@@ -936,7 +1079,16 @@ Unstructured Copy Variants — All State Space Combinations
 
 ## 10 — Structured (Tensor) Copies — All Variants
 
+The tensor-aware forms, one per direction, with full operand lists.
+
+This is reference material rather than narrative — §10.1 is the load you will
+write in every pipeline prologue, §10.2 the store you will write in every
+epilogue. Read them once to see the shape, then come back when you need the
+exact operand order.
+
 ### 10.1 Structured Load — Global to Shared (Standard)
+
+The workhorse: the instruction at the top of every TMA pipeline.
 
 ```
 Structured Copy: Global → Shared::CTA (Standard Load)
@@ -982,6 +1134,9 @@ Structured Copy: Global → Shared::CTA (Standard Load)
 ```
 
 ### 10.2 Structured Store — Shared to Global
+
+The reverse, for epilogues. Note that stores complete differently from loads —
+there is no barrier to wait on, so you use `bulk_group` from §7.2.
 
 ```
 Structured Copy: Shared::CTA → Global (Store / Write-back)
@@ -1032,6 +1187,17 @@ Structured Copy: Shared::CTA → Global (Store / Write-back)
 ---
 
 ## 11 — TMA Multicast
+
+The optimisation Chapter 2 §3 promised, now with the actual mechanism.
+
+The setup: several blocks in a cluster all need the same tile. Fetched
+separately that is N trips to HBM for one tile's worth of data. Multicast makes
+it one fetch that lands in all N blocks' shared memory simultaneously.
+
+The complication is in the bookkeeping, and §11.3 is where the real content is.
+Each participating block has its own mbarrier, and every one of them has to be
+set up correctly before the copy is issued — get this wrong and the kernel
+hangs rather than producing wrong numbers, which is at least an honest failure.
 
 ### 11.1 The Problem Multicast Solves
 
@@ -1203,6 +1369,16 @@ Multicast mbarrier Rules — What Can Go Wrong and How to Avoid It
 
 ## 12 — Dynamic Shared Memory Layout with TMA
 
+A practical section about a problem you will hit the first time your tiles
+outgrow 48 KB and you have to switch to `extern __shared__`.
+
+With dynamic shared memory there is no compiler to lay out your variables — you
+get one flat array and place everything by hand. TMA makes that fussier than
+usual, because mbarriers need 8-byte alignment and TMA destinations need 128,
+and getting either wrong is a silent misalignment rather than an error.
+
+The template here is worth copying verbatim.
+
 ### 12.1 The Problem with Dynamic SMEM and TMA
 
 When using dynamic shared memory (`extern __shared__ char smem[]`), you must manually lay out the mbarrier object and data tile within the shared memory region. TMA requires the data destination to be 128-byte aligned (for swizzling), and the mbarrier must be 8-byte aligned. Getting the layout wrong causes subtle corruption.
@@ -1265,6 +1441,16 @@ Dynamic Shared Memory Layout for TMA — The Right Way
 ---
 
 ## 13 — cp.async.bulk.prefetch
+
+A hint rather than a copy: start pulling this data from HBM into L2, but don't
+put it anywhere yet.
+
+The use case is the start of a pipeline, where you have nothing to overlap the
+first real fetch with. Prefetching a few tiles ahead warms L2 so those fetches
+land in cache rather than going the full distance to HBM.
+
+It is a hint, so it can be dropped. Treat it as an optimisation, never as a
+guarantee that data will be there.
 
 ### 13.1 Prefetching — Warming the L2 Cache
 
@@ -1333,6 +1519,18 @@ cp.async.bulk.prefetch — How It Works
 
 ## 14 — cp.reduce.async
 
+The last variant, and the one that does more than move data.
+
+Instead of overwriting the destination, `cp.reduce.async` combines with it —
+adding, taking a maximum, ANDing — element by element, in hardware, as the
+tile is written back. The alternative is reading the destination into
+registers, combining, and writing it back, which costs a round trip and needs
+atomics to be safe.
+
+This is what split-K GEMM wants, where many blocks accumulate partial results
+into the same output tile. Chapter 10's Stream-K scheduling leans on it
+directly.
+
 ### 14.1 What cp.reduce.async Does
 
 `cp.reduce.async` extends TMA beyond simple copies to perform **hardware-accelerated atomic reductions**. Instead of copying a tile of data from SMEM to global memory and adding to an existing global accumulator (which would require thread-driven atomics), cp.reduce.async offloads the entire tile reduction to TMA hardware.
@@ -1374,6 +1572,9 @@ cp.reduce.async — The Problem It Solves
 ```
 
 ### 14.2 cp.reduce.async — Full Instruction Reference
+
+Every operation and type combination. Note that the supported set is narrower
+than you might expect — check here before designing around a reduction.
 
 ```
 cp.reduce.async — All Variants and Operands
@@ -1455,6 +1656,14 @@ cp.reduce.async — All Variants and Operands
 ---
 
 ## 15 — Putting It All Together
+
+Two complete programs. §15.1 is the standard pipeline shape: a `cp.async.bulk`
+load, an mbarrier wait, and L2 hinting applied — the three things from §7 and §8
+working together. §15.2 covers the output side, pairing a TMA store with
+`cp.reduce.async`.
+
+Between them they contain the copy machinery that every kernel in Chapters 8
+through 10 assumes you already have.
 
 ### 15.1 Full Example: cp.async.bulk with mbarrier and L2 Hinting
 
@@ -1799,7 +2008,13 @@ int main() {
 
 ## 16 — Quick Reference
 
+The chapter as cards. The *Multicast Checklist* and the *Dynamic SMEM Layout
+Template* are the two worth keeping to hand — both describe setups where one
+missing step causes a hang rather than an error.
+
 ### cp.async.bulk Instruction Family
+
+Every variant in one table, organised by whether it's tensor-aware.
 
 ```
 Instruction Variant                     Use Case
@@ -1816,6 +2031,9 @@ cp.reduce.async.bulk.global.shared::cta...       Atomic tile reduction
 
 ### Completion Mechanism Comparison
 
+mbarrier versus bulk_group, side by side. The rule of thumb: mbarrier for
+loads you'll pipeline, bulk_group for stores.
+
 ```
 Mechanism                 Granularity   Blocking?  Overhead  Best For
 ──────────────────────────────────────────────────────────────────────────
@@ -1824,6 +2042,8 @@ bulk_group / commit+wait      Per group  Yes (wait) Low      Simple load-compute
 ```
 
 ### L2 Cache Hinting Guide
+
+Which policy for which access pattern, in one card.
 
 ```
 Data Pattern                   Policy           PTX
@@ -1835,6 +2055,9 @@ General / unknown pattern       evict_normal     (default — no createpolicy ne
 ```
 
 ### Multicast Checklist
+
+Run through this before debugging a hung multicast. It is almost always an
+mbarrier that wasn't initialised on every participating block.
 
 ```
 Before using multicast, verify ALL of these:
@@ -1849,6 +2072,9 @@ Before using multicast, verify ALL of these:
 ```
 
 ### Dynamic SMEM Layout Template
+
+Copy this rather than reinventing it — the alignment requirements are easy to
+get subtly wrong.
 
 ```cpp
 extern __shared__ char smem[];
@@ -1868,6 +2094,8 @@ half*     tile_ptr = reinterpret_cast<half*>    (smem + TILE_OFF);
 
 ### cp.reduce.async Supported Operations
 
+The operation and type matrix. Narrower than you'd expect.
+
 ```
 Type    Operations
 ──────────────────────────────────────────────────────────────────────────
@@ -1884,6 +2112,9 @@ Type    Operations
 ```
 
 ### Common Mistakes and Fixes
+
+Read before debugging. Note which entries cause hangs and which cause wrong
+data — that distinction tells you where to look first.
 
 ```
 Mistake                                 Symptom              Fix

@@ -7,11 +7,38 @@
 
 **What this covers:** Everything from Lesson 4 — what TMA is and why it exists, how descriptors replace manual address calculation, the full `cuTensorMapEncodeTiled()` API (all 12 parameters explained with worked examples), data types, tensor rank and global dimensions, stride semantics, box dimensions, swizzling (32B/64B/128B) and bank-conflict elimination with the XOR formula, interleaving for non-linear layouts (16B and 32B modes), L2 promotion policies for prefetching, and out-of-bounds fill behavior. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
+**How to read this chapter.** Chapter 1 introduced the TMA as the piece of
+hardware that fetches tiles while your threads compute. This chapter is about
+the object you hand it: the **descriptor**, a small struct built once on the host
+that tells the TMA the shape of your tensor, the size of the tile you want, and
+how to lay it out in shared memory once it arrives.
+
+Almost everything here happens *before* the kernel runs. The next chapter covers
+the instruction that uses the descriptor; this one covers getting the descriptor
+right — which is where the real difficulty lives, because a malformed descriptor
+does not raise an error. It copies the wrong bytes.
+
+The chapter runs in four movements. Sections 1–3 explain what a descriptor is
+and why it replaces address arithmetic. Sections 4–8 walk the twelve parameters
+of `cuTensorMapEncodeTiled()` one at a time — this is the reference core.
+Sections 9–11 are about shared-memory layout: bank conflicts, swizzling, and
+interleaving. Sections 12–13 cover two optional behaviours that cost nothing to
+enable and are easy to overlook.
+
+If you only read part of this chapter, read §7 and §8. Dimension ordering and
+stride units are the two places where nearly every first descriptor goes wrong.
+
 ---
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
+The TMA is Hopper hardware, so there is no A100 fallback for this chapter. If
+you already have an H100 and a working `nvcc`, skip to the Table of Contents.
+
 ### What Hardware Can You Use?
+
+`sm_90a` or later. The trailing `a` is required — plain `sm_90` will not give
+you the TMA instructions.
 
 ```
 Hardware Compatibility Matrix
@@ -37,6 +64,8 @@ Hardware Compatibility Matrix
 
 ### Cloud GPU Rental — Lambda Labs
 
+Usually the cheapest hourly H100.
+
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
@@ -49,6 +78,8 @@ Lambda Labs Setup (H100)
 ```
 
 ### Cloud GPU Rental — AWS
+
+`p5` is the H100 family; `p4d` is A100 and has no TMA.
 
 ```
 AWS p5 Setup (H100)
@@ -63,6 +94,9 @@ AWS p5 Setup (H100)
 ```
 
 ### Hopper vs Blackwell — What Changes
+
+Read once if you are on a B100 or B200. The descriptor API carries over
+essentially unchanged; only the compile flag differs.
 
 ```
 Hopper (sm_90a) vs Blackwell (sm_100a) — TMA Differences
@@ -86,6 +120,9 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — TMA Differences
 ```
 
 ### How to Compile and Run Each Example
+
+The compile/run box format used throughout the chapter. Every code block comes
+with one, so you can copy a file out and build it without guessing flags.
 
 ```
 ═══════════════════════════════════════════════════════
@@ -120,6 +157,19 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — TMA Differences
 ---
 
 ## 1 — What Is TMA
+
+Start with the problem before the machinery.
+
+Copying a 2D tile out of a large matrix sounds trivial and is not. Every thread
+has to compute its own source address from a row, a column, and a stride; check
+whether that address falls off the edge of the tensor; and issue its own load.
+For a 64×64 tile that is thousands of instructions spent on arithmetic that has
+nothing to do with your algorithm.
+
+The TMA is a dedicated hardware unit that does all of it. One thread issues one
+instruction, and the copy happens in the background. §1.1 covers the problem,
+§1.2 what the unit can do, and §1.3 the property that matters most — it is
+genuinely asynchronous, which is what makes real pipelining possible.
 
 ### 1.1 The Problem TMA Solves
 
@@ -262,6 +312,18 @@ The H100 Async Architecture
 
 ## 2 — How Descriptors Replace Address Calculation
 
+The conceptual shift, and it is worth pausing on because everything else follows
+from it.
+
+Ordinarily, "where is element [i][j]" is a calculation your threads perform,
+over and over, at run time. A descriptor turns that into a *declaration* made
+once: here is the tensor's shape, here are its strides, here is the tile size I
+want. From then on, you ask for a tile by coordinate — "give me the tile at row
+128, column 256" — and the hardware works out the addresses.
+
+§2.2's framing is the useful one: the descriptor is a job specification, not a
+pointer.
+
 ### 2.1 The Old Way — Manual Address Computation
 
 In pre-TMA code, every memory access required threads to compute the exact byte address of each element they wanted. For a 2D matrix tile, this meant computing `base + row * stride + col * element_size` for every thread, every iteration, every tile. This computation is simple but consumes instruction slots and registers.
@@ -363,6 +425,14 @@ Descriptor as Job Specification
 
 ## 3 — cuTensorMap — The Descriptor Object
 
+The concrete type. A `CUtensorMap` is a 128-byte opaque struct — you never read
+its fields directly, you fill it through an API and pass it to the kernel.
+
+Two practical constraints appear here and both cause real bugs: it must be
+64-byte aligned, and it should be built once on the host rather than
+reconstructed per launch. §3.2 covers which encode function to use, since there
+is more than one and `EncodeTiled` is the one this chapter is about.
+
 ### 3.1 The CUtensorMap Type
 
 `CUtensorMap` is a fixed-size opaque struct defined by NVIDIA. It is exactly 128 bytes and encodes all the information the TMA hardware needs to perform an autonomous data transfer.
@@ -441,7 +511,20 @@ cuTensorMapEncodeTiled vs cuTensorMapEncodeIm2col
 
 ## 4 — cuTensorMapEncodeTiled — All 12 Parameters
 
+The heart of the chapter. Twelve parameters, and getting any one of them wrong
+gives you a kernel that runs and produces wrong data.
+
+§4.1 shows the whole signature at once so you can see the shape of it. §4.2 is
+the more valuable half: a complete worked example that fills in all twelve for a
+real tensor, with the arithmetic shown. Read the worked example first if the
+bare signature looks impenetrable — it usually does.
+
+Sections 5 through 8 then take the parameters in groups.
+
 ### 4.1 Function Signature — Complete View
+
+All twelve parameters in one place. Don't try to absorb it — skim it for shape,
+then read the worked example that follows.
 
 ```
 cuTensorMapEncodeTiled — All 12 Parameters
@@ -566,6 +649,13 @@ Manual Worked Example — 4096×2048 BF16 Matrix, 128×64 Tile
 
 ## 5 — Data Types
 
+The first parameter, and the simplest: what one element of your tensor is.
+
+The list is worth a glance rather than a study, with one thing to notice — the
+element size implied here is what every byte-based parameter later in the
+descriptor gets measured against. Pick the wrong type and your strides are
+silently wrong by a factor of two.
+
 ### 5.1 CUtensorMapDataType — Complete Reference
 
 The data type parameter tells the TMA engine the size and interpretation of each element. TMA uses this to calculate transfer sizes and ensure correct alignment.
@@ -639,6 +729,13 @@ Data Types — All Options with Properties
 ---
 
 ## 6 — Tensor Rank and Global Address
+
+Two parameters that look obvious and each carry a trap.
+
+**Rank** (§6.1) is the number of dimensions, not the mathematical rank from
+linear algebra — a full-rank 2D matrix and a degenerate one both have
+`tensorRank = 2`. **globalAddress** (§6.2) points at element zero, must be
+16-byte aligned, and is the origin every tile coordinate is measured from.
 
 ### 6.1 tensorRank — Number of Dimensions
 
@@ -742,6 +839,19 @@ globalAddress — Requirements and Common Mistakes
 ---
 
 ## 7 — Global Dimensions and Strides
+
+This is the section where most first descriptors break, and the cause is always
+one of two things.
+
+The first is **ordering**. TMA expects dimensions innermost-first — the fastest-
+varying dimension comes first in the array, which is the reverse of how you
+would write the shape in NumPy or PyTorch. The second is **units**: `globalDim`
+is counted in elements, `globalStrides` in *bytes*. Mixing them up produces a
+descriptor that reads real memory at the wrong spacing, so you get plausible
+numbers from the wrong locations.
+
+Read both subsections carefully, and check your first descriptor against the
+worked example rather than against your intuition.
 
 ### 7.1 globalDim — Tensor Shape in Elements
 
@@ -852,6 +962,14 @@ globalStrides — Detailed Specification
 
 ## 8 — Box Dimensions and Element Strides
 
+Having described the tensor, you now describe the tile you want out of it.
+
+**boxDim** (§8.1) is the tile size, in elements, in the same innermost-first
+order as §7 — and it is what determines how much shared memory each copy needs.
+**elementStrides** (§8.2) lets the TMA skip elements as it reads, taking every
+second or every fourth value. That is a niche feature, and for most work you
+will set it to all ones and move on.
+
 ### 8.1 boxDim — The Tile Size
 
 `boxDim` specifies how many elements TMA fetches per dimension in each call. This is the tile size — the chunk of data that lands in shared memory when you issue `cp.async.bulk.tensor`.
@@ -958,6 +1076,17 @@ elementStrides — Intra-Tile Subsampling
 
 ## 9 — Shared Memory and Bank Conflicts
 
+The chapter changes subject here. Sections 9 through 11 are not about the source
+tensor at all — they are about how the tile gets *arranged* once it lands in
+shared memory.
+
+This section is the setup for that, and it recaps the bank-conflict material
+from Chapter 1 §13.3 in the detail you need for §10. The short version: shared
+memory is 32 independent banks, a warp can hit all 32 in one cycle, and any two
+threads wanting different addresses in the same bank are serialised.
+
+If Chapter 1's version is still fresh, skim to §10.
+
 ### 9.1 Shared Memory Banks — The Hardware Reality
 
 Before explaining swizzling (§10), you need a solid understanding of why bank conflicts happen. This section gives you the mental model that makes swizzling's XOR formula intuitive.
@@ -1014,6 +1143,9 @@ Shared Memory Bank Structure — Physical Layout
 
 ### 9.2 Why 32 Banks Exist
 
+Why the number is 32 and not something else — it lines up with the warp size and
+with a 128-byte cache line, which is not a coincidence.
+
 ```
 32 Banks — The Design Rationale
 ══════════════════════════════════════════════════════════════════════
@@ -1044,6 +1176,21 @@ Shared Memory Bank Structure — Physical Layout
 ---
 
 ## 10 — Swizzling
+
+The fix, and the most important section in the chapter after §7.
+
+A naive tile layout puts every column of a matrix into a single bank, which
+turns a column read into a 32-way conflict. Swizzling scrambles the layout as
+the TMA writes — XORing part of the row index into the address — so that a
+column spreads across all 32 banks instead.
+
+The crucial part is that the TMA does this *for free*, in hardware, on the way
+in. You enable it in the descriptor and never think about it again — except in
+Chapter 6 §11, where you have to reproduce the same XOR to read the tile back
+out.
+
+§10.2 covers 128B swizzle, which is the right default for FP16 and BF16 GEMM.
+§10.3 covers the narrower modes and when they apply.
 
 ### 10.1 What Swizzling Is — The Intuition
 
@@ -1143,6 +1290,9 @@ Swizzling — The XOR Formula
 
 ### 10.3 64B and 32B Swizzle — When to Use Each
 
+The narrower modes. You need these when your tile's row is too short for 128B
+swizzle to be legal — the mode has to divide evenly into the row.
+
 ```
 64B Swizzle
 ══════════════════════════════════════════════════════════════════════
@@ -1197,6 +1347,9 @@ Swizzling — The XOR Formula
 
 ### 10.4 Setting Up Swizzle in the Descriptor
 
+The enumeration values. Note them down: Chapter 6's descriptor has its own
+swizzle field, and the two must agree.
+
 ```
 Swizzle Enumeration Values
 ══════════════════════════════════════════════════════════════════════
@@ -1227,6 +1380,17 @@ Swizzle Enumeration Values
 ---
 
 ## 11 — Interleaving
+
+A specialised feature with one clear use case: image data.
+
+Deep learning frameworks often store feature maps as NCHW, where the channel
+values for a single pixel are scattered far apart in memory. Convolution wants
+them adjacent. Interleave mode lets the TMA gather from that non-linear layout
+and deposit a linearised tile in shared memory.
+
+If you are writing GEMM, skip this section. If you are writing convolution, note
+§11.2 — interleave and swizzle are coupled, and only certain combinations are
+legal.
 
 ### 11.1 What Interleaving Is and Why It Exists
 
@@ -1289,6 +1453,9 @@ Interleaved Layout — NC/8HWC8 Example
 
 ### 11.2 Interleave + Swizzle Coupling
 
+The combinations that are legal. 32B interleave requires 32B swizzle — this is a
+hardware constraint, not a recommendation.
+
 ```
 The Coupling Requirement — 32B Interleave Must Use 32B Swizzle
 ══════════════════════════════════════════════════════════════════════
@@ -1328,6 +1495,15 @@ The Coupling Requirement — 32B Interleave Must Use 32B Swizzle
 ---
 
 ## 12 — L2 Promotion
+
+A free optimisation that most people never enable.
+
+When the TMA pulls a tile out of HBM, it can be told to drag a larger block into
+L2 along with it. If your next tile is adjacent — and in a tiled GEMM it almost
+always is — that next fetch then hits L2 instead of going to HBM.
+
+Costs nothing, requires one descriptor field, and is worth a measurable amount
+on any kernel with a predictable access pattern.
 
 ### 12.1 What L2 Promotion Does
 
@@ -1372,6 +1548,9 @@ L2 Promotion — Hardware Mechanics
 ```
 
 ### 12.2 L2 Promotion Options — Complete Reference
+
+The four settings. Larger promotion helps sequential access and hurts random
+access, for the obvious reason.
 
 ```
 L2 Promotion Enumeration — All Options
@@ -1426,6 +1605,17 @@ L2 Promotion Enumeration — All Options
 
 ## 13 — Out-of-Bounds Fill
 
+The last parameter, and the one that quietly deletes a whole class of code from
+your kernel.
+
+Real matrix dimensions are rarely multiples of your tile size, so the tiles at
+the edges hang over the end of the tensor. Ordinarily you would guard every
+access with a bounds check. The TMA does it in hardware instead: out-of-range
+elements arrive as zeros, at no cost, with no branch.
+
+That is not a convenience feature — it is the reason TMA GEMM kernels have no
+edge-case code path at all.
+
 ### 13.1 OOB Fill — Handling Tile Edge Cases
 
 When a tile extends beyond the boundary of the global tensor, TMA can automatically fill the out-of-bounds regions with a constant value. This eliminates the need for software boundary-check code in kernels — a significant simplification for tiled algorithms where the last tile may be partially out of bounds.
@@ -1461,6 +1651,9 @@ OOB Fill — Visual Explanation
 ```
 
 ### 13.2 OOB Fill Options
+
+Zero-fill or leave-unchanged. Zero is almost always what a GEMM wants, since
+zeros contribute nothing to a dot product.
 
 ```
 OOB Fill Enumeration
@@ -1522,6 +1715,14 @@ OOB Fill Enumeration
 ---
 
 ## 14 — Putting It All Together
+
+Two complete programs. §14.1 builds a descriptor for a 2D tensor and performs a
+real TMA copy; §14.2 does the same for a 3D tensor, where the dimension-ordering
+rule from §7 stops being merely theoretical.
+
+Both begin with a hand-worked computation of every parameter before the code
+appears. That is the habit worth taking away: compute the descriptor by hand,
+then check the code against your arithmetic — not the other way round.
 
 ### 14.1 Full Example: cuTensorMap Setup and TMA Copy
 
@@ -2049,7 +2250,14 @@ int main() {
 
 ## 15 — Quick Reference
 
+The chapter as cards. Two of these are worth more than the others: *Dimension
+Ordering* is the rule that catches everyone, and *Common Mistakes* is a list of
+failures that produce wrong data rather than error messages.
+
 ### cuTensorMapEncodeTiled Parameter Summary
+
+All twelve parameters on one card, with units. The units column is the one to
+check.
 
 ```
 Parameter        Type                      Notes
@@ -2070,6 +2278,9 @@ oobFill          CUtensorMapFloatOOBfill   NONE or NAN_REQUEST_ZERO_FMA.
 
 ### Dimension Ordering — The Critical Rule
 
+Innermost dimension first — the reverse of NumPy and PyTorch shape notation.
+This single card prevents most descriptor bugs.
+
 ```
 TMA uses INNERMOST-FIRST ordering (opposite of NumPy/C):
 
@@ -2086,6 +2297,9 @@ TMA uses INNERMOST-FIRST ordering (opposite of NumPy/C):
 
 ### Swizzle Selection Guide
 
+Which swizzle mode for which tile width. When in doubt with BF16 or FP16, it is
+128B.
+
 ```
 Use Case                            Recommended Swizzle
 ──────────────────────────────────────────────────────────────────────
@@ -2100,6 +2314,8 @@ No bank-conflict concerns           SWIZZLE_NONE
 
 ### L2 Promotion Selection Guide
 
+Which promotion size suits which access pattern.
+
 ```
 Use Case                            L2 Promotion
 ──────────────────────────────────────────────────────────────────────
@@ -2111,6 +2327,8 @@ Sparse / embedding lookups          NONE (avoid over-fetching)
 
 ### OOB Fill Decision
 
+Zero versus no-fill, in one line.
+
 ```
 Condition                                      Recommendation
 ──────────────────────────────────────────────────────────────────────
@@ -2120,6 +2338,9 @@ Integer tensor core operations                    NONE (handle in SW)
 ```
 
 ### Common Mistakes and Fixes
+
+Worth reading before you debug anything. Every entry compiles cleanly and
+returns the wrong data.
 
 ```
 Mistake                               Symptom              Fix
