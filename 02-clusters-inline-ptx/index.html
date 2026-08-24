@@ -3144,8 +3144,24 @@
 
 <h1 id="clusters-inline-ptx-data-types-pointers">Clusters, Inline PTX, Data Types &amp; Pointers<a class="headerlink" href="#clusters-inline-ptx-data-types-pointers" title="Permanent link">&para;</a></h1>
 <h2 id="lesson-2-companion-guide-programming-the-h100-beyond">Lesson 2 Companion Guide — Programming the H100 &amp; Beyond<a class="headerlink" href="#lesson-2-companion-guide-programming-the-h100-beyond" title="Permanent link">&para;</a></h2>
+<p><strong>How to read this chapter.</strong> It is long, and it is really three chapters
+stacked together. Sections 1–3 are about <em>clusters</em> — the new level of the CUDA
+hierarchy that lets thread blocks read each other's shared memory. Sections 4–6
+are about <em>inline PTX</em> — how to drop below CUDA C++ and write GPU assembly by
+hand. Sections 7–16 are the <em>vocabulary</em> those first two halves assume: state
+spaces, PTX types, packed formats, byte addressing, and the address-conversion
+instructions that glue them together.</p>
+<p>You do not have to read it in order. If you are here because a CUTLASS kernel
+threw an <code>asm()</code> block at you, start at §5. If you are here for clusters, read
+§1–3 and stop. Each section opens with a short orientation like this one, and
+sections marked ★ are complete runnable programs rather than reference material.</p>
 <hr />
 <h2 id="before-you-start-hardware-setup-installation">★ BEFORE YOU START — Hardware, Setup &amp; Installation<a class="headerlink" href="#before-you-start-hardware-setup-installation" title="Permanent link">&para;</a></h2>
+<p>Everything in this chapter compiles and runs, so this preamble settles where you
+are going to run it. The short version: an H100 (<code>sm_90a</code>) runs every example;
+an A100 or a consumer card runs everything except the cluster and DSMEM sections
+(§1–3), which need Hopper hardware. If you already have a machine and a working
+<code>nvcc</code>, skip to the Table of Contents.</p>
 <h3 id="what-hardware-can-you-use">What Hardware Can You Use?<a class="headerlink" href="#what-hardware-can-you-use" title="Permanent link">&para;</a></h3>
 <p>This guide targets NVIDIA Hopper GPUs (sm_90a), but most examples also run on earlier architectures. Here is a summary of what works where:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Hardware Compatibility Matrix
@@ -3235,6 +3251,10 @@
 </span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>    Cluster code will NOT compile — add #ifdef __CUDA_ARCH__ guards
 </span></code></pre></div>
 <h3 id="local-setup-desktop-gpu">Local Setup (Desktop GPU)<a class="headerlink" href="#local-setup-desktop-gpu" title="Permanent link">&para;</a></h3>
+<p>If you have a Hopper or Ada card in your own machine, this is the fastest path —
+no hourly billing, no SSH. Note the <code>-arch</code> flag at the bottom: it must match
+your card, and getting it wrong is the most common reason an example refuses to
+compile.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Local CUDA Installation (Ubuntu 22.04)
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -3257,6 +3277,10 @@
 </span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>  # NOTE: Cluster code won't compile on sm_86!
 </span></code></pre></div>
 <h3 id="hopper-vs-blackwell-what-changes-in-the-code">Hopper vs Blackwell — What Changes in the Code?<a class="headerlink" href="#hopper-vs-blackwell-what-changes-in-the-code" title="Permanent link">&para;</a></h3>
+<p>If you are running on a B100 or B200 rather than an H100, read this once. Almost
+nothing in this chapter changes — the PTX syntax, the constraints, the state
+spaces, and the cluster API are all identical. What changes is the compile flag
+and a handful of instruction names.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Hopper (sm_90a) vs Blackwell (sm_100a) — Code Differences
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
@@ -3330,6 +3354,17 @@
 </ol>
 <hr />
 <h2 id="1-thread-block-clusters">1 — Thread Block Clusters<a class="headerlink" href="#1-thread-block-clusters" title="Permanent link">&para;</a></h2>
+<p>For fifteen years CUDA had exactly three levels: threads, blocks, grids. Hopper
+adds a fourth — the <strong>cluster</strong>, a small group of thread blocks that the hardware
+guarantees to co-schedule on neighbouring SMs, and which can therefore read one
+another's shared memory directly.</p>
+<p>That one capability is the whole point. Before clusters, two blocks that needed
+to exchange data had no choice but to write it to global memory and read it back
+— roughly a thousand cycles of round trip. Inside a cluster it costs tens.</p>
+<p>This section builds the idea up in layers: where clusters sit in the hierarchy
+(§1.1), the problem they were invented to solve (§1.2), what the hardware
+actually does (§1.3), how to choose a size (§1.4), the two ways to declare one in
+code (§1.5–§1.6), and the PTX registers underneath the C++ API (§1.7).</p>
 <h3 id="11-the-extended-cuda-hierarchy">1.1 The Extended CUDA Hierarchy<a class="headerlink" href="#11-the-extended-cuda-hierarchy" title="Permanent link">&para;</a></h3>
 <p>Before Hopper arrived in 2022, every CUDA programmer worked with three levels of parallelism: individual <strong>threads</strong> group into <strong>thread blocks</strong>, and thread blocks form a <strong>grid</strong>. This hierarchy has been stable since CUDA 1.0. The H100 introduces a fourth level — the <strong>Thread Block Cluster</strong> — which sits between blocks and the grid.</p>
 <p>Why does this matter? Because previously, the only way for two thread blocks to share data was through global memory (HBM3 on the H100), which has ~500 cycle latency. The cluster gives blocks a direct communication path through each other's shared memory with only ~50-80 cycle latency — a 3-10× speedup for cross-block communication.</p>
@@ -3954,6 +3989,17 @@
 </span></code></pre></div>
 <hr />
 <h2 id="2-distributed-shared-memory">2 — Distributed Shared Memory<a class="headerlink" href="#2-distributed-shared-memory" title="Permanent link">&para;</a></h2>
+<p>Section 1 kept saying that blocks in a cluster can read each other's shared
+memory. DSMEM — Distributed Shared Memory — is the hardware that makes that
+true.</p>
+<p>The name misleads people, so it's worth stating plainly up front: DSMEM is <strong>not</strong>
+a pool of memory that blocks share. Each block still owns its own private shared
+memory. What DSMEM adds is a fast interconnect <em>between</em> SMs in a GPC, plus an
+addressing scheme that lets one block name a location inside another block's
+scratchpad.</p>
+<p>§2.1 covers the architecture, §2.2 the question you'll actually want answered:
+how much bandwidth do you get out of it, and when is it worth using instead of
+just going to global memory?</p>
 <h3 id="21-dsmem-architecture">2.1 DSMEM Architecture<a class="headerlink" href="#21-dsmem-architecture" title="Permanent link">&para;</a></h3>
 <p>Distributed Shared Memory is the hardware feature that makes clusters useful. It's easy to misunderstand what DSMEM actually is, so let's be precise: DSMEM is <strong>not</strong> a new type of memory or a new pool of SRAM. It is the existing per-SM shared memory, extended with a hardware interconnect that allows one SM to access another SM's shared memory — but only within the same cluster.</p>
 <p>The key insight is that each SM has 228 KB of SRAM, and this SRAM is used for shared memory. When a thread block runs on SM 0, its <code>__shared__</code> allocations live in SM 0's SRAM. When two blocks form a cluster on SMs 0 and 1, the thread block on SM 0 can now issue memory operations that target SM 1's SRAM. The DSMEM interconnect (a dedicated SM-to-SM network within the GPC) routes these operations.</p>
@@ -4051,6 +4097,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="3-tma-multicast-with-dsmem">3 — TMA Multicast with DSMEM<a class="headerlink" href="#3-tma-multicast-with-dsmem" title="Permanent link">&para;</a></h2>
+<p>Here is the first place clusters pay for themselves in a real kernel.</p>
+<p>In a tiled GEMM, every block in a cluster typically needs the <em>same</em> tile of the
+A matrix. Without clusters, each block fetches its own copy from HBM — four
+blocks, four identical fetches, four times the bandwidth. TMA multicast lets one
+fetch land in all of them at once.</p>
+<p>This is a short section with one idea in it, but it is the idea that makes
+clusters worth the complexity for GEMM and attention kernels.</p>
 <h3 id="31-the-multicast-optimization">3.1 The Multicast Optimization<a class="headerlink" href="#31-the-multicast-optimization" title="Permanent link">&para;</a></h3>
 <p>TMA (Tensor Memory Accelerator) is the H100's hardware unit for copying large tiles of data from global memory (HBM) to shared memory without involving the CPU or the thread warps. TMA multicast extends this by allowing a SINGLE HBM fetch to be delivered to MULTIPLE SMs simultaneously.</p>
 <p>This is especially powerful for GEMM (matrix multiplication) kernels. In a typical GEMM, every block in a cluster needs the same tile of matrix A. Without multicast, each block issues its own TMA fetch, causing N redundant HBM reads for cluster size N. With multicast, a single TMA fetch delivers the data to all N SMs at once.</p>
@@ -4123,6 +4176,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="4-ptx-parallel-thread-execution">4 — PTX — Parallel Thread Execution<a class="headerlink" href="#4-ptx-parallel-thread-execution" title="Permanent link">&para;</a></h2>
+<p>We now switch topics entirely. The rest of this chapter is about writing GPU
+assembly.</p>
+<p>PTX is the intermediate language <code>nvcc</code> emits before the real machine code
+(SASS). It sits at roughly the same level as LLVM IR or Java bytecode: stable,
+documented, and portable across GPU generations in a way SASS is not.</p>
+<p>§4.1 explains where PTX sits in the compilation pipeline. §4.2 answers the
+question you should be asking — why bother, when CUDA C++ works fine? The honest
+answer is that some Hopper instructions have no C++ form at all, and the ones
+you'll want most (<code>wgmma</code>, TMA, <code>mbarrier</code>) are among them.</p>
 <h3 id="41-what-is-ptx">4.1 What is PTX?<a class="headerlink" href="#41-what-is-ptx" title="Permanent link">&para;</a></h3>
 <p>PTX (Parallel Thread Execution) is NVIDIA's virtual assembly language for GPUs. When you write <code>nvcc mykernel.cu</code>, the compiler goes through two major stages: first, it compiles your CUDA C++ into PTX (a portable, architecture-neutral representation); second, a PTX assembler called <code>ptxas</code> converts that PTX into SASS (Streaming ASSembler), which is the actual machine code that runs on the hardware.</p>
 <p>Think of PTX as analogous to Java bytecode or LLVM IR — it's a stable intermediate format that can be compiled to different hardware targets without changing the source. This is why old CUDA code can run on new GPUs: the PTX from an older binary gets JIT-compiled by the new GPU's driver.</p>
@@ -4215,6 +4277,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="5-inline-ptx-assembly">5 — Inline PTX Assembly<a class="headerlink" href="#5-inline-ptx-assembly" title="Permanent link">&para;</a></h2>
+<p>This is the section to bookmark. <code>asm()</code> is how PTX gets into an otherwise
+ordinary CUDA C++ kernel, and its syntax — inherited from GCC — is famously
+unfriendly on first contact.</p>
+<p>The mechanism is simpler than it looks. You write an instruction string with
+placeholders (<code>%0</code>, <code>%1</code>, …), then tell the compiler which C++ variables fill
+those placeholders and whether each one is being read or written. The compiler
+handles register allocation; you handle the contract.</p>
+<p>Get that contract wrong and the failures are silent — wrong answers rather than
+compile errors — which is why the next section is devoted entirely to the rules.</p>
 <h3 id="51-the-asm-statement">5.1 The asm() Statement<a class="headerlink" href="#51-the-asm-statement" title="Permanent link">&para;</a></h3>
 <p>Inline PTX lets you embed PTX instructions directly inside CUDA C++ functions. The syntax is the same as GCC inline assembly (because nvcc uses a GCC-style frontend), but the instruction strings are PTX rather than x86 assembly.</p>
 <p>The key concept is the <strong>constraint system</strong>: you declare which C++ variables map to which PTX registers, and in what way (read-only input, write-only output, or read-write). The compiler then allocates actual registers and substitutes them for the <code>%0</code>, <code>%1</code>, etc. placeholders in your instruction string.</p>
@@ -4960,6 +5031,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="6-ptx-operands-constraints-clobbers">6 — PTX Operands, Constraints &amp; Clobbers<a class="headerlink" href="#6-ptx-operands-constraints-clobbers" title="Permanent link">&para;</a></h2>
+<p>Everything that goes wrong with inline PTX goes wrong here, in the little
+strings between the colons.</p>
+<p>Four things to get right, one per subsection: picking a constraint letter that
+matches the register width the instruction expects (§6.1), knowing which
+placeholder number refers to which variable — outputs are numbered first, which
+catches everyone once (§6.2), telling the compiler when an output register gets
+written before the inputs are finished with (§6.3), and declaring scratch
+registers that don't correspond to any C++ variable (§6.4).</p>
+<p>None of these produce a compile error when you get them wrong. They produce
+plausible-looking numbers that happen to be incorrect.</p>
 <h3 id="61-the-constraint-system-deep-dive">6.1 The Constraint System — Deep Dive<a class="headerlink" href="#61-the-constraint-system-deep-dive" title="Permanent link">&para;</a></h3>
 <p>The constraint system is the trickiest part of inline PTX for newcomers. The errors you get when you use the wrong constraint are often cryptic compilation failures or, worse, silent incorrect results. This section gives you the mental model to get it right every time.</p>
 <p>The fundamental rule is: <strong>the constraint must match the physical register type that the PTX instruction expects for that operand</strong>. PTX is a typed assembly language — <code>add.u32</code> expects 32-bit unsigned integer registers, while <code>add.f32</code> expects 32-bit float registers. The constraint string you write tells the compiler which physical register type to allocate.</p>
@@ -5216,6 +5297,16 @@
 </span><span id="__span-27-20"><a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>  a, b, c: "r" (read-only 32-bit registers)
 </span></code></pre></div><a class="headerlink" href="#task-compute-result-a-b-c-all-uint32_t-given-a0xff00-b0x00ff-c0xf0f0-step-1-orb32-tmp-a-b-a-1111-1111-0000-0000-0xff00-b-0000-0000-1111-1111-0x00ff-tmp-1111-1111-1111-1111-0xffff-step-2-notb32-nc-c-bitwise-not-of-c-c-1111-0000-1111-0000-0xf0f0-nc-0000-1111-0000-1111-0x0f0f-step-3-andb32-result-tmp-nc-tmp-1111-1111-1111-1111-0xffff-nc-0000-1111-0000-1111-0x0f0f-result-0000-1111-0000-1111-0x0f0f-constraints-result-r-early-clobber-written-before-all-inputs-are-done-a-b-c-r-read-only-32-bit-registers" title="Permanent link">&para;</a></h2>
 <h2 id="7-state-spaces-in-cudaptx">7 — State Spaces in CUDA/PTX<a class="headerlink" href="#7-state-spaces-in-cudaptx" title="Permanent link">&para;</a></h2>
+<p>In C++, memory is memory: you have a pointer, you dereference it. GPUs do not
+work that way. A GPU address is meaningless until you also say <em>which kind</em> of
+memory it refers to — registers, shared, global, local, constant, or parameter.
+That label is called a <strong>state space</strong>, and every PTX load and store carries one.</p>
+<p>This matters for three reasons: the wrong state space silently produces wrong
+results, the same numeric address means different things in different spaces,
+and the performance difference between the fastest and slowest space is roughly
+five hundred to one.</p>
+<p>§7.1 maps them all out; §7.2–§7.5 take them one at a time, in rough order of how
+often you'll touch them.</p>
 <h3 id="71-overview-what-are-state-spaces">7.1 Overview — What Are State Spaces?<a class="headerlink" href="#71-overview-what-are-state-spaces" title="Permanent link">&para;</a></h3>
 <p>In most programming languages, memory is memory. You have a pointer and you dereference it. But GPU programming has a crucial complication: there are fundamentally different <em>kinds</em> of memory, each with different physical locations, speeds, scopes, and lifetimes. PTX exposes these differences explicitly through "state spaces."</p>
 <p>A state space is just a label on a memory region. Every <code>ld</code> (load) and <code>st</code> (store) instruction in PTX must specify which state space it targets. This is not an abstraction — it's literal hardware routing. When the PTX assembler sees <code>ld.shared.b32</code>, it emits a different hardware instruction than <code>ld.global.b32</code>, because these route to completely different physical hardware units.</p>
@@ -5839,6 +5930,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="8-data-types-in-ptx">8 — Data Types in PTX<a class="headerlink" href="#8-data-types-in-ptx" title="Permanent link">&para;</a></h2>
+<p>PTX is strongly typed, and it wears its types on the outside: every instruction
+names the type it operates on as a suffix — <code>add.u32</code>, <code>mul.f16x2</code>, <code>ld.global.b64</code>.</p>
+<p>The underlying registers, though, are just 32 bits of storage. The suffix is not
+a description of what's in the register; it is an instruction to the hardware
+about how to <em>interpret</em> those bits for this one operation. Getting comfortable
+with that distinction is most of what this section is for.</p>
 <h3 id="81-fundamental-types-the-type-system">8.1 Fundamental Types — The Type System<a class="headerlink" href="#81-fundamental-types-the-type-system" title="Permanent link">&para;</a></h3>
 <p>PTX is a strongly typed assembly language. Every instruction specifies the type it operates on as a suffix (e.g., <code>.u32</code>, <code>.f32</code>, <code>.b32</code>). This is different from x86 assembly, where the register name implies the size but not the type interpretation.</p>
 <p>The key insight: PTX registers are all 32-bit (or register pairs for 64-bit), but the INTERPRETATION changes based on the type modifier. The bits <code>0x3F800000</code> are <code>1.0f</code> if interpreted as <code>.f32</code>, but are <code>1,065,353,216</code> if interpreted as <code>.u32</code>.</p>
@@ -5906,6 +6003,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="9-deep-learning-data-types">9 — Deep Learning Data Types<a class="headerlink" href="#9-deep-learning-data-types" title="Permanent link">&para;</a></h2>
+<p>This section is less about syntax and more about numerics — why machine learning
+abandoned FP32 and what it got in exchange.</p>
+<p>Three questions get answered: what the formats actually look like bit by bit
+(§9.1), why BF16 beat FP16 for training despite being strictly less precise
+(§9.2), and how FP8 can possibly work when its maximum representable value is
+448 (§9.3). The answer to the second is range, and the answer to the third is
+scaling — but the details are worth reading, because they explain design
+decisions you'll meet again in Chapter 7.</p>
 <h3 id="91-format-comparison-the-full-picture">9.1 Format Comparison — The Full Picture<a class="headerlink" href="#91-format-comparison-the-full-picture" title="Permanent link">&para;</a></h3>
 <p>Modern deep learning training and inference use a variety of reduced-precision formats to maximize throughput while maintaining accuracy. The H100 supports FP8, FP16, BF16, TF32, and FP32 natively. Understanding the bit layout and tradeoffs is essential for writing efficient kernels.</p>
 <p>The progression from FP32 → BF16 → FP8 trades precision for speed:
@@ -6087,6 +6192,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="10-packed-data-types">10 — Packed Data Types<a class="headerlink" href="#10-packed-data-types" title="Permanent link">&para;</a></h2>
+<p>A GPU register is 32 bits wide. An FP16 value is 16. Rather than waste half of
+every register, the hardware packs two FP16 values into one register — or four
+FP8 values — and provides instructions that operate on both halves at once.</p>
+<p>This is not merely an optimisation you can skip. Tensor cores <em>require</em> packed
+operands: hand <code>wgmma</code> unpacked data and it will read the bits anyway and give
+you nonsense. Chapters 6 and 7 assume you have this section internalised.</p>
 <h3 id="101-packing-multiple-values-in-one-register">10.1 Packing Multiple Values in One Register<a class="headerlink" href="#101-packing-multiple-values-in-one-register" title="Permanent link">&para;</a></h3>
 <p>GPU registers are 32 bits wide. For 16-bit types like FP16 and BF16, this means we can pack two values into a single register and operate on both simultaneously. This is SIMD (Single Instruction, Multiple Data) within a register — one instruction does the work of two.</p>
 <p>The tensor cores REQUIRE packed data. When you feed FP16 data to a WGMMA instruction, it reads <code>.f16x2</code> format — two FP16 values packed in one 32-bit register. If your data isn't packed, the compiler adds packing instructions, wasting cycles. Understanding packing lets you arrange your data to minimize this overhead.</p>
@@ -6172,6 +6283,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="11-memory-addresses-byte-addressing">11 — Memory Addresses &amp; Byte Addressing<a class="headerlink" href="#11-memory-addresses-byte-addressing" title="Permanent link">&para;</a></h2>
+<p>A short but load-bearing section. In C++, <code>ptr + 1</code> moves forward by
+<code>sizeof(*ptr)</code> bytes and the compiler does the arithmetic for you. In PTX there
+is no such courtesy: addresses are raw byte counts and every offset you compute
+must be scaled by hand.</p>
+<p>Almost every "why is my inline PTX reading garbage" bug traces back to a missing
+multiply by the element size.</p>
 <h3 id="111-the-address-model-everything-is-bytes">11.1 The Address Model — Everything Is Bytes<a class="headerlink" href="#111-the-address-model-everything-is-bytes" title="Permanent link">&para;</a></h3>
 <p>Both CPU and GPU use byte addressing. The "address" of a value is always the distance in bytes from the start of the addressable space. When you write <code>ptr + 1</code> in C++, the actual byte offset depends on the pointer's type — the compiler multiplies by <code>sizeof(*ptr)</code> automatically.</p>
 <p>In PTX, you always work with raw byte offsets. There is no automatic scaling. This is important when computing addresses manually in inline PTX.</p>
@@ -6239,6 +6356,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="12-shared-memory-banks-programming-perspective">12 — Shared Memory Banks — Programming Perspective<a class="headerlink" href="#12-shared-memory-banks-programming-perspective" title="Permanent link">&para;</a></h2>
+<p>Chapter 1 introduced bank conflicts from the hardware's side. This section is
+the programmer's side: the formula for working out which bank an address lands
+in (§12.1), and the two standard ways to escape a conflict once you've found one
+(§12.2).</p>
+<p>The two fixes are padding — trivially simple, wastes memory, and interferes with
+TMA's alignment requirements — and swizzling, which costs nothing at runtime but
+requires you to think in XOR. Both are shown side by side so you can see why
+production kernels almost always choose the second.</p>
 <h3 id="121-bank-assignment-formula-the-math">12.1 Bank Assignment Formula — The Math<a class="headerlink" href="#121-bank-assignment-formula-the-math" title="Permanent link">&para;</a></h3>
 <p>Shared memory is physically organized into 32 banks, each 4 bytes wide. Banks allow 32 threads (one warp) to access 32 different addresses simultaneously — one per bank — with no conflicts. Understanding bank assignment is essential for writing SMEM layouts that avoid the 2× to 32× slowdowns caused by bank conflicts.</p>
 <p>The formula is simple:</p>
@@ -6362,6 +6487,12 @@
 </span><span id="__span-45-50"><a id="__codelineno-45-50" name="__codelineno-45-50" href="#__codelineno-45-50"></a>  CUTLASS uses swizzling extensively for its shared memory layouts.
 </span></code></pre></div><a class="headerlink" href="#fixing-bank-conflicts-padding-and-swizzling-scenario-3232-float-matrix-in-smem-access-column-major-thread-i-reads-smemrowi-for-varying-row-stride-32-conflict-technique-1-padding-allocate-extra-elements-to-shift-rows-off-of-aligned-boundaries-without-padding-__shared__-float-smem3232-row-length-32-floats-128-bytes-smemrc-at-byte-offset-r128-c4-smem00-bank-0-smem10-bank-128432-bank-0-conflict-with-padding-1-per-row-__shared__-float-smem3233-row-length-33-floats-132-bytes-smemrc-at-byte-offset-r132-c4-smem00-bank-0432-0-smem10-bank-132432-3332-1-different-bank-smem20-bank-264432-6632-2-different-bank-smem310-bank-4092432-102332-31-all-different-cost-32-extra-floats-128-bytes-wasted-negligible-for-228kb-smem-technique-2-swizzling-reorder-elements-within-each-row-using-xor-so-the-physical-layout-distributes-columns-across-all-32-banks-swizzled-index-formula-physical_col-logical_col-xor-row-32-manual-trace-for-3232-matrix-row-0-physical_col-logical_col-xor-0-identity-no-change-smem0col0-bank-0-smem0col1-bank-1-row-1-physical_col-logical_col-xor-1-shifted-by-1-smem1col0-physical-smem10-xor-1-1-bank-1-smem1col1-physical-smem11-xor-1-0-bank-0-column-0-access-different-rows-row-0-physical-col-0-xor-0-0-bank-0-row-1-physical-col-0-xor-1-1-bank-1-different-row-2-physical-col-0-xor-2-2-bank-2-different-row-31-physical-col-0-xor-31-31-bank-31-all-different-swizzling-eliminates-the-conflict-with-zero-extra-memory-trade-off-accessing-element-rowcol-requires-xor-transformation-cutlass-uses-swizzling-extensively-for-its-shared-memory-layouts" title="Permanent link">&para;</a></h2>
 <h2 id="13-pointers-state-spaces">13 — Pointers &amp; State Spaces<a class="headerlink" href="#13-pointers-state-spaces" title="Permanent link">&para;</a></h2>
+<p>Sections 13 through 16 form a single short arc: how addresses get converted
+between state spaces, and why you would ever need to do it.</p>
+<p>Start here, with Unified Virtual Addressing. UVA is the reason a plain C++
+pointer works no matter which kind of memory it points at: the state space is
+encoded in the pointer's high bits, and the hardware decodes it on every access.
+Convenient — and, as the next section shows, not free.</p>
 <h3 id="131-unified-virtual-addressing-uva">13.1 Unified Virtual Addressing (UVA)<a class="headerlink" href="#131-unified-virtual-addressing-uva" title="Permanent link">&para;</a></h3>
 <p>UVA maps all GPU memory spaces into a single 64-bit virtual address space. The high bits of any pointer tell the hardware which physical subsystem to route the access to. This is why a single <code>float*</code> in CUDA C++ can point to global memory, shared memory, or constant memory — the hardware figures out which one at dereference time by inspecting the address bits.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>UVA Address Space — How Regions Are Tagged
@@ -6386,6 +6517,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="14-generic-vs-state-space-pointers">14 — Generic vs State-Space Pointers<a class="headerlink" href="#14-generic-vs-state-space-pointers" title="Permanent link">&para;</a></h2>
+<p>Two kinds of address, and the difference matters more than it first appears.</p>
+<p>A <strong>generic</strong> pointer is the ordinary C++ kind: 64 bits, tagged with its state
+space, works everywhere, costs a few cycles per access while the hardware decodes
+the tag. A <strong>state-space</strong> pointer is a bare integer — usually 32 bits for shared
+memory — with no tag at all. It is what PTX instructions actually want, it is
+half the size, and dereferencing it as a C++ pointer will crash.</p>
 <h3 id="141-generic-pointers-default">14.1 Generic Pointers (Default)<a class="headerlink" href="#141-generic-pointers-default" title="Permanent link">&para;</a></h3>
 <p>Every pointer you write in CUDA C++ is generic — 64-bit, works for any memory space, costs a few cycles for hardware routing on each dereference.</p>
 <h3 id="142-state-space-pointers-explicit">14.2 State-Space Pointers (Explicit)<a class="headerlink" href="#142-state-space-pointers-explicit" title="Permanent link">&para;</a></h3>
@@ -6417,6 +6554,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="15-cvta-convert-to-address">15 — cvta — Convert To Address<a class="headerlink" href="#15-cvta-convert-to-address" title="Permanent link">&para;</a></h2>
+<p><code>cvta</code> — "convert to address" — is the instruction that moves between the two
+pointer forms from §14. Strip the tag to get a raw shared-memory offset, or add
+it back to get a pointer C++ can use.</p>
+<p>You will type <code>__cvta_generic_to_shared()</code> more than almost any other intrinsic
+in this book: every TMA copy, every <code>mbarrier</code> operation, and every <code>ldmatrix</code>
+in later chapters begins with one.</p>
 <h3 id="151-what-cvta-does">15.1 What cvta Does<a class="headerlink" href="#151-what-cvta-does" title="Permanent link">&para;</a></h3>
 <p><code>cvta</code> strips or adds the state-space tag bits, converting between 64-bit generic addresses and state-space-specific offsets.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>cvta — Complete Reference
@@ -6441,6 +6584,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="16-mapa-cluster-wide-memory">16 — mapa &amp; Cluster-Wide Memory<a class="headerlink" href="#16-mapa-cluster-wide-memory" title="Permanent link">&para;</a></h2>
+<p>The last piece of address plumbing, and the one that closes the loop back to
+§1–3.</p>
+<p><code>mapa</code> takes an address inside <em>your</em> block's shared memory and rewrites it to
+point at the same offset inside <em>another</em> block's shared memory in your cluster.
+That is the concrete mechanism behind everything DSMEM promised: the remote
+block's scratchpad, addressable as if it were a slightly further-away part of
+your own.</p>
 <h3 id="161-what-mapa-does">16.1 What mapa Does<a class="headerlink" href="#161-what-mapa-does" title="Permanent link">&para;</a></h3>
 <p><code>mapa</code> translates a shared-memory address from THIS block's space into an address that accesses the TARGET block's shared memory via the DSMEM interconnect. Without <code>mapa</code>, there is no way to address another block's SMEM.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>mapa — Address Translation for Cross-Block SMEM
@@ -6474,6 +6624,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="17-putting-it-all-together">17 — Putting It All Together<a class="headerlink" href="#17-putting-it-all-together" title="Permanent link">&para;</a></h2>
+<p>Two complete programs that use most of the chapter at once — clusters, inline
+PTX, state spaces, address conversion, and packed types in the same kernel.</p>
+<p>Both open with a hand-worked trace before the code: real bit patterns, computed
+by hand, so you can check the program's output against arithmetic you did
+yourself. Working through the trace first is worth the ten minutes; it is the
+difference between reading the code and being able to debug it.</p>
 <h3 id="171-full-example-ptx-pointers-packed-types">17.1 Full Example: PTX Pointers &amp; Packed Types<a class="headerlink" href="#171-full-example-ptx-pointers-packed-types" title="Permanent link">&para;</a></h3>
 <p><strong>Manual worked example before the code:</strong></p>
 <p>For <code>test_packed_fp16</code> below, tracing with <code>a0=1.0f, a1=2.0f, b0=3.0f, b1=4.0f</code>:
@@ -6972,7 +7128,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="18-quick-reference">18 — Quick Reference<a class="headerlink" href="#18-quick-reference" title="Permanent link">&para;</a></h2>
+<p>Nothing new below — this is the chapter compressed into cards you can come back
+to without re-reading. The last one, the Five Commandments, is the section worth
+re-reading before you write any inline PTX of your own; every rule in it
+corresponds to a bug class that fails silently.</p>
 <h3 id="inline-ptx-syntax-cheat-sheet">Inline PTX Syntax Cheat Sheet<a class="headerlink" href="#inline-ptx-syntax-cheat-sheet" title="Permanent link">&para;</a></h3>
+<p>The whole <code>asm()</code> contract on one card: syntax, constraint letters, and
+modifiers.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a>Full syntax:
 </span><span id="__span-56-2"><a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a>  asm [volatile] ("instruction_string"
 </span><span id="__span-56-3"><a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a>      : output_operands      // after 1st colon
@@ -7004,6 +7166,8 @@
 </span><span id="__span-56-29"><a id="__codelineno-56-29" name="__codelineno-56-29" href="#__codelineno-56-29"></a>  Anything with side effects or ordering requirements.
 </span></code></pre></div>
 <h3 id="state-space-quick-reference">State Space Quick Reference<a class="headerlink" href="#state-space-quick-reference" title="Permanent link">&para;</a></h3>
+<p>Section 7 in one table — including the latency column, which is the one to
+remember.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-57-1"><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a>Space           PTX Qualifier        CUDA C++           Scope    Speed
 </span><span id="__span-57-2"><a id="__codelineno-57-2" name="__codelineno-57-2" href="#__codelineno-57-2"></a>──────────────────────────────────────────────────────────────────────
 </span><span id="__span-57-3"><a id="__codelineno-57-3" name="__codelineno-57-3" href="#__codelineno-57-3"></a>Register        .reg                 (automatic)         Thread   1 cycle
@@ -7015,6 +7179,8 @@
 </span><span id="__span-57-9"><a id="__codelineno-57-9" name="__codelineno-57-9" href="#__codelineno-57-9"></a>Parameter       .param               kernel args         Kernel   1-2 cycles
 </span></code></pre></div>
 <h3 id="address-conversion-functions">Address Conversion Functions<a class="headerlink" href="#address-conversion-functions" title="Permanent link">&para;</a></h3>
+<p>Sections 15 and 16 in one place: every conversion you can perform, and what type
+comes back.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-58-1"><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a>Intrinsic                              Direction              Result
 </span><span id="__span-58-2"><a id="__codelineno-58-2" name="__codelineno-58-2" href="#__codelineno-58-2"></a>──────────────────────────────────────────────────────────────────────
 </span><span id="__span-58-3"><a id="__codelineno-58-3" name="__codelineno-58-3" href="#__codelineno-58-3"></a>__cvta_generic_to_shared(ptr)          Generic→Shared         uint32_t
@@ -7029,6 +7195,8 @@
 </span><span id="__span-58-12"><a id="__codelineno-58-12" name="__codelineno-58-12" href="#__codelineno-58-12"></a>  mapa.shared::cluster.u32 r,l,rank;// local SMEM addr → cluster addr
 </span></code></pre></div>
 <h3 id="data-type-quick-reference">Data Type Quick Reference<a class="headerlink" href="#data-type-quick-reference" title="Permanent link">&para;</a></h3>
+<p>Every PTX type you'll meet in this book, with its C++ equivalent, its constraint
+letter, and where the tensor cores will accept it.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-59-1"><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a>PTX Type   Bits  C++ Type          Constraint  Tensor Core Use
 </span><span id="__span-59-2"><a id="__codelineno-59-2" name="__codelineno-59-2" href="#__codelineno-59-2"></a>──────────────────────────────────────────────────────────────
 </span><span id="__span-59-3"><a id="__codelineno-59-3" name="__codelineno-59-3" href="#__codelineno-59-3"></a>.f32        32   float             "f"         Accumulator (C/D)
@@ -7045,6 +7213,7 @@
 </span><span id="__span-59-14"><a id="__codelineno-59-14" name="__codelineno-59-14" href="#__codelineno-59-14"></a>.pred        1   bool              —           Predicate/branch
 </span></code></pre></div>
 <h3 id="cluster-quick-reference">Cluster Quick Reference<a class="headerlink" href="#cluster-quick-reference" title="Permanent link">&para;</a></h3>
+<p>The cluster API and its underlying PTX registers, side by side.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-60-1"><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a>Concept                C++ API                       PTX Register
 </span><span id="__span-60-2"><a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a>────────────────────────────────────────────────────────────────────
 </span><span id="__span-60-3"><a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a>Get cluster handle     cg::this_cluster()            —
@@ -7060,6 +7229,8 @@
 </span><span id="__span-60-13"><a id="__codelineno-60-13" name="__codelineno-60-13" href="#__codelineno-60-13"></a>Grid must be multiple of cluster dimensions.
 </span></code></pre></div>
 <h3 id="the-five-commandments-of-inline-ptx">The Five Commandments of Inline PTX<a class="headerlink" href="#the-five-commandments-of-inline-ptx" title="Permanent link">&para;</a></h3>
+<p>If you keep one page from this chapter, keep this one. Each rule below maps to a
+failure mode that produces wrong answers rather than error messages.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-61-1"><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a>1. ALWAYS USE volatile FOR SIDE EFFECTS
 </span><span id="__span-61-2"><a id="__codelineno-61-2" name="__codelineno-61-2" href="#__codelineno-61-2"></a>   Stores, atomics, barriers, TMA ops, fences.
 </span><span id="__span-61-3"><a id="__codelineno-61-3" name="__codelineno-61-3" href="#__codelineno-61-3"></a>   Without volatile the compiler may delete or reorder them.
@@ -7084,6 +7255,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="final-comprehensive-example">★ Final Comprehensive Example<a class="headerlink" href="#final-comprehensive-example" title="Permanent link">&para;</a></h2>
+<p>The capstone. Two blocks in a cluster each load a slice of an array into their
+own shared memory, then reach across into their partner's shared memory to
+combine the two — a vector add distributed across two SMs, written with the
+address conversions from §15 and §16 and the cluster machinery from §1.</p>
+<p>If you can read this kernel and predict its output before running it, you have
+this chapter.</p>
 <p>This final example combines clusters, PTX basics, state spaces, pointers, and data types in one kernel. It is the capstone of the guide.</p>
 <p><strong>Manual Worked Example:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-62-1"><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a>Scenario: Cluster of 2 blocks, each with 64 threads.

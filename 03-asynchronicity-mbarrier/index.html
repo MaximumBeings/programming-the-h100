@@ -3040,8 +3040,26 @@
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on any H100 or B200 instance.</p>
 </blockquote>
 <p><strong>What this covers:</strong> Everything from Lesson 3 — the philosophy of asynchronicity and latency hiding, blocking vs non-blocking operations, the Generic vs Async proxy memory model, read-after-write and write-after-read hazards, memory fences (acquire/release/cross-proxy), the mbarrier primitive (init, arrive, expect_tx, try_wait, test_wait, arrive_drop), barrier reuse with phase flipping, WAR hazard prevention, barrier.cluster for cross-block synchronization, cp.async.bulk commit/wait groups, and named barriers. Each section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.</p>
+<p><strong>How to read this chapter.</strong> Chapter 1 said the H100 hides memory latency by
+letting the TMA fetch data in the background. This chapter is about the bill that
+arrives with that gift: once a copy happens <em>behind your back</em>, you need a way to
+know when it has finished — and a way to stop the compiler and the hardware from
+helpfully reordering things around it.</p>
+<p>The chapter comes in four movements. Sections 1–4 build the case for asynchrony
+from first principles, with no PTX at all. Sections 5–7 introduce the memory
+model you need before you can reason about it: proxies, hazards, and fences.
+Sections 8–13 are the core — <code>mbarrier</code>, the Hopper primitive that every
+production pipeline is built on, taken apart instruction by instruction.
+Sections 14–16 cover three related primitives you'll meet in real kernels.</p>
+<p>If you are impatient, read §5–§7 and then §8–§9. Those four sections contain the
+mental model; the rest is detail you can look up.</p>
 <hr />
 <h2 id="before-you-start-hardware-setup-installation">★ BEFORE YOU START — Hardware, Setup &amp; Installation<a class="headerlink" href="#before-you-start-hardware-setup-installation" title="Permanent link">&para;</a></h2>
+<p>A short preamble on where to run the examples. The <code>mbarrier</code> and
+<code>cp.async.bulk</code> instructions in this chapter were introduced with Hopper, so
+unlike the earlier chapters there is no meaningful A100 fallback — you need an
+H100 (<code>sm_90a</code>) or a B200. If you already have one and a working <code>nvcc</code>, skip
+ahead to the Table of Contents.</p>
 <h3 id="what-hardware-can-you-use">What Hardware Can You Use?<a class="headerlink" href="#what-hardware-can-you-use" title="Permanent link">&para;</a></h3>
 <p>This guide targets NVIDIA Hopper GPUs (sm_90a). The mbarrier and cp.async.bulk instructions covered here are Hopper-introduced features. Here is a summary of what works where:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Hardware Compatibility Matrix
@@ -3063,6 +3081,7 @@
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  everywhere. The code sections (§5+) require sm_90a or sm_100a.
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-lambda-labs">Cloud GPU Rental — Lambda Labs<a class="headerlink" href="#cloud-gpu-rental-lambda-labs" title="Permanent link">&para;</a></h3>
+<p>Usually the cheapest way to get an hour on an H100 without a corporate account.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Lambda Labs Setup (H100)
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
@@ -3086,6 +3105,8 @@
 </span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>       ./ex01
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-aws">Cloud GPU Rental — AWS<a class="headerlink" href="#cloud-gpu-rental-aws" title="Permanent link">&para;</a></h3>
+<p>The alternative if you already have AWS set up. Note that <code>p5</code> is the H100
+family; <code>p4d</code> is A100 and will not run this chapter's examples.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>AWS p5 Setup (H100)
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -3100,6 +3121,9 @@
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  For H100 (p5):  use -arch=sm_90a, all sections work.
 </span></code></pre></div>
 <h3 id="hopper-vs-blackwell-what-changes-for-this-lesson">Hopper vs Blackwell — What Changes for This Lesson<a class="headerlink" href="#hopper-vs-blackwell-what-changes-for-this-lesson" title="Permanent link">&para;</a></h3>
+<p>Read this once if you are on a B100 or B200. The short answer is that everything
+in this chapter carries over unchanged — <code>mbarrier</code> is not going anywhere — and
+only the compile flag differs.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Hopper (sm_90a) vs Blackwell (sm_100a) — Async/Barrier Differences
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -3154,6 +3178,15 @@
 </ol>
 <hr />
 <h2 id="1-the-synchronous-world">1 — The Synchronous World<a class="headerlink" href="#1-the-synchronous-world" title="Permanent link">&para;</a></h2>
+<p>Before explaining the solution, this section makes sure you feel the problem.</p>
+<p>Every instruction a processor executes falls into one of two categories: it
+either <em>does</em> something with data it already has, or it <em>fetches</em> data it
+doesn't. On a CPU those two costs are within an order of magnitude of each
+other. On a GPU they are not remotely close — arithmetic takes a handful of
+cycles, a trip to HBM takes around five hundred.</p>
+<p>§1.1 draws that distinction; §1.2 shows the only two ways out of it. There is no
+code here, and it's worth reading slowly — everything else in the chapter is
+machinery in service of this one idea.</p>
 <h3 id="11-doing-vs-fetching-the-two-fundamental-operations">1.1 Doing vs Fetching — The Two Fundamental Operations<a class="headerlink" href="#11-doing-vs-fetching-the-two-fundamental-operations" title="Permanent link">&para;</a></h3>
 <p>Every computation — whether on a CPU, a GPU, or a human brain — can be decomposed into exactly two kinds of work: <strong>doing</strong> (processing, computing, transforming data) and <strong>fetching</strong> (retrieving data, reading from memory, loading ingredients). The relationship between these two operations determines how fast a system can run.</p>
 <p>In a synchronous system, doing and fetching are chained together sequentially. You fetch, then you do, then you fetch again, then you do again. At any given moment you are doing exactly one of these things, and all other work is paused while you wait.</p>
@@ -3229,6 +3262,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="2-asynchronicity">2 — Asynchronicity<a class="headerlink" href="#2-asynchronicity" title="Permanent link">&para;</a></h2>
+<p>The core idea, stated in its most general form: separate the moment you <em>ask</em>
+for something from the moment you <em>use</em> it.</p>
+<p>That sounds obvious written down, but it has a sharp consequence. Between the
+request and the result there is now a window in which the data is neither absent
+nor present — in flight. Every difficulty in the rest of this chapter comes from
+that window: how you know it has closed, and what you're forbidden from doing
+while it's open.</p>
 <h3 id="21-decoupling-request-from-result">2.1 Decoupling Request from Result<a class="headerlink" href="#21-decoupling-request-from-result" title="Permanent link">&para;</a></h3>
 <p>The fundamental mechanism of asynchronicity is that issuing an operation and receiving its result are separate events, potentially separated by large amounts of time (and other useful work). The three-stage pattern is universal:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>The Three-Stage Async Pattern
@@ -3288,6 +3328,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="3-blocking-vs-non-blocking-operations">3 — Blocking vs Non-Blocking Operations<a class="headerlink" href="#3-blocking-vs-non-blocking-operations" title="Permanent link">&para;</a></h2>
+<p>The same distinction, now in the vocabulary you'll see in the PTX manual.</p>
+<p>A <strong>blocking</strong> operation doesn't return until the work is done. A <strong>non-blocking</strong>
+one returns immediately and leaves you holding a promise. §3.1 makes the case
+that blocking is often perfectly fine — not everything needs to be asynchronous,
+and asynchrony you don't need is pure complexity. §3.2 covers the case where it
+isn't fine, which on this hardware is most of the interesting ones.</p>
 <h3 id="31-blocking-operations-when-sequential-is-fine">3.1 Blocking Operations — When Sequential Is Fine<a class="headerlink" href="#31-blocking-operations-when-sequential-is-fine" title="Permanent link">&para;</a></h3>
 <p>A blocking operation pauses the calling thread until the operation finishes. Control does not return until completion. This creates an implicit synchronization point.</p>
 <p>The advantage is simplicity: after a blocking call returns, you know the operation is done. The disadvantage is wasted time — the thread idles while waiting.</p>
@@ -3352,6 +3398,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="4-asynchrony-in-gpus">4 — Asynchrony in GPUs<a class="headerlink" href="#4-asynchrony-in-gpus" title="Permanent link">&para;</a></h2>
+<p>Now the general idea gets specific to this machine.</p>
+<p>§4.1 puts numbers on the mismatch: how many arithmetic operations an H100 SM can
+retire in the time one HBM request takes to come back. The ratio is the reason
+async on a GPU is not a technique you reach for when convenient but the default
+way the machine is meant to be driven.</p>
+<p>§4.2 names the two distinct problems it solves — hiding latency, and freeing the
+SM's threads from doing address arithmetic — which are often conflated.</p>
 <h3 id="41-the-speed-mismatch-why-async-is-not-optional">4.1 The Speed Mismatch — Why Async Is Not Optional<a class="headerlink" href="#41-the-speed-mismatch-why-async-is-not-optional" title="Permanent link">&para;</a></h3>
 <p>In modern computing, arithmetic is incredibly fast and memory access is agonizingly slow by comparison. On the H100:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Speed Mismatch — H100 Numbers
@@ -3445,6 +3498,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="5-proxies-in-cuda">5 — Proxies in CUDA<a class="headerlink" href="#5-proxies-in-cuda" title="Permanent link">&para;</a></h2>
+<p>This section introduces the single most under-explained term in the CUDA memory
+model, and skipping it will make Sections 6 and 7 incomprehensible.</p>
+<p>A <strong>proxy</strong> is simply <em>who</em> is performing a memory access. When your thread
+executes a load, that's the <strong>generic proxy</strong>. When the TMA engine moves a tile
+in the background, that's the <strong>async proxy</strong> — a completely separate piece of
+hardware, taking a different path through the memory system.</p>
+<p>The consequence is the part that matters: two proxies touching the same address
+do not automatically see each other's work. Not because of a bug, but because
+they are physically different agents on different paths. Everything in §6 and §7
+exists to bridge that gap.</p>
 <h3 id="51-what-is-a-proxy">5.1 What Is a Proxy?<a class="headerlink" href="#51-what-is-a-proxy" title="Permanent link">&para;</a></h3>
 <p>The term "proxy" in CUDA's memory model refers to the <strong>agent</strong> performing a memory operation. This is one of the least-taught but most critical concepts for understanding why memory hazards occur and how fences fix them.</p>
 <p>Different proxies have different views of memory. They access memory through different hardware paths, which means they can have inconsistent views of the same memory location at the same point in time. A write done by Proxy A may not be visible to Proxy B unless an explicit ordering instruction (a fence) is used to synchronize the two views.</p>
@@ -3494,6 +3557,10 @@
 </span><span id="__span-12-44"><a id="__codelineno-12-44" name="__codelineno-12-44" href="#__codelineno-12-44"></a>  But it means you MUST use explicit fences when they share data.
 </span></code></pre></div>
 <h3 id="52-why-two-proxies-exist-the-hardware-reality">5.2 Why Two Proxies Exist — The Hardware Reality<a class="headerlink" href="#52-why-two-proxies-exist-the-hardware-reality" title="Permanent link">&para;</a></h3>
+<p>The previous section described the two proxies as an abstraction. Here is the
+physical reason they are distinct: trace the two paths through the diagram below
+and notice that the generic proxy goes through L1 while the async proxy does
+not.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Hardware Memory Paths — Why the Proxies Differ
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
@@ -3532,6 +3599,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="6-memory-hazards">6 — Memory Hazards<a class="headerlink" href="#6-memory-hazards" title="Permanent link">&para;</a></h2>
+<p>Two concrete ways the proxy split will corrupt your data if you don't intervene.</p>
+<p>A <strong>RAW</strong> hazard (§6.1) is writing something with your thread and then having the
+TMA read it before your write has become visible — the TMA fetches stale data.
+A <strong>WAR</strong> hazard (§6.2) is the mirror image: the TMA overwrites a buffer while
+your thread is still reading the old contents out of it.</p>
+<p>Both are timing-dependent, which means both will pass your tests on a small
+input and fail in production. Learn to recognise the shapes.</p>
 <h3 id="61-read-after-write-raw-hazard">6.1 Read-After-Write (RAW) Hazard<a class="headerlink" href="#61-read-after-write-raw-hazard" title="Permanent link">&para;</a></h3>
 <p>A RAW hazard occurs when the Async Proxy reads from a location that the Generic Proxy has recently written, but the write has not yet propagated to where the Async Proxy can see it. The Async Proxy reads stale data.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Read-After-Write (RAW) Hazard — Visual Explanation
@@ -3625,6 +3699,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="7-fences">7 — Fences<a class="headerlink" href="#7-fences" title="Permanent link">&para;</a></h2>
+<p>A fence is how you tell the hardware "do not reorder across this line."</p>
+<p>There are three you need, and they come in a natural pairing. A <strong>release</strong>
+fence (§7.2) is used by whoever produces data: it guarantees everything written
+before it is visible before the signal that says it's ready. An <strong>acquire</strong>
+fence (§7.3) is used by whoever consumes it: it guarantees nothing is read early.
+And a <strong>cross-proxy</strong> fence (§7.4) is the one specific to this chapter — it
+bridges the generic and async proxies from §5.</p>
+<p>§7.1 also introduces <strong>scope</strong>, which is the knob that decides how much a fence
+costs: ordering within a block is cheap, ordering across the whole GPU is not.</p>
 <h3 id="71-what-is-a-fence-and-why-do-we-need-one">7.1 What Is a Fence and Why Do We Need One?<a class="headerlink" href="#71-what-is-a-fence-and-why-do-we-need-one" title="Permanent link">&para;</a></h3>
 <p>A fence is an explicit instruction that constrains the ordering and visibility of memory operations. Without fences, the hardware (and compiler) may reorder or delay memory operations for performance, creating the hazards described in Section 6.</p>
 <p>Fences are <strong>scoped</strong>: they apply to a specific level of the memory hierarchy (CTA, cluster, GPU, system). A <code>.cta</code> fence makes writes visible to other threads in the same block. A <code>.gpu</code> fence makes writes visible to ALL threads on the GPU. Using a wider scope than necessary wastes time.</p>
@@ -3770,6 +3853,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="8-mbarrier-the-core-primitive">8 — mbarrier — The Core Primitive<a class="headerlink" href="#8-mbarrier-the-core-primitive" title="Permanent link">&para;</a></h2>
+<p>Here is the payoff. Everything from §5 to §7 was setup for this.</p>
+<p>An <code>mbarrier</code> is a small object you place in shared memory that answers one
+question: <em>has the thing I'm waiting for happened yet?</em> What makes it more than
+an ordinary barrier is that hardware can signal it. The TMA, having finished
+depositing a tile, decrements the barrier itself — no thread has to poll, no
+thread has to wait around to be told.</p>
+<p>This is the primitive that every H100 GEMM, every FlashAttention kernel, and
+every CUTLASS pipeline is built on. §8.1 covers what it is; §8.2 covers creating
+one, including the arrival count that trips up most first attempts.</p>
 <h3 id="81-what-is-mbarrier">8.1 What Is mbarrier?<a class="headerlink" href="#81-what-is-mbarrier" title="Permanent link">&para;</a></h3>
 <p>The mbarrier (memory barrier) is the H100's hardware-accelerated synchronization primitive. It lives in <strong>shared memory</strong> (not registers) and tracks the completion of asynchronous memory transactions.</p>
 <p>Unlike <code>__syncthreads()</code> which blocks until a number of threads <strong>arrive</strong>, the mbarrier blocks until a certain amount of <strong>data</strong> arrives. It decouples the "Producer" (who issues the async copy) from the "Consumer" (who waits for the data), enabling pipelines where copies and computes truly overlap.</p>
@@ -3873,6 +3965,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="9-the-mbarrier-pipeline-step-by-step">9 — The mbarrier Pipeline — Step by Step<a class="headerlink" href="#9-the-mbarrier-pipeline-step-by-step" title="Permanent link">&para;</a></h2>
+<p>The five-step sequence that essentially every TMA kernel on this hardware
+follows. If you learn one pattern from this chapter, learn this one.</p>
+<p>§9.2 covers the instruction that surprises people: <code>mbarrier.arrive.expect_tx</code>
+does two jobs at once — it registers an arrival <em>and</em> declares how many bytes
+are about to show up. That second job is what lets the TMA close the barrier on
+its own.</p>
 <h3 id="91-overview-of-the-full-pipeline">9.1 Overview of the Full Pipeline<a class="headerlink" href="#91-overview-of-the-full-pipeline" title="Permanent link">&para;</a></h3>
 <p>The complete mbarrier pipeline has five steps. Every high-performance kernel on H100 that uses TMA follows this exact pattern.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>The mbarrier Pipeline — Complete Flow
@@ -3987,6 +4085,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="10-phase-and-transaction-count">10 — Phase and Transaction Count<a class="headerlink" href="#10-phase-and-transaction-count" title="Permanent link">&para;</a></h2>
+<p>An <code>mbarrier</code> tracks two independent things, and confusing them is the most
+common source of hangs.</p>
+<p>The <strong>phase</strong> (§10.1) is a single bit that says which <em>generation</em> of use the
+barrier is in. It flips every time the barrier completes, and it exists so a
+barrier can be reused in a loop without you having to reinitialise it. The
+<strong>transaction count</strong> (§10.2) tracks bytes rather than threads — it's how the
+barrier knows a TMA copy has fully landed and not just started.</p>
+<p>Threads move the phase. The TMA moves the transaction count. The barrier
+completes when both are satisfied.</p>
 <h3 id="101-phase-the-barriers-reuse-bit">10.1 Phase — The Barrier's Reuse Bit<a class="headerlink" href="#101-phase-the-barriers-reuse-bit" title="Permanent link">&para;</a></h3>
 <p>The phase bit is a single bit that distinguishes one "generation" of barrier use from the next. It flips automatically every time the barrier completes. This allows you to reuse the same mbarrier object for multiple rounds without re-initializing it.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>Phase Bit — How Reuse Works
@@ -4090,6 +4197,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="11-mbarriertry_wait-and-test_wait">11 — mbarrier.try_wait and test_wait<a class="headerlink" href="#11-mbarriertry_wait-and-test_wait" title="Permanent link">&para;</a></h2>
+<p>Three ways to ask "is it ready yet", differing in what happens when the answer
+is no.</p>
+<p><code>try_wait</code> (§11.1) puts the warp to sleep and lets the scheduler run someone
+else. <code>test_wait</code> (§11.2) returns immediately either way, which is what you want
+if you have useful work to do while waiting. And <code>try_wait.acquire</code> (§11.3) is
+<code>try_wait</code> plus the acquire fence from §7.3 folded in — which, as the subsection
+title says, is the version you should actually be writing in production code.</p>
 <h3 id="111-mbarriertry_waitparity-non-blocking-wait">11.1 mbarrier.try_wait.parity — Non-Blocking Wait<a class="headerlink" href="#111-mbarriertry_waitparity-non-blocking-wait" title="Permanent link">&para;</a></h3>
 <p><code>try_wait</code> is the non-blocking completion check. It returns immediately with a boolean result: true if the barrier's current phase matches completion of the requested parity, false if still in progress.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>mbarrier.try_wait.parity — How It Works
@@ -4243,6 +4357,11 @@
 </span></code></pre></div>
 <hr />
 <h2 id="12-mbarrier-reuse-pattern">12 — mbarrier Reuse Pattern<a class="headerlink" href="#12-mbarrier-reuse-pattern" title="Permanent link">&para;</a></h2>
+<p>A barrier inside a pipeline loop gets used over and over, and reusing it
+correctly is fiddlier than it looks — this is where the phase bit from §10.1
+earns its keep.</p>
+<p>Read the pattern here carefully and then reuse it verbatim. Hand-rolled variants
+of this loop are a reliable source of kernels that hang on the third iteration.</p>
 <h3 id="121-the-correct-reuse-pattern">12.1 The Correct Reuse Pattern<a class="headerlink" href="#121-the-correct-reuse-pattern" title="Permanent link">&para;</a></h3>
 <p>Properly reusing an mbarrier barrier across multiple pipeline iterations is one of the most important patterns in H100 programming. The key insight is that the barrier automatically resets its thread arrival count on completion, and the phase bit automatically flips. You only need to track the phase in a local register.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>mbarrier Reuse — Step-by-Step Pattern
@@ -4301,6 +4420,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="13-war-hazards-and-mbarrierarrive">13 — WAR Hazards and mbarrier.arrive<a class="headerlink" href="#13-war-hazards-and-mbarrierarrive" title="Permanent link">&para;</a></h2>
+<p>Back to the write-after-read hazard from §6.2, now with the tools to fix it.</p>
+<p>The problem: in a double-buffered pipeline, the producer wants to refill a slot
+as soon as possible, but must not do so while the consumer is still reading it.
+The solution is a second barrier pointing the other way — the consumer signals
+"I'm done with this slot" using a bare <code>mbarrier.arrive</code> (§13.2), which
+registers an arrival without waiting for anything.</p>
+<p>That two-barrier handshake is the backbone of every real pipeline you'll write,
+and Chapter 9 opens by building on exactly this.</p>
 <h3 id="131-the-write-after-read-problem-in-pipelines">13.1 The Write-After-Read Problem in Pipelines<a class="headerlink" href="#131-the-write-after-read-problem-in-pipelines" title="Permanent link">&para;</a></h3>
 <p>In a pipelined GEMM kernel, you have a producer (TMA loading the next tile) and a consumer (WGMMA computing on the current tile). The buffer for the current tile is going to be REUSED for the next tile. The producer must not overwrite the buffer until the consumer is done reading it. This is a Write-After-Read (WAR) hazard.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>WAR Hazard in Pipeline — Concrete Scenario
@@ -4456,6 +4583,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="14-barriercluster-cross-block-synchronization">14 — barrier.cluster — Cross-Block Synchronization<a class="headerlink" href="#14-barriercluster-cross-block-synchronization" title="Permanent link">&para;</a></h2>
+<p><code>__syncthreads()</code> synchronises the threads of one block. Once Chapter 2's
+clusters enter the picture, you need something that synchronises across blocks —
+and that is a different instruction with a different cost.</p>
+<p>§14.1 explains why the old primitive can't be stretched to cover this; §14.2
+covers the split arrive/wait form, which lets you do useful work in the gap
+between announcing that you've arrived and waiting for everyone else.</p>
 <h3 id="141-why-barriercluster-is-needed">14.1 Why barrier.cluster Is Needed<a class="headerlink" href="#141-why-barriercluster-is-needed" title="Permanent link">&para;</a></h3>
 <p><code>__syncthreads()</code> synchronizes within a single thread block. It cannot coordinate blocks in different SMs, even if they are in the same cluster. <code>barrier.cluster</code> fills this gap — it synchronizes ALL blocks in a thread block cluster.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>barrier.cluster vs __syncthreads — Scope Comparison
@@ -4503,6 +4636,9 @@
 </span><span id="__span-34-43"><a id="__codelineno-34-43" name="__codelineno-34-43" href="#__codelineno-34-43"></a>    // After this: all blocks' DSMEM writes are visible cluster-wide.
 </span></code></pre></div>
 <h3 id="142-barrierclusterarrive-and-barrierclusterwait">14.2 barrier.cluster.arrive and barrier.cluster.wait<a class="headerlink" href="#142-barrierclusterarrive-and-barrierclusterwait" title="Permanent link">&para;</a></h3>
+<p>Note that this is deliberately two instructions rather than one. Splitting
+arrive from wait gives you a window in which to do independent work while the
+rest of the cluster catches up.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>Two Instructions, One Barrier
 </span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>
@@ -4549,6 +4685,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="15-cpasyncbulk-groups-commit-and-wait">15 — cp.async.bulk Groups — Commit and Wait<a class="headerlink" href="#15-cpasyncbulk-groups-commit-and-wait" title="Permanent link">&para;</a></h2>
+<p>A second, lighter-weight completion mechanism, and an alternative to <code>mbarrier</code>
+for the cases that don't need its precision.</p>
+<p>The model is a queue: you issue some copies, <code>commit_group</code> draws a line under
+them (§15.2), and <code>wait_group&lt;N&gt;</code> waits until all but the newest N batches have
+landed (§15.3). That "all but N" phrasing is what makes it useful — it's how you
+express "keep two loads in flight at all times" in a single instruction.</p>
+<p>§15.4 covers the <code>.read</code> variant, which waits for a weaker condition — the
+source has been read, not the destination written — and is precisely what you
+need for the WAR hazards of §13.</p>
 <h3 id="151-grouping-async-copies-for-pipeline-control">15.1 Grouping Async Copies for Pipeline Control<a class="headerlink" href="#151-grouping-async-copies-for-pipeline-control" title="Permanent link">&para;</a></h3>
 <p>When you issue multiple <code>cp.async.bulk</code> operations, you can group them into batches using commit/wait. This allows you to express "wait for the N most recently committed groups to complete" rather than waiting for every individual copy.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>cp.async.bulk Groups — The Mental Model
@@ -4589,6 +4734,8 @@
 </span><span id="__span-36-36"><a id="__codelineno-36-36" name="__codelineno-36-36" href="#__codelineno-36-36"></a>    use tile K data;      // Group 0 is definitely done
 </span></code></pre></div>
 <h3 id="152-cpasyncbulkcommit_group">15.2 cp.async.bulk.commit_group<a class="headerlink" href="#152-cpasyncbulkcommit_group" title="Permanent link">&para;</a></h3>
+<p>The instruction that draws a line under the copies issued so far and turns them
+into one countable batch.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>cp.async.bulk.commit_group — Batching Copies
 </span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>
@@ -4614,6 +4761,9 @@
 </span><span id="__span-37-23"><a id="__codelineno-37-23" name="__codelineno-37-23" href="#__codelineno-37-23"></a>    Items after the seal = next shipment. commit_group is the seal.
 </span></code></pre></div>
 <h3 id="153-cpasyncbulkwait_group-waiting-for-n-groups">15.3 cp.async.bulk.wait_group — Waiting for N Groups<a class="headerlink" href="#153-cpasyncbulkwait_group-waiting-for-n-groups" title="Permanent link">&para;</a></h3>
+<p>The counterpart. Read the <code>N</code> carefully: it is how many groups you are willing
+to leave <em>outstanding</em>, not how many to wait for — which is backwards from most
+people's first guess.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>cp.async.bulk.wait_group&lt;N&gt; — Selective Wait
 </span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>
@@ -4670,6 +4820,9 @@
 </span><span id="__span-38-54"><a id="__codelineno-38-54" name="__codelineno-38-54" href="#__codelineno-38-54"></a>  without an additional fence.
 </span></code></pre></div>
 <h3 id="154-cpasyncbulkwait_groupread-for-war-hazard-prevention">15.4 cp.async.bulk.wait_group.read — For WAR Hazard Prevention<a class="headerlink" href="#154-cpasyncbulkwait_groupread-for-war-hazard-prevention" title="Permanent link">&para;</a></h3>
+<p>A weaker and therefore faster wait. It tells you the copy has finished <em>reading</em>
+its source, which is all you need before overwriting that source — you don't
+have to wait for the destination write to land.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>cp.async.bulk.wait_group.read — The Read Variant
 </span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>
@@ -4689,6 +4842,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="16-named-barriers">16 — Named Barriers<a class="headerlink" href="#16-named-barriers" title="Permanent link">&para;</a></h2>
+<p>The last primitive, and the one that makes warp specialisation possible.</p>
+<p><code>__syncthreads()</code> is all-or-nothing: every warp in the block waits for every
+other. But in a producer/consumer kernel, the warps loading data and the warps
+computing on it don't want to rendezvous with each other on every iteration —
+that would destroy the overlap you built the pipeline for.</p>
+<p>Named barriers let you carve the block into groups that synchronise
+independently. Chapter 8's warp-specialised kernels rest on this.</p>
 <h3 id="161-what-are-named-barriers">16.1 What Are Named Barriers?<a class="headerlink" href="#161-what-are-named-barriers" title="Permanent link">&para;</a></h3>
 <p><code>__syncthreads()</code> is a "whole-block rendezvous" — it makes ALL warps in the block wait for each other. This is often more synchronization than you need. Named barriers (also called split barriers) let you create MULTIPLE independent synchronization points within one block, each involving only a SUBSET of warps.</p>
 <p>This enables <strong>producer/consumer pipelines within a single block</strong>: producer warps load data and signal one barrier; consumer warps wait on that barrier and then compute. Meanwhile, the consumer warps signal a different barrier when they're done reading, allowing the producer to reload.</p>
@@ -4749,6 +4909,11 @@
 </span></code></pre></div>
 <hr />
 <h2 id="17-putting-it-all-together">17 — Putting It All Together<a class="headerlink" href="#17-putting-it-all-together" title="Permanent link">&para;</a></h2>
+<p>Two complete, runnable programs. The first (§17.1) walks the five-step pipeline
+from §9 end to end. The second (§17.2) builds the two-barrier handshake from §13
+— the pattern that shows up again, at production scale, in Chapter 9.</p>
+<p>Both open with a hand-worked trace of the barrier state so you can predict the
+output before you compile.</p>
 <h3 id="171-full-example-basic-mbarrier-tma-simulation">17.1 Full Example: Basic mbarrier + TMA Simulation<a class="headerlink" href="#171-full-example-basic-mbarrier-tma-simulation" title="Permanent link">&para;</a></h3>
 <p><strong>Manual Worked Example Before the Code:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>Scenario: Single block, 64 threads, copy 256 floats (1024 bytes) from
@@ -5250,7 +5415,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="18-quick-reference">18 — Quick Reference<a class="headerlink" href="#18-quick-reference" title="Permanent link">&para;</a></h2>
+<p>The chapter as reference cards. The two pattern blocks at the end are the ones
+worth keeping open in another window the first few times you write a pipeline of
+your own.</p>
 <h3 id="mbarrier-instruction-reference">mbarrier Instruction Reference<a class="headerlink" href="#mbarrier-instruction-reference" title="Permanent link">&para;</a></h3>
+<p>Every <code>mbarrier</code> instruction in one table, with what each one does to the phase
+and the transaction count.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>Instruction                                          Purpose
 </span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>mbarrier.init.shared::cta.b64 [addr], count         Create barrier, set thread count
@@ -5262,6 +5432,8 @@
 </span><span id="__span-47-9"><a id="__codelineno-47-9" name="__codelineno-47-9" href="#__codelineno-47-9"></a>mbarrier.arrive_drop.release...b64 _, [addr]        Arrive + permanently drop count
 </span></code></pre></div>
 <h3 id="phase-and-transaction-count-rules">Phase and Transaction Count Rules<a class="headerlink" href="#phase-and-transaction-count-rules" title="Permanent link">&para;</a></h3>
+<p>Section 10 condensed. When a kernel hangs, the bug is almost always one of these
+rules.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>Rule                                         Notes
 </span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-48-3"><a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a>Phase stored in REGISTERS not SMEM           int phase = 0; (per thread)
@@ -5273,6 +5445,7 @@
 </span><span id="__span-48-9"><a id="__codelineno-48-9" name="__codelineno-48-9" href="#__codelineno-48-9"></a>Barrier completes when BOTH counts = 0      Thread arrivals AND tx bytes
 </span></code></pre></div>
 <h3 id="fence-and-proxy-reference">Fence and Proxy Reference<a class="headerlink" href="#fence-and-proxy-reference" title="Permanent link">&para;</a></h3>
+<p>Which fence to reach for, given who is producing and who is consuming.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>Fence Type                    PTX                          When to Use
 </span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a>Release (producer)            fence.release.cta            After writing, before signal
@@ -5281,6 +5454,8 @@
 </span><span id="__span-49-6"><a id="__codelineno-49-6" name="__codelineno-49-6" href="#__codelineno-49-6"></a>try_wait built-in acquire     try_wait.parity.acquire       Use this; avoids separate fence
 </span></code></pre></div>
 <h3 id="synchronization-primitive-comparison">Synchronization Primitive Comparison<a class="headerlink" href="#synchronization-primitive-comparison" title="Permanent link">&para;</a></h3>
+<p>All the primitives in this chapter side by side — scope, cost, and what each one
+is actually for.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>Primitive            Scope       Blocking?  Counts        Use Case
 </span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-50-3"><a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a>__syncthreads()      CTA         Yes        Threads        Simple intra-block sync
@@ -5290,6 +5465,7 @@
 </span><span id="__span-50-7"><a id="__codelineno-50-7" name="__codelineno-50-7" href="#__codelineno-50-7"></a>cp.async.bulk.wait_group CTA     Yes        Groups         Bulk copy batch control
 </span></code></pre></div>
 <h3 id="the-producerconsumer-mbarrier-pattern">The Producer/Consumer mbarrier Pattern<a class="headerlink" href="#the-producerconsumer-mbarrier-pattern" title="Permanent link">&para;</a></h3>
+<p>The canonical loop. Copy this rather than reconstructing it from memory.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>INIT (once):
 </span><span id="__span-51-2"><a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>  [thread 0] mbarrier.init [mbar], 1
 </span><span id="__span-51-3"><a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a>  __syncthreads()
@@ -5306,6 +5482,8 @@
 </span><span id="__span-51-14"><a id="__codelineno-51-14" name="__codelineno-51-14" href="#__codelineno-51-14"></a>  → repeat (no re-init needed: barrier auto-resets thread count!)
 </span></code></pre></div>
 <h3 id="cpasyncbulk-group-pattern">cp.async.bulk Group Pattern<a class="headerlink" href="#cpasyncbulk-group-pattern" title="Permanent link">&para;</a></h3>
+<p>The §15 equivalent, for pipelines that don't need the full precision of
+<code>mbarrier</code>.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a>// Issue copies (uncommitted):
 </span><span id="__span-52-2"><a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a>cp.async.bulk ... ;       // tile K+1
 </span><span id="__span-52-3"><a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a>cp.async.bulk ... ;       // tile K+1 part 2
