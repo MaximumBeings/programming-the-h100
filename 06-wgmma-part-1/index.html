@@ -2764,9 +2764,32 @@
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on any H100 or B200 instance.</p>
 </blockquote>
 <p><strong>What this covers:</strong> Everything from Lesson 6 — the four key innovations in Hopper's tensor core model, the paradigm shift from warp to warp group as the unit of execution, how wgmma.mma_async works and why it is non-blocking, the WGMMA pipeline (fence → load → compute → collect), the full instruction syntax and all qualifier meanings (.sync, .aligned, scale_d, imm-scale, imm-trans), operand location rules (A in registers vs SMEM, B always in SMEM, D always in registers), ldmatrix for loading A tiles (address phase, register phase, swizzle addressing, x1/x2/x4 vectorization), the 64-bit WGMMA descriptor (base address, LBO, SBO, matrix base offset, swizzle mode bits), all supported tile shapes for BF16/FP16/TF32/FP8/INT8, register layout and output accumulator structure, and stmatrix for writing results back. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.</p>
+<p><strong>How to read this chapter.</strong> This is where the book stops moving data around
+and starts doing arithmetic with it. <code>wgmma</code> is the instruction that drives
+Hopper's tensor cores, and it is the single most demanding piece of the Hopper
+ISA: it is asynchronous, it is issued by 128 threads acting as one, and it
+insists that its operands be laid out in memory in a very particular way.</p>
+<p>The chapter has four movements. Sections 1–3 are conceptual — what changed in
+Hopper, what a <em>warp group</em> is, and the four-stage shape every wgmma kernel
+takes. Sections 4–7 cover the instruction itself and the rules it enforces.
+Sections 8–11 deal with getting operands into the right registers, which is
+where most of the real difficulty lives. Sections 12–14 cover the descriptor —
+the 64-bit word that tells the tensor core how to walk shared memory.</p>
+<p>Two pieces of advice. First, do not try to write a wgmma kernel until you have
+read §12 and §13; the descriptor is where nearly all first attempts fail.
+Second, this chapter assumes Chapter 2's packed types and address conversion,
+and Chapter 4's swizzling. If §11 stops making sense, that is where to go back
+to.</p>
 <hr />
 <h2 id="before-you-start-hardware-setup-installation">★ BEFORE YOU START — Hardware, Setup &amp; Installation<a class="headerlink" href="#before-you-start-hardware-setup-installation" title="Permanent link">&para;</a></h2>
+<p>Unlike the earlier chapters, there is no fallback hardware here. <code>wgmma</code> exists
+only on Hopper and later — an A100 will not compile a single example in this
+chapter. If you already have an H100 with a working <code>nvcc</code>, skip to the Table of
+Contents.</p>
 <h3 id="what-hardware-can-you-use">What Hardware Can You Use?<a class="headerlink" href="#what-hardware-can-you-use" title="Permanent link">&para;</a></h3>
+<p>The short version: <code>sm_90a</code> or <code>sm_100a</code>, nothing older. Note the trailing <code>a</code>
+— it is not optional. Compiling for plain <code>sm_90</code> silently drops the wgmma
+instructions.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Hardware Compatibility Matrix
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -2788,6 +2811,7 @@
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    read directly from SMEM without first loading into registers.
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-lambda-labs">Cloud GPU Rental — Lambda Labs<a class="headerlink" href="#cloud-gpu-rental-lambda-labs" title="Permanent link">&para;</a></h3>
+<p>Usually the cheapest hourly H100.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Lambda Labs Setup (H100)
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
@@ -2798,6 +2822,7 @@
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  5. Compile: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out &amp;&amp; ./out
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-aws">Cloud GPU Rental — AWS<a class="headerlink" href="#cloud-gpu-rental-aws" title="Permanent link">&para;</a></h3>
+<p>The <code>p5</code> family is H100; <code>p4d</code> is A100 and will not work for this chapter.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>AWS p5 Setup (H100)
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -2808,6 +2833,10 @@
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  A100 (p4d): use sm_80. wgmma sections will NOT compile.
 </span></code></pre></div>
 <h3 id="hopper-vs-blackwell-what-changes">Hopper vs Blackwell — What Changes<a class="headerlink" href="#hopper-vs-blackwell-what-changes" title="Permanent link">&para;</a></h3>
+<p>Worth reading once if you are on a B100 or B200. Blackwell keeps <code>wgmma</code>
+working but adds a successor instruction family (<code>tcgen05</code>) with a different
+layout, so code written here runs — it simply is not the fastest thing available
+on that chip.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Hopper (sm_90a) vs Blackwell (sm_100a) — WGMMA Differences
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -2851,6 +2880,13 @@
 </ol>
 <hr />
 <h2 id="1-four-key-innovations">1 — Four Key Innovations<a class="headerlink" href="#1-four-key-innovations" title="Permanent link">&para;</a></h2>
+<p>Start with why Hopper's tensor cores needed a new instruction at all.</p>
+<p>Ampere's <code>mma.sync</code> worked, and worked well. But it was synchronous, it was
+issued per warp, and it required both operands to be sitting in registers —
+which meant threads spent much of their time shuffling data into place rather
+than computing. Hopper changes all four of those things at once.</p>
+<p>This section names the four changes. Everything else in the chapter is a
+consequence of one of them, so it is worth reading before the details start.</p>
 <h3 id="11-what-changed-in-hoppers-tensor-cores">1.1 What Changed in Hopper's Tensor Cores<a class="headerlink" href="#11-what-changed-in-hoppers-tensor-cores" title="Permanent link">&para;</a></h3>
 <p>Ampere's tensor cores were good. Hopper's are in a different class — not just because of raw FLOP counts, but because of fundamental architectural changes that allow the compute units to stay busy nearly 100% of the time. There are four specific innovations, and each one removes a bottleneck that existed in Ampere.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>The Four Hopper MMA Innovations — What Each Fixes
@@ -2907,6 +2943,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="2-warp-to-warp-group">2 — Warp to Warp Group<a class="headerlink" href="#2-warp-to-warp-group" title="Permanent link">&para;</a></h2>
+<p>The first and most disorienting of those four changes: the unit of execution
+gets bigger.</p>
+<p>For a decade the warp — 32 threads — was the atom of NVIDIA GPU execution. On
+Hopper, <code>wgmma</code> is issued by a <strong>warp group</strong>: four consecutive warps, 128
+threads, acting as a single instruction issuer. Not four cooperating warps —
+one instruction, issued once, on behalf of all of them.</p>
+<p>This has practical consequences you'll feel immediately. Block sizes want to be
+multiples of 128. Divergence between the four warps is not merely slow, it is
+illegal. And the output matrix is spread across all 128 threads rather than 32,
+which is what §8 is about.</p>
 <h3 id="21-what-is-a-warp-group">2.1 What Is a Warp Group?<a class="headerlink" href="#21-what-is-a-warp-group" title="Permanent link">&para;</a></h3>
 <p>A <strong>warp group</strong> is a set of 4 consecutive warps within a thread block that are fused together by the hardware for wgmma execution. A warp has 32 threads; a warp group has 4 × 32 = <strong>128 threads</strong>. The warp group is the new fundamental unit of tensor core computation on Hopper.</p>
 <p>This is a significant paradigm shift. For a decade, the warp (32 threads) was the unit of SIMT execution on NVIDIA GPUs. Every instruction — loads, math, branches — was issued per-warp. Hopper adds warp group as a higher-level concept specifically for tensor core operations.</p>
@@ -2945,6 +2991,8 @@
 </span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>  w_in_wg = warp &amp; 3;                 // warp index within group (0..3)
 </span></code></pre></div>
 <h3 id="22-how-the-warp-scheduler-fuses-warps">2.2 How the Warp Scheduler Fuses Warps<a class="headerlink" href="#22-how-the-warp-scheduler-fuses-warps" title="Permanent link">&para;</a></h3>
+<p>What the hardware is actually doing underneath the abstraction — and why the
+four warps must be consecutive and must arrive together.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Warp Fusion — What Happens at the Hardware Level
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
@@ -2988,6 +3036,11 @@
 </span></code></pre></div>
 <hr />
 <h2 id="3-the-wgmma-pipeline">3 — The WGMMA Pipeline<a class="headerlink" href="#3-the-wgmma-pipeline" title="Permanent link">&para;</a></h2>
+<p>Before any syntax, the shape. Every wgmma kernel ever written follows the same
+four stages: <strong>fence → load → compute → collect</strong>.</p>
+<p>Learn this sequence now, because the next four sections are each an expansion of
+one stage of it, and the ordering is not negotiable — the fence exists precisely
+to stop the compiler from rearranging what follows.</p>
 <h3 id="31-the-four-stage-pipeline">3.1 The Four-Stage Pipeline<a class="headerlink" href="#31-the-four-stage-pipeline" title="Permanent link">&para;</a></h3>
 <p>Every wgmma-based kernel follows the same four-stage pipeline. Understanding this pipeline is the prerequisite for writing correct, high-performance GEMM kernels.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>The WGMMA Pipeline — Four Stages
@@ -3041,6 +3094,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="4-wgmmafencesyncaligned-the-register-barrier">4 — wgmma.fence.sync.aligned — The Register Barrier<a class="headerlink" href="#4-wgmmafencesyncaligned-the-register-barrier" title="Permanent link">&para;</a></h2>
+<p>Stage one of the pipeline, and the instruction most often misunderstood.</p>
+<p>The name suggests a general-purpose memory fence. It is not. <code>wgmma.fence</code>
+orders <strong>register</strong> access — it tells the hardware that the accumulator
+registers your threads have been writing are now finished with, and the tensor
+core may take them over. It does nothing at all about shared memory; if you need
+your SMEM writes visible to wgmma, you need a different fence entirely (Chapter
+3, §7.4).</p>
+<p>§4.2 introduces commit and wait groups, which work exactly like the
+<code>cp.async.bulk</code> groups from Chapter 3 §15 — but for arithmetic rather than
+copies. Chapter 7 takes them much further.</p>
 <h3 id="41-what-wgmmafence-does-and-what-it-does-not-do">4.1 What wgmma.fence Does — and What It Does NOT Do<a class="headerlink" href="#41-what-wgmmafence-does-and-what-it-does-not-do" title="Permanent link">&para;</a></h3>
 <p><code>wgmma.fence.sync.aligned</code> is frequently misunderstood. It is specifically a <strong>register-ordering barrier</strong> for wgmma. It ensures that prior warp group register accesses are visible in the right order before a later <code>wgmma.mma_async</code> reads or writes those same registers.</p>
 <p>It does NOT order shared memory writes. If you need to ensure that SMEM writes are visible before wgmma reads them, you need <code>fence.proxy.async</code> (Lesson 3).</p>
@@ -3140,6 +3203,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="5-wgmmamma_async-the-core-instruction">5 — wgmma.mma_async — The Core Instruction<a class="headerlink" href="#5-wgmmamma_async-the-core-instruction" title="Permanent link">&para;</a></h2>
+<p>The instruction itself. It computes <code>D = A × B + C</code> on a tile, and the <code>_async</code>
+suffix carries the whole story: it returns immediately, having merely <em>handed
+the work over</em> to the tensor cores.</p>
+<p>That is what makes overlap possible — and what makes the accumulator registers
+untouchable until you have waited. Reading <code>D</code> before <code>wgmma.wait_group</code> returns
+does not give you a partial result; it gives you garbage, silently.</p>
 <h3 id="51-what-wgmmamma_async-does">5.1 What wgmma.mma_async Does<a class="headerlink" href="#51-what-wgmmamma_async-does" title="Permanent link">&para;</a></h3>
 <p><code>wgmma.mma_async</code> is the core tensor core instruction for Hopper. It computes a matrix multiply-accumulate (MMA) operation: <strong>D = A × B + C</strong>, where D and C are in thread registers, A can be in registers or SMEM, and B is always in SMEM. The operation is <strong>asynchronous</strong> — the instruction is issued, the hardware accepts it into a queue, and the thread immediately continues. The actual computation happens in the background on dedicated tensor core hardware.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>wgmma.mma_async — The Computation It Performs
@@ -3175,6 +3244,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="6-instruction-qualifiers">6 — Instruction Qualifiers<a class="headerlink" href="#6-instruction-qualifiers" title="Permanent link">&para;</a></h2>
+<p>A <code>wgmma</code> instruction is a long chain of dot-separated qualifiers, and each one
+is load-bearing. This section takes them in three groups.</p>
+<p>§6.1 covers <code>.sync</code> and <code>.aligned</code> — the promises you make about all 128 threads
+arriving together. §6.2 covers the shape and dtype, which are not free
+parameters: only specific <code>m×n×k</code> combinations exist per precision, and §14
+lists them all. §6.3 covers the immediate operands, including <code>scale_d</code>, the
+flag that decides whether this instruction accumulates onto <code>D</code> or overwrites it
+— the difference between a working K-loop and a wrong answer.</p>
 <h3 id="61-sync-and-aligned-what-they-enforce">6.1 .sync and .aligned — What They Enforce<a class="headerlink" href="#61-sync-and-aligned-what-they-enforce" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>.sync and .aligned — The Convergence Qualifiers
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3323,6 +3400,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="7-operand-locations">7 — Operand Locations<a class="headerlink" href="#7-operand-locations" title="Permanent link">&para;</a></h2>
+<p>A short section with one hard rule in it, and it constrains your entire kernel
+design.</p>
+<p><code>B</code> must live in shared memory. Always. There is no register path for it. <code>A</code>
+may live in either registers or shared memory, and <code>C</code>/<code>D</code> are always in
+registers, distributed across the warp group.</p>
+<p>That asymmetry is why the rest of this chapter splits the way it does: §8–§11
+are about the register path for <code>A</code>, and §12–§13 are about the shared-memory
+path used by <code>B</code> and, optionally, <code>A</code>.</p>
 <h3 id="71-where-a-b-cd-must-live">7.1 Where A, B, C/D Must Live<a class="headerlink" href="#71-where-a-b-cd-must-live" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Operand Location Rules — Where Data Must Reside
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3376,6 +3461,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="8-the-d-register-operand-output-layout">8 — The D Register Operand — Output Layout<a class="headerlink" href="#8-the-d-register-operand-output-layout" title="Permanent link">&para;</a></h2>
+<p>Where the answer ends up — and it is not anywhere convenient.</p>
+<p>The output tile is scattered across all 128 threads of the warp group, and each
+thread holds a set of non-contiguous elements chosen by the hardware, not by
+you. You cannot pick this layout, and you cannot ignore it: any epilogue you
+write has to either work in that layout or move data out of it, which is what
+<code>stmatrix</code> (§15) is for.</p>
+<p>Work through the worked example here rather than skimming it. Knowing which
+element lives in which thread's register is the difference between an epilogue
+that works and one that transposes your matrix by accident.</p>
 <h3 id="81-how-output-elements-are-distributed-across-threads">8.1 How Output Elements Are Distributed Across Threads<a class="headerlink" href="#81-how-output-elements-are-distributed-across-threads" title="Permanent link">&para;</a></h3>
 <p>The output D matrix is distributed across all 128 threads of the warp group. Each thread holds a non-contiguous portion of the output tile. Understanding this distribution is essential for writing the epilogue (applying softmax, scaling, and storing results back to SMEM or global memory).</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>D Register Distribution — m64n128k16 FP32 Example
@@ -3436,6 +3530,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="9-a-in-registers-ldmatrix">9 — A in Registers — ldmatrix<a class="headerlink" href="#9-a-in-registers-ldmatrix" title="Permanent link">&para;</a></h2>
+<p>If <code>A</code> is going into registers, you cannot get it there with an ordinary load.</p>
+<p>The reason is the layout from §8: the tensor core expects each thread to hold a
+specific, scattered set of elements, and reproducing that pattern with
+<code>ld.shared</code> would mean every thread computing its own irregular address and
+issuing several loads. <code>ldmatrix</code> is a single instruction that reads an 8×8 tile
+out of shared memory and deals the elements to the right threads in hardware.</p>
+<p>§9.2 covers the <code>x1</code>/<code>x2</code>/<code>x4</code> variants — how many tiles to fetch per
+instruction. Bigger is generally better, for the usual reason: fewer
+instructions, fewer addresses.</p>
 <h3 id="91-why-ldmatrix-exists">9.1 Why ldmatrix Exists<a class="headerlink" href="#91-why-ldmatrix-exists" title="Permanent link">&para;</a></h3>
 <p>When matrix A is loaded into registers for reuse, you can't use a normal <code>ld.shared</code> instruction. That's because the tensor core expects A data in a very specific <strong>fragmented layout</strong> across the 32 lanes of a warp. This layout does not correspond to any simple linear ordering of elements.</p>
 <p><code>ldmatrix</code> is a hardware instruction that reads data from shared memory and distributes it across the warp's registers in EXACTLY the fragmented layout that the tensor core hardware expects. No software shuffling needed.</p>
@@ -3474,6 +3577,8 @@
 </span><span id="__span-16-33"><a id="__codelineno-16-33" name="__codelineno-16-33" href="#__codelineno-16-33"></a>  .trans:   Optional — transpose while loading (row-major → col-major).
 </span></code></pre></div>
 <h3 id="92-ldmatrix-vectorization-x1-x2-x4">9.2 ldmatrix Vectorization — x1, x2, x4<a class="headerlink" href="#92-ldmatrix-vectorization-x1-x2-x4" title="Permanent link">&para;</a></h3>
+<p>One, two, or four 8×8 tiles per instruction. The choice affects how many threads
+must supply an address, which is the subject of the next section.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>x1, x2, x4 — How Many 8×8 Matrices to Load
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
@@ -3513,6 +3618,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="10-ldmatrix-address-and-register-phases">10 — ldmatrix — Address and Register Phases<a class="headerlink" href="#10-ldmatrix-address-and-register-phases" title="Permanent link">&para;</a></h2>
+<p><code>ldmatrix</code> does two quite different things in sequence, and separating them in
+your head is the key to getting the address arithmetic right.</p>
+<p>In the <strong>address phase</strong>, a subset of threads each supply one address — the
+start of one row of one 8×8 tile. In the <strong>register phase</strong>, the hardware
+redistributes the fetched data across all 32 threads according to the fixed
+tensor core layout.</p>
+<p>The consequence that catches people: the thread that provides an address is
+usually not the thread that receives that data. The two phases have nothing to
+do with each other.</p>
 <h3 id="101-the-two-phase-execution">10.1 The Two-Phase Execution<a class="headerlink" href="#101-the-two-phase-execution" title="Permanent link">&para;</a></h3>
 <p><code>ldmatrix</code> works in two distinct phases that are important to understand for writing the correct address calculation.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>ldmatrix — The Two-Phase Execution Model
@@ -3575,6 +3689,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="11-swizzle-address-calculation">11 — Swizzle Address Calculation<a class="headerlink" href="#11-swizzle-address-calculation" title="Permanent link">&para;</a></h2>
+<p>Now the two hard parts meet. The tile in shared memory was written by the TMA
+with swizzling applied (Chapter 4, §10) — so the address a thread must hand to
+<code>ldmatrix</code> is not the naive <code>row × stride + col</code>. It is that, XORed.</p>
+<p>This is the single most error-prone calculation in the chapter, and it fails in
+the worst possible way: the kernel runs, produces numbers, and the numbers are
+wrong. Work the formula through by hand on the example given before trusting any
+code you write against it.</p>
 <h3 id="111-computing-the-smem-address-for-ldmatrix">11.1 Computing the SMEM Address for ldmatrix<a class="headerlink" href="#111-computing-the-smem-address-for-ldmatrix" title="Permanent link">&para;</a></h3>
 <p>The SMEM containing the A tile was written by TMA with swizzling applied (Lesson 4). When ldmatrix reads it, the threads must provide addresses that account for this swizzle, so the reads land in different banks (conflict-free). The swizzle address formula uses an XOR of high-order address bits to remap bank assignments.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>Swizzle Address Formula — How the XOR Works
@@ -3653,6 +3774,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="12-the-wgmma-descriptor">12 — The WGMMA Descriptor<a class="headerlink" href="#12-the-wgmma-descriptor" title="Permanent link">&para;</a></h2>
+<p>The other operand path. Where <code>A</code>-in-registers needed <code>ldmatrix</code>, operands read
+straight from shared memory need a <strong>descriptor</strong> — a single 64-bit integer that
+tells the tensor core everything about the tile's layout.</p>
+<p>If the TMA descriptor from Chapter 4 felt like a lot of parameters packed into
+one object, this is the same idea one level down: base address, two strides, an
+offset, and the swizzle mode, all bit-packed into one register.</p>
+<p>§12.1 explains what it encodes; §12.2 builds one step by step. Get this wrong
+and wgmma reads the correct memory in the wrong order — again, silently.</p>
 <h3 id="121-what-the-descriptor-is">12.1 What the Descriptor Is<a class="headerlink" href="#121-what-the-descriptor-is" title="Permanent link">&para;</a></h3>
 <p>The WGMMA descriptor is a <strong>64-bit integer</strong> (stored in a register) that encodes everything wgmma needs to find and read a matrix tile from shared memory. It replaces the need for threads to compute element addresses at runtime — the hardware interprets the descriptor and generates all required SMEM accesses internally.</p>
 <p>Both A (when reading from SMEM) and B operands require descriptors. The descriptor encodes: base address, leading byte offset (LBO), stride byte offset (SBO), matrix base offset, and swizzle mode.</p>
@@ -3702,6 +3831,9 @@
 </span><span id="__span-20-44"><a id="__codelineno-20-44" name="__codelineno-20-44" href="#__codelineno-20-44"></a>  addresses and strides must be 16-byte aligned anyway.
 </span></code></pre></div>
 <h3 id="122-building-the-descriptor">12.2 Building the Descriptor<a class="headerlink" href="#122-building-the-descriptor" title="Permanent link">&para;</a></h3>
+<p>The bit-packing, field by field. Note that the address fields are <em>shifted</em> —
+descriptors store encoded values, not raw byte offsets, and forgetting the shift
+is the classic first bug.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>Descriptor Construction — Step by Step
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
@@ -3762,7 +3894,17 @@
 </span></code></pre></div>
 <hr />
 <h2 id="13-descriptor-fields-lbo-sbo-base-offset-swizzle">13 — Descriptor Fields — LBO, SBO, Base Offset, Swizzle<a class="headerlink" href="#13-descriptor-fields-lbo-sbo-base-offset-swizzle" title="Permanent link">&para;</a></h2>
+<p>The two stride fields inside the descriptor have famously unhelpful names, so
+here is the plain version before you read the details.</p>
+<p><strong>LBO</strong> (§13.1) is how far to jump to reach the next element along the tile's
+leading dimension. <strong>SBO</strong> (§13.2) is how far to jump along the other one. Which
+is which depends on whether your tile is row- or column-major, which is why the
+names are abstract rather than saying "row" and "column".</p>
+<p>§13.3 covers the remaining fields, including the swizzle mode bits — which must
+match the swizzle the TMA actually applied when it wrote the tile. A mismatch
+here is not caught by anything.</p>
 <h3 id="131-lbo-leading-byte-offset">13.1 LBO — Leading Byte Offset<a class="headerlink" href="#131-lbo-leading-byte-offset" title="Permanent link">&para;</a></h3>
+<p>The stride along the leading dimension — the one that varies fastest in memory.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>LBO (Leading Byte Offset) — Navigating the Leading Dimension
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
@@ -3791,6 +3933,8 @@
 </span><span id="__span-22-26"><a id="__codelineno-22-26" name="__codelineno-22-26" href="#__codelineno-22-26"></a>    LBO = (8 × 32) / 16 = 16  → LBO_field = 16.
 </span></code></pre></div>
 <h3 id="132-sbo-stride-byte-offset">13.2 SBO — Stride Byte Offset<a class="headerlink" href="#132-sbo-stride-byte-offset" title="Permanent link">&para;</a></h3>
+<p>The stride along the other dimension. The worked example is the fastest way to
+see which of the two you need.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>SBO (Stride Byte Offset) — Navigating the Non-Leading Dimension
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
@@ -3817,6 +3961,8 @@
 </span><span id="__span-23-24"><a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a>  Together they allow wgmma to traverse any 2D tile layout in SMEM.
 </span></code></pre></div>
 <h3 id="133-matrix-base-offset-and-swizzle-mode-bits">13.3 Matrix Base Offset and Swizzle Mode Bits<a class="headerlink" href="#133-matrix-base-offset-and-swizzle-mode-bits" title="Permanent link">&para;</a></h3>
+<p>The remaining fields. The swizzle bits must agree with what the TMA did when it
+wrote this tile — Chapter 4, §10 — and nothing checks that they do.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>Matrix Base Offset and Swizzle Mode
 </span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
@@ -3853,7 +3999,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="14-all-supported-tile-shapes">14 — All Supported Tile Shapes<a class="headerlink" href="#14-all-supported-tile-shapes" title="Permanent link">&para;</a></h2>
+<p>Reference material, but reference material with a rule hidden in it: the tile
+shape is not a free parameter. <code>M</code> is always 64. <code>K</code> is fixed by the precision
+— 16 for BF16/FP16, 8 for TF32, 32 for FP8 and INT8. Only <code>N</code> is genuinely
+yours to choose.</p>
+<p>Skim the four tables now to absorb that pattern, then come back when you need a
+specific instruction name.</p>
 <h3 id="141-bf16-and-fp16-k16-variants">14.1 BF16 and FP16 — k16 Variants<a class="headerlink" href="#141-bf16-and-fp16-k16-variants" title="Permanent link">&para;</a></h3>
+<p>The most common case, and the one to read if you only read one.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>BF16 / FP16 Tile Shapes — m64nXk16
 </span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
@@ -3886,6 +4039,7 @@
 </span><span id="__span-25-30"><a id="__codelineno-25-30" name="__codelineno-25-30" href="#__codelineno-25-30"></a>    N=128: (64×128)/128 = 64 FP16 values = 32 FP32-packed registers.
 </span></code></pre></div>
 <h3 id="142-tf32-k8-variants">14.2 TF32 — k8 Variants<a class="headerlink" href="#142-tf32-k8-variants" title="Permanent link">&para;</a></h3>
+<p>Half the K depth, because each element is twice the width.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>TF32 Tile Shapes — m64nXk8
 </span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
@@ -3911,6 +4065,8 @@
 </span><span id="__span-26-23"><a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>    NOT available for TF32 variants (no transpose modifier).
 </span></code></pre></div>
 <h3 id="143-fp8-k32-variants">14.3 FP8 — k32 Variants<a class="headerlink" href="#143-fp8-k32-variants" title="Permanent link">&para;</a></h3>
+<p>Double the K depth, for the same reason in reverse. Chapter 7 covers FP8 in
+depth.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>FP8 Tile Shapes — m64nXk32
 </span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>
@@ -3938,6 +4094,7 @@
 </span><span id="__span-27-25"><a id="__codelineno-27-25" name="__codelineno-27-25" href="#__codelineno-27-25"></a>  imm-trans: NOT available for FP8 variants.
 </span></code></pre></div>
 <h3 id="144-int8-and-uint8-k32-variants">14.4 INT8 and UINT8 — k32 Variants<a class="headerlink" href="#144-int8-and-uint8-k32-variants" title="Permanent link">&para;</a></h3>
+<p>The integer path, mostly used for quantized inference.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>INT8 / UINT8 Tile Shapes — m64nXk32 Integer
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
@@ -3962,6 +4119,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="15-stmatrix-writing-results-back-to-smem">15 — stmatrix — Writing Results Back to SMEM<a class="headerlink" href="#15-stmatrix-writing-results-back-to-smem" title="Permanent link">&para;</a></h2>
+<p>The mirror image of <code>ldmatrix</code>, and the answer to the problem §8 raised.</p>
+<p>Your results are scattered across 128 threads in the tensor core's layout.
+Writing them out with ordinary stores would mean 128 threads each computing an
+irregular address and fighting over shared memory banks. <code>stmatrix</code> reverses
+<code>ldmatrix</code>: threads hand over their registers, the hardware works out where each
+element belongs.</p>
+<p>This section is the introduction. Chapter 7 §6–§8 covers it properly, including
+the awkward fact that <code>stmatrix</code> has no 32-bit variant while your accumulator is
+FP32.</p>
 <h3 id="151-why-stmatrix-exists">15.1 Why stmatrix Exists<a class="headerlink" href="#151-why-stmatrix-exists" title="Permanent link">&para;</a></h3>
 <p>After <code>wgmma.wait_group&lt;0&gt;</code>, the D matrix elements are scattered across all 128 threads' registers in the fragmented wgmma output layout. To write these results back to a contiguous region of SMEM (or global memory), you need <code>stmatrix</code> — the inverse of <code>ldmatrix</code>. It takes the distributed register fragments and deposits them into a contiguous SMEM layout that threads can easily write to global memory.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>stmatrix — The Inverse of ldmatrix
@@ -4007,6 +4173,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="16-putting-it-all-together">16 — Putting It All Together<a class="headerlink" href="#16-putting-it-all-together" title="Permanent link">&para;</a></h2>
+<p>One complete program that builds a real WGMMA descriptor and validates every
+field of it against hand-computed values.</p>
+<p>The validation is the point. A descriptor is an opaque 64-bit integer, and a
+wrong one produces plausible-looking wrong answers rather than an error — so the
+habit worth taking from this section is checking the bits before trusting the
+math.</p>
 <h3 id="161-full-example-wgmma-descriptor-construction-and-validation">16.1 Full Example: WGMMA Descriptor Construction and Validation<a class="headerlink" href="#161-full-example-wgmma-descriptor-construction-and-validation" title="Permanent link">&para;</a></h3>
 <p><strong>Manual Worked Example Before the Code:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Setup: m64n64k16, BF16 inputs, FP32 accumulator.
@@ -4292,7 +4464,11 @@
 </span></code></pre></div>
 <hr />
 <h2 id="17-quick-reference">17 — Quick Reference<a class="headerlink" href="#17-quick-reference" title="Permanent link">&para;</a></h2>
+<p>The chapter as reference cards. The last one, <em>Common Mistakes and Fixes</em>, is
+worth reading in full even though nothing in it is new — every entry is a
+failure mode that produces wrong numbers instead of an error message.</p>
 <h3 id="wgmmamma_async-instruction-syntax">wgmma.mma_async Instruction Syntax<a class="headerlink" href="#wgmmamma_async-instruction-syntax" title="Permanent link">&para;</a></h3>
+<p>Every qualifier in order, with what each one does.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>Full syntax:
 </span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>  wgmma.mma_async.sync.aligned.{shape}.{dtypeD}.{dtypeA}.{dtypeB}
 </span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>      {d_regs}, {a_desc_or_regs}, b_desc,
@@ -4308,6 +4484,7 @@
 </span><span id="__span-33-13"><a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>  imm-trans-b: 0=no transpose, 1=transpose B in flight
 </span></code></pre></div>
 <h3 id="operand-location-rules">Operand Location Rules<a class="headerlink" href="#operand-location-rules" title="Permanent link">&para;</a></h3>
+<p>Section 7 on one line: B in SMEM, always.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>Operand    Location Options         Notes
 </span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>A          Registers (ldmatrix)     Use when A is reused across N tiles
@@ -4316,6 +4493,8 @@
 </span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>C/D        Registers ONLY           Always; D written back via stmatrix
 </span></code></pre></div>
 <h3 id="wgmmafence-when-to-call-it">wgmma.fence — When to Call It<a class="headerlink" href="#wgmmafence-when-to-call-it" title="Permanent link">&para;</a></h3>
+<p>The placement rules. When in doubt, the answer is "before the first wgmma of a
+group, after any register writes to the accumulator."</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>Call wgmma.fence.sync.aligned:
 </span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>  □ Before the FIRST wgmma.mma_async in a warp group
 </span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>  □ After the LAST wgmma.mma_async, before reading d[] registers
@@ -4327,6 +4506,8 @@
 </span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>  mbarrier barrier   → for TMA completion tracking (different purpose)
 </span></code></pre></div>
 <h3 id="d-register-count-formula">D Register Count Formula<a class="headerlink" href="#d-register-count-formula" title="Permanent link">&para;</a></h3>
+<p>How many registers your accumulator will occupy — worth computing before you
+choose an <code>N</code>, since this is what drives occupancy.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>D_REGS_per_thread = (M × N) / num_threads = (64 × N) / 128 = N / 2
 </span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>
 </span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>N=8:   4 regs    N=64: 32 regs    N=128: 64 regs    N=256: 128 regs
@@ -4334,6 +4515,7 @@
 </span><span id="__span-36-5"><a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>For FP16 acc: actual register count = D_REGS_per_thread / 2 (pairs packed as FP16x2)
 </span></code></pre></div>
 <h3 id="tile-shapes-by-precision">Tile Shapes by Precision<a class="headerlink" href="#tile-shapes-by-precision" title="Permanent link">&para;</a></h3>
+<p>Section 14 condensed to one card.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>Precision    Shape          K    D type   Notes
 </span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>BF16/FP16    m64nXk16      16   f32/f16  Most common; dominant for H100 training
@@ -4345,6 +4527,8 @@
 </span><span id="__span-37-9"><a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>N range for INT8: 8 to 224 in multiples of 8 (28 valid values)
 </span></code></pre></div>
 <h3 id="wgmma-descriptor-bit-layout">WGMMA Descriptor Bit Layout<a class="headerlink" href="#wgmma-descriptor-bit-layout" title="Permanent link">&para;</a></h3>
+<p>The 64-bit word, field by field. Keep this one open while writing descriptor
+code.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>Bits     Field                  Encoding
 </span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>0-13     Base address           smem_addr &gt;&gt; 4   (16B granularity)
@@ -4355,6 +4539,8 @@
 </span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>62-63    Swizzle mode           00=none, 01=128B★, 10=64B, 11=32B
 </span></code></pre></div>
 <h3 id="common-mistakes-and-fixes">Common Mistakes and Fixes<a class="headerlink" href="#common-mistakes-and-fixes" title="Permanent link">&para;</a></h3>
+<p>Read this before debugging anything. Each entry corresponds to a bug that
+compiles cleanly and returns wrong numbers.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>Mistake                                   Symptom              Fix
 </span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>──────────────────────────────────────────────────────────────────────────────
 </span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>Missing wgmma.fence before first wgmma    Wrong results        Add fence before first call

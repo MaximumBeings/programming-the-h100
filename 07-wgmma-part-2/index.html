@@ -2722,9 +2722,27 @@
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on any H100 or B200 instance.</p>
 </blockquote>
 <p><strong>What this covers:</strong> Everything from Lesson 7 — commit/wait group mechanics for overlapping wgmma with data preparation (the pipeline-friendly API), wgmma.fence dual roles (group boundary + register hazard control), stmatrix for cooperative accumulator writeback (address phase, register layout, x1/x2/x4 variants, FP32 vs FP16 accumulator paths), the FP8 paradigm shift (E4M3 vs E5M2 formats, scaling factors, packed types e4m3x2/x4, the cvt.satfinite quantization instruction, K-major layout requirement, precision pitfalls with large K), and Sparse WGMMA (2:4 structured sparsity, sp-meta register, sp-sel thread selector, metadata packing for FP16/BF16/FP8/TF32). Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.</p>
+<p><strong>How to read this chapter.</strong> Chapter 6 got a single <code>wgmma</code> instruction to
+issue correctly. This one is about everything that turns that instruction into a
+fast kernel — and about the two ways Hopper lets you go faster still.</p>
+<p>There are four independent parts, and they can be read in any order. Sections
+1–5 are about <strong>pipelining</strong>: commit and wait groups, and what actually overlaps
+with what. Sections 6–8 are about the <strong>epilogue</strong> — getting results out of the
+accumulator registers and back into shared memory with <code>stmatrix</code>. Sections 9–14
+are about <strong>FP8</strong>, which is less a data type than a small numerical discipline
+you have to adopt. Sections 15–17 are about <strong>structured sparsity</strong>.</p>
+<p>If you are here to make an existing wgmma kernel faster, read §1–§5. If you are
+here because your epilogue is transposing your matrix, read §6–§8. If you are
+here for FP8, start at §9 and read straight through to §14 — especially §14,
+which documents a hardware behaviour that is not in the official numbers.</p>
 <hr />
 <h2 id="before-you-start-hardware-setup-installation">★ BEFORE YOU START — Hardware, Setup &amp; Installation<a class="headerlink" href="#before-you-start-hardware-setup-installation" title="Permanent link">&para;</a></h2>
+<p>Same requirements as Chapter 6: Hopper or later, compiled for <code>sm_90a</code>. The FP8
+and sparse sections have no pre-Hopper equivalent at all. Skip ahead if you
+already have a machine set up.</p>
 <h3 id="what-hardware-can-you-use">What Hardware Can You Use?<a class="headerlink" href="#what-hardware-can-you-use" title="Permanent link">&para;</a></h3>
+<p><code>sm_90a</code> or <code>sm_100a</code>. The trailing <code>a</code> matters — without it the wgmma
+instructions are silently unavailable.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Hardware Compatibility Matrix
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -2747,6 +2765,7 @@
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    On Blackwell (sm_100a): ldmatrix.b8 is supported for FP8 A loading.
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-lambda-labs">Cloud GPU Rental — Lambda Labs<a class="headerlink" href="#cloud-gpu-rental-lambda-labs" title="Permanent link">&para;</a></h3>
+<p>Usually the cheapest hourly H100.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Lambda Labs Setup (H100)
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
@@ -2757,6 +2776,7 @@
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  5. Compile: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out &amp;&amp; ./out
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-aws">Cloud GPU Rental — AWS<a class="headerlink" href="#cloud-gpu-rental-aws" title="Permanent link">&para;</a></h3>
+<p><code>p5</code> is the H100 family. <code>p4d</code> is A100 and cannot run this chapter.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>AWS p5 Setup (H100)
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -2767,6 +2787,8 @@
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  A100 (p4d): use sm_80. Nothing in this lesson compiles on sm_80.
 </span></code></pre></div>
 <h3 id="hopper-vs-blackwell-what-changes">Hopper vs Blackwell — What Changes<a class="headerlink" href="#hopper-vs-blackwell-what-changes" title="Permanent link">&para;</a></h3>
+<p>Read once if you are on Blackwell. Everything here still runs; Blackwell simply
+adds a newer tensor core generation alongside it.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Hopper (sm_90a) vs Blackwell (sm_100a) — Lesson 7 Differences
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -2812,6 +2834,14 @@
 </ol>
 <hr />
 <h2 id="1-wgmma-groups">1 — WGMMA Groups<a class="headerlink" href="#1-wgmma-groups" title="Permanent link">&para;</a></h2>
+<p>Chapter 6 §5 made the essential point: <code>wgmma.mma_async</code> returns immediately and
+leaves the tensor cores working in the background. This section asks the obvious
+follow-up — how do you find out when they're done?</p>
+<p>The answer is not "wait for instruction number seven." The hardware does not
+track individual wgmma instructions; it tracks <em>batches</em> of them. You draw a
+line under a set of instructions, and then you wait on the batch.</p>
+<p>That indirection is what makes deep pipelining possible, and it is what §2 and
+§3 are about.</p>
 <h3 id="11-why-grouping-exists-the-tracking-problem">1.1 Why Grouping Exists — The Tracking Problem<a class="headerlink" href="#11-why-grouping-exists-the-tracking-problem" title="Permanent link">&para;</a></h3>
 <p><code>wgmma.mma_async</code> launches tensor core operations asynchronously — each call puts a matrix multiply "in flight" and returns immediately. This is great for latency hiding, but it creates a bookkeeping challenge: how do you know when a specific set of wgmma operations is done?</p>
 <p>If the hardware had to track each individual wgmma separately, the scoreboard overhead would be enormous. And if you had to wait for every single wgmma individually, you would lose all the overlap benefit. The solution is <strong>grouping</strong>: batch several wgmma calls into a named group, then wait for entire groups rather than individual operations.</p>
@@ -2864,6 +2894,11 @@
 </span></code></pre></div>
 <hr />
 <h2 id="2-wgmmacommit_group">2 — wgmma.commit_group<a class="headerlink" href="#2-wgmmacommit_group" title="Permanent link">&para;</a></h2>
+<p>The instruction that draws the line. Everything issued since the last
+<code>commit_group</code> becomes one countable batch.</p>
+<p>It does not wait, it does not synchronise, and it costs essentially nothing — it
+is pure bookkeeping. The mental model that helps: you are pushing a marker onto
+a queue.</p>
 <h3 id="21-what-commit_group-does">2.1 What commit_group Does<a class="headerlink" href="#21-what-commit_group-does" title="Permanent link">&para;</a></h3>
 <p><code>wgmma.commit_group.sync.aligned</code> closes the currently open batch of wgmma operations and makes them trackable as a single named unit (a "group"). Any <code>wgmma.mma_async</code> calls issued AFTER this point belong to the NEXT group.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>wgmma.commit_group — Mechanics
@@ -2918,6 +2953,13 @@
 </span></code></pre></div>
 <hr />
 <h2 id="3-wgmmawait_group">3 — wgmma.wait_group<a class="headerlink" href="#3-wgmmawait_group" title="Permanent link">&para;</a></h2>
+<p>The other half, and the one with the counter-intuitive argument.</p>
+<p><code>wgmma.wait_group&lt;N&gt;</code> waits until at most <strong>N</strong> groups remain outstanding — not
+until N groups have completed. So <code>wait_group&lt;0&gt;</code> means "wait for everything",
+and <code>wait_group&lt;1&gt;</code> means "let one batch stay in flight."</p>
+<p>That second form is the whole point. Keeping one group running while you prepare
+the next is how you stop the tensor cores from ever going idle, and picking N is
+the main tuning knob in a wgmma kernel.</p>
 <h3 id="31-what-wait_group-does">3.1 What wait_group Does<a class="headerlink" href="#31-what-wait_group-does" title="Permanent link">&para;</a></h3>
 <p><code>wgmma.wait_group.sync.aligned N</code> is the synchronization point. It stalls the thread until the number of still-pending committed groups drops to N or fewer. This gives precise control over how many groups can be "in flight" at once.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>wgmma.wait_group — The Synchronization Point
@@ -2976,6 +3018,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="4-the-commitwait-pipeline-what-actually-overlaps">4 — The Commit/Wait Pipeline — What Actually Overlaps<a class="headerlink" href="#4-the-commitwait-pipeline-what-actually-overlaps" title="Permanent link">&para;</a></h2>
+<p>It is easy to write a commit/wait pipeline that looks right and overlaps
+nothing. This section is about telling the two apart.</p>
+<p>The question to keep asking is: between issuing the math and waiting for it,
+what work is there that does not touch the accumulator registers? Loading the
+next tile qualifies. Computing the next set of descriptors qualifies. Reading
+<code>D</code> does not — that is exactly what you are waiting for.</p>
+<p>The timeline diagrams here are worth the time; they show where the cycles
+actually go.</p>
 <h3 id="41-the-complete-overlap-pattern">4.1 The Complete Overlap Pattern<a class="headerlink" href="#41-the-complete-overlap-pattern" title="Permanent link">&para;</a></h3>
 <p>The real power of groups becomes clear when you see the full pipeline. The key insight is that you are not just "commit then wait" — you are interleaving math, data preparation, and synchronization so that tensor cores are never idle.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>The Pipelined wgmma Pattern — Complete Timeline
@@ -3036,6 +3086,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="5-wgmmafence-dual-role-review">5 — wgmma.fence — Dual Role Review<a class="headerlink" href="#5-wgmmafence-dual-role-review" title="Permanent link">&para;</a></h2>
+<p><code>wgmma.fence</code> has appeared several times now, in slightly different roles, so
+this section consolidates it.</p>
+<p>It does two distinct jobs. It marks a <strong>group boundary</strong> — the point where one
+batch of wgmma instructions ends. And it controls <strong>register hazards</strong> — telling
+the hardware that your threads have finished writing the accumulator registers
+the tensor core is about to claim.</p>
+<p>Most misplaced fences come from thinking about only one of those jobs at a time.
+Read this before you go debugging a pipeline that produces intermittently wrong
+results.</p>
 <h3 id="51-the-two-things-wgmmafence-controls">5.1 The Two Things wgmma.fence Controls<a class="headerlink" href="#51-the-two-things-wgmmafence-controls" title="Permanent link">&para;</a></h3>
 <p>At this point in the course you have seen wgmma.fence appear in multiple contexts. It is worth consolidating exactly what it does and does not do, because the confusion between its roles causes hard-to-debug bugs.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>wgmma.fence.sync.aligned — Complete Role Summary
@@ -3100,6 +3159,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="6-stmatrix-writing-accumulators-back-to-smem">6 — stmatrix — Writing Accumulators Back to SMEM<a class="headerlink" href="#6-stmatrix-writing-accumulators-back-to-smem" title="Permanent link">&para;</a></h2>
+<p>The epilogue problem, stated plainly.</p>
+<p>When <code>wait_group&lt;0&gt;</code> returns, your answer exists — scattered across 128 threads'
+registers in a layout the hardware chose. Getting it into shared memory as a
+coherent tile with ordinary stores would mean every thread computing an
+irregular address, and 128 threads colliding on 32 memory banks while they do
+it.</p>
+<p><code>stmatrix</code> is the hardware's answer: threads hand over registers, the hardware
+works out where each element belongs. It is <code>ldmatrix</code> (Chapter 6, §9) run
+backwards, deliberately so.</p>
 <h3 id="61-why-stmatrix-exists-the-scatter-problem">6.1 Why stmatrix Exists — The Scatter Problem<a class="headerlink" href="#61-why-stmatrix-exists-the-scatter-problem" title="Permanent link">&para;</a></h3>
 <p>After <code>wgmma.wait_group&lt;0&gt;</code> completes, the D matrix elements are scattered across 128 threads' registers in the hardware-defined wgmma output layout. This layout is highly non-contiguous — each thread holds elements from multiple non-adjacent rows and columns.</p>
 <p>Writing these back to SMEM with normal <code>st.shared</code> instructions would be a nightmare: each thread would need to compute complex, non-linear addresses to place its register values in the right SMEM locations. And even then, the result might have bank conflicts.</p>
@@ -3148,6 +3216,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="7-stmatrix-address-and-register-phases">7 — stmatrix — Address and Register Phases<a class="headerlink" href="#7-stmatrix-address-and-register-phases" title="Permanent link">&para;</a></h2>
+<p>Like <code>ldmatrix</code>, <code>stmatrix</code> runs in two phases — and they are the <em>same</em> two
+phases, which is the useful part.</p>
+<p>§7.1 covers the address phase: which threads supply addresses, and what those
+addresses mean. §7.2 covers the register phase: the striped layout each thread's
+registers must be in.</p>
+<p>The symmetry with <code>ldmatrix</code> is intentional and worth leaning on. If you can
+read a tile in with one, you can write it out with the other using the same
+address arithmetic.</p>
 <h3 id="71-phase-1-address-responsibility">7.1 Phase 1: Address Responsibility<a class="headerlink" href="#71-phase-1-address-responsibility" title="Permanent link">&para;</a></h3>
 <p>The address assignment in stmatrix follows the SAME pattern as ldmatrix. This symmetry is intentional — if you read with ldmatrix and write with stmatrix using the same address formula, the data is correctly reconstructed.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>stmatrix Address Phase — Who Points Where
@@ -3262,6 +3338,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="8-stmatrix-and-fp32-accumulators-the-conversion-requirement">8 — stmatrix and FP32 Accumulators — The Conversion Requirement<a class="headerlink" href="#8-stmatrix-and-fp32-accumulators-the-conversion-requirement" title="Permanent link">&para;</a></h2>
+<p>And here is the catch that trips up every first epilogue.</p>
+<p><code>stmatrix</code> handles 16-bit and 8-bit elements. It has no 32-bit form. But your
+accumulator is FP32, because that is what wgmma accumulates in. So the two do
+not connect directly — you must convert down to BF16 or FP16 first, in
+registers, before <code>stmatrix</code> will take your data.</p>
+<p>That is usually fine, since you probably wanted to store BF16 anyway. But it has
+to be a deliberate step in your epilogue, and the section covers what the
+conversion costs and where to put it.</p>
 <h3 id="81-the-fp32-problem-stmatrix-only-supports-16-bit">8.1 The FP32 Problem — stmatrix Only Supports 16-bit<a class="headerlink" href="#81-the-fp32-problem-stmatrix-only-supports-16-bit" title="Permanent link">&para;</a></h3>
 <p><code>stmatrix</code> only supports <code>.b16</code> (16-bit) and <code>.b8</code> (8-bit) element types. It has no <code>.b32</code> (32-bit) variant. This creates a critical divergence in the epilogue path depending on whether your wgmma used FP32 or FP16 accumulators.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>stmatrix and FP32 — The Conversion Requirement
@@ -3319,6 +3403,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="9-fp8-the-paradigm-shift">9 — FP8 — The Paradigm Shift<a class="headerlink" href="#9-fp8-the-paradigm-shift" title="Permanent link">&para;</a></h2>
+<p>The chapter changes subject here. Sections 9 through 14 are about FP8.</p>
+<p>The headline is simple: half the bits, twice the tensor core throughput, half
+the memory traffic. The reason it is a "paradigm shift" rather than just another
+dtype is what comes with it. BF16 was close enough to FP32 that you could mostly
+swap it in and carry on. FP8 is not: with a maximum representable value of 448,
+ordinary neural network activations overflow it immediately.</p>
+<p>So FP8 is not a type you adopt. It is a type plus a scaling discipline, and
+§10–§14 build that discipline up piece by piece.</p>
 <h3 id="91-why-fp8-matters">9.1 Why FP8 Matters<a class="headerlink" href="#91-why-fp8-matters" title="Permanent link">&para;</a></h3>
 <p>FP8 represents the same kind of paradigm shift for AI inference and training that BF16 represented in 2020. By halving the bit width of FP16 (from 16 bits to 8 bits), FP8 delivers roughly double the tensor core throughput and halves memory bandwidth requirements for the matrix multiply operations that dominate AI workloads.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>FP8 Impact on H100 Throughput
@@ -3357,6 +3449,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="10-fp8-formats-e4m3-vs-e5m2">10 — FP8 Formats — E4M3 vs E5M2<a class="headerlink" href="#10-fp8-formats-e4m3-vs-e5m2" title="Permanent link">&para;</a></h2>
+<p>There are two FP8 formats, and the split tells you something about what floating
+point actually buys you.</p>
+<p>With only eight bits to spend, you must choose between <strong>range</strong> and
+<strong>precision</strong>. E4M3 spends more bits on the mantissa: finer resolution, maximum
+value 448. E5M2 spends more on the exponent: coarser, but reaching to 57,344.</p>
+<p>§10.1 reviews IEEE 754 briefly if the sign/exponent/mantissa split isn't fresh.
+§10.2 explains why both formats exist — forward passes and backward passes want
+different things, and the Transformer Engine switches between them accordingly.</p>
 <h3 id="101-ieee-754-floating-point-review">10.1 IEEE 754 Floating Point Review<a class="headerlink" href="#101-ieee-754-floating-point-review" title="Permanent link">&para;</a></h3>
 <p>Before diving into FP8, it helps to review how floating point numbers are encoded. Every floating point number has three fields: sign, exponent, and mantissa. The key tradeoff in any reduced-precision format is how to split the available bits between exponent (which controls dynamic range) and mantissa (which controls precision).</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Floating Point Format Review — Sign, Exponent, Mantissa
@@ -3387,6 +3487,8 @@
 </span><span id="__span-14-26"><a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>               The 8 bits of FP8 force a painful tradeoff between the two.
 </span></code></pre></div>
 <h3 id="102-e4m3-vs-e5m2-different-tools-for-different-phases">10.2 E4M3 vs E5M2 — Different Tools for Different Phases<a class="headerlink" href="#102-e4m3-vs-e5m2-different-tools-for-different-phases" title="Permanent link">&para;</a></h3>
+<p>The practical division: E4M3 forward, E5M2 backward. The reason is that
+gradients span a far wider range than activations, and range is what E5M2 buys.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>E4M3 vs E5M2 — Why Two Formats Exist
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
@@ -3443,6 +3545,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="11-fp8-packed-types">11 — FP8 Packed Types<a class="headerlink" href="#11-fp8-packed-types" title="Permanent link">&para;</a></h2>
+<p>The same packing story from Chapter 2 §10, now at its most extreme: four FP8
+values in a single 32-bit register.</p>
+<p>The reason is worth stating, because it explains a lot of GPU memory behaviour.
+The memory system never fetches less than a 32-byte sector. Request one FP8
+byte and you have paid for thirty-two. Packing is how you make sure the other
+thirty-one are useful to you.</p>
 <h3 id="111-why-packing-is-necessary">11.1 Why Packing Is Necessary<a class="headerlink" href="#111-why-packing-is-necessary" title="Permanent link">&para;</a></h3>
 <p>The GPU memory controller never fetches less than 32 bytes (one "sector") at a time. If you request a single FP8 byte, the GPU fetches 32 bytes, delivers your 1 byte, and wastes the other 31. To fix this, FP8 values must always be accessed in packed groups. NVIDIA defines two packing types: <code>x2</code> (two FP8 in 16 bits) and <code>x4</code> (four FP8 in 32 bits).</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>FP8 Packed Types — x2 and x4
@@ -3501,6 +3609,16 @@
 </span></code></pre></div>
 <hr />
 <h2 id="12-fp8-quantization-cvtsatfinite">12 — FP8 Quantization — cvt.satfinite<a class="headerlink" href="#12-fp8-quantization-cvtsatfinite" title="Permanent link">&para;</a></h2>
+<p>How data actually becomes FP8 — and it is not a cast.</p>
+<p>§12.1 covers <code>cvt.satfinite</code>, the conversion instruction, and specifically the
+<code>satfinite</code> part: values too large to represent clamp to the maximum rather than
+becoming infinity. That saturation is a deliberate design choice, and it is what
+makes FP8 survivable at all.</p>
+<p>§12.2 covers scaling factors, which is the real content of this section.
+Multiply your tensor by a scale before converting, divide it back out after —
+so that its actual range lands inside FP8's tiny window instead of clipping.
+Getting that scale right, per tensor and per step, is what the Transformer
+Engine automates.</p>
 <h3 id="121-converting-to-fp8-the-quantization-step">12.1 Converting to FP8 — The Quantization Step<a class="headerlink" href="#121-converting-to-fp8-the-quantization-step" title="Permanent link">&para;</a></h3>
 <p>Before FP8 data can be fed to WGMMA, it must be converted (quantized) from the higher-precision format (FP32 or FP16) in which it was computed. The key instruction is <code>cvt.rn.satfinite.e4m3x2.f16x2</code> (and its variants), which converts two FP16 values to two FP8 E4M3 values in a single instruction.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>cvt.satfinite — FP8 Quantization Instruction
@@ -3612,7 +3730,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="13-fp8-wgmma-instruction-and-layout-rules">13 — FP8 WGMMA — Instruction and Layout Rules<a class="headerlink" href="#13-fp8-wgmma-instruction-and-layout-rules" title="Permanent link">&para;</a></h2>
+<p>FP8 imposes constraints that BF16 does not, and this is where they get stated.</p>
+<p>§13.1 gives the instruction form — note <code>k32</code>, twice the K depth of BF16, since
+each element is half the size. §13.2 covers the operand paths, and contains the
+rule to remember: for FP8, the layout requirements are stricter than you are
+used to. A K-major layout that was optional before becomes mandatory here.</p>
 <h3 id="131-the-fp8-wgmma-instruction">13.1 The FP8 WGMMA Instruction<a class="headerlink" href="#131-the-fp8-wgmma-instruction" title="Permanent link">&para;</a></h3>
+<p>The instruction form. <code>k32</code> rather than <code>k16</code> — the K depth doubles because the
+elements halve.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>FP8 WGMMA — Complete Instruction Form
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
@@ -3644,6 +3769,8 @@
 </span><span id="__span-19-29"><a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a>    N=256: 128 registers (heavy register pressure)
 </span></code></pre></div>
 <h3 id="132-a-operand-registers-rs-vs-descriptor-ss-for-fp8">13.2 A Operand: Registers (RS) vs Descriptor (SS) for FP8<a class="headerlink" href="#132-a-operand-registers-rs-vs-descriptor-ss-for-fp8" title="Permanent link">&para;</a></h3>
+<p>The two paths for getting <code>A</code> in, and the layout each one demands. This is
+stricter than the BF16 case in Chapter 6 §7.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>FP8 A Loading — SS vs RS Path on Hopper
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
@@ -3708,6 +3835,15 @@
 </span></code></pre></div>
 <hr />
 <h2 id="14-fp8-precision-pitfalls-k-slicing">14 — FP8 Precision Pitfalls — K-Slicing<a class="headerlink" href="#14-fp8-precision-pitfalls-k-slicing" title="Permanent link">&para;</a></h2>
+<p>The most valuable section in the chapter, and the one you will not find in the
+documentation.</p>
+<p>FP8 wgmma is specified as accumulating in FP32. Measured on real H100 silicon,
+it does not — the effective accumulator behaves closer to 22 bits of mantissa
+than 32. For short K it makes no difference. For long K it compounds, and your
+GEMM quietly loses precision as the reduction gets deeper.</p>
+<p>The fix is <strong>K-slicing</strong>: break the reduction into chunks, and promote to real
+FP32 between them. This section shows how to decide chunk size, and what it
+costs. If you are shipping FP8 inference, read this one twice.</p>
 <h3 id="141-the-fp22-accumulation-issue">14.1 The "FP22" Accumulation Issue<a class="headerlink" href="#141-the-fp22-accumulation-issue" title="Permanent link">&para;</a></h3>
 <p>Even though FP8 wgmma is documented as using an FP32 accumulator, empirical measurements on H100 reveal that the actual effective accumulation precision is closer to what might be called "FP22" — approximately 8-bit exponent and 13-bit mantissa, rather than FP32's 23-bit mantissa. This means the lowest FP32 mantissa bits may be lost during long dot products.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>FP8 Precision Pitfalls — Accumulation Depth
@@ -3767,6 +3903,14 @@
 </span></code></pre></div>
 <hr />
 <h2 id="15-sparse-wgmma-24-structured-sparsity">15 — Sparse WGMMA — 2:4 Structured Sparsity<a class="headerlink" href="#15-sparse-wgmma-24-structured-sparsity" title="Permanent link">&para;</a></h2>
+<p>The last subject, and the second way to double throughput.</p>
+<p>The bargain is this: if you can arrange for exactly two of every four
+consecutive elements in <code>A</code> to be zero, the hardware will store only the
+non-zeros and run the multiply at twice the rate. Half the data read, half the
+work done, same answer.</p>
+<p>The catch is bookkeeping. The tensor core needs to know <em>which</em> two of each four
+survived, and that information has to be encoded and handed over alongside the
+values — which is what §16 and §17 are for.</p>
 <h3 id="151-what-sparse-wgmma-is">15.1 What Sparse WGMMA Is<a class="headerlink" href="#151-what-sparse-wgmma-is" title="Permanent link">&para;</a></h3>
 <p>Sparse WGMMA is a variant where matrix A is <strong>structured sparse</strong>: for every group of 4 consecutive elements in each row, exactly 2 are zero. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.</p>
 <p>The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. This information is encoded in a "metadata" register (sp-meta) that accompanies the sparse A matrix.</p>
@@ -3820,6 +3964,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="16-sp-meta-the-metadata-register">16 — sp-meta — The Metadata Register<a class="headerlink" href="#16-sp-meta-the-metadata-register" title="Permanent link">&para;</a></h2>
+<p>Where the "which two" information lives.</p>
+<p><code>sp-meta</code> is a register holding two bits per quartet, naming the positions of
+the surviving elements. Two bits, four positions, two survivors — exactly enough
+to reconstruct the original layout, and no more.</p>
+<p>The encoding is fiddly and differs by data type. Work through the worked example
+rather than trusting your reading of the table.</p>
 <h3 id="161-what-sp-meta-encodes">16.1 What sp-meta Encodes<a class="headerlink" href="#161-what-sp-meta-encodes" title="Permanent link">&para;</a></h3>
 <p>The sp-meta register tells the hardware WHERE the non-zeros are within each quartet. For 2:4 sparsity (FP16/BF16/FP8/INT8), each quartet needs 2 indices (0,1,2,3), each requiring 2 bits. So 4 bits per quartet encodes which 2 of 4 positions are non-zero.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>sp-meta — Packing Sparsity Indices
@@ -3887,6 +4037,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="17-sp-sel-the-thread-selector">17 — sp-sel — The Thread Selector<a class="headerlink" href="#17-sp-sel-the-thread-selector" title="Permanent link">&para;</a></h2>
+<p>The last piece, and the least intuitive.</p>
+<p>Metadata is not supplied by every thread — it comes from one designated thread
+per group, and <code>sp-sel</code> is the compile-time constant that says which. It is
+essentially a plumbing detail, but a wrong <code>sp-sel</code> means the hardware reads
+metadata from a thread that never wrote any, and the result is wrong numbers
+rather than an error.</p>
 <h3 id="171-what-sp-sel-does">17.1 What sp-sel Does<a class="headerlink" href="#171-what-sp-sel-does" title="Permanent link">&para;</a></h3>
 <p><code>sp-sel</code> (sparsity selector) is a compile-time constant (0 or 1) that tells the hardware which threads within each group of 4 consecutive threads are responsible for providing the metadata register. It exists because not all 128 threads in the warp group need to provide unique metadata — only specific "contributor" threads are read.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>sp-sel — Thread Metadata Responsibility
@@ -3940,6 +4096,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="18-putting-it-all-together">18 — Putting It All Together<a class="headerlink" href="#18-putting-it-all-together" title="Permanent link">&para;</a></h2>
+<p>One complete kernel that uses most of the chapter at once: a pipelined <code>wgmma</code>
+loop with commit/wait groups from §1–§5, and an <code>stmatrix</code> epilogue from
+§6–§8.</p>
+<p>This is the closest thing in the book to the inner loop of a real CUTLASS GEMM.
+Chapters 8 and 9 take it the rest of the way, adding warp specialisation and a
+fused epilogue on top of exactly this structure.</p>
 <h3 id="181-full-example-pipelined-wgmma-with-commitwait-and-stmatrix-epilogue">18.1 Full Example: Pipelined wgmma with commit/wait and stmatrix Epilogue<a class="headerlink" href="#181-full-example-pipelined-wgmma-with-commitwait-and-stmatrix-epilogue" title="Permanent link">&para;</a></h3>
 <p><strong>Manual Worked Example Before the Code:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>Scenario: m64n64k16, BF16→FP16 accumulator (to avoid FP32→FP16 conversion in epilogue).
@@ -4228,7 +4390,12 @@
 </span></code></pre></div>
 <hr />
 <h2 id="19-quick-reference">19 — Quick Reference<a class="headerlink" href="#19-quick-reference" title="Permanent link">&para;</a></h2>
+<p>The chapter as reference cards. As in Chapter 6, the <em>Common Mistakes</em> card at
+the end is worth reading even though nothing in it is new — these are the bugs
+that compile cleanly.</p>
 <h3 id="wgmma-group-api">wgmma Group API<a class="headerlink" href="#wgmma-group-api" title="Permanent link">&para;</a></h3>
+<p>Commit and wait in one card. Remember that <code>N</code> is how many groups may remain
+outstanding, not how many to wait for.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>Instruction                              Purpose
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>wgmma.commit_group.sync.aligned          Seal pending wgmma ops into a group
@@ -4240,6 +4407,7 @@
 </span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>N&gt;1: keep multiple groups in flight → deep pipeline (rare)
 </span></code></pre></div>
 <h3 id="stmatrix-reference">stmatrix Reference<a class="headerlink" href="#stmatrix-reference" title="Permanent link">&para;</a></h3>
+<p>The instruction forms, and the reminder that there is no 32-bit variant.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Variant                                  Data    Output   Use Case
 </span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>stmatrix.sync.aligned.m8n8.x4.shared.b16  FP16x2  16×16   FP16/BF16 accumulator ★
@@ -4253,6 +4421,7 @@
 </span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>  Option B: st.shared.f32 directly from d[] registers (correct FP32, manual scatter)
 </span></code></pre></div>
 <h3 id="fp8-formats-at-a-glance">FP8 Formats at a Glance<a class="headerlink" href="#fp8-formats-at-a-glance" title="Permanent link">&para;</a></h3>
+<p>E4M3 and E5M2 side by side — bit layout, range, and which phase each one is for.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Format   Bits  E  M  Max Value  Best For              Notes
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>E4M3     8     4  3  448        Forward pass (weights, acts)  Has NaN, no Inf
@@ -4263,6 +4432,7 @@
 </span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>e5m2x4   32    —  —  —          Storage, transport            4 E5M2 packed
 </span></code></pre></div>
 <h3 id="fp8-quantization-instructions">FP8 Quantization Instructions<a class="headerlink" href="#fp8-quantization-instructions" title="Permanent link">&para;</a></h3>
+<p>The conversion instructions, with their saturation behaviour.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>Instruction                                   Input   Output    Notes
 </span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>cvt.rn.satfinite.e4m3x2.f16x2  fp8, fp16x2   f16x2  e4m3x2   2 FP16 → 2 FP8 E4M3
@@ -4271,6 +4441,8 @@
 </span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>.satfinite: out-of-range values clamp to ±max (don't become Inf/NaN)
 </span></code></pre></div>
 <h3 id="sparse-wgmma-sp-sel-and-sp-meta-rules">Sparse WGMMA sp-sel and sp-meta Rules<a class="headerlink" href="#sparse-wgmma-sp-sel-and-sp-meta-rules" title="Permanent link">&para;</a></h3>
+<p>Sections 16 and 17 condensed. The encoding table is the part to check against
+rather than recall.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>Precision     Sparsity  K/op  sp-sel   sp-meta cycle       Loop unroll
 </span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>──────────────────────────────────────────────────────────────────────────
 </span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>TF32          1:2       k16   0 or 1   Alternate: 14, 4    Unroll 2×
@@ -4283,6 +4455,8 @@
 </span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>For FP8/INT8: all threads contribute → sp-sel MUST be 0.
 </span></code></pre></div>
 <h3 id="wgmmafence-placement-checklist">wgmma.fence Placement Checklist<a class="headerlink" href="#wgmmafence-placement-checklist" title="Permanent link">&para;</a></h3>
+<p>Section 5 as a checklist. Run through it when a pipeline produces intermittently
+wrong results.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>  □ BEFORE the first wgmma.mma_async in any new warpgroup sequence
 </span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>  □ AFTER the last wgmma.mma_async (and after wait_group&lt;0&gt;) before reading d[]
 </span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>  □ AFTER ldmatrix (if A is loaded to registers) and BEFORE wgmma that uses them
@@ -4294,6 +4468,8 @@
 </span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>  ✗ Ordering global memory operations → use fence.sc.gpu or similar
 </span></code></pre></div>
 <h3 id="common-mistakes-and-fixes">Common Mistakes and Fixes<a class="headerlink" href="#common-mistakes-and-fixes" title="Permanent link">&para;</a></h3>
+<p>Each entry is a bug that produces wrong numbers rather than an error message.
+Check here before reaching for a profiler.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>Mistake                                    Symptom              Fix
 </span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>──────────────────────────────────────────────────────────────────────────────
 </span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>Missing fence before first wgmma.mma_async Wrong accumulator     Add wgmma.fence before
