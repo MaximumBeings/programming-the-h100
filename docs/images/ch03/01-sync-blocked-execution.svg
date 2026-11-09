@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="388.8pt" viewBox="0 0 720 388.8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T14:18:47.141690</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 388.8 
+L 720 388.8 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 54.1008 137.264 
+L 232.8912 137.264 
+Q 234.288 137.264 234.288 135.9328 
+L 234.288 78.6912 
+Q 234.288 77.36 232.8912 77.36 
+L 54.1008 77.36 
+Q 52.704 77.36 52.704 78.6912 
+L 52.704 135.9328 
+Q 52.704 137.264 54.1008 137.264 
+z
+" clip-path="url(#p12a42cf1b3)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 235.6848 137.264 
+L 309.7152 137.264 
+Q 311.112 137.264 311.112 135.9328 
+L 311.112 78.6912 
+Q 311.112 77.36 309.7152 77.36 
+L 235.6848 77.36 
+Q 234.288 77.36 234.288 78.6912 
+L 234.288 135.9328 
+Q 234.288 137.264 235.6848 137.264 
+z
+" clip-path="url(#p12a42cf1b3)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 326.4768 137.264 
+L 505.2672 137.264 
+Q 506.664 137.264 506.664 135.9328 
+L 506.664 78.6912 
+Q 506.664 77.36 505.2672 77.36 
+L 326.4768 77.36 
+Q 325.08 77.36 325.08 78.6912 
+L 325.08 135.9328 
+Q 325.08 137.264 326.4768 137.264 
+z
+" clip-path="url(#p12a42cf1b3)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 508.0608 137.264 
+L 582.0912 137.264 
+Q 583.488 137.264 583.488 135.9328 
+L 583.488 78.6912 
+Q 583.488 77.36 582.0912 77.36 
+L 508.0608 77.36 
+Q 506.664 77.36 506.664 78.6912 
+L 506.664 135.9328 
+Q 506.664 137.264 508.0608 137.264 
+z
+" clip-path="url(#p12a42cf1b3)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 54.1008 330.288 
+L 582.0912 330.288 
+Q 583.488 330.288 583.488 328.9568 
+L 583.488 205.1552 
+Q 583.488 203.824 582.0912 203.824 
+L 54.1008 203.824 
+Q 52.704 203.824 52.704 205.1552 
+L 52.704 328.9568 
+Q 52.704 330.288 54.1008 330.288 
+z
+" clip-path="url(#p12a42cf1b3)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">The Synchronous World — Blocked Execution</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(126.786234 104.817313)">Fetch A</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(103.307484 115.645438)">(blocked, waiting)</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="272.7" y="109.715984" transform="rotate(-0 272.7 109.715984)">Compute A</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(399.153094 104.817313)">Fetch B</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(375.683484 115.645438)">(blocked, waiting)</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="545.076" y="109.715984" transform="rotate(-0 545.076 109.715984)">Compute B</text>
+   </g>
+   <g id="patch_7">
+    <path d="M 581.491567 147.248 
+Q 318.09628 147.248 54.700993 147.248 
+" style="fill: none; stroke: #555555; stroke-linecap: round"/>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="318.096" y="167.216" transform="rotate(-0 318.096 167.216)">Time →</text>
+   </g>
+   <g id="text_7">
+    <text style="font-style: italic; font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="360" y="50.736" transform="rotate(-0 360 50.736)">Only ONE of {fetching, computing} happens at any instant</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(148.809711 251.152406)">In H100 terms: fetching ≈ moving a tile HBM3 → SMEM (~200–500 ns).</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(190.951117 263.502406)">Computing ≈ one Tensor Core tile multiply (~1–5 ns).</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(154.1735 275.852406)">The fetch is 100–500× slower than the compute — so a synchronous</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(172.296977 288.202406)">kernel leaves the Tensor Cores idle essentially all of the time.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p12a42cf1b3">
+   <rect x="10.8" y="10.8" width="698.4" height="359.424"/>
+  </clipPath>
+ </defs>
+</svg>

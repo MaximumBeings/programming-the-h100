@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="388.8pt" viewBox="0 0 720 388.8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T14:18:47.188799</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 388.8 
+L 720 388.8 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 54.1008 120.624 
+L 274.7952 120.624 
+Q 276.192 120.624 276.192 119.2928 
+L 276.192 75.3632 
+Q 276.192 74.032 274.7952 74.032 
+L 54.1008 74.032 
+Q 52.704 74.032 52.704 75.3632 
+L 52.704 119.2928 
+Q 52.704 120.624 54.1008 120.624 
+z
+" clip-path="url(#paaf2dc016c)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 137.9088 173.872 
+L 358.6032 173.872 
+Q 360 173.872 360 172.5408 
+L 360 128.6112 
+Q 360 127.28 358.6032 127.28 
+L 137.9088 127.28 
+Q 136.512 127.28 136.512 128.6112 
+L 136.512 172.5408 
+Q 136.512 173.872 137.9088 173.872 
+z
+" clip-path="url(#paaf2dc016c)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 284.5728 120.624 
+L 358.6032 120.624 
+Q 360 120.624 360 119.2928 
+L 360 75.3632 
+Q 360 74.032 358.6032 74.032 
+L 284.5728 74.032 
+Q 283.176 74.032 283.176 75.3632 
+L 283.176 119.2928 
+Q 283.176 120.624 284.5728 120.624 
+z
+" clip-path="url(#paaf2dc016c)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 368.3808 173.872 
+L 442.4112 173.872 
+Q 443.808 173.872 443.808 172.5408 
+L 443.808 128.6112 
+Q 443.808 127.28 442.4112 127.28 
+L 368.3808 127.28 
+Q 366.984 127.28 366.984 128.6112 
+L 366.984 172.5408 
+Q 366.984 173.872 368.3808 173.872 
+z
+" clip-path="url(#paaf2dc016c)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 54.1008 330.288 
+L 644.9472 330.288 
+Q 646.344 330.288 646.344 328.9568 
+L 646.344 231.7792 
+Q 646.344 230.448 644.9472 230.448 
+L 54.1008 230.448 
+Q 52.704 230.448 52.704 231.7792 
+L 52.704 328.9568 
+Q 52.704 330.288 54.1008 330.288 
+z
+" clip-path="url(#paaf2dc016c)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">Latency Hiding — The Async Solution</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="164.448" y="99.673469" transform="rotate(-0 164.448 99.673469)">Fetch A — issued, runs in background</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="248.256" y="152.921469" transform="rotate(-0 248.256 152.921469)">Fetch B — issued immediately after</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="321.588" y="99.731984" transform="rotate(-0 321.588 99.731984)">Compute A</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="405.396" y="152.979984" transform="rotate(-0 405.396 152.979984)">Compute B</text>
+   </g>
+   <g id="patch_7">
+    <path d="M 448.790505 197.168 
+Q 251.74599 197.168 54.701476 197.168 
+" style="fill: none; stroke: #555555; stroke-linecap: round"/>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="248.256" y="217.136" transform="rotate(-0 248.256 217.136)">Time →</text>
+   </g>
+   <g id="text_7">
+    <text style="font-style: italic; font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="360" y="54.064" transform="rotate(-0 360 54.064)">Fetching and computing now overlap — both proxies stay busy</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(212.228219 270.639406)">Total time ≈ max(all fetches) + a little compute overhead</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(218.373531 282.989406)">vs. synchronous: sum(all fetches) + sum(all computes)</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(147.876109 295.339406)">This is why TMA + mbarrier + wgmma exist: so the Tensor Cores never have to wait.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="paaf2dc016c">
+   <rect x="10.8" y="10.8" width="698.4" height="359.424"/>
+  </clipPath>
+ </defs>
+</svg>

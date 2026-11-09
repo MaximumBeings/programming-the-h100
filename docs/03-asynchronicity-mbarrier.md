@@ -194,37 +194,9 @@ In a synchronous system, doing and fetching are chained together sequentially. Y
 
 Think of cooking a meal synchronously: you put water on to boil, then stand there watching the pot until it boils (fetching complete), then add the pasta (doing), then stand watching again until the pasta is cooked (fetching again), then drain it (doing). You accomplished nothing else for the entire 15 minutes the water and pasta were cooking. You were **blocked**.
 
-```
-The Synchronous World — Blocked Execution
-══════════════════════════════════════════════════════════════════════
+![The synchronous world — blocked execution](images/ch03/01-sync-blocked-execution.svg)
 
-  Time →
-  ┌────────────────────────────────────────────────────────────────┐
-  │                                                                │
-  │  Fetch A ████████████░░░░░░░░░░░░  Compute A  ▓▓▓             │
-  │  (waiting)               ↑              ↑                      │
-  │                     data arrives   can finally start           │
-  │                                                                │
-  │  Then:                                                         │
-  │  Fetch B ████████████░░░░░░░░░░░░  Compute B  ▓▓▓             │
-  │                                                                │
-  │  BLOCKED ████ = time spent waiting for memory (wasted!)        │
-  │  COMPUTE ▓▓▓  = time spent doing useful work                   │
-  │                                                                │
-  │  Total time = fetch_A + compute_A + fetch_B + compute_B        │
-  │  Utilization = (compute_A + compute_B) / total_time            │
-  │             = very low if fetch >> compute                     │
-  └────────────────────────────────────────────────────────────────┘
-
-  In CUDA / H100 hardware terms:
-  ─────────────────────────────────────────────────────────────────
-  Fetching → Moving data from HBM3 to Shared Memory (~200-500 ns)
-  Doing    → Tensor Core matrix multiply (~1-5 ns for tile)
-
-  The fetch is 100-500× SLOWER than the compute.
-  Synchronous execution means Tensor Cores sit idle 99% of the time
-  waiting for data. This is the problem we solve in this lesson.
-```
+*Fetch A blocks the thread completely before Compute A can even start, and the same happens again for Fetch B — only one of {fetching, computing} ever happens at a time, and on the H100 a fetch (HBM3 → SMEM, ~200–500 ns) is 100–500× slower than the compute it's blocking (~1–5 ns per Tensor Core tile multiply).*
 
 ### 1.2 Latency Hiding — The Async Solution
 
@@ -232,28 +204,12 @@ Asynchronicity solves the blocked-waiting problem by **decoupling the request fr
 
 The cooking analogy: put the water on, go chop vegetables while it heats, come back when you hear the boil. You accomplished two tasks in the time it took to do one. This is **latency hiding** — you didn't make the water boil faster, but you hid its latency behind useful work.
 
+![Latency hiding — the async solution](images/ch03/02-async-latency-hiding.svg)
+
+*Fetch A and Fetch B are issued back to back and run concurrently in the background; Compute A and Compute B each start as soon as their own fetch lands. Total time collapses to roughly `max(all fetches)` instead of `sum(all fetches) + sum(all computes)` — a speedup of up to fetch_latency / compute_time, which on this hardware is 100–500×.*
+
 ```
-Latency Hiding — The Async Solution
-══════════════════════════════════════════════════════════════════════
-
-  Time →
-  ┌────────────────────────────────────────────────────────────────┐
-  │                                                                │
-  │  Fetch A ████████████░░░░░░░░░░░░      ← issued, runs async  │
-  │  Fetch B     ████████████░░░░░░░░░░    ← issued immediately   │
-  │  Compute A               ▓▓▓          ← uses Fetch A result  │
-  │  Compute B                  ▓▓▓       ← uses Fetch B result  │
-  │                                                                │
-  │  BLOCKED ████ = memory operation in flight (overlapped!)       │
-  │  COMPUTE ▓▓▓  = useful work happening simultaneously          │
-  │                                                                │
-  │  Total time ≈ max(all fetches) + small compute overhead        │
-  │  vs. Sync:  sum(all fetches) + sum(all computes)               │
-  │                                                                │
-  │  Speedup = up to fetch_latency / compute_time (100-500×!)     │
-  └────────────────────────────────────────────────────────────────┘
-
-  The key insight:
+The key insight:
   ─────────────────────────────────────────────────────────────────
   If fetch_cost >> compute_cost, you MUST overlap them.
   The H100's Tensor Cores can multiply 256×128×64 matrices in ~1ns.
@@ -362,19 +318,13 @@ A blocking operation pauses the calling thread until the operation finishes. Con
 
 The advantage is simplicity: after a blocking call returns, you know the operation is done. The disadvantage is wasted time — the thread idles while waiting.
 
-```
-Blocking Operations — Characteristics
-══════════════════════════════════════════════════════════════════════
+![Blocking vs. non-blocking operations — thread timelines](images/ch03/03-blocking-vs-nonblocking-timelines.svg)
 
-  Thread timeline (blocking):
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ Thread  [issue op]──────────────────[wait]──────[continue]      │
-  │                   ↑                             ↑               │
-  │                launches                     op done,            │
-  │                operation                    unblocks            │
-  │                                                                 │
-  │  Time between [issue] and [continue] = wasted cycles            │
-  └─────────────────────────────────────────────────────────────────┘
+*Blocking: the thread issues the op and then sits idle until it completes before it can continue — the gap between issue and continue is pure wasted cycles. Non-blocking (§3.2): the thread issues the op, keeps doing other work, and only checks in with a poll once it actually needs the result.*
+
+```
+Blocking Operations — Reference
+══════════════════════════════════════════════════════════════════════
 
   CUDA examples of blocking operations:
   ─────────────────────────────────────────────────────────────────
@@ -396,21 +346,8 @@ Blocking Operations — Characteristics
 A non-blocking operation returns control immediately to the launching thread before the operation has finished. The thread must later check for completion via a separate mechanism.
 
 ```
-Non-Blocking Operations — Characteristics
+Non-Blocking Operations — Reference
 ══════════════════════════════════════════════════════════════════════
-
-  Thread timeline (non-blocking):
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ Thread [issue op]→[work]→[work]→[work]→[check]→[use result]    │
-  │                 ↑                         ↑                     │
-  │             launches                  polls: is op done?        │
-  │             op, continues             (yes: proceed)            │
-  │             immediately               (no: keep working)        │
-  │                                                                 │
-  │ Async Op         ████████████████████░░░ (finishes in background)│
-  │                                       ↑                         │
-  │                                 done flag set                   │
-  └─────────────────────────────────────────────────────────────────┘
 
   CUDA examples of non-blocking operations:
   ─────────────────────────────────────────────────────────────────
@@ -464,33 +401,13 @@ Speed Mismatch — H100 Numbers
 
   Ratio: memory time / compute time ≈ 40 μs / 1 μs = 40×
   Without async: Tensor Cores idle 97.5% of the time. Pure waste.
-
-  ─── The Hopper Solution ─────────────────────────────────────────
-
-  H100 has dedicated hardware units that run COMPLETELY INDEPENDENTLY:
-
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ SM (Streaming Multiprocessor)                                   │
-  │                                                                 │
-  │  ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐   │
-  │  │ Warp         │   │ Tensor Cores │   │ TMA Engine       │   │
-  │  │ Schedulers   │   │ (WGMMA)      │   │ (cp.async.bulk)  │   │
-  │  │              │   │              │   │                  │   │
-  │  │ Issues PTX   │   │ Doing math   │   │ Moving data      │   │
-  │  │ instructions │   │ on tiles     │   │ HBM → SMEM       │   │
-  │  │ (few ns)     │   │ (few ns)     │   │ (hundreds of ns) │   │
-  │  └──────┬───────┘   └──────┬───────┘   └────────┬─────────┘   │
-  │         │                  │                     │             │
-  │         └──────────────────┼─────────────────────┘             │
-  │                            │ mbarrier coordinates them         │
-  └────────────────────────────┼─────────────────────────────────── ┘
-                               │
-                    These three units run SIMULTANEOUSLY.
-                    The warp scheduler issues instructions fast.
-                    TMA handles the slow data movement.
-                    Tensor Cores crunch numbers on previously fetched data.
-                    mbarrier tells everyone when data is ready.
 ```
+
+H100 has dedicated hardware units that run **completely independently** of each other:
+
+![H100 SM — three independent async units](images/ch03/04-sm-async-units.svg)
+
+*The warp scheduler issues instructions in a few nanoseconds, Tensor Cores crunch on previously fetched tiles in a few nanoseconds, and the TMA Engine moves data from HBM3 to SMEM in the hundreds of nanoseconds it actually takes — all three run simultaneously, and mbarrier is the mechanism that tells each of them when the others' work is ready.*
 
 ### 4.2 The Two Problems Async Solves
 
@@ -563,51 +480,26 @@ The term "proxy" in CUDA's memory model refers to the **agent** performing a mem
 
 Different proxies have different views of memory. They access memory through different hardware paths, which means they can have inconsistent views of the same memory location at the same point in time. A write done by Proxy A may not be visible to Proxy B unless an explicit ordering instruction (a fence) is used to synchronize the two views.
 
+![The two proxies](images/ch03/05-two-proxies.svg)
+
+*The Generic Proxy is the thread itself, issuing ordinary `ld`/`st` and routed through L1 → L2 → HBM3. The Async Proxy is dedicated hardware (the TMA engine, the tensor cores) running `cp.async.bulk` / `wgmma`, routed through L2 → HBM3 with L1 skipped entirely — and running completely independently of any thread. Because they don't share a coherency domain by default, a write from one is not guaranteed visible to the other without an explicit fence (§7).*
+
 ```
-The Two Proxies
+The Two Proxies — PTX Examples
 ══════════════════════════════════════════════════════════════════════
 
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  GENERIC PROXY                                                   │
-  │  ─────────────                                                   │
-  │  Who: The executing thread (warp) itself.                        │
-  │  What: Normal loads and stores issued by your PTX instructions.  │
-  │  Path: Thread → L1 cache → L2 cache → HBM3                      │
-  │                                                                  │
-  │  Examples:                                                       │
-  │    ld.global.f32  → generic proxy reads from global memory       │
-  │    st.shared.f32  → generic proxy writes to shared memory        │
-  │    ld.shared.f32  → generic proxy reads from shared memory       │
-  │                                                                  │
-  │  Key property: Operations are ordered PER THREAD in program order│
-  │  (with some hardware reordering at scope boundaries).            │
-  └──────────────────────────────────────────────────────────────────┘
+  Generic Proxy:
+    ld.global.f32  → generic proxy reads from global memory
+    st.shared.f32  → generic proxy writes to shared memory
+    ld.shared.f32  → generic proxy reads from shared memory
+    Ordered PER THREAD in program order (with some hardware
+    reordering at scope boundaries).
 
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  ASYNC PROXY                                                     │
-  │  ──────────                                                      │
-  │  Who: A dedicated hardware unit (TMA engine, tensor core unit).  │
-  │  What: Bulk async copies and tensor core operations.             │
-  │  Path: TMA → L2 cache → HBM3  (BYPASSES L1 entirely!)           │
-  │        WGMMA → directly accesses shared memory layout            │
-  │                                                                  │
-  │  Examples:                                                       │
-  │    cp.async.bulk.tensor ... → TMA engine moves data (async proxy)│
-  │    wgmma.mma_async ...      → tensor cores compute (async proxy) │
-  │                                                                  │
-  │  Key property: Runs INDEPENDENTLY of the Generic Proxy.          │
-  │  The thread that issued the command has NO IDEA when it finishes.│
-  │  The thread does not automatically see the result.               │
-  └──────────────────────────────────────────────────────────────────┘
-
-  ─── The Critical Consequence ────────────────────────────────────
-
-  Generic Proxy writes → L1 cache → MAY NOT BE VISIBLE to Async Proxy!
-  Async Proxy writes   → L2 cache → MAY NOT BE VISIBLE to Generic Proxy!
-
-  They don't share the same cache coherency domain by default.
-  This is intentional — it enables independent operation.
-  But it means you MUST use explicit fences when they share data.
+  Async Proxy:
+    cp.async.bulk.tensor ... → TMA engine moves data (async proxy)
+    wgmma.mma_async ...      → tensor cores compute (async proxy)
+    The thread that issued the command has NO IDEA when it finishes
+    and does not automatically see the result.
 ```
 
 ### 5.2 Why Two Proxies Exist — The Hardware Reality
@@ -617,30 +509,13 @@ physical reason they are distinct: trace the two paths through the diagram below
 and notice that the generic proxy goes through L1 while the async proxy does
 not.
 
+![Hardware memory paths — why the proxies differ](images/ch03/06-proxy-hardware-paths.svg)
+
+*The Generic Proxy's path runs Thread → L1 → L2 → HBM3. The Async Proxy's path has the thread issue a command and return immediately, while the TMA Engine itself moves data HBM3 → SMEM completely independently — bypassing L1 entirely. When TMA writes to shared memory and the Generic Proxy later reads from shared memory through L1, those are genuinely different hardware paths that do not automatically stay in sync.*
+
 ```
-Hardware Memory Paths — Why the Proxies Differ
+The Consequence in Plain English
 ══════════════════════════════════════════════════════════════════════
-
-  Generic Proxy path (thread executes ld/st):
-  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
-  │  Thread  │──►│  L1 $    │──►│   L2 $   │──►│   HBM3   │
-  │ (warp)   │   │ (per SM) │   │ (shared) │   │ (DRAM)   │
-  └──────────┘   └──────────┘   └──────────┘   └──────────┘
-
-  Async Proxy path (TMA engine handles cp.async.bulk):
-  ┌──────────┐                  ┌──────────┐   ┌──────────┐
-  │  Thread  │─[issues cmd]─►  │          │   │          │
-  │ (warp)   │   returns imm.  │   TMA    │──►│   HBM3   │──►│SMEM│
-  └──────────┘                 │  Engine  │   │          │
-                               └──────────┘   └──────────┘
-                               (completely independent of thread!)
-
-  KEY DIFFERENCE: TMA BYPASSES L1 CACHE ENTIRELY.
-  When TMA writes to Shared Memory, it goes HBM3 → SMEM directly.
-  When the Generic Proxy reads from Shared Memory, it goes through L1.
-  These are different hardware paths that do not automatically sync.
-
-  ─── The Consequence in Plain English ────────────────────────────
 
   Scenario: Thread writes to global memory, then TMA reads same address.
 
@@ -673,32 +548,15 @@ input and fail in production. Learn to recognise the shapes.
 
 A RAW hazard occurs when the Async Proxy reads from a location that the Generic Proxy has recently written, but the write has not yet propagated to where the Async Proxy can see it. The Async Proxy reads stale data.
 
+Intended sequence: (1) Generic Proxy writes value V to address X, (2) Async Proxy reads address X and should see V. Here is what can happen without a fence:
+
+![Read-after-write (RAW) hazard](images/ch03/07-raw-hazard-timeline.svg)
+
+*The Generic Proxy's `st.global [X], V` lands in L1 only — not yet propagated to L2/HBM. The Async Proxy's `cp.async.bulk [X]`, issued right after, reads X directly from L2/HBM and gets the OLD value: L1 has `[X] = V` but L2 still has `[X] = OLD`, and the TMA only ever sees L2. The fix is `fence.proxy.async` between the write and the TMA launch, draining the Generic Proxy's pending writes into L2/HBM first.*
+
 ```
-Read-After-Write (RAW) Hazard — Visual Explanation
+Read-After-Write (RAW) Hazard — Concrete Example
 ══════════════════════════════════════════════════════════════════════
-
-  Intended sequence:
-    1. Generic Proxy writes value V to address X
-    2. Async Proxy reads address X → should see V
-
-  What can happen WITHOUT a fence:
-  ─────────────────────────────────────────────────────────────────
-
-  Time →
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  Generic Proxy (Thread):                                        │
-  │    st.global [X], V     →  V is written to L1 cache            │
-  │                             (not yet propagated to L2/HBM!)    │
-  │                                                                 │
-  │  Async Proxy (TMA — issued right after):                        │
-  │    cp.async.bulk [X]    →  TMA reads X from L2/HBM             │
-  │                             L2/HBM still has OLD value!         │
-  │                             TMA loads stale data into SMEM.     │
-  │                                                                 │
-  │  L1 cache:  [X] = V (new)    ← generic proxy sees this         │
-  │  L2 cache:  [X] = OLD        ← async proxy sees THIS           │
-  │             ↑ inconsistency!                                    │
-  └─────────────────────────────────────────────────────────────────┘
 
   Concrete example where this matters:
   ─────────────────────────────────────────────────────────────────
@@ -722,30 +580,15 @@ Read-After-Write (RAW) Hazard — Visual Explanation
 
 A WAR hazard occurs when the Async Proxy writes to a location that the Generic Proxy has recently read and cached locally. The Generic Proxy continues using its stale cached copy even though the true value has been updated.
 
+Intended sequence: (1) Generic Proxy reads value V from address X, possibly caching it, (2) Async Proxy writes new value V' to address X, (3) Generic Proxy should now see V' — but without synchronization, sees stale V instead. Here is what can happen:
+
+![Write-after-read (WAR) hazard](images/ch03/08-war-hazard-timeline.svg)
+
+*The Generic Proxy's `ld.global [X]` loads V into L1; a later `ld.global [X]` hits L1 and returns the same cached V, with no idea the Async Proxy has since updated X. In between, the Async Proxy's `cp.async.bulk [src]→[X]` writes V' to X via L2 without invalidating the Generic Proxy's L1 line — so the Generic Proxy keeps reading stale data (§13's two-barrier handshake is the fix).*
+
 ```
-Write-After-Read (WAR) Hazard — Visual Explanation
+Write-After-Read (WAR) Hazard — Failure Modes
 ══════════════════════════════════════════════════════════════════════
-
-  Intended sequence:
-    1. Generic Proxy reads value V from address X (possibly caches it)
-    2. Async Proxy writes new value V' to address X
-    3. Generic Proxy should now see V' (but sees stale V instead!)
-
-  What can happen WITHOUT proper synchronization:
-  ─────────────────────────────────────────────────────────────────
-
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  Generic Proxy (Thread):                                        │
-  │    ld.global [X]  →  V is loaded into L1 cache                 │
-  │    ... uses V in computation ...                                │
-  │    ld.global [X]  →  L1 hit! Returns cached V (stale!)         │
-  │                       (doesn't know Async Proxy updated X)     │
-  │                                                                 │
-  │  Async Proxy (TMA — ran between the two loads):                 │
-  │    cp.async.bulk [src] → [X]   // writes V' to X via L2        │
-  │                                   L1 cache NOT invalidated!    │
-  │                                   Generic proxy still sees V.  │
-  └─────────────────────────────────────────────────────────────────┘
 
   Two failure modes:
   ─────────────────────────────────────────────────────────────────
@@ -988,24 +831,13 @@ mbarrier vs __syncthreads — Key Differences
 
   Physical location: mbarrier object lives in SHARED MEMORY (64 bits)
   Why shared memory: it must be accessible to TMA hardware and threads
-
-  ─── mbarrier Object — Internal State ────────────────────────────
-
-  The mbarrier object is a 64-bit value in shared memory:
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  mbarrier object (64 bits in shared memory)                    │
-  │                                                                 │
-  │  ┌──────────┬──────────────────────┬───────────────────────┐   │
-  │  │  Phase   │  Pending thread      │  Pending transaction  │   │
-  │  │  bit (1) │  arrival count       │  byte count           │   │
-  │  │  0 or 1  │  (decrements as      │  (decrements as TMA   │   │
-  │  │          │  threads arrive)     │  data arrives)        │   │
-  │  └──────────┴──────────────────────┴───────────────────────┘   │
-  │                                                                 │
-  │  Barrier COMPLETES when BOTH counts reach zero.                 │
-  │  On completion: phase bit flips (0→1 or 1→0) automatically.    │
-  └─────────────────────────────────────────────────────────────────┘
 ```
+
+The mbarrier object itself is a single 64-bit value in shared memory:
+
+![mbarrier object — 64 bits in shared memory](images/ch03/09-mbarrier-object-bitfield.svg)
+
+*A 1-bit phase, a pending thread arrival count that decrements as threads arrive, and a pending transaction byte count that decrements as TMA data arrives. The barrier completes only once both counts reach zero, and on completion the phase bit flips (0→1 or 1→0) automatically.*
 
 ### 8.2 Initializing mbarrier — mbarrier.init
 
@@ -1133,21 +965,11 @@ The mbarrier Pipeline — Complete Flow
   All threads: process the data that TMA brought in
   Then:        phase ^= 1;  (toggle local phase tracking variable)
                Repeat steps 2-6 for the next tile (barrier reused!).
-
-  ─── Visual Timeline ─────────────────────────────────────────────
-
-  Tile K:
-  Time →
-  ┌───────────────────────────────────────────────────────────────────────┐
-  │ Step1    Step2      Step3        Step4           Step5    Step6       │
-  │ [init]──[expect_tx]─[cp.async]──[compute K-1]──[wait]──[compute K]  │
-  │                        ↓                           ↑                 │
-  │                    TMA starts                  phase flips           │
-  │                    in background               (data arrived!)       │
-  │                                                                       │
-  │         TMA running:  ████████████████████████░░ (done!)             │
-  └───────────────────────────────────────────────────────────────────────┘
 ```
+
+![The mbarrier pipeline — one tile, six steps](images/ch03/10-mbarrier-pipeline-timeline.svg)
+
+*Steps 1–3 set up the barrier and launch the TMA copy; the TMA then runs in the background while Step 4 computes on the PREVIOUS tile (K−1) — that overlap is the entire reason this pattern exists. Step 5 waits for the TMA to finish and the phase to flip, and only then does Step 6 compute on the tile that just arrived.*
 
 ### 9.2 mbarrier.arrive.expect_tx — Setting the Transaction Count
 
@@ -1612,20 +1434,12 @@ WAR Hazard in Pipeline — Concrete Scenario
     (wgmma from K=0 takes more cycles than we accounted for)
     → TMA corrupts smem[0] mid-computation. Wrong answer!
 
-  ─── The WAR Hazard Visualized ────────────────────────────────────
-
-  Time →
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  WGMMA:  [reading smem[0] ████████████████████]                │
-  │  TMA:                    [writing smem[0] ████]  ← conflict!  │
-  │                                  ↑                             │
-  │                         WAR hazard: write while reading        │
-  └─────────────────────────────────────────────────────────────────┘
-
-  Fix: TMA must wait until WGMMA signals it's done reading smem[0].
-  WGMMA signals completion using mbarrier.arrive (decrements a barrier).
-  TMA waits on that barrier before starting the overwrite.
+Fix: TMA must wait until WGMMA signals it's done reading smem[0]. WGMMA signals completion using `mbarrier.arrive` (decrements a barrier), and TMA waits on that barrier before starting the overwrite.
 ```
+
+![WAR hazard inside a double-buffered pipeline](images/ch03/11-war-pipeline-conflict-timeline.svg)
+
+*WGMMA is still reading `smem[0]` when TMA starts overwriting it for the next tile — the overlap between the two bars is the conflict window. §13.2's two-barrier handshake is what closes that window.*
 
 ### 13.2 mbarrier.arrive — Signaling Completion Without Waiting
 
@@ -1664,27 +1478,12 @@ mbarrier.arrive — The Consumer's Signal to the Producer
     // Now safe to issue TMA overwrite
     cp.async.bulk.tensor [smem + tile_K], ... [data_bar];
 
-  ─── Complete Two-Barrier WAR Prevention Pattern ─────────────────
-
-  Barrier A (data_bar):   "Has the data arrived from TMA?"
-                          Producer signals via TMA hardware.
-                          Consumer waits on this.
-
-  Barrier B (release_bar): "Are consumers done reading the buffer?"
-                           Consumer warps signal via mbarrier.arrive.
-                           Producer waits on this before next overwrite.
-
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  Producer thread:           Consumer warps:                      │
-  │                                                                  │
-  │  wait(release_bar, ph_r)    wait(data_bar, ph_d)                │
-  │    ← waits for consumers       ← waits for TMA data            │
-  │  ph_r ^= 1                  ph_d ^= 1                           │
-  │  arrive.expect_tx(data_bar) compute on smem tile                │
-  │  cp.async.bulk → smem       arrive.release(release_bar)         │
-  │    ← TMA loads next tile       ← signals: done reading          │
-  └──────────────────────────────────────────────────────────────────┘
+Barrier A (`data_bar`) answers "has the data arrived from TMA?" — the producer signals it via TMA hardware, and the consumer waits on it. Barrier B (`release_bar`) answers "are consumers done reading the buffer?" — consumer warps signal it via `mbarrier.arrive`, and the producer waits on it before its next overwrite.
 ```
+
+![Two-barrier WAR prevention — producer/consumer handshake](images/ch03/12-two-barrier-war-prevention.svg)
+
+*The consumer waits on `data_bar` before it can compute, and the producer waits on `release_bar` before it can overwrite the buffer for the next tile — each barrier gates the opposite side, which is exactly what closes the WAR hazard window from §13.1.*
 
 ### 13.3 mbarrier.arrive.release — With Memory Ordering
 

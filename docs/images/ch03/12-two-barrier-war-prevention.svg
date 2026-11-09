@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="374.4pt" viewBox="0 0 720 374.4" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T14:18:47.624011</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 374.4 
+L 720 374.4 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 47.1168 117.049846 
+L 337.6512 117.049846 
+Q 339.048 117.049846 339.048 115.721723 
+L 339.048 51.971815 
+Q 339.048 50.643692 337.6512 50.643692 
+L 47.1168 50.643692 
+Q 45.72 50.643692 45.72 51.971815 
+L 45.72 115.721723 
+Q 45.72 117.049846 47.1168 117.049846 
+z
+" clip-path="url(#pbe965eeaa0)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 382.3488 117.049846 
+L 672.8832 117.049846 
+Q 674.28 117.049846 674.28 115.721723 
+L 674.28 51.971815 
+Q 674.28 50.643692 672.8832 50.643692 
+L 382.3488 50.643692 
+Q 380.952 50.643692 380.952 51.971815 
+L 380.952 115.721723 
+Q 380.952 117.049846 382.3488 117.049846 
+z
+" clip-path="url(#pbe965eeaa0)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 47.1168 229.940308 
+L 337.6512 229.940308 
+Q 339.048 229.940308 339.048 228.612185 
+L 339.048 144.940431 
+Q 339.048 143.612308 337.6512 143.612308 
+L 47.1168 143.612308 
+Q 45.72 143.612308 45.72 144.940431 
+L 45.72 228.612185 
+Q 45.72 229.940308 47.1168 229.940308 
+z
+" clip-path="url(#pbe965eeaa0)" style="fill: #fafafa; stroke: #888888; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 382.3488 229.940308 
+L 672.8832 229.940308 
+Q 674.28 229.940308 674.28 228.612185 
+L 674.28 144.940431 
+Q 674.28 143.612308 672.8832 143.612308 
+L 382.3488 143.612308 
+Q 380.952 143.612308 380.952 144.940431 
+L 380.952 228.612185 
+Q 380.952 229.940308 382.3488 229.940308 
+z
+" clip-path="url(#pbe965eeaa0)" style="fill: #fafafa; stroke: #888888; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 194.379954 117.211363 
+Q 356.507846 130.331064 516.629833 143.288445 
+" clip-path="url(#pbe965eeaa0)" style="fill: none; stroke: #00695c; stroke-width: 1.8; stroke-linecap: round"/>
+    <path d="M 511.273922 140.045881 
+L 516.629833 143.288445 
+L 510.822236 145.627635 
+z
+" clip-path="url(#pbe965eeaa0)" style="fill: #00695c; stroke: #00695c; stroke-width: 1.8; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 525.620046 117.211363 
+Q 363.492154 130.331064 203.370167 143.288445 
+" clip-path="url(#pbe965eeaa0)" style="fill: none; stroke: #2e7d32; stroke-width: 1.8; stroke-linecap: round"/>
+    <path d="M 209.177764 145.627635 
+L 203.370167 143.288445 
+L 208.726078 140.045881 
+z
+" clip-path="url(#pbe965eeaa0)" style="fill: #2e7d32; stroke: #2e7d32; stroke-width: 1.8; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="37.549517" transform="rotate(-0 360 37.549517)">Two-Barrier WAR Prevention — Producer / Consumer Handshake</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(172.533375 80.35505)">data_bar</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(125.413453 93.052082)">"Has data arrived from TMA?"</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(501.492094 80.35505)">release_bar</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(456.253031 92.180207)">"Are consumers done reading?"</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(158.929 174.158808)">Producer thread:</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(135.540875 183.672558)">wait(release_bar) → proceed</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(139.274 194.072558)">arrive.expect_tx(data_bar)</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(146.732125 204.583808)">cp.async.bulk → smem</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(492.611 173.313183)">Consumer warps:</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(476.349125 183.672558)">wait(data_bar) → proceed</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(482.5835 194.183808)">compute on smem tile</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(473.806 204.472558)">arrive.release(release_bar)</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 7.3px; font-family: 'DejaVu Sans'; fill: #00695c" transform="translate(290.343313 96.276582) rotate(-354)">consumer waits on data_bar</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 7.3px; font-family: 'DejaVu Sans'; fill: #2e7d32" transform="translate(290.343313 175.258854) rotate(-354)">producer waits on release_bar</text>
+   </g>
+   <g id="text_8">
+    <text style="font-style: italic; font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="360" y="296.346462" transform="rotate(-0 360 296.346462)">Producer never overwrites a tile until release_bar says every consumer is done reading it</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pbe965eeaa0">
+   <rect x="10.8" y="10.8" width="698.4" height="345.312"/>
+  </clipPath>
+ </defs>
+</svg>

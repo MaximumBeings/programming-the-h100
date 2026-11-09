@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="417.6pt" viewBox="0 0 720 417.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T14:18:47.329662</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 417.6 
+L 720 417.6 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 47.1168 191.256828 
+L 344.6352 191.256828 
+Q 346.032 191.256828 346.032 189.92011 
+L 346.032 52.238234 
+Q 346.032 50.901517 344.6352 50.901517 
+L 47.1168 50.901517 
+Q 45.72 50.901517 45.72 52.238234 
+L 45.72 189.92011 
+Q 45.72 191.256828 47.1168 191.256828 
+z
+" clip-path="url(#pd25f99852d)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 375.3648 191.256828 
+L 672.8832 191.256828 
+Q 674.28 191.256828 674.28 189.92011 
+L 674.28 52.238234 
+Q 674.28 50.901517 672.8832 50.901517 
+L 375.3648 50.901517 
+Q 373.968 50.901517 373.968 52.238234 
+L 373.968 189.92011 
+Q 373.968 191.256828 375.3648 191.256828 
+z
+" clip-path="url(#pd25f99852d)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 47.1168 358.346483 
+L 672.8832 358.346483 
+Q 674.28 358.346483 674.28 357.009766 
+L 674.28 226.011476 
+Q 674.28 224.674759 672.8832 224.674759 
+L 47.1168 224.674759 
+Q 45.72 224.674759 45.72 226.011476 
+L 45.72 357.009766 
+Q 45.72 358.346483 47.1168 358.346483 
+z
+" clip-path="url(#pd25f99852d)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="37.699915" transform="rotate(-0 360 37.699915)">The Two Proxies</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(162.221445 91.730243)">GENERIC PROXY</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(195.876 99.499172)"/>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(125.680695 112.579454)">Who: the executing thread (warp)</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(129.046734 123.369454)">What: ordinary ld/st instructions</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(129.090828 134.963516)">Path: Thread → L1 → L2 → HBM3</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(195.876 142.659172)"/>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(123.198477 155.739454)">Ordered per-thread, program order</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(495.029258 91.730243)">ASYNC PROXY</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(524.124 99.499172)"/>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(450.785719 112.579454)">Who: TMA engine / tensor core unit</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(462.761063 123.369454)">What: cp.async.bulk, wgmma</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(450.956258 134.159454)">Path: TMA → L2 → HBM3 (skips L1!)</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(524.124 142.659172)"/>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(453.652461 155.739454)">Runs independently of any thread</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(190.983516 270.594058)">Generic Proxy writes → land in L1 — MAY NOT be visible to the Async Proxy</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(190.983516 282.294058)">Async Proxy writes → land in L2 — MAY NOT be visible to the Generic Proxy</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(360 291.510621)"/>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(192.507188 305.694058)">The two proxies do not share a coherency domain by default — an explicit</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(206.350313 317.394058)">fence (§7) is what bridges them when they touch the same address.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pd25f99852d">
+   <rect x="10.8" y="10.8" width="698.4" height="387.648"/>
+  </clipPath>
+ </defs>
+</svg>
