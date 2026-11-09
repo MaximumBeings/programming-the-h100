@@ -929,6 +929,35 @@ int main() {
 }
 ```
 
+**Sample Output** (H100 SXM5, grid of 4 blocks, cluster size 2):
+
+```
+╔══════════════════════════════════════════════════════╗
+║  Thread Block Cluster Inspection — H100 Demo         ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Per-Block Report:
+Block(global) Cluster Rank   Cluster Size   My SMEM Val  Partner Val  Exchange OK?
+--------------------------------------------------------------------------------
+  0            0              2              0            100          ✓ PASS
+  1            1              2              100          0            ✓ PASS
+  2            0              2              200          300          ✓ PASS
+  3            1              2              300          200          ✓ PASS
+
+DSMEM Exchange Tests: 4/4 passed
+
+Cluster Metadata Verification:
+  ✓ All cluster metadata correct
+
+════════════════════════════════════════════════
+ALL TESTS PASSED — Clusters working correctly!
+════════════════════════════════════════════════
+```
+
+With a size-2 cluster, blocks 0–1 form cluster 0 and blocks 2–3 form cluster 1. Each block writes `global_block_id × 100` into its own shared memory, then reads index 0 of its partner's shared memory across the DSMEM interconnect — block 0 reads block 1's value (100), block 1 reads block 0's value (0), and the same pattern repeats for the second cluster. `prop.name` and the exact SM count/clock reported by `cudaGetDeviceProperties` will vary by the specific H100 SKU (SXM5 vs PCIe) and driver version; everything below the GPU line is deterministic given this launch configuration.
+
 ---
 
 ## 2 — Distributed Shared Memory
@@ -1360,7 +1389,8 @@ Let's manually trace what happens with `fma.rn.f32` (fused multiply-add):
   COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex02_ptx_basics.cu -o ex02_ptx
            (ALSO works on sm_80, sm_86, sm_89 — nothing Hopper-specific here)
   RUN:     ./ex02_ptx
-  EXPECT:  12 numbered tests all showing PASS
+  EXPECT:  11 numbered tests (17 individual checks total — Tests 4, 6 and 9
+           each run more than one check) all showing PASS
 ═══════════════════════════════════════════════════════
 ```
 
@@ -2031,6 +2061,62 @@ int main() {
     return (passed == tests) ? 0 : 1;
 }
 ```
+
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════╗
+║  Inline PTX Basics — Full Test Suite                  ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: add.u32 (42 + 10 = 52)
+  ✓ PASS: result = 52
+
+Test 2: mad.lo.u32 (5*7+3 = 38)
+  ✓ PASS: result = 38
+
+Test 3: fma.rn.f32 (2.5 * 4.0 + 1.5 = 11.5)
+  ✓ PASS: result = 11.5000
+
+Test 4: predicate max
+  ✓ PASS: max(10,20) = 20
+  ✓ PASS: max(30,5) = 30
+
+Test 5: special registers (%tid.x, %ctaid.x, %laneid)
+  ✓ PASS: tid.x = 0
+  INFO: ctaid.x = 0 (block index, not checked — scheduling dependent)
+  INFO: laneid = 0 (should be 0 since tid=0)
+
+Test 6: bitwise ops (a=0xFF00, b=0x0F0F)
+  ✓ PASS: and = 0x00F00
+  ✓ PASS: or = 0x0FF0F
+  ✓ PASS: xor = 0x0F00F
+  ✓ PASS: shl = 0xFF000
+  ✓ PASS: shr = 0x00FF0
+
+Test 7: early clobber — (7+3)*(7-3) = 40
+  ✓ PASS: result = 40
+
+Test 8: read-write operand — 100 + 3 = 103
+  ✓ PASS: result = 103
+
+Test 9: immediate operand template
+  ✓ PASS: 1 << 5 = 32
+  ✓ PASS: 7 << 3 = 56
+
+Test 10: volatile + memory clobber (store 0xDEADBEEF to SMEM)
+  ✓ PASS: loaded 0xDEADBEEF from SMEM
+
+Test 11: vote.ballot (even lanes → 0x55555555)
+  ✓ PASS: ballot = 0x55555555
+
+╔══════════════════════════════════════════════════════╗
+║  Results: 17/17 tests passed                          ║
+║  ✓ ALL PASS                                          ║
+╚══════════════════════════════════════════════════════╝
+```
+
+Test 5's `ctaid.x` and `laneid` lines are printed as `INFO`, not `PASS` — only `tid.x == 0` is actually asserted, since which block happens to write first is a scheduling detail, not something the test should depend on. Every other line is deterministic for this launch configuration; `%05X`/`%08X` field widths are why `and`, `or`, `xor` and `shr` print with a leading zero (`0x00F00` not `0xF00`).
 
 ---
 
@@ -2996,6 +3082,32 @@ int main() {
     return (passed == tests) ? 0 : 1;
 }
 ```
+
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════╗
+║  PTX State Spaces — Test Suite                        ║
+╚══════════════════════════════════════════════════════╝
+
+Test 2: .shared — Thread 0 reads thread 1's slot (expected 2.5)
+  ✓ PASS: thread 0 read 2.5 from thread 1's slot
+
+Test 3: .global — Multiply by 10 via explicit PTX
+  ✓ PASS: all 8 values multiplied by 10 correctly
+
+Test 4: .const — Read SCALE_FACTOR[0] = 2.0 via PTX and C++
+  ✓ PASS: PTX read = 2.0, C++ read = 2.0 (both = 2.0)
+
+Test 6: Combined — global→SMEM→compute with SCALE_FACTOR[0]=2.0
+  ✓ PASS: 128 elements scaled by 2.0 (sample: in=5 out=10)
+
+╔══════════════════════════════════════════════════════╗
+║  Results: 4/4 tests passed                            ║
+╚══════════════════════════════════════════════════════╝
+```
+
+Tests are numbered 2, 3, 4 and 6 rather than 1–4 because they follow the file's own "Test N: .state_space" numbering scheme from the comment headers above (Test 1 is `.reg`, shown only as a comment since register values need no device round-trip to verify, and Test 5, `.local`, is a diagnostic spill case covered in prose rather than as a counted pass/fail check).
 
 ---
 
@@ -4088,6 +4200,38 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════╗
+║  ex04: PTX Pointers, State Spaces & Packed Types      ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: cvta + ld.shared (smem[0]=42, smem[1]=99)
+  ✓ PASS: loaded 42.0 and 99.0, SMEM offset=0x0
+
+Test 2: st.shared/ld.shared neighbor (expect 7.0 and 17.0)
+  ✓ PASS: my=7.0 neighbor=17.0
+
+Test 3: ld.global/st.global multiply by 2
+  ✓ PASS: all elements×2 correct
+
+Test 4: atom.shared.add (64 threads → counter=64)
+  ✓ PASS: counter=64
+
+Test 5: Packed FP16 add (1+3=4, 2+4=6)
+  ✓ PASS: slot0=4.0 slot1=6.0
+
+Test 6: mov.b32 bit reinterpret (float↔uint32)
+  ✓ PASS: pi bits=0x40490FD0, roundtrip matches
+
+╔══════════════════════════════════════════════════════╗
+║  6/6 tests passed   ✓ ALL PASS                      ║
+╚══════════════════════════════════════════════════════╝
+```
+
+The `SMEM offset=0x%X` value in Test 1 is whatever small 32-bit offset `__cvta_generic_to_shared` happens to assign — it is driver/compiler-chosen, not a fixed address, so don't expect `0x0` specifically on your own run; the surrounding PASS depends only on the two loaded values being 42.0 and 99.0, not on that offset. `0x40490FD0` is the exact IEEE-754 single-precision bit pattern for `3.14159f` — that part is architecture-independent and will match on any run.
+
 ---
 
 ### 17.2 Full Example: Data Types & Packed Operations
@@ -4312,6 +4456,35 @@ int main() {
     return (passed==tests)?0:1;
 }
 ```
+
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════╗
+║  ex05: PTX Data Types & Packed Operations             ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: cvt FP32→FP16 (1.5f → 0x3E00)
+  ✓ PASS: 0x3E00
+
+Test 2: FP16 pack/unpack (1.0f=0x3C00, 2.0f=0x4000)
+  ✓ PASS: packed=0x40003C00 lo=0x3C00 hi=0x4000
+
+Test 3: add.bf16x2 (2.0+3.0=5.0 in both slots)
+  ✓ PASS: lo=5.00 hi=5.00
+
+Test 4: add.f64 (1.23456789012345 + 9.87654321098765)
+  ✓ PASS: 11.111111101111101
+
+Test 5: mad hi+lo (0xFFFFFFFF * 0xFFFFFFFF)
+  ✓ PASS: lo=0x00000001 hi=0xFFFFFFFE
+
+╔══════════════════════════════════════════════════════╗
+║  5/5 tests passed   ✓ ALL PASS                      ║
+╚══════════════════════════════════════════════════════╝
+```
+
+Test 5 is the one worth tracing by hand: `0xFFFFFFFF × 0xFFFFFFFF = 0xFFFFFFFE00000001` as a full 64-bit product (that's `(2³²−1)² = 2⁶⁴ − 2³³ + 1`), so `mad.lo.u32` (the low 32 bits) gives `0x00000001` and `mad.hi.u32` (the high 32 bits) gives `0xFFFFFFFE` — exactly what the two halves need to be to reconstruct the 64-bit result.
 
 ---
 
@@ -4793,6 +4966,56 @@ int main() {
     return (total_errors == 0) ? 0 : 1;
 }
 ```
+
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex06: Comprehensive Capstone — Clusters + PTX + DSMEM   ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+       ✓ Hopper/Blackwell GPU detected — clusters supported.
+
+Launch config:
+  Grid:    2 blocks
+  Block:   64 threads
+  Cluster: 2 blocks per cluster (1 cluster total)
+  N:       128 elements
+
+Verification (first 8 and last 4 elements):
+  Index    Input        Expected     Got          OK?
+  ------------------------------------------------------------
+  0        0.0          64.0         64.0         ✓
+  1        1.0          66.0         66.0         ✓
+  2        2.0          68.0         68.0         ✓
+  3        3.0          70.0         70.0         ✓
+  4        4.0          72.0         72.0         ✓
+  5        5.0          74.0         74.0         ✓
+  6        6.0          76.0         76.0         ✓
+  7        7.0          78.0         78.0         ✓
+  63       63.0         190.0        190.0        ✓
+  64       64.0         64.0         64.0         ✓
+  65       65.0         66.0         66.0         ✓
+  126      126.0        188.0        188.0        ✓
+  127      127.0        190.0        190.0        ✓
+
+  ✓ ALL 128 elements correct!
+
+  What just happened (review):
+  ├── Block 0 loaded input[0..63] into its SMEM (PTX ld.global)
+  ├── Block 1 loaded input[64..127] into its SMEM (PTX ld.global)
+  ├── cluster.sync() ensured both blocks' SMEM was ready
+  ├── Each block read the partner's SMEM via map_shared_rank (DSMEM)
+  ├── PTX fma.rn.f32 computed the pairwise sum
+  └── Results written back to global memory (PTX st.global)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED — Comprehensive example complete!     ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+Index 0 and index 64 both land on "Expected 64.0" because they're DSMEM partners: thread 0 of Block 0 reads `input[0]=0` plus Block 1's partner value `input[64]=64`, while thread 0 of Block 1 reads `input[64]=64` plus Block 0's partner value `input[0]=0` — same pair, same sum, read through the DSMEM interconnect in opposite directions. `prop.name` will reflect whatever H100 SKU (or B100/B200) you actually run this on; everything from "Launch config" down is deterministic for N=128.
 
 ---
 
