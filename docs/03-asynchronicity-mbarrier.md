@@ -390,14 +390,15 @@ Speed Mismatch — H100 Numbers
   ─────────────────────────────────────────────────────────────────
   Register read                ~1 cycle        N/A (on-chip)
   Shared memory read           ~4-10 cycles    ~19 TB/s (per SM)
-  L2 cache read (hit)          ~100 cycles     ~12 TB/s (all SMs)
+  L2 cache read (hit)          ~100 cycles     ~12 TB/s (all SMs, est.)
   HBM3 read (DRAM)             ~200-500 cycles 3.35 TB/s (all SMs)
 
-  Tensor Core throughput (FP8):  ~989 TOPS (peak)
+  Tensor Core throughput (FP8):  1,979 TFLOPS dense / 3,958 TFLOPS sparse (H100 SXM5 peak)
   Time to do 1 GEMM tile (128×128×64, FP8):  < 1 μs
 
   Time to load that same tile (128×128×64 FP8 = 1 MB) from HBM3:
-    1 MB / 3.35 TB/s ÷ 132 SMs ≈ 40 μs  (per SM's share of bandwidth)
+    1 MB ÷ (3.35 TB/s ÷ 132 SMs) ≈ 40 μs  (per SM's share of bandwidth,
+    out of the 132 SMs enabled on the shipping H100 SXM5 die)
 
   Ratio: memory time / compute time ≈ 40 μs / 1 μs = 40×
   Without async: Tensor Cores idle 97.5% of the time. Pure waste.
