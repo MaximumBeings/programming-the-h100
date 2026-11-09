@@ -273,40 +273,9 @@ TMA Capabilities Overview
 
 The H100's ability to overlap compute and memory 100% rests on three independent hardware units that can run simultaneously:
 
-```
-The H100 Async Architecture
-══════════════════════════════════════════════════════════════════════
+![The H100 async architecture — TMA and Tensor Cores overlap](images/ch04/01-h100-tma-async-architecture.svg)
 
-  ┌────────────────────────────────────────────────────────────────┐
-  │                    H100 SM                                     │
-  │                                                                │
-  │  ┌─────────────────┐   ┌──────────────────┐   ┌────────────┐  │
-  │  │  Warp Schedulers │   │   Tensor Cores   │   │    TMA     │  │
-  │  │  (issue units)   │   │   (WGMMA)        │   │   Engine   │  │
-  │  │                  │   │                  │   │            │  │
-  │  │  Issues PTX      │   │  Multiplying     │   │  Moving    │  │
-  │  │  instructions    │   │  tile K          │   │  tile K+1  │  │
-  │  │  in nanoseconds  │   │  (currently)     │   │  (next)    │  │
-  │  └──────────────────┘   └──────────────────┘   └────────────┘  │
-  │            │                     │                    │        │
-  │            └─────────────────────┼────────────────────┘        │
-  │                         mbarrier coordinates                   │
-  │                         "data ready" signals                   │
-  └────────────────────────────────────────────────────────────────┘
-
-  While WGMMA multiplies tile K (which is already in SMEM):
-    TMA loads tile K+1 from HBM to the OTHER SMEM buffer.
-
-  This is only possible if TMA runs COMPLETELY INDEPENDENTLY.
-  With thread-driven copies (pre-Hopper): threads are busy copying K+1,
-  so they cannot also be driving WGMMA for tile K. Forced serialization.
-  With TMA: threads issue one instruction and immediately drive WGMMA.
-  The descriptor handles everything else.
-
-  Result: for a well-tuned GEMM kernel, the bottleneck shifts from
-  memory bandwidth (threads busy copying) to pure compute throughput.
-  This is how H100 achieves near-theoretical FLOP utilization.
-```
+*While WGMMA multiplies tile K out of SMEM, TMA independently loads tile K+1 from HBM into the other SMEM buffer. This overlap is only possible because TMA runs completely independently: with pre-Hopper thread-driven copies, the same threads that would drive WGMMA for tile K are instead busy computing addresses and issuing copies for tile K+1 — forced serialization. With TMA, one thread fires a single instruction and the rest immediately drive WGMMA; the descriptor handles everything else. For a well-tuned GEMM kernel, the bottleneck shifts from memory bandwidth to pure compute throughput — this is how H100 approaches near-theoretical FLOP utilization.*
 
 ---
 
@@ -1037,7 +1006,9 @@ boxDim — Tile Dimensions in Elements
     Total = 64 × 128 × 2 = 16,384 bytes = 16 KB
 
   Both tiles: 16 KB each. For double-buffering: 2 × (16+16) = 64 KB
-  Leaves 228 - 64 = 164 KB for accumulator tiles, mbarrier, etc.
+  H100 has 228 KB of shared memory per SM, but a single thread block
+  can opt into at most 227 KB of it (CUDA reserves 1 KB per block).
+  Leaves 227 - 64 = 163 KB for accumulator tiles, mbarrier, etc.
 ```
 
 ### 8.2 elementStrides — Subsampling Within the Tile
@@ -1093,52 +1064,43 @@ Before explaining swizzling (§10), you need a solid understanding of why bank c
 
 Shared memory is physically divided into 32 banks. Each bank is an independently readable/writable memory array, 4 bytes wide. The 32 banks allow 32 threads (one warp) to perform 32 simultaneous independent accesses — one per bank — with no conflict. This is the ideal case.
 
+![Shared memory bank structure — conflict-free vs. 32-way-conflict access](images/ch04/02-shared-memory-banks.svg)
+
+*32 banks, each 4 bytes wide; `bank = (byte_address / 4) % 32`, and the assignment repeats every 128 bytes. A stride-1 warp access (`smem[0..31]`) lands one thread per bank — all 32 serviced in a single cycle. A stride-32 access — the shape you get reading a column out of a row-major matrix, exactly the GEMM case in §9 above — puts every thread's address in bank 0, serializing the warp into 32 cycles. Swizzling (§10) rearranges the addresses so that what looks like the same bank lands in different physical banks.*
+
+Reference card — the two access patterns in the diagram, spelled out:
+
 ```
-Shared Memory Bank Structure — Physical Layout
-══════════════════════════════════════════════════════════════════════
+Conflict-Free Access — The Ideal Case
+──────────────────────────────────────────────────────────────────────
+Warp accesses smem[0], smem[1], smem[2], ..., smem[31]:
+  thread 0 → smem[0]  → bank 0
+  thread 1 → smem[1]  → bank 1
+  thread 2 → smem[2]  → bank 2
+  ...
+  thread 31 → smem[31] → bank 31
+All different banks → ALL serviced in 1 cycle. Ideal!
 
-  32 banks, each 4 bytes wide.
-  Bank assignment formula: bank = (byte_address / 4) % 32
+Bank Conflict — The Problem Case
+──────────────────────────────────────────────────────────────────────
+Warp accesses smem[0], smem[32], smem[64], ..., smem[31*32]:
+(stride-32 access — typical in column-major reads of row-major matrix)
+  thread 0  → smem[0]    = byte 0    → bank 0
+  thread 1  → smem[32]   = byte 128  → bank 0  <- SAME BANK
+  thread 2  → smem[64]   = byte 256  → bank 0  <- SAME BANK
+  ...
+  thread 31 → smem[31x32]= byte 3968 → bank 0  <- ALL IN BANK 0
+32-way conflict: 32 cycles instead of 1. 32x SLOWDOWN.
 
-  ┌────────────────────────────────────────────────────────────────┐
-  │  Byte addr:  0  4  8 12 16 20 24 28 32 36 40 ...124 128 132...│
-  │  Bank:       0  1  2  3  4  5  6  7  8  9 10 ... 31   0   1  │
-  │                                                   ↑   ↑        │
-  │                              after 32 banks (128 bytes), repeats│
-  └────────────────────────────────────────────────────────────────┘
+Why This Happens in GEMM
+──────────────────────────────────────────────────────────────────────
+A[M][K] matrix stored row-major in SMEM: rows of K elements.
+When we compute tile products, we need to read COLUMNS of A.
+Reading column j: A[0][j], A[1][j], A[2][j], ... A[M-1][j]
+These are K elements apart in memory -> stride K access -> conflict!
 
-  Pattern repeats every 128 bytes (32 banks × 4 bytes each).
-
-  ─── Conflict-Free Access — The Ideal Case ────────────────────────
-
-  Warp accesses smem[0], smem[1], smem[2], ..., smem[31]:
-    thread 0 → smem[0]  → bank 0
-    thread 1 → smem[1]  → bank 1
-    thread 2 → smem[2]  → bank 2
-    ...
-    thread 31 → smem[31] → bank 31
-  All different banks → ALL serviced in 1 cycle. Ideal! ✓
-
-  ─── Bank Conflict — The Problem Case ────────────────────────────
-
-  Warp accesses smem[0], smem[32], smem[64], ..., smem[31*32]:
-  (stride-32 access — typical in column-major reads of row-major matrix)
-    thread 0  → smem[0]    = byte 0    → bank 0
-    thread 1  → smem[32]   = byte 128  → bank 0  ← SAME BANK!
-    thread 2  → smem[64]   = byte 256  → bank 0  ← SAME BANK!
-    ...
-    thread 31 → smem[31×32]= byte 3968 → bank 0  ← ALL IN BANK 0!
-  32-way conflict: 32 cycles instead of 1. 32× SLOWDOWN. ✗
-
-  ─── Why This Happens in GEMM ─────────────────────────────────────
-
-  A[M][K] matrix stored row-major in SMEM: rows of K elements.
-  When we compute tile products, we need to read COLUMNS of A.
-  Reading column j: A[0][j], A[1][j], A[2][j], ... A[M-1][j]
-  These are K elements apart in memory → stride K access → conflict!
-
-  The fix: SWIZZLE the addresses so that what logically appears to be
-  the same bank maps to DIFFERENT physical banks.
+The fix: SWIZZLE the addresses so that what logically appears to be
+the same bank maps to DIFFERENT physical banks.
 ```
 
 ### 9.2 Why 32 Banks Exist
@@ -1242,50 +1204,25 @@ Swizzling — The XOR Formula
 
 128B swizzling is the recommended default for FP16 and BF16 GEMM on H100. It eliminates bank conflicts completely for the most common access patterns.
 
+![128B swizzle permutation — logical cell (y,x) to physical cell (y, x XOR (y & 7))](images/ch04/03-swizzle-128b-grid.svg)
+
+*TMA treats the SMEM destination as a 2D array of 128-byte rows, each split into 8 cells of 16 bytes; the pattern repeats every 8 rows (1024 bytes). The grid is the formula `x' = x ^ (y & 7)` worked out for every (row, column) pair — column 0 is highlighted to show that it lands on a different physical cell in every one of the 8 rows, which is exactly what removes the bank conflict from a stride-128-byte (same logical column) access.*
+
+Reference card — the bank-level consequence, spelled out for a column-0 access:
+
 ```
-128B Swizzle — How It Works
-══════════════════════════════════════════════════════════════════════
+Bank analysis for COLUMN 0 access (threads read logical col=0, rows 0-7):
+  Row 0: physical addr = base + 128x0 + 16x0 = base+0    -> bank 0
+  Row 1: physical addr = base + 128x1 + 16x1 = base+144  -> bank 4+...
+  Row 2: physical addr = base + 128x2 + 16x2 = base+288  -> bank ...
+  ...
+  Each row maps to a DIFFERENT bank for the same logical column.
+  No conflicts!
 
-  Memory model: TMA treats the SMEM destination as a 2D array of
-  128-byte rows, each row split into 8 cells of 16 bytes.
-
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  SMEM layout for 128B swizzle (one "pattern block" = 1024 bytes) │
-  │                                                                  │
-  │  Row 0: [cell0][cell1][cell2][cell3][cell4][cell5][cell6][cell7] │
-  │          16B     16B    16B    16B    16B    16B    16B    16B   │
-  │  Row 1: [cell0][cell1][cell2][cell3][cell4][cell5][cell6][cell7] │
-  │  Row 2: [...]                                                    │
-  │  ...                                                             │
-  │  Row 7: [...]   ← after 8 rows (1024 bytes), pattern repeats    │
-  └──────────────────────────────────────────────────────────────────┘
-
-  Logical cell (y, x) maps to physical cell (y, x XOR (y & 7)):
-  ┌────────┬──────────────────────────────────────────────────────┐
-  │ Row (y)│ Physical cell x' for logical column x=0,1,...,7      │
-  ├────────┼──────────────────────────────────────────────────────┤
-  │   0    │  0^(0&7)=0, 1^0=1, 2^0=2, 3^0=3, 4, 5, 6, 7       │
-  │   1    │  0^(1&7)=1, 1^1=0, 2^1=3, 3^1=2, 5, 4, 7, 6       │
-  │   2    │  0^2=2,   1^2=3,  2^2=0, 3^2=1,  6, 7, 4, 5       │
-  │   3    │  0^3=3,   1^3=2,  2^3=1, 3^3=0,  7, 6, 5, 4       │
-  │   4    │  0^4=4,   1^4=5,  2^4=6, 3^4=7,  0, 1, 2, 3       │
-  │   5    │  0^5=5,   1^5=4,  2^5=7, 3^5=6,  1, 0, 3, 2       │
-  │   6    │  0^6=6,   1^6=7,  2^6=4, 3^6=5,  2, 3, 0, 1       │
-  │   7    │  0^7=7,   1^7=6,  2^7=5, 3^7=4,  3, 2, 1, 0       │
-  └────────┴──────────────────────────────────────────────────────┘
-
-  Bank analysis for COLUMN 0 access (threads read logical col=0, rows 0-7):
-    Row 0: physical addr = base + 128×0 + 16×0 = base+0    → bank 0
-    Row 1: physical addr = base + 128×1 + 16×1 = base+144  → bank 4+...
-    Row 2: physical addr = base + 128×2 + 16×2 = base+288  → bank ...
-    ...
-    Each row maps to a DIFFERENT bank for the same logical column.
-    No conflicts! ✓
-
-  Summary: 128B swizzle permutes the 8 cells within each 128-byte row
-  based on the row index, ensuring that the same logical column position
-  maps to different physical addresses (and thus different banks) in
-  adjacent rows.
+Summary: 128B swizzle permutes the 8 cells within each 128-byte row
+based on the row index, ensuring that the same logical column position
+maps to different physical addresses (and thus different banks) in
+adjacent rows.
 ```
 
 ### 10.3 64B and 32B Swizzle — When to Use Each
@@ -1293,56 +1230,31 @@ Swizzling — The XOR Formula
 The narrower modes. You need these when your tile's row is too short for 128B
 swizzle to be legal — the mode has to divide evenly into the row.
 
+![64B and 32B swizzle permutation grids, side by side with the 128B grid's logic](images/ch04/04-swizzle-64b-32b-grids.svg)
+
+*The narrower modes follow the exact same XOR rule, just over fewer cells. 64B permutes 4 cells (`x' = x ^ (y & 3)`, period 4 rows = 512 bytes) — both the left half (cells 0–3) and right half (cells 4–7) of each 128-byte row are permuted independently with that formula. 32B permutes pairs of cells (`x' = x ^ (y & 1)`, period 2 rows = 256 bytes).*
+
 ```
-64B Swizzle
-══════════════════════════════════════════════════════════════════════
+When to use 64B:
+- FP16/BF16 tiles where the inner dimension is 32 elements (64 bytes)
+- When 128B swizzle would be "too large" for the tile footprint
+- Specific matrix shapes where the TMA inner dim = 64 bytes
 
-  Pattern: Permutes 4 cells of 16B (64 bytes) instead of 8.
-  Formula: x' = x ^ (y & 3)   (XOR with low 2 bits of row)
-  Pattern period: 4 rows × 128 bytes = 512 bytes
-  Both the left half (cells 0-3) and right half (cells 4-7) of each
-  128-byte row are permuted independently using the same formula.
+When to use 32B:
+- Required when interleave = CU_TENSOR_MAP_INTERLEAVE_32B
+  (interleaving and swizzle are coupled -- see Sec 11)
+- Very narrow tiles where inner dim <= 16 bytes
+- INT8/UINT8 data with specific narrow layouts
 
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  Row 0: [c0][c1][c2][c3] [c4][c5][c6][c7]  x' = x^(0&3) = x^0 │
-  │  Row 1: [c1][c0][c3][c2] [c5][c4][c7][c6]  x' = x^1           │
-  │  Row 2: [c2][c3][c0][c1] [c6][c7][c4][c5]  x' = x^2           │
-  │  Row 3: [c3][c2][c1][c0] [c7][c6][c5][c4]  x' = x^3           │
-  └──────────────────────────────────────────────────────────────────┘
+Swizzle Selection Rule of Thumb
+──────────────────────────────────────────────────────────────────────
+Start with SWIZZLE_128B for all FP16/BF16 GEMM workloads.
+It provides the most conflict-free coverage and matches the
+128-byte cache line width of the L2 cache.
 
-  When to use 64B:
-  ├── FP16/BF16 tiles where the inner dimension is 32 elements (64 bytes)
-  ├── When 128B swizzle would be "too large" for the tile footprint
-  └── Specific matrix shapes where the TMA inner dim = 64 bytes
-
-32B Swizzle
-══════════════════════════════════════════════════════════════════════
-
-  Pattern: Permutes pairs of 16B cells (32 bytes).
-  Formula: x' = x ^ (y & 1)   (XOR with low 1 bit of row, cells 0-1)
-  Pattern period: 2 rows × 128 bytes = 256 bytes
-
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  Row 0: [c0][c1] ... x' = x^0 (identity in low 2 cells)        │
-  │  Row 1: [c1][c0] ... x' = x^1 (swap low 2 cells)              │
-  │  Row 2: [c0][c1] ... (repeat)                                  │
-  └──────────────────────────────────────────────────────────────────┘
-
-  When to use 32B:
-  ├── Required when interleave = CU_TENSOR_MAP_INTERLEAVE_32B
-  │   (interleaving and swizzle are coupled — see §11)
-  ├── Very narrow tiles where inner dim ≤ 16 bytes
-  └── INT8/UINT8 data with specific narrow layouts
-
-  ─── Swizzle Selection Rule of Thumb ─────────────────────────────
-
-  Start with SWIZZLE_128B for all FP16/BF16 GEMM workloads.
-  It provides the most conflict-free coverage and matches the
-  128-byte cache line width of the L2 cache.
-
-  Downgrade to SWIZZLE_64B or SWIZZLE_32B only if:
-  └── Your boxDim[0] × sizeof(element) < 128 bytes (smaller than 128B span)
-      In that case, the wider swizzle would permute addresses beyond your tile.
+Downgrade to SWIZZLE_64B or SWIZZLE_32B only if:
+  Your boxDim[0] x sizeof(element) < 128 bytes (smaller than 128B span)
+  In that case, the wider swizzle would permute addresses beyond your tile.
 ```
 
 ### 10.4 Setting Up Swizzle in the Descriptor
@@ -1511,41 +1423,9 @@ When TMA fetches data from HBM, it can optionally pre-fetch a larger block into 
 
 The motivation: HBM is organized in 128-byte cache lines. If you request only 32 bytes, the hardware still reads the entire 128-byte line from DRAM but only caches 32 bytes. You've wasted 75% of the DRAM bandwidth. By promoting to 128B, you ensure the full cache line is used, reducing redundant DRAM accesses for subsequent tiles that touch nearby data.
 
-```
-L2 Promotion — Hardware Mechanics
-══════════════════════════════════════════════════════════════════════
+![L2 promotion — fetch-size waste vs. full cache-line utilization](images/ch04/05-l2-promotion.svg)
 
-  HBM to L2 transfer unit: 128 bytes (one L2 cache line)
-
-  Without promotion (NONE → 32B fetch):
-  ─────────────────────────────────────────────────────────────────
-  ┌──────────────────────────────────────────────────────────────┐
-  │  HBM Cache Line (128 bytes):                                 │
-  │  [32B needed][96B padding]  ← DRAM read still transfers 128B │
-  │       ↑                                                      │
-  │  Only 32B cached in L2. 96B are fetched from DRAM then       │
-  │  discarded. Bandwidth wasted: 75%.                           │
-  └──────────────────────────────────────────────────────────────┘
-
-  With L2_128B promotion:
-  ─────────────────────────────────────────────────────────────────
-  ┌──────────────────────────────────────────────────────────────┐
-  │  HBM Cache Line (128 bytes):                                 │
-  │  [128B cached in L2 → ALL available for future accesses]     │
-  │       ↑                                                      │
-  │  Full 128B cached. Bandwidth efficiency: 100%.               │
-  │  Next TMA call that needs adjacent data: L2 HIT (fast!)     │
-  └──────────────────────────────────────────────────────────────┘
-
-  With L2_256B promotion:
-  ─────────────────────────────────────────────────────────────────
-  ┌──────────────────────────────────────────────────────────────┐
-  │  HBM: TWO consecutive 128-byte cache lines fetched at once   │
-  │  [line N: 128B][line N+1: 128B]                              │
-  │  Both cached in L2. Useful when tile width > 128B            │
-  │  and you'll need adjacent data soon (e.g., next row).        │
-  └──────────────────────────────────────────────────────────────┘
-```
+*HBM moves data to L2 in fixed 128-byte cache lines no matter how little you ask for. Request 32 bytes with NONE and the hardware still pulls the full 128-byte line from DRAM, caching 32 and discarding 96 — 75% of that DRAM read is wasted. L2_128B keeps the whole line, so bandwidth efficiency is 100% and a later TMA call touching adjacent data gets an L2 hit instead of another DRAM trip. L2_256B goes further and pulls two consecutive 128-byte lines at once, which pays off when the tile is wider than 128B and the next row's data will be needed soon too.*
 
 ### 12.2 L2 Promotion Options — Complete Reference
 
@@ -1620,35 +1500,9 @@ edge-case code path at all.
 
 When a tile extends beyond the boundary of the global tensor, TMA can automatically fill the out-of-bounds regions with a constant value. This eliminates the need for software boundary-check code in kernels — a significant simplification for tiled algorithms where the last tile may be partially out of bounds.
 
-```
-OOB Fill — Visual Explanation
-══════════════════════════════════════════════════════════════════════
+![OOB fill — the SMEM tile split into valid data and three out-of-bounds fill regions](images/ch04/06-oob-fill.svg)
 
-  Global tensor: 100 columns × 50 rows
-  Tile size (boxDim): 128 × 64
-
-  Kernel issues TMA call at coordinates (col=0, row=0):
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  SMEM tile (128 cols × 64 rows):                               │
-  │                                                                 │
-  │  Cols 0..99:   valid data from HBM  ← within globalDim        │
-  │  Cols 100..127: FILLED by OOB handler ← out of bounds!        │
-  │                                                                 │
-  │  Rows 0..49:   valid data from HBM  ← within globalDim        │
-  │  Rows 50..63:  FILLED by OOB handler ← out of bounds!        │
-  │                                                                 │
-  │  Overlap region (cols 100-127 AND rows 50-63): also FILLED    │
-  └─────────────────────────────────────────────────────────────────┘
-
-  The fill happens in SMEM (the destination). HBM is NOT modified.
-  The kernel sees a full 128×64 tile with valid data in bounds
-  and fill values out of bounds. No IF statements needed in the kernel.
-
-  This is extremely useful for:
-  ├── The last tile in a row (cols: last_col_start + tile_width > matrix_cols)
-  ├── The last tile in a column (rows: similar)
-  └── Corner tiles (both extents exceed matrix dimensions simultaneously)
-```
+*Global tensor: 100 columns × 50 rows; tile size (boxDim): 128 × 64. A TMA call at (col=0, row=0) pulls a tile that overhangs both edges of the tensor: columns 0–99 and rows 0–49 are valid data from HBM, columns 100–127 and rows 50–63 are filled by the OOB handler, and the corner where both overhangs overlap is filled too. The fill happens in SMEM — HBM itself is never touched — so the kernel sees a full 128×64 tile with real data in bounds and fill values out of bounds, with no boundary `if` statements needed. This is what makes the last tile in a row, the last tile in a column, and a corner tile all handled by the same code path.*
 
 ### 13.2 OOB Fill Options
 
@@ -2030,6 +1884,35 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex01: cuTensorMap Setup + TMA Load + Verify             ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Descriptor setup:
+  Matrix:       256 × 128 FP32
+  Tile:         64 × 32 = 2048 elements = 8192 bytes
+  globalDim:    {256, 128}
+  globalStride: {1024} bytes
+  boxDim:       {64, 32}
+  swizzle:      128B
+  l2Promotion:  128B
+
+cuTensorMapEncodeTiled: SUCCESS
+
+Launching 16 tile blocks (4×4 tiles)...
+Element checks: 32768 / 32768 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — TMA loaded all tiles correctly!          ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+The top banner is a plain hardcoded string, so its border lines up exactly. The pass/fail banner is built with `printf("║  %-56s  ║\n", ...)`, and `%-56s` pads to 56 *bytes* — the same quirk from Chapter 3. `"✓ ALL PASS — TMA loaded all tiles correctly!"` is 44 display characters but 48 bytes (`✓` and `—` are each 3-byte UTF-8 sequences), so the field gets only 8 padding spaces instead of the 12 it would need to fill 56 *columns*. The closing `║` lands 2 columns short of the border above and below it.
+
 ### 14.2 Full Example: Multi-Dimensional TMA (3D Tensor)
 
 **Manual Worked Example:**
@@ -2245,6 +2128,29 @@ int main() {
     return ok ? 0 : 1;
 }
 ```
+
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex02: 3D TMA — Attention Tensor [B][S][D] Tile Load     ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+3D Tensor: [4][128][64] FP16
+Tile:      [1][32][64] = 2048 elements = 4096 bytes
+
+Descriptor created successfully.
+
+Launching 16 blocks (4 seq_tiles × 4 batches)...
+Element checks: 32768 / 32768 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS                                              ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+Worth noticing: this banner's string is `"✓ ALL PASS"` with no em dash — just the one 3-byte checkmark. That costs the field 2 bytes versus its visual width, so `%-56s` pads it with 2 fewer spaces than a pure-ASCII string of the same length would get — and here that shortfall exactly cancels out the box's own two-space margins, so the right border lands flush with the border above and below it. Contrast with ex01 above, where two multi-byte characters (`✓` and `—`) ate 4 extra bytes and the border came up 2 columns short. Same mechanism, different outcome, depending on how many non-ASCII characters happen to be in the string.
 
 ---
 
