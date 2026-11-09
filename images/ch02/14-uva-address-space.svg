@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="684pt" height="259.2pt" viewBox="0 0 684 259.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T15:00:34.019866</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 259.2 
+L 684 259.2 
+L 684 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 52.635789 146.376 
+L 185.115789 146.376 
+L 185.115789 88.272 
+L 52.635789 88.272 
+z
+" clip-path="url(#pa8d01b2cfb)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 192.088421 146.376 
+L 324.568421 146.376 
+L 324.568421 88.272 
+L 192.088421 88.272 
+z
+" clip-path="url(#pa8d01b2cfb)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 331.541053 146.376 
+L 464.021053 146.376 
+L 464.021053 88.272 
+L 331.541053 88.272 
+z
+" clip-path="url(#pa8d01b2cfb)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 470.993684 146.376 
+L 603.473684 146.376 
+L 603.473684 88.272 
+L 470.993684 88.272 
+z
+" clip-path="url(#pa8d01b2cfb)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="342" y="36.903363" transform="rotate(-0 342 36.903363)">UVA — One Virtual Address Space, Tagged by High Bits</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(104.00193 114.499568)">Global</text>
+    <text style="font-weight: 700; font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(101.42893 124.461189)">(HBM3)</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 6.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="118.875789" y="159.288" transform="rotate(-0 118.875789 159.288)">0x0001'....</text>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(246.149468 114.499244)">Local</text>
+    <text style="font-weight: 700; font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(244.826655 124.461514)">(spill)</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 6.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="258.328421" y="159.288" transform="rotate(-0 258.328421 159.288)">0x0002'....</text>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(381.205693 114.499568)">Shared</text>
+    <text style="font-weight: 700; font-size: 8.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(380.461935 124.461189)">(SRAM)</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 6.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="397.781053" y="159.288" transform="rotate(-0 397.781053 159.288)">0x0003'....</text>
+   </g>
+   <g id="text_8">
+    <text style="font-weight: 700; font-size: 8.3px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="537.233684" y="119.480055" transform="rotate(-0 537.233684 119.480055)">Constant</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 6.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="537.233684" y="159.288" transform="rotate(-0 537.233684 159.288)">0x0004'....</text>
+   </g>
+   <g id="text_10">
+    <text style="font-weight: 700; font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start" x="52.635789" y="75.36" transform="rotate(-0 52.635789 75.36)">64-bit generic pointer, partitioned by the high bits:</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="342" y="194.796" transform="rotate(-0 342 194.796)">float* ptr = &amp;smem[5]  →  hardware reads the high bits (0x0003) to route to SRAM, then uses the low bits as the byte offset</text>
+   </g>
+   <g id="text_12">
+    <text style="font-style: italic; font-size: 7.4px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="342" y="220.62" transform="rotate(-0 342 220.62)">Exact ranges are implementation-defined — never hard-code them; use __cvta_generic_to_shared() etc.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pa8d01b2cfb">
+   <rect x="10.8" y="10.8" width="662.4" height="232.416"/>
+  </clipPath>
+ </defs>
+</svg>
