@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="432pt" viewBox="0 0 720 432" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T12:47:13.752906</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 432 
+L 720 432 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 33.1488 198.288 
+L 344.6352 198.288 
+Q 346.032 198.288 346.032 196.9488 
+L 346.032 52.3152 
+Q 346.032 50.976 344.6352 50.976 
+L 33.1488 50.976 
+Q 31.752 50.976 31.752 52.3152 
+L 31.752 196.9488 
+Q 31.752 198.288 33.1488 198.288 
+z
+" clip-path="url(#p980a690091)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 375.3648 198.288 
+L 686.8512 198.288 
+Q 688.248 198.288 688.248 196.9488 
+L 688.248 52.3152 
+Q 688.248 50.976 686.8512 50.976 
+L 375.3648 50.976 
+Q 373.968 50.976 373.968 52.3152 
+L 373.968 196.9488 
+Q 373.968 198.288 375.3648 198.288 
+z
+" clip-path="url(#p980a690091)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 33.1488 285.336 
+L 344.6352 285.336 
+Q 346.032 285.336 346.032 283.9968 
+L 346.032 233.1072 
+Q 346.032 231.768 344.6352 231.768 
+L 33.1488 231.768 
+Q 31.752 231.768 31.752 233.1072 
+L 31.752 283.9968 
+Q 31.752 285.336 33.1488 285.336 
+z
+" clip-path="url(#p980a690091)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 375.3648 285.336 
+L 686.8512 285.336 
+Q 688.248 285.336 688.248 283.9968 
+L 688.248 233.1072 
+Q 688.248 231.768 686.8512 231.768 
+L 375.3648 231.768 
+Q 373.968 231.768 373.968 233.1072 
+L 373.968 283.9968 
+Q 373.968 285.336 375.3648 285.336 
+z
+" clip-path="url(#p980a690091)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 348.033762 258.552 
+Q 360.002071 258.552 369.510705 258.552 
+" clip-path="url(#p980a690091)" style="fill: none; stroke: #00695c; stroke-width: 2.2; stroke-linecap: round"/>
+    <path d="M 363.910705 255.752 
+L 369.510705 258.552 
+L 363.910705 261.352 
+z
+" clip-path="url(#p980a690091)" style="fill: #00695c; stroke: #00695c; stroke-width: 2.2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 33.1488 375.732 
+L 686.8512 375.732 
+Q 688.248 375.732 688.248 374.3928 
+L 688.248 310.1112 
+Q 688.248 308.772 686.8512 308.772 
+L 33.1488 308.772 
+Q 31.752 308.772 31.752 310.1112 
+L 31.752 374.3928 
+Q 31.752 375.732 33.1488 375.732 
+z
+" clip-path="url(#p980a690091)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="37.743363" transform="rotate(-0 360 37.743363)">Copying a 64x64 Tile: Before and After TMA</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(122.883469 87.778664)">Before TMA (A100 and earlier)</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(188.892 96.357)"/>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(133.398234 110.067656)">Every thread in the warp:</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(110.681039 121.377656)">1. computes its own source address</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(100.753523 132.687656)">2. computes its own destination address</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(155.191055 144.840469)">3. issues a load</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(153.486398 156.150469)">4. issues a store</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(134.88607 166.617656)">5. repeats across the tile</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(493.542352 93.433664)">After TMA (H100)</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(531.108 102.012)"/>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(456.388594 116.565469)">One thread issues ONE instruction</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(458.731477 127.032656)">with a descriptor (base ptr, dims,</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(462.804164 138.342656)">strides, box size, element type,</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(459.154922 149.983664)">bounds). TMA hardware does the</text>
+    <text style="font-size: 8.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(480.404672 160.962656)">rest in the background.</text>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 10.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="188.892" y="261.449344" transform="rotate(-0 188.892 261.449344)">~20,000+ warp instructions</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="531.108" y="262.652938" transform="rotate(-0 531.108 262.652938)">1 instruction</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(203.823281 339.227859)">Same 64x64 BF16 tile from a [4096,4096] matrix, row=128 col=256.</text>
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(174.396797 350.585438)">The TMA hardware generates all 4,096 underlying memory transactions internally.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p980a690091">
+   <rect x="10.8" y="10.8" width="698.4" height="401.76"/>
+  </clipPath>
+ </defs>
+</svg>
