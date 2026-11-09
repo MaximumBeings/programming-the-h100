@@ -294,54 +294,9 @@ the CPU) or already lives at the top (in the HBM3 memory stacks). The SMs in the
 middle are where your code actually runs, and the L2 cache between them is the
 shared staging area that essentially all traffic passes through.
 
-```
-H100 SXM5 Die — Top Level
-══════════════════════════════════════════════════════════════════════════
-
-  ┌──────────────────────────────────────────────────────────────────┐
-  │                     NVLink Hub & Switches                        │
-  │  (18 NVLink 4.0 lanes → 900 GB/s GPU-to-GPU bandwidth)         │
-  ├────────┬────────┬────────┬────────┬────────┬────────┬───────────┤
-  │ HBM3   │ HBM3   │ HBM3   │ HBM3   │ HBM3   │(HBM3) │           │
-  │Stack 0 │Stack 1 │Stack 2 │Stack 3 │Stack 4 │ dis-  │           │
-  │ 16GB   │ 16GB   │ 16GB   │ 16GB   │ 16GB   │abled  │           │
-  ├────────┴────────┴────────┴────────┴────────┴───────┴───────────┤
-  │              10 × 512-bit Memory Controllers                     │
-  │         (DRAM scheduling, row buffering, address mapping)        │
-  ├────────────────────────────────────────────────────────────────┤
-  │                                                                  │
-  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
-  │  │  GPC 0   │  │  GPC 1   │  │  GPC 2   │  │  GPC 3   │        │
-  │  │ (18 SMs) │  │ (18 SMs) │  │ (18 SMs) │  │ (18 SMs) │        │
-  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘        │
-  │                                                                  │
-  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
-  │  │  GPC 4   │  │  GPC 5   │  │  GPC 6   │  │  GPC 7   │        │
-  │  │ (18 SMs) │  │ (18 SMs) │  │ (18 SMs) │  │ (18 SMs) │        │
-  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘        │
-  │                                                                  │
-  │          8 GPCs × 18 SMs/GPC = 144 SMs (132 enabled)            │
-  │                                                                  │
-  ├────────────────────────────────────────────────────────────────┤
-  │             50 MB L2 Cache (25 MB per partition)                 │
-  │           (128-byte lines, 32-byte sectors)                      │
-  ├────────────────────────────────────────────────────────────────┤
-  │                                                                  │
-  │  ┌────────────────────────────────────────────────────────────┐  │
-  │  │              GigaThread Engine                              │  │
-  │  │  (CTA scheduling, cluster management, occupancy tracking)  │  │
-  │  └────────────────────────────────────────────────────────────┘  │
-  │                                                                  │
-  │  ┌──────────────────────┐  ┌──────────────────────────────────┐  │
-  │  │  PCIe 5.0 Interface  │  │  Transformer Engine Controller   │  │
-  │  │  (128 GB/s bidir)    │  │  (FP8 auto-scaling)              │  │
-  │  └──────────────────────┘  └──────────────────────────────────┘  │
-  └──────────────────────────────────────────────────────────────────┘
-```
-
 ![NVIDIA H100 SXM5 die floor plan — NVLink hub, five HBM3 stacks, ten memory controllers, eight GPCs, 50 MB L2, the GigaThread Engine, PCIe 5.0 and the Transformer Engine Controller](images/ch01/01-die-floorplan.svg)
 
-*Figure 1.1 — The H100 SXM5 die, drawn to the structure above. Sources: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02); NVIDIA H100 datasheet PB-11773-001.*
+*Figure 1.1 — The H100 SXM5 die, top to bottom: the NVLink 4.0 hub (18 links, 900 GB/s GPU-to-GPU), five enabled HBM3 stacks of 16 GB each (a sixth disabled for yield), ten 512-bit memory controllers, eight GPCs of 18 SMs each (144 total, 132 enabled), the 50 MB L2 cache, and the GigaThread Engine alongside the PCIe 5.0 interface and Transformer Engine Controller. Sources: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02); NVIDIA H100 datasheet PB-11773-001.*
 
 > **On the 132-of-144 figure:** the full GH100 die really does have 8 GPCs
 > of 18 SMs each (144 total) [NVIDIA Hopper Architecture whitepaper, GTC22,
@@ -629,43 +584,9 @@ NVLink 4.0 — GPU-to-GPU Interconnect
 Eight GPUs, each able to reach every other at full speed. The bandwidth
 comparison at the bottom is the part to remember.
 
-```
-DGX H100 Node (8 GPUs, fully connected via NVSwitch)
-══════════════════════════════════════════════════════════
-
-  ┌──────┐    NVLink     ┌──────┐
-  │GPU 0 │◄────────────►│GPU 1 │
-  │      │    900 GB/s    │      │
-  └──┬───┘               └──┬───┘
-     │ ╲                  ╱  │
-     │   ╲    NVSwitch  ╱    │
-     │     ╲          ╱      │
-  ┌──┴───┐   ╲      ╱   ┌──┴───┐
-  │GPU 2 │◄───╲──►╱───►│GPU 3 │
-  └──┬───┘      ╳       └──┬───┘
-     │        ╱   ╲         │
-  ┌──┴───┐ ╱       ╲ ┌──┴───┐
-  │GPU 4 │◄──────────►│GPU 5 │
-  └──┬───┘            └──┬───┘
-     │                    │
-  ┌──┴───┐            ┌──┴───┐
-  │GPU 6 │◄──────────►│GPU 7 │
-  └──────┘            └──────┘
-
-  Every GPU can talk to every other GPU at 900 GB/s.
-  Total bisection bandwidth: 900 × 8 = 7.2 TB/s
-
-  For comparison:
-    PCIe 5.0: 128 GB/s (GPU ↔ CPU)
-    NVLink:   900 GB/s (GPU ↔ GPU) → 7× faster than PCIe
-
-  This is why multi-GPU training puts tensor/pipeline parallelism
-  across NVLink, and data parallelism across network nodes.
-```
-
 ![DGX H100 node topology — eight GPUs, each connected to a central NVSwitch fabric, every GPU reaching every other GPU at 900 GB/s](images/ch01/04-dgx-topology.svg)
 
-*Figure 1.3 — The same eight GPUs, drawn as a star through the switch rather than a mesh of direct links. Source: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02).*
+*Figure 1.3 — Eight GPUs, each reaching every other GPU at 900 GB/s through the NVSwitch fabric (drawn as a star through the switch, not a mesh of direct links). Total bisection bandwidth: 900 × 8 = 7.2 TB/s. For comparison, PCIe 5.0 (GPU ↔ CPU) is 128 GB/s — NVLink is roughly 7× faster. This is why multi-GPU training puts tensor/pipeline parallelism across NVLink and data parallelism across network nodes. Source: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02).*
 
 ---
 
@@ -684,58 +605,9 @@ them.
 
 The SM is the fundamental execution unit of the GPU. It receives thread blocks from the GigaThread Engine and executes them to completion.
 
-```
-H100 SM — Internal Architecture
-══════════════════════════════════════════════════════════════════
-
-  ┌────────────────────────────────────────────────────────────┐
-  │                    Streaming Multiprocessor                 │
-  │                                                            │
-  │  ┌──────────────────────────────────────────────────────┐  │
-  │  │              L1 Instruction Cache (128 KB)           │  │
-  │  │     (shared across all 4 quadrants)                  │  │
-  │  └─────────────────────┬────────────────────────────────┘  │
-  │                        │                                    │
-  │  ┌──────────┬──────────┬──────────┬──────────┐            │
-  │  │Quadrant 0│Quadrant 1│Quadrant 2│Quadrant 3│            │
-  │  │ (SMSP 0) │ (SMSP 1) │ (SMSP 2) │ (SMSP 3) │            │
-  │  │          │          │          │          │            │
-  │  │ Warp     │ Warp     │ Warp     │ Warp     │            │
-  │  │ Sched    │ Sched    │ Sched    │ Sched    │            │
-  │  │          │          │          │          │            │
-  │  │ L0 ICache│ L0 ICache│ L0 ICache│ L0 ICache│            │
-  │  │          │          │          │          │            │
-  │  │ 32 FP32  │ 32 FP32  │ 32 FP32  │ 32 FP32  │  = 128/SM │
-  │  │ 16 FP64  │ 16 FP64  │ 16 FP64  │ 16 FP64  │  =  64/SM │
-  │  │ 16 INT32 │ 16 INT32 │ 16 INT32 │ 16 INT32 │  =  64/SM │
-  │  │ 1 Tensor │ 1 Tensor │ 1 Tensor │ 1 Tensor │  =   4/SM │
-  │  │ 8 LSU    │ 8 LSU    │ 8 LSU    │ 8 LSU    │  =  32/SM │
-  │  │ 4 SFU    │ 4 SFU    │ 4 SFU    │ 4 SFU    │  =  16/SM │
-  │  │          │          │          │          │            │
-  │  │ Dispatch │ Dispatch │ Dispatch │ Dispatch │            │
-  │  │ Unit     │ Unit     │ Unit     │ Unit     │            │
-  │  │          │          │          │          │            │
-  │  │ Register │ Register │ Register │ Register │            │
-  │  │  File    │  File    │  File    │  File    │            │
-  │  │ (64 KB)  │ (64 KB)  │ (64 KB)  │ (64 KB)  │  = 256 KB │
-  │  └──────────┴──────────┴──────────┴──────────┘            │
-  │                        │                                    │
-  │  ┌──────────────────────────────────────────────────────┐  │
-  │  │        Unified Shared Memory / L1 Data Cache         │  │
-  │  │            256 KB total (228 KB SMEM max)            │  │
-  │  │         33 TB/s bandwidth, 32 banks × 4 bytes        │  │
-  │  └──────────────────────────────────────────────────────┘  │
-  │                        │                                    │
-  │  ┌──────────────────────────────────────────────────────┐  │
-  │  │                    TMA Unit                          │  │
-  │  │   (async tensor copy, descriptor-based addressing)   │  │
-  │  └──────────────────────────────────────────────────────┘  │
-  └────────────────────────────────────────────────────────────┘
-```
-
 ![NVIDIA H100 Streaming Multiprocessor internal architecture — L1 instruction cache, four quadrants each with a warp scheduler, dispatch unit, FP32/FP64/INT32/Tensor/LSU/SFU units and a register file, the unified shared memory / L1 data cache, and the TMA unit](images/ch01/02-sm-internals.svg)
 
-*Figure 1.2 — One SM, every unit from this section placed where it actually sits. Source: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02).*
+*Figure 1.2 — One SM: a 128 KB L1 instruction cache shared across all 4 quadrants, each quadrant (SMSP) holding a warp scheduler, L0 instruction cache, dispatch unit, 32 FP32/16 FP64/16 INT32/1 Tensor/8 LSU/4 SFU execution units and a 64 KB register file (128/64/64/4/32/16 units and 256 KB registers total per SM), the unified 256 KB shared memory / L1 data cache (228 KB max SMEM, 33 TB/s, 32 banks × 4 bytes), and the TMA unit. Source: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02).*
 
 ---
 
