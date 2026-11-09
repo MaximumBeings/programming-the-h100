@@ -2415,6 +2415,25 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex01: mbarrier Pipeline — Init/Arrive/Wait/Reuse        ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Config: K=4 tiles, 256 elements/tile, 64 threads/block
+
+Element checks: 1024 / 1024 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — mbarrier pipeline working correctly!     ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+`GPU:` and the SM pair come from `cudaGetDeviceProperties` and vary with the hardware the binary runs on — any Hopper or newer card prints `SM 9.0` or higher; the rest of the output is deterministic. The kernel runs `K=4` iterations of the init → `arrive.expect_tx` → poll-`try_wait.parity` → verify → flip-phase pipeline over one `BLOCK_SIZE=64` block, so every one of the `K × TILE_SIZE = 4 × 256 = 1024` elements loaded into `smem` is checked against `(float)(k * TILE_SIZE + i)`, and all 1024 checks pass since the host seeds `h_input[i] = (float)i` to match exactly. One cosmetic note: the closing box's right edge lands two columns short of the border above it. That's not a typo in this guide — it's the real behavior of `printf("║  %-56s  ║\n", ...)` on the actual program: the field width `56` is a *byte* count, and the string being padded contains two multi-byte UTF-8 glyphs (`✓` and the em dash `—`, 3 bytes each instead of 1), so the padding comes up short of the visual width the border uses. The `✗ FAILURES DETECTED` variant (only one multi-byte glyph) happens to land flush by comparison.
+
 ---
 
 ### 17.2 Full Example: WAR Hazard Prevention with Two Barriers
@@ -2652,6 +2671,25 @@ int main() {
     return (errors == 0) ? 0 : 1;
 }
 ```
+
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex02: WAR Prevention — Two-Barrier Pipeline             ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Config: 8 tiles × 128 elements = 1024 total
+Element errors: 0 / 1024
+Sample: in=7 → out=14 (expected 14)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — WAR hazard correctly prevented!          ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+`GPU:` again varies with the card the binary runs on; everything else is deterministic. The host seeds `h_in[i] = (float)i` and `h_exp[i] = i * 2.0f`, and the kernel's compute step writes `dst[k*TILE+i] = smem[i] * 2.0f` after `data_bar` confirms the tile has arrived — so all `K_TILES × TILE = 8 × 128 = 1024` elements match and `errors` stays `0`. The `k == 0` priming `arrive.release` on `release_bar` is what lets the very first tile's producer proceed immediately, since otherwise it would spin forever waiting on consumer signals that haven't happened yet; from `k == 1` onward the producer genuinely blocks on `release_bar` until the consumers finish reading the buffer it's about to overwrite — the WAR hazard the two-barrier design exists to prevent. The sample index chosen for the `in=/out=` line is `i = 7`: `in=7 → out=14`. As in the previous example, the closing box's right edge runs two columns short of the border above it, for the same reason: the PASS string carries the same two 3-byte UTF-8 glyphs (`✓`, `—`) against the byte-counted `%-56s` field, so the padding comes up two bytes short of the visual width the border uses — regardless of how much slack is left in the 56-byte field itself.
 
 ---
 
