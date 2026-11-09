@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="259.2pt" viewBox="0 0 720 259.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T14:18:47.519239</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 259.2 
+L 720 259.2 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 47.1168 165.744 
+L 672.8832 165.744 
+Q 674.28 165.744 674.28 164.4528 
+L 674.28 83.1072 
+Q 674.28 81.816 672.8832 81.816 
+L 47.1168 81.816 
+Q 45.72 81.816 45.72 83.1072 
+L 45.72 164.4528 
+Q 45.72 165.744 47.1168 165.744 
+z
+" clip-path="url(#p5dba3dd2f7)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 61.0848 152.832 
+L 163.0512 152.832 
+Q 164.448 152.832 164.448 151.5408 
+L 164.448 96.0192 
+Q 164.448 94.728 163.0512 94.728 
+L 61.0848 94.728 
+Q 59.688 94.728 59.688 96.0192 
+L 59.688 151.5408 
+Q 59.688 152.832 61.0848 152.832 
+z
+" clip-path="url(#p5dba3dd2f7)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 179.8128 152.832 
+L 407.4912 152.832 
+Q 408.888 152.832 408.888 151.5408 
+L 408.888 96.0192 
+Q 408.888 94.728 407.4912 94.728 
+L 179.8128 94.728 
+Q 178.416 94.728 178.416 96.0192 
+L 178.416 151.5408 
+Q 178.416 152.832 179.8128 152.832 
+z
+" clip-path="url(#p5dba3dd2f7)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 424.2528 152.832 
+L 658.9152 152.832 
+Q 660.312 152.832 660.312 151.5408 
+L 660.312 96.0192 
+Q 660.312 94.728 658.9152 94.728 
+L 424.2528 94.728 
+Q 422.856 94.728 422.856 96.0192 
+L 422.856 151.5408 
+Q 422.856 152.832 424.2528 152.832 
+z
+" clip-path="url(#p5dba3dd2f7)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="36.903363" transform="rotate(-0 360 36.903363)">mbarrier Object — 64 Bits in Shared Memory</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(93.634875 116.3625)">Phase bit</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(99.91175 126.291875)">(1 bit)</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(100.343625 137.091875)">0 or 1</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(263.278875 115.5875)">Pending thread</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(268.3845 126.7625)">arrival count</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(231.615125 136.691875)">(decrements as threads arrive)</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(501.727125 115.5875)">Pending transaction</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(520.0915 125.9875)">byte count</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(473.7465 136.691875)">(decrements as TMA data arrives)</text>
+   </g>
+   <g id="text_5">
+    <text style="font-style: italic; font-size: 9.3px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="360" y="204.48" transform="rotate(-0 360 204.48)">Barrier completes when BOTH counts reach zero — then the phase bit flips automatically</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p5dba3dd2f7">
+   <rect x="10.8" y="10.8" width="698.4" height="232.416"/>
+  </clipPath>
+ </defs>
+</svg>
