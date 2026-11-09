@@ -7,27 +7,26 @@
 }
 
 /* ------------------------------------------------------------------
-   Neutral header
+   Orange header
 
    Material derives the browser's `theme-color` from the computed
-   background of .md-header, which is why a coloured header tints
-   Safari's toolbar. Painting the header neutral keeps the browser
-   chrome grey in both themes while green stays the accent for links,
-   active nav items and the TOC marker.
+   background of .md-header, so a coloured header also tints Safari's
+   toolbar — that's intentional here. Green stays the accent for links,
+   active nav items and the TOC marker; the header itself is orange.
    ------------------------------------------------------------------ */
 
 :root {
-  --h100-header-bg: #f2f3f5;
-  --h100-header-fg: #1c1e21;
-  --h100-header-line: rgba(0, 0, 0, 0.10);
-  --h100-header-field: rgba(0, 0, 0, 0.06);
+  --h100-header-bg: #e8590c;
+  --h100-header-fg: #fff7f0;
+  --h100-header-line: rgba(0, 0, 0, 0.14);
+  --h100-header-field: rgba(255, 255, 255, 0.16);
 }
 
 [data-md-color-scheme="slate"] {
-  --h100-header-bg: #1b1d24;
-  --h100-header-fg: #e8eaed;
-  --h100-header-line: rgba(255, 255, 255, 0.12);
-  --h100-header-field: rgba(255, 255, 255, 0.08);
+  --h100-header-bg: #c2410c;
+  --h100-header-fg: #fff3ea;
+  --h100-header-line: rgba(0, 0, 0, 0.25);
+  --h100-header-field: rgba(255, 255, 255, 0.14);
 }
 
 .md-header,
