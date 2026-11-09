@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="612pt" height="230.4pt" viewBox="0 0 612 230.4" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T12:47:14.036302</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 230.4 
+L 612 230.4 
+L 612 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 53.864471 144.801 
+L 165.693176 144.801 
+Q 167.082353 144.801 167.082353 143.5248 
+L 167.082353 82.2672 
+Q 167.082353 80.991 165.693176 80.991 
+L 53.864471 80.991 
+Q 52.475294 80.991 52.475294 82.2672 
+L 52.475294 143.5248 
+Q 52.475294 144.801 53.864471 144.801 
+z
+" clip-path="url(#p941701a031)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 178.890353 144.801 
+L 290.719059 144.801 
+Q 292.108235 144.801 292.108235 143.5248 
+L 292.108235 82.2672 
+Q 292.108235 80.991 290.719059 80.991 
+L 178.890353 80.991 
+Q 177.501176 80.991 177.501176 82.2672 
+L 177.501176 143.5248 
+Q 177.501176 144.801 178.890353 144.801 
+z
+" clip-path="url(#p941701a031)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 303.916235 144.801 
+L 415.744941 144.801 
+Q 417.134118 144.801 417.134118 143.5248 
+L 417.134118 82.2672 
+Q 417.134118 80.991 415.744941 80.991 
+L 303.916235 80.991 
+Q 302.527059 80.991 302.527059 82.2672 
+L 302.527059 143.5248 
+Q 302.527059 144.801 303.916235 144.801 
+z
+" clip-path="url(#p941701a031)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 428.942118 144.801 
+L 540.770824 144.801 
+Q 542.16 144.801 542.16 143.5248 
+L 542.16 82.2672 
+Q 542.16 80.991 540.770824 80.991 
+L 428.942118 80.991 
+Q 427.552941 80.991 427.552941 82.2672 
+L 427.552941 143.5248 
+Q 427.552941 144.801 428.942118 144.801 
+z
+" clip-path="url(#p941701a031)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="306" y="36.640863" transform="rotate(-0 306 36.640863)">L2 Cache Line: 4 x 32-Byte Sectors</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(87.485738 110.178852)">Sector 0</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(86.699761 121.655297)">32 bytes</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(212.51162 110.178852)">Sector 1</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(211.725643 121.655297)">32 bytes</text>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(337.537502 110.178852)">Sector 2</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(336.751526 121.655297)">32 bytes</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(462.563385 110.178852)">Sector 3</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(461.777408 121.655297)">32 bytes</text>
+   </g>
+   <g id="patch_6">
+    <path d="M 56.039301 160.7535 
+Q 297.318006 160.7535 538.59671 160.7535 
+" style="fill: none; stroke: #00695c; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 60.039301 162.7535 
+L 56.039301 160.7535 
+L 60.039301 158.7535 
+" style="fill: none; stroke: #00695c; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 534.59671 158.7535 
+L 538.59671 160.7535 
+L 534.59671 162.7535 
+" style="fill: none; stroke: #00695c; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="358.094118" y="176.706" transform="rotate(-0 358.094118 176.706)">1 cache line = 128 bytes</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p941701a031">
+   <rect x="10.8" y="10.8" width="590.4" height="204.192"/>
+  </clipPath>
+ </defs>
+</svg>

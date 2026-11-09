@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="684pt" height="403.2pt" viewBox="0 0 684 403.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-09T12:47:14.304491</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 403.2 
+L 684 403.2 
+L 684 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 33.112421 177.557143 
+L 337.119158 177.557143 
+Q 338.513684 177.557143 338.513684 176.223086 
+L 338.513684 45.485486 
+Q 338.513684 44.151429 337.119158 44.151429 
+L 33.112421 44.151429 
+Q 31.717895 44.151429 31.717895 45.485486 
+L 31.717895 176.223086 
+Q 31.717895 177.557143 33.112421 177.557143 
+z
+" clip-path="url(#p62931b2e9f)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 353.853474 177.557143 
+L 657.860211 177.557143 
+Q 659.254737 177.557143 659.254737 176.223086 
+L 659.254737 45.485486 
+Q 659.254737 44.151429 657.860211 44.151429 
+L 353.853474 44.151429 
+Q 352.458947 44.151429 352.458947 45.485486 
+L 352.458947 176.223086 
+Q 352.458947 177.557143 353.853474 177.557143 
+z
+" clip-path="url(#p62931b2e9f)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 33.112421 257.600571 
+L 657.860211 257.600571 
+Q 659.254737 257.600571 659.254737 256.266514 
+L 659.254737 205.572343 
+Q 659.254737 204.238286 657.860211 204.238286 
+L 33.112421 204.238286 
+Q 31.717895 204.238286 31.717895 205.572343 
+L 31.717895 256.266514 
+Q 31.717895 257.600571 33.112421 257.600571 
+z
+" clip-path="url(#p62931b2e9f)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="342" y="37.653363" transform="rotate(-0 342 37.653363)">Coalesced vs. Uncoalesced Warp Memory Access</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(134.047914 80.520473)">BEST CASE -- coalesced</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(185.115789 88.494286)"/>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(110.296461 102.441739)">32 threads, consecutive addresses</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(125.242993 113.545817)">0x1000, 0x1004, ... 0x107C</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(185.115789 122.034286)"/>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(124.971555 136.420473)">All fit in 1 x 128B cache line</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(143.704102 147.600473)">-&gt; 1 L2 transaction</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(444.381623 80.520473)">WORST CASE -- uncoalesced</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(505.856842 88.494286)"/>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(431.83167 102.441739)">32 threads, stride-128B addresses</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(444.884186 113.545817)">0x1000, 0x1080, 0x1100, ...</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(505.856842 122.034286)"/>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(455.28817 136.420473)">32 different cache lines</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(459.469248 147.600473)">-&gt; 32 L2 transactions</text>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="345.486316" y="233.639741" transform="rotate(-0 345.486316 233.639741)">Same 128 bytes moved either way -- 32x difference in L2 transactions issued</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p62931b2e9f">
+   <rect x="10.8" y="10.8" width="662.4" height="373.536"/>
+  </clipPath>
+ </defs>
+</svg>
