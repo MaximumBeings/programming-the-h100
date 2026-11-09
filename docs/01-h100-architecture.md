@@ -77,7 +77,7 @@ Memory:
   Registers/SM:      256 KB
 
 Interconnect:
-  NVLink 4.0:        900 GB/s (18 lanes)
+  NVLink 4.0:        900 GB/s (18 links)
   PCIe 5.0:          128 GB/s bidirectional
 
 Key Innovation:      Fully asynchronous execution via TMA
@@ -303,14 +303,29 @@ CUDA Core (FP32):
 Tensor Core (FP16, 4th Gen):
   1 tensor core does: A[m×k] × B[k×n] + C[m×n] → D[m×n]
   Where m=16, k=16, n=16 for wgmma (with warp groups)
-  4 tensor cores/SM working together via WGMMA:
-    1024 FLOPS/cycle/SM (FP16)
-    2048 FLOPS/cycle/SM (FP8)  ← 2× throughput at half precision
+  4 tensor cores/SM working together via WGMMA.
 
-  FP8 peak for full GPU (132 SMs):
-    2048 × 132 SMs = 270,336 FLOPS/cycle
-    At ~1.8 GHz boost clock: 270,336 × 1.8 GHz ≈ 487 TFLOPS
-    Spec sheet: 1,979 TFLOPS (with sparsity) / 989 TFLOPS (dense)
+  A tensor core does not behave like a CUDA core (one fixed op/cycle) --
+  one WGMMA instruction drives a whole small matrix multiply over several
+  cycles, so the honest way to get FLOPS/cycle/SM is bottom-up from
+  NVIDIA's own published full-GPU totals, not from an assumed per-core
+  issue rate:
+
+    FP16 / BF16 dense: 989.4 TFLOPS / 132 SMs / 1.98 GHz ≈ 3,786 FLOPS/cycle/SM
+    FP8           dense: 1,979   TFLOPS / 132 SMs / 1.98 GHz ≈ 7,572 FLOPS/cycle/SM
+
+    FP8 is exactly 2× FP16/BF16 -- "half the bits, double the rate" holds.
+
+  FP8 peak for full GPU (132 SMs), checked against the spec sheet:
+    7,572 FLOPS/cycle/SM × 132 SMs × 1.98 GHz ≈ 1,979 TFLOPS  ✓ matches
+    Official spec (SXM5): 1,979 TFLOPS dense / 3,958 TFLOPS with 2:4 sparsity
+    [NVIDIA H100 datasheet, PB-11773-001; boost clock 1,980 MHz confirmed
+    independently via two GPU-database sources]
+
+  (An earlier draft of this chapter had these swapped -- 989 TFLOPS
+  labeled "dense" and 1,979 TFLOPS labeled "with sparsity." 1,979 TFLOPS
+  is the real dense figure; 3,958 TFLOPS is the real sparse one. 989.4
+  TFLOPS is actually the dense FP16/BF16 number, one precision tier down.)
 ```
 
 ### 3.2 Warp Group MMA (WGMMA)
@@ -377,17 +392,22 @@ notice is that halving the bit width roughly doubles the FLOPs — which is the
 entire reason FP8 exists.
 
 ```
-Precision       Bits   Range              Tensor Core FLOPS/cycle   Use Case
-─────────────────────────────────────────────────────────────────────────────
-FP64            64     ±10^308            64/SM                     Scientific
-TF32            32*    same as FP32       512/SM                    Training
-FP32            32     ±3.4×10^38         (via CUDA cores only)     General
-FP16            16     ±65504             1024/SM                   Training
-BF16            16     ±3.4×10^38         1024/SM                   Training
-FP8 (E4M3)     8      ±448               2048/SM                   Inference
-FP8 (E5M2)     8      ±57344             2048/SM                   Gradients
-
-* TF32 uses 32 bits storage but only 10-bit mantissa (≥10 bits)
+Precision     Bits  Range          Tensor Core FLOPS/cycle/SM*   Use Case
+──────────────────────────────────────────────────────────────────────────
+FP64          64    ±1.8×10^308    ~256                          Scientific
+TF32          32**  ±3.4×10^38     ~1,893                        Training
+FP32          32    ±3.4×10^38     (via CUDA cores only, 256)    General
+FP16          16    ±65,504        ~3,786                        Training
+BF16          16    ±3.4×10^38     ~3,786                        Training
+FP8 (E4M3)     8    ±448           ~7,572                        Inference
+FP8 (E5M2)     8    ±57,344        ~7,572                        Gradients
+──────────────────────────────────────────────────────────────────────────
+* Dense (no 2:4 sparsity). Derived from NVIDIA's published full-GPU
+  TFLOPS totals (SXM5, 132 SMs, 1,980 MHz boost) the same way as the
+  worked derivation in §3.1, not from an assumed per-core rate --
+  every sparse variant is exactly 2× its dense row.
+  [NVIDIA H100 datasheet, PB-11773-001]
+** TF32 uses 32 bits of storage but a 10-bit mantissa internally.
 
 The Transformer Engine dynamically selects FP8 E4M3 for forward
 and E5M2 for backward, auto-scaling to prevent overflow.
@@ -456,6 +476,19 @@ H100 SXM5 Die — Top Level
   │  └──────────────────────┘  └──────────────────────────────────┘  │
   └──────────────────────────────────────────────────────────────────┘
 ```
+
+![NVIDIA H100 SXM5 die floor plan — NVLink hub, five HBM3 stacks, ten memory controllers, eight GPCs, 50 MB L2, the GigaThread Engine, PCIe 5.0 and the Transformer Engine Controller](images/ch01/01-die-floorplan.svg)
+
+*Figure 1.1 — The H100 SXM5 die, drawn to the structure above. Sources: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02); NVIDIA H100 datasheet PB-11773-001.*
+
+> **On the 132-of-144 figure:** the full GH100 die really does have 8 GPCs
+> of 18 SMs each (144 total) [NVIDIA Hopper Architecture whitepaper, GTC22,
+> v1.02]. The SXM5 product binned down to 132 SMs, described in the same
+> whitepaper as "8 GPCs, 66 TPCs" -- 66 TPCs ÷ 8 GPCs is not a whole number,
+> so the 12 disabled SMs are not spread evenly as "1.5 per GPC." NVIDIA does
+> not publish the exact per-GPC enabled-SM breakdown for SXM5; treat the
+> 18-SMs-per-GPC diagram above as the full-die floor plan, not a literal
+> picture of which SMs are switched on in a given chip.
 
 ### 4.2 The GigaThread Engine
 
@@ -557,21 +590,28 @@ A number like "5,120-bit bus" only becomes useful once you convert it into how
 long your tile actually takes to arrive. That's what this does.
 
 ```
-Bus width: 5120 bits = 640 bytes
+Bus width: 5120 bits = 640 bytes (10 × 512-bit memory controllers)
+[NVIDIA Hopper Architecture whitepaper, GTC22, v1.02]
 
 TMA can move 128 bytes of data at once in a single transaction.
-This fits cleanly into the bus:
-  5120 bits / 8 = 640 bytes per bus cycle
-  640 / 128 = 5 concurrent 128-byte transactions per cycle
+This fits cleanly into the bus width:
+  5120 bits / 8 = 640 bytes wide
+  640 / 128 = 5 concurrent 128-byte transactions, bus-width-wise
 
 For a 64×64 BF16 tile:
-  64 × 64 × 2 bytes = 8192 bytes
-  8192 / 128 = 64 transactions
-  64 / 5 = ~13 bus cycles to transfer the entire tile
+  64 × 64 × 2 bytes = 8,192 bytes
 
-At ~1.8 GHz memory clock:
-  13 cycles × ~0.56 ns/cycle ≈ 7.2 ns for one tile transfer
-  This is fast enough to keep tensor cores fed.
+At the official aggregate HBM3 bandwidth of 3.35 TB/s
+[NVIDIA H100 datasheet, PB-11773-001]:
+  8,192 bytes / 3.35 TB/s ≈ 2.4 ns for one tile transfer once the
+  request is in flight -- fast enough to keep tensor cores fed.
+
+  Note: HBM3's own per-pin signaling clock runs far higher than, and
+  in a completely separate clock domain from, the SM's 1,980 MHz boost
+  clock. An earlier draft of this section estimated tile-transfer time
+  from an assumed "~1.8 GHz memory clock," which conflated the two
+  domains. This version derives the same number from the published
+  aggregate bandwidth instead, so it doesn't need that assumption.
 ```
 
 ---
@@ -775,22 +815,23 @@ NVLink 4.0 — GPU-to-GPU Interconnect
 ══════════════════════════════════════════════════════════
 
   Total bandwidth:     900 GB/s (bidirectional)
-  Number of lanes:     18
-  Sub-links:           9 (each = 2 lanes)
-  Per sub-link:        100 GB/s bidirectional (50 GB/s per direction)
+  Links:               18 fourth-generation NVLink links
+  Per link:            50 GB/s bidirectional
+                        (25 GB/s per direction, via 2 differential
+                        signal pairs per direction)
+  Check:               18 × 50 GB/s = 900 GB/s  ✓
+  [NVIDIA Hopper Architecture whitepaper, GTC22, v1.02]
 
   Signaling:           PAM4 (Pulse Amplitude Modulation, 4 levels)
-  ┌────────────────────────────────────────┐
-  │  NRZ (old):  2 voltage levels → 1 bit per symbol     │
-  │  PAM4 (new): 4 voltage levels → 2 bits per symbol    │
-  │                                                        │
-  │  Level 0: 0.0V  → bits "00"                           │
-  │  Level 1: 0.3V  → bits "01"                           │
-  │  Level 2: 0.6V  → bits "10"                           │
-  │  Level 3: 0.9V  → bits "11"                           │
-  │                                                        │
-  │  Same wire frequency → 2× the data rate               │
-  └────────────────────────────────────────┘
+  ┌─────────────────────────────────────────────────────────┐
+  │  NRZ  (NVLink 1.0-3.0): 2 amplitude levels → 1 bit/symbol │
+  │  PAM4 (NVLink 4.0+):    4 amplitude levels → 2 bits/symbol│
+  │                                                            │
+  │  Same baud rate, twice the bits per symbol →              │
+  │  2× the data rate per differential pair.                  │
+  │  (NVIDIA does not publish exact per-level voltages --      │
+  │  only the 4-level/2-bit-per-symbol scheme is public.)      │
+  └─────────────────────────────────────────────────────────┘
 
   Direct connections:  Up to 8 GPUs peer-to-peer
   NVSwitch fabric:     Up to 256 GPUs in a switched topology
@@ -839,6 +880,10 @@ DGX H100 Node (8 GPUs, fully connected via NVSwitch)
   This is why multi-GPU training puts tensor/pipeline parallelism
   across NVLink, and data parallelism across network nodes.
 ```
+
+![DGX H100 node topology — eight GPUs, each connected to a central NVSwitch fabric, every GPU reaching every other GPU at 900 GB/s](images/ch01/04-dgx-topology.svg)
+
+*Figure 1.3 — The same eight GPUs, drawn as a star through the switch rather than a mesh of direct links. Source: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02).*
 
 ---
 
@@ -905,6 +950,10 @@ H100 SM — Internal Architecture
   │  └──────────────────────────────────────────────────────┘  │
   └────────────────────────────────────────────────────────────┘
 ```
+
+![NVIDIA H100 Streaming Multiprocessor internal architecture — L1 instruction cache, four quadrants each with a warp scheduler, dispatch unit, FP32/FP64/INT32/Tensor/LSU/SFU units and a register file, the unified shared memory / L1 data cache, and the TMA unit](images/ch01/02-sm-internals.svg)
+
+*Figure 1.2 — One SM, every unit from this section placed where it actually sits. Source: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02).*
 
 ---
 
@@ -1958,6 +2007,10 @@ H100 Memory Hierarchy — Bandwidth vs Capacity
   This cascading filtering is what makes the hierarchy work.
 ```
 
+![H100 memory hierarchy bandwidth ladder — registers, shared memory, L2 cache and HBM3 plotted on a log scale with their capacity and latency annotated](images/ch01/03-memory-hierarchy.svg)
+
+*Figure 1.4 — The table above, as a ladder: each step away from the SM gives up roughly an order of magnitude of bandwidth and gains one of latency. Sources: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02); NVIDIA H100 datasheet PB-11773-001.*
+
 ---
 
 ## 19 — Quick Reference Tables
@@ -2012,10 +2065,10 @@ Bank Conflict:
 Swizzle:
   swizzled_bank = bank XOR (row_index % 32)
 
-Tensor Core throughput:
-  FP16: 1024 FLOPS/cycle/SM (dense)
-  FP8:  2048 FLOPS/cycle/SM (dense)
-  Sparse: 2× dense throughput
+Tensor Core throughput (SXM5, derived from published full-GPU totals):
+  FP16/BF16: ~3,786 FLOPS/cycle/SM (dense)
+  FP8:       ~7,572 FLOPS/cycle/SM (dense)
+  Sparse (2:4): 2× dense throughput
 ```
 
 ### The Three Laws of H100 Performance
