@@ -265,54 +265,9 @@ Why does this matter? Because previously, the only way for two thread blocks to 
 
 Think of it this way: before clusters, each block was an island. If block A needed data computed by block B, it had to write to global memory and block B had to read from global memory. With clusters, blocks within the same cluster can directly read and write each other's shared memory as if it were their own (with some address translation, covered in Section 16).
 
-```
-CUDA Programming Hierarchy — Pre-Hopper vs Hopper
-══════════════════════════════════════════════════════════════════════
+![CUDA programming hierarchy — pre-Hopper's three levels vs. Hopper's four](images/ch02/01-cuda-hierarchy-pre-post-hopper.svg)
 
-  Pre-Hopper (3 levels):
-  ┌───────────────────────────────────────────────────────────────┐
-  │ Grid (the entire GPU workload)                                 │
-  │                                                               │
-  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐     │
-  │  │ Block 0  │  │ Block 1  │  │ Block 2  │  │ Block 3  │ ... │
-  │  │ ──────── │  │ ──────── │  │ ──────── │  │ ──────── │     │
-  │  │ t0..t255 │  │ t0..t255 │  │ t0..t255 │  │ t0..t255 │     │
-  │  │          │  │          │  │          │  │          │     │
-  │  │ runs on  │  │ runs on  │  │ runs on  │  │ runs on  │     │
-  │  │   SM 0   │  │   SM 1   │  │   SM 2   │  │   SM 3   │     │
-  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
-  │       │             │              │              │            │
-  │       └─────────────┴──────────────┴──────────────┘           │
-  │                            │                                   │
-  │                     To communicate:                            │
-  │                     MUST go through GLOBAL MEMORY              │
-  │                     (~500 cycle latency, shared bandwidth)     │
-  └───────────────────────────────────────────────────────────────┘
-
-  Hopper (4 levels):
-  ┌───────────────────────────────────────────────────────────────┐
-  │ Grid                                                           │
-  │                                                               │
-  │  ┌─────────────────────────────┐  ┌────────────────────────┐ │
-  │  │ Cluster 0  (co-scheduled)   │  │ Cluster 1              │ │
-  │  │                             │  │                        │ │
-  │  │  ┌──────────┐ ┌──────────┐  │  │ ┌──────────┐ ┌──────┐ │ │
-  │  │  │ Block 0  │ │ Block 1  │  │  │ │ Block 2  │ │Blk 3 │ │ │
-  │  │  │  SM 0    │ │  SM 1    │  │  │ │  SM 4    │ │ SM 5 │ │ │
-  │  │  │ SMEM     │ │ SMEM     │  │  │ │ SMEM     │ │ SMEM │ │ │
-  │  │  │ 228 KB   │ │ 228 KB   │  │  │ │ 228 KB   │ │228KB │ │ │
-  │  │  └────┬─────┘ └─────┬────┘  │  │ └──────────┘ └──────┘ │ │
-  │  │       │ DSMEM link  │       │  │                        │ │
-  │  │       └──────┬───────┘       │  │                        │ │
-  │  │       SM-to-SM network       │  │                        │ │
-  │  │       ~50-80 cycle latency   │  │                        │ │
-  │  └─────────────────────────────┘  └────────────────────────┘ │
-  │                                                               │
-  │  KEY INSIGHT: Block 0 can directly READ Block 1's 228KB SMEM. │
-  │  Combined visible shared memory = 228KB × cluster_size.       │
-  │  No global memory required for intra-cluster exchange!        │
-  └───────────────────────────────────────────────────────────────┘
-```
+*Pre-Hopper, grid and block are the whole story: four blocks, each pinned to its own SM, with no way to talk to each other except a round trip through global memory at ~500 cycles. Hopper inserts a fourth level, the cluster, between block and grid. Blocks 0 and 1 are co-scheduled onto adjacent SMs inside the same cluster and get a direct DSMEM link at ~50-80 cycles — Block 0 can read Block 1's 228 KB of shared memory as if it were an extension of its own, so a cluster of size N exposes N × 228 KB with no global-memory round trip required.*
 
 ### 1.2 Why Clusters Exist — The Problem They Solve
 
@@ -327,50 +282,9 @@ For algorithms like attention (where blocks need to cooperate on softmax normali
 
 Clusters solve this by extending the hardware to allow shared-memory cross-access within a group of co-scheduled blocks. The key hardware enabling this is the SM-to-SM DSMEM interconnect within a GPC (Graphics Processing Cluster). When blocks are placed in the same cluster, the hardware routes their shared-memory accesses through this dedicated interconnect instead of global memory.
 
-```
-The Communication Problem — With and Without Clusters
-══════════════════════════════════════════════════════════════════════
+![The communication problem — with and without clusters](images/ch02/02-communication-with-without-clusters.svg)
 
-  Scenario: Block A computes partial sums; Block B needs Block A's results.
-
-  ─── WITHOUT CLUSTERS ───────────────────────────────────────────────
-
-  Block A (SM 0)          Memory Hierarchy         Block B (SM 1)
-  ┌─────────────┐                                  ┌─────────────┐
-  │ compute     │                                  │             │
-  │ partial_sum │──── 1. st.global ────────►        │             │
-  │             │         ↓                         │             │
-  └─────────────┘    ┌─────────┐                   └─────────────┘
-                     │  L1/L2  │  ~200 cycles             │
-                     │  Cache  │  (if cached)             │
-                     ├─────────┤  ~500 cycles             │
-                     │   HBM3  │  (if not cached)         │
-                     └─────────┘                          │
-                          │                               │
-                          └──── 2. ld.global ────────────►│
-                                                    ┌─────────────┐
-                                                    │  use result │
-                                                    └─────────────┘
-  Total cost: ~400-1000 cycles + HBM bandwidth consumed.
-
-  ─── WITH CLUSTERS ──────────────────────────────────────────────────
-
-  Block A (SM 0)         SM-to-SM Network          Block B (SM 1)
-  ┌─────────────┐                                  ┌─────────────┐
-  │ compute     │                                  │             │
-  │ partial_sum │──── DSMEM direct link ──────────►│  read from  │
-  │ in SMEM     │       ~50-80 cycles              │  A's SMEM   │
-  └─────────────┘                                  └─────────────┘
-
-  Total cost: ~50-80 cycles. No HBM bandwidth consumed at all.
-  Speedup: 5-10× for intra-cluster communication.
-
-  Real-world use cases:
-    ├── Flash Attention 3: blocks cooperate on softmax reduction
-    ├── GEMM (matrix multiply): blocks share input tiles
-    ├── Top-k filtering: blocks combine partial sorted lists
-    └── Any all-reduce within a small group of blocks
-```
+*Without clusters, Block A has one path to Block B: write to global memory, Block B reads it back — ~400-1000 cycles plus whatever HBM bandwidth that round trip consumes. With clusters, the same exchange is a single DSMEM hop at ~50-80 cycles, with no HBM traffic at all — a 5-10× speedup for intra-cluster communication. This is the mechanism behind FlashAttention 3's softmax reduction, GEMM's shared input tiles, top-k filtering's partial-list merges, and any all-reduce within a small group of blocks.*
 
 ### 1.3 How Clusters Actually Work — Mechanics
 
@@ -383,66 +297,32 @@ Let's be very precise about what clusters do and don't do, because there are sev
 **Misconception 3: "You can have unlimited cluster size."** Wrong. The maximum portable cluster size is 8 blocks. Size 16 exists but requires a non-portable flag and may leave SMs idle.
 
 ```
-Cluster Mechanics — What the Hardware Actually Does
-══════════════════════════════════════════════════════════════════════
-
-  Step 1: Kernel launch with cluster size = 2
-  ─────────────────────────────────────────────
+Step 1: Kernel launch with cluster size = 2
   my_kernel<<<dim3(128,1,1), dim3(256,1,1)>>>(...);
-  // 128 blocks total, cluster size 2 → 64 clusters of 2 blocks each
+  // 128 blocks total, cluster size 2 -> 64 clusters of 2 blocks each
 
-  Step 2: The scheduler assigns cluster blocks to the SAME GPC
-  ─────────────────────────────────────────────────────────────
-  ┌─────────────────────────────────────────────┐
-  │ GPC 0 (contains SMs 0-17)                   │
-  │                                             │
-  │  Cluster 0:   Block 0 → SM 3               │
-  │               Block 1 → SM 4   ← adjacent  │
-  │                                             │
-  │  Cluster 1:   Block 2 → SM 7               │
-  │               Block 3 → SM 8               │
-  │  ...                                        │
-  └─────────────────────────────────────────────┘
-  The scheduler GUARANTEES these co-run concurrently.
-
-  Step 3: Both blocks launch simultaneously
-  ─────────────────────────────────────────────
+Step 3: Both blocks launch simultaneously
   The "concurrent" guarantee means:
-    ✓ Block 0 and Block 1 are both running at the same time
-    ✓ Neither will be pre-empted while the other runs
-    ✓ DSMEM accesses are valid during the entire kernel
+    - Block 0 and Block 1 are both running at the same time
+    - Neither will be pre-empted while the other runs
+    - DSMEM accesses are valid during the entire kernel
 
-  Step 4: Threads access cross-block SMEM via DSMEM
-  ─────────────────────────────────────────────────
-  Thread in Block 0:
-    uint32_t remote_addr = mapa(my_smem_addr, /*rank=*/1);
-    // remote_addr now points into Block 1's shared memory
-    float val = ld.shared::cluster [remote_addr];
-    // This load travels via the SM-to-SM DSMEM interconnect
-
-  Hardware routing:
-    ld.shared::cluster [addr] → hardware checks address rank bits
-    → routes to the appropriate SM's shared memory controller
-    → returns value in ~50-80 cycles
-
-  What the SMEM looks like from inside the cluster:
-  ┌──────────────────────────────────────────────────┐
-  │  Block 0 SMEM (228 KB)   │  Block 1 SMEM (228 KB)│
-  │  Rank 0 addresses        │  Rank 1 addresses      │
-  │  [Block 0 owns this]     │  [Block 1 owns this]  │
-  │                          │                        │
-  │  Block 0 threads can:    │  Block 0 threads can:  │
-  │  ✓ read/write freely     │  ✓ read (via DSMEM)   │
-  │                          │  ✓ write (via DSMEM)  │
-  │                          │  ✓ atomic (via DSMEM) │
-  └──────────────────────────────────────────────────┘
+Step 4: thread in Block 0 reaching into Block 1's SMEM
+  uint32_t remote_addr = mapa(my_smem_addr, /*rank=*/1);
+  // remote_addr now points into Block 1's shared memory
+  float val = ld.shared::cluster [remote_addr];
+  // This load travels via the SM-to-SM DSMEM interconnect
 ```
+
+![Cluster mechanics — GPC co-scheduling and the cross-block SMEM view](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)
+
+*Step 2: the scheduler places both of a cluster's blocks on SMs within the same GPC — here Cluster 0's Block 0 and Block 1 land on adjacent SMs 3 and 4, Cluster 1's on SMs 7 and 8 — and guarantees they co-run concurrently, which is what makes Step 3's promise hold. That guarantee is what lets Step 4 work: a thread in Block 0 calls `mapa` to retarget a local SMEM address at Block 1 (rank 1), then `ld.shared::cluster` on that address — hardware checks the rank bits and routes to Block 1's shared-memory controller in ~50-80 cycles. The right-hand panel shows what that looks like from inside the cluster: each block still privately owns its own 228 KB, but Block 0's threads can read, write, and atomically operate on Block 1's share via DSMEM, not just their own.*
 
 ### 1.4 Cluster Sizes — Practical Considerations
 
 Choosing a cluster size is a tradeoff between more shared-memory capacity (bigger is better) vs. worse SM utilization (bigger wastes slots) and higher synchronization cost (bigger is slower to sync).
 
-A key hardware fact: each GPC on the H100 has exactly 18 SMs. A cluster of size 2 fits 9 times per GPC (18/2 = 9), with no waste. A cluster of size 4 fits 4 times (18/4 = 4 clusters, 2 SMs idle per GPC — but the scheduler can fill these with non-cluster blocks). A cluster of size 16 requires all 18 SMs but only uses 16, so 2 SMs sit idle per GPC.
+A key hardware fact: the full GH100 die has 8 GPCs of up to 18 SMs each (144 SMs total) — but the shipping H100 product disables some for yield, so the real count per GPC is lower and uneven: H100 SXM5 ships 132 SMs across its 8 GPCs (~16-17 per GPC on average), and H100 PCIe ships only 114. The table below uses the full die's 18-SM GPC as the clean illustrative case for the capacity model; on a real card, substitute whatever SM count that specific GPC actually has. A cluster of size 2 fits 9 times per GPC (18/2 = 9), with no waste. A cluster of size 4 fits 4 times (18/4 = 4 clusters, 2 SMs idle per GPC — but the scheduler can fill these with non-cluster blocks). A cluster of size 16 requires all 18 SMs but only uses 16, so 2 SMs sit idle per GPC.
 
 ```
 Cluster Size Trade-offs — Practical Decision Table
@@ -982,54 +862,9 @@ Distributed Shared Memory is the hardware feature that makes clusters useful. It
 
 The key insight is that each SM has 228 KB of SRAM, and this SRAM is used for shared memory. When a thread block runs on SM 0, its `__shared__` allocations live in SM 0's SRAM. When two blocks form a cluster on SMs 0 and 1, the thread block on SM 0 can now issue memory operations that target SM 1's SRAM. The DSMEM interconnect (a dedicated SM-to-SM network within the GPC) routes these operations.
 
-```
-DSMEM — What It Is and How It Works
-══════════════════════════════════════════════════════════════════════
+![DSMEM — distributed shared memory architecture](images/ch02/04-dsmem-architecture.svg)
 
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  GPC (Graphics Processing Cluster) — hardware grouping of SMs  │
-  │                                                                 │
-  │  ┌────────────────────────┐   ┌────────────────────────┐       │
-  │  │ SM 0 (Block A runs here)│   │ SM 1 (Block B runs here)│       │
-  │  │                        │   │                        │       │
-  │  │ ┌──────────────────┐   │   │ ┌──────────────────┐   │       │
-  │  │ │  Shared Memory   │   │   │ │  Shared Memory   │   │       │
-  │  │ │    (228 KB)      │   │   │ │    (228 KB)      │   │       │
-  │  │ │                  │   │   │ │                  │   │       │
-  │  │ │ smem[0] = 1.0    │   │   │ │ smem[0] = 2.0    │   │       │
-  │  │ │ smem[1] = 3.0    │   │   │ │ smem[1] = 4.0    │   │       │
-  │  │ │ ...              │   │   │ │ ...              │   │       │
-  │  │ └────────┬─────────┘   │   │ └────────┬─────────┘   │       │
-  │  │          │              │   │          │              │       │
-  │  └──────────┼──────────────┘   └──────────┼──────────────┘       │
-  │             │                              │                      │
-  │             │    SM-to-SM DSMEM Interconnect                      │
-  │             └─────────────┬────────────────┘                     │
-  │                           │                                      │
-  │                 ┌──────────▼──────────┐                          │
-  │                 │  DSMEM Network      │                          │
-  │                 │  (within GPC only)  │                          │
-  │                 │  ~50-80 cycle RTT   │                          │
-  │                 └─────────────────────┘                          │
-  │                                                                  │
-  │  Thread in Block A can issue:                                    │
-  │    ld.shared::cluster [block_B_smem_addr]  → reads SM 1's SRAM  │
-  │    st.shared::cluster [block_B_smem_addr]  → writes SM 1's SRAM │
-  │    atom.shared::cluster [addr]             → atomic on SM 1 SRAM │
-  │                                                                  │
-  │  RESTRICTION: This only works within the SAME cluster            │
-  │  (which means within the same GPC).                              │
-  │  Cross-GPC access must go through L2/global memory.             │
-  └─────────────────────────────────────────────────────────────────┘
-
-  Combined SMEM visible to a cluster:
-  ┌──────────────┬──────────────┬──────────────┬──────────────┐
-  │  Block 0     │  Block 1     │  Block 2     │  Block 3     │
-  │  228 KB      │  228 KB      │  228 KB      │  228 KB      │
-  └──────────────┴──────────────┴──────────────┴──────────────┘
-  Total for cluster of 4: 4 × 228 KB = 912 KB accessible!
-  (Versus 228 KB without clusters — a 4× increase)
-```
+*DSMEM is not a new memory pool — it's each SM's existing 228 KB of SRAM, plus a dedicated SM-to-SM interconnect within the GPC that lets Block A issue `ld.shared::cluster` / `st.shared::cluster` / `atom.shared::cluster` against Block B's SRAM and have the hardware route it there in ~50-80 cycles round trip. That only works within the same cluster (same GPC) — cross-GPC access still has to go through L2 or global memory. A cluster of 4 blocks therefore exposes 4 × 228 KB = 912 KB of combined shared memory, a 4× increase over the 228 KB a single block sees on its own.*
 
 ### 2.2 DSMEM Bandwidth Model
 
@@ -1038,48 +873,21 @@ Understanding the bandwidth available through DSMEM versus global memory is impo
 The H100 has ~3.35 TB/s of HBM3 bandwidth shared across all 132 SMs. Per-SM, that's about 25 GB/s of global memory bandwidth. The DSMEM interconnect operates in parallel with the global memory path — so using DSMEM does not reduce your global memory bandwidth. You get both simultaneously.
 
 ```
-Bandwidth Analysis — DSMEM vs Global Memory
-══════════════════════════════════════════════════════════════════════
+H100 System Bandwidth Numbers (approximate):
+  HBM3 bandwidth:            3.35 TB/s  (all SMs share this)
+  L2 cache bandwidth:       12.0 TB/s  (all SMs share this)
+  Per-SM share (132 SMs):   ~25 GB/s global / ~90 GB/s L2
 
-  H100 System Bandwidth Numbers (approximate):
-  ─────────────────────────────────────────────────────────────────
-    HBM3 bandwidth:            3.35 TB/s  (all SMs share this)
-    L2 cache bandwidth:       12.0 TB/s  (all SMs share this)
-    Per-SM share (132 SMs):   ~25 GB/s global / ~90 GB/s L2
-
-  DSMEM Interconnect:
-    ├── Dedicated SM-to-SM bandwidth within GPC
-    ├── Available SIMULTANEOUSLY with global memory accesses
-    ├── Does NOT consume HBM or L2 bandwidth
-    └── Estimated: ~256 GB/s SM-to-SM per cluster (estimated)
-
-  Communication Scenarios for Block A → Block B transfer of 1 MB:
-  ─────────────────────────────────────────────────────────────────
-  Method A: Through global memory
-    Block A writes 1 MB to HBM → 1 MB / 25 GB/s = 40 μs
-    Block B reads 1 MB from HBM → 1 MB / 25 GB/s = 40 μs
-    Total: ~80 μs + synchronization overhead
-
-  Method B: Through L2 cache (same data, still needs HBM store first)
-    Block A writes 1 MB → L2 hit on Block B's read: 1 MB / 90 GB/s
-    Total: ~12 μs (if everything fits in L2, optimistic)
-
-  Method C: Via DSMEM (cluster)
-    Block A fills SMEM, cluster.sync(), Block B reads via DSMEM
-    Transfer time: 1 MB / 256 GB/s ≈ 4 μs
-    + cluster.sync() overhead: ~87 cycles / ~1.5 GHz = ~58 ns ≈ 0 μs
-    Total: ~4 μs — roughly 10-20× faster than global memory!
-
-  WHEN DSMEM HELPS (communication-bound):
-    ├── Blocks exchange large amounts of intermediate data
-    ├── Multiple communication rounds per kernel invocation
-    └── The data fits in SMEM (228 KB × cluster_size limit)
-
-  WHEN DSMEM DOESN'T HELP (compute-bound):
-    ├── Blocks rarely communicate
-    ├── The data to share exceeds cluster SMEM capacity
-    └── The bottleneck is arithmetic, not memory transfers
+DSMEM Interconnect:
+  - Dedicated SM-to-SM bandwidth within GPC
+  - Available SIMULTANEOUSLY with global memory accesses
+  - Does NOT consume HBM or L2 bandwidth
+  - Estimated: ~256 GB/s SM-to-SM per cluster (estimated)
 ```
+
+![Transfer time for 1 MB, Block A to Block B — global memory vs. L2 vs. DSMEM](images/ch02/05-dsmem-bandwidth-comparison.svg)
+
+*The three routes for Block A to hand 1 MB to Block B. Through global memory: a 1 MB write plus a 1 MB read, each at the ~25 GB/s a single SM gets of the shared 3.35 TB/s HBM3 pool, for ~80 μs total. Through L2, optimistically assuming the write stays resident for Block B's read at ~90 GB/s per-SM L2 share: ~12 μs. Through DSMEM — Block A fills SMEM, `cluster.sync()`, Block B reads it back at an estimated ~256 GB/s SM-to-SM — the transfer itself is ~4 μs, and the `cluster.sync()` overhead (~87 cycles at ~1.5 GHz, ~58 ns) is close enough to zero to ignore. DSMEM helps when blocks exchange large amounts of data across multiple communication rounds and the data fits inside `228 KB × cluster_size`; it does nothing for a kernel that's compute-bound or that rarely communicates.*
 
 ---
 
@@ -1101,67 +909,14 @@ TMA (Tensor Memory Accelerator) is the H100's hardware unit for copying large ti
 
 This is especially powerful for GEMM (matrix multiplication) kernels. In a typical GEMM, every block in a cluster needs the same tile of matrix A. Without multicast, each block issues its own TMA fetch, causing N redundant HBM reads for cluster size N. With multicast, a single TMA fetch delivers the data to all N SMs at once.
 
+![TMA multicast — one HBM fetch delivered to all blocks](images/ch02/06-tma-multicast-bandwidth.svg)
+
+*GEMM scenario: a cluster of 4 blocks that all need the same Tile A. Without multicast, each block issues its own TMA fetch — 4 separate reads of identical data, 4× bandwidth waste. With multicast, a single elected thread issues one TMA request; the TMA unit fetches Tile A from HBM once and fans the copy out to all 4 SMs' shared memory in hardware, so one HBM read satisfies every block in the cluster.*
+
+For a GEMM kernel computing output tiles `C = A × B`, each output tile needs a row-stripe of A (shared by every block in a row of the cluster) and a column-stripe of B (shared by every block in a column). With multicast, all row-blocks share one A fetch and all col-blocks share one B fetch — for a 2×2 cluster, both reads are halved, a 2× bandwidth saving. This is one reason FlashAttention 3 achieves such high throughput on H100.
+
 ```
-TMA Multicast — Bandwidth Savings Diagram
-══════════════════════════════════════════════════════════════════════
-
-  GEMM scenario: Cluster of 4 blocks, all need Tile A of matrix A.
-
-  WITHOUT Multicast:
-  ───────────────────────────────────────────────────────────────────
-  ┌──────┐         ┌──────┐         ┌──────┐         ┌──────┐
-  │Block │ fetch 1 │ HBM  │         │ HBM  │         │ HBM  │
-  │  0   │─────────►  A   │         │  A   │         │  A   │
-  └──────┘         └──────┘         └──────┘         └──────┘
-  ┌──────┐                 fetch 2
-  │Block │─────────────────────────►HBM
-  │  1   │
-  └──────┘
-  ┌──────┐                                  fetch 3
-  │Block │───────────────────────────────────────────►HBM
-  │  2   │
-  └──────┘
-  ┌──────┐                                                   fetch 4
-  │Block │─────────────────────────────────────────────────────────►HBM
-  │  3   │
-  └──────┘
-
-  Result: 4 separate HBM reads of the same data. 4× bandwidth waste.
-
-  WITH Multicast:
-  ───────────────────────────────────────────────────────────────────
-  (One TMA request issued by a single "elected" thread in the cluster)
-
-  ┌──────┐                    ┌─────────────────────────────────────┐
-  │Elect.│─── 1 TMA fetch ───►│              HBM                    │
-  │Thread│                    │  Tile A (e.g., 128KB of matrix data)│
-  └──────┘                    └──────────────────┬──────────────────┘
-                                                  │ ONE read
-                                                  ▼
-                              ┌───────────────────────────────────┐
-                              │         TMA Unit (multicast)      │
-                              │  Hardware fan-out to all SMs:     │
-                              └────┬────────┬────────┬────────┬───┘
-                                   │        │        │        │
-                                   ▼        ▼        ▼        ▼
-                              SM 0 SMEM SM 1 SMEM SM 2 SMEM SM 3 SMEM
-                              (copy)   (copy)   (copy)   (copy)
-
-  Result: 1 HBM read satisfies all 4 blocks. 4× bandwidth savings!
-
-  ─── Why This Matters for Real Kernels ──────────────────────────
-  A GEMM kernel processes output tiles C = A × B.
-  Each output tile needs:
-    - A row-stripe of A (same for all blocks in a row of the cluster)
-    - A col-stripe of B (same for all blocks in a col of the cluster)
-  With multicast:
-    - All row-blocks share the same A fetch → bandwidth ÷ cluster_cols
-    - All col-blocks share the same B fetch → bandwidth ÷ cluster_rows
-  For a 2×2 cluster: both A and B reads are halved → 2× bandwidth savings
-  This is one reason FlashAttention 3 achieves high throughput on H100.
-
-  ─── Code Pattern ────────────────────────────────────────────────
-  // Only one thread per cluster issues the TMA
+Code pattern — only one thread per cluster issues the TMA:
   if (cluster.block_rank() == 0 && threadIdx.x == 0) {
       // Issue TMA multicast: delivers to ALL blocks in cluster
       cp.async.bulk.tensor.2d.shared::cluster.global [smem_desc], [gmem_desc];
@@ -1194,60 +949,18 @@ Think of PTX as analogous to Java bytecode or LLVM IR — it's a stable intermed
 
 As a programmer, PTX is important for two reasons: (1) some H100 features simply have no C++ equivalents and can only be accessed through PTX, and (2) understanding PTX helps you read the assembly output of your kernels and understand what the compiler is actually generating.
 
+![CUDA compilation pipeline — from source to execution](images/ch02/07-cuda-compilation-pipeline.svg)
+
+*`nvcc` runs in two stages: its frontend parses the CUDA extensions, splits off host code, and compiles device code to `mykernel.ptx` — PTX, a stable virtual ISA. `ptxas` then assembles that PTX into `mykernel.cubin`, hardware-specific SASS for the target architecture, which the GPU driver loads and runs on the SMs. PTX is stable across GPU generations (old PTX gets JIT-recompiled on a new GPU's driver); SASS is not (`sm_90a` SASS will not run on `sm_80`). A shipped binary carries both — SASS as the fast path for the GPU it was built for, PTX as the fallback for whatever comes next.*
+
 ```
-CUDA Compilation Pipeline — From Source to Execution
-══════════════════════════════════════════════════════════════════════
+cuobjdump --dump-ptx mykernel    -> see the PTX from a compiled binary
+cuobjdump --dump-sass mykernel   -> see the hardware assembly
 
-  Your code:  mykernel.cu  (CUDA C++)
-                    │
-                    │ nvcc frontend
-                    │  ├── parses CUDA extensions (__global__, <<<>>>)
-                    │  ├── separates host code (compiles with g++/cl)
-                    │  └── compiles device code to PTX
-                    ▼
-          mykernel.ptx  (PTX — Virtual ISA)
-              ┌──────────────────────────────────────────────┐
-              │ .version 8.0                                  │
-              │ .target sm_90a                                │
-              │ .visible .entry mykernel(.param .u64 ptr) {  │
-              │   .reg .u32 %r<10>;                           │
-              │   .reg .f32 %f<5>;                            │
-              │   ld.param.u64 %rd1, [ptr];                   │
-              │   mov.u32 %r1, %tid.x;                        │
-              │   ...                                         │
-              │ }                                             │
-              └──────────────────────────────────────────────┘
-                    │
-                    │ ptxas (PTX Assembler)
-                    │  ├── register allocation
-                    │  ├── instruction scheduling
-                    │  └── generates hardware machine code
-                    ▼
-          mykernel.cubin  (SASS — Hardware ISA for sm_90a)
-              ┌──────────────────────────────────────────────┐
-              │ (binary, but can be disassembled with cuobjdump)│
-              │ LDG.E R2, [R4+0x10];   ← actual H100 opcode  │
-              │ IMAD.MOV.U32 R5, RZ, RZ, R3;                 │
-              │ ...                                           │
-              └──────────────────────────────────────────────┘
-                    │
-                    │ GPU driver loads cubin, runs on SMs
-                    ▼
-              Actual execution on H100 hardware
-
-  KEY POINTS:
-  ├── PTX is STABLE across GPU generations (old PTX runs on new GPUs)
-  ├── SASS is HARDWARE-SPECIFIC (sm_90a SASS won't run on sm_80)
-  ├── When you ship a binary, it contains BOTH PTX and SASS
-  │   PTX = fallback for future GPUs (JIT compiled)
-  │   SASS = fast path for known GPU
-  └── cuobjdump --dump-ptx    → see the PTX from a compiled binary
-      cuobjdump --dump-sass   → see the hardware assembly
-
-  Useful compile flags:
-    nvcc -keep            → keeps intermediate .ptx files
-    nvcc --ptxas-options=-v → shows register/SMEM usage
-    nvcc -lineinfo        → embeds source line info for profiler
+Useful compile flags:
+  nvcc -keep               -> keeps intermediate .ptx files
+  nvcc --ptxas-options=-v  -> shows register/SMEM usage
+  nvcc -lineinfo           -> embeds source line info for profiler
 ```
 
 ### 4.2 Why Learn PTX?
@@ -2449,50 +2162,11 @@ State Space Map — Physical Location vs. Software View
   Local         .local           HBM3 (spill space)    ~500 cycles
   Constant      .const           On-SM const cache     ~10 cycles (broadcast)
   Parameter     .param           Special registers     1-2 cycles
-
-  ─── Memory Hierarchy Diagram ────────────────────────────────────
-
-  ┌─────────────────────────────────────────────────────────────┐
-  │                    GPU Chip (H100)                          │
-  │                                                             │
-  │  ┌───────────────────────────────────────────────────────┐  │
-  │  │  SM (Streaming Multiprocessor)                        │  │
-  │  │                                                       │  │
-  │  │  ┌────────────────┐   ┌──────────────────────────┐   │  │
-  │  │  │ Register File  │   │  Shared Memory (228KB)    │   │  │
-  │  │  │ (.reg)         │   │  (.shared::cta)           │   │  │
-  │  │  │ 65536 × 32-bit │   │  32 banks × 32-bit wide  │   │  │
-  │  │  │ per SM         │   │  ~10 cycle latency        │   │  │
-  │  │  │ ~1 cycle lat.  │   │                          │   │  │
-  │  │  └────────────────┘   └──────────────────────────┘   │  │
-  │  │                                                       │  │
-  │  │  ┌────────────────┐   ┌──────────────────────────┐   │  │
-  │  │  │ Const Cache    │   │  L1 Data Cache (~48KB)   │   │  │
-  │  │  │ (.const)       │   │  (caches .global loads)  │   │  │
-  │  │  │ 64KB per SM    │   │                          │   │  │
-  │  │  └────────────────┘   └──────────────────────────┘   │  │
-  │  └───────────────────────────────────────────────────────┘  │
-  │                          │                                   │
-  │           ┌──────────────▼──────────────┐                   │
-  │           │         L2 Cache            │                   │
-  │           │  (50 MB, shared across SMs) │                   │
-  │           │  ~100-200 cycle latency     │                   │
-  │           └──────────────┬──────────────┘                   │
-  │                          │                                   │
-  └──────────────────────────┼───────────────────────────────────┘
-                             │
-             ┌───────────────▼──────────────┐
-             │      HBM3 (80 GB)            │
-             │  .global, .local memory      │
-             │  3.35 TB/s bandwidth         │
-             │  ~500 cycle latency          │
-             └──────────────────────────────┘
-
-  IMPORTANT: When you write __shared__ in CUDA C++, the compiler
-  translates all accesses to use .shared::cta in PTX automatically.
-  When you write ld.shared explicitly in asm(), you bypass this
-  translation and directly control the routing.
 ```
+
+![State space memory hierarchy — from on-SM register file down to off-chip HBM3](images/ch02/08-state-space-memory-hierarchy.svg)
+
+*Each state space pins to one physical location. The register file and shared memory (228 KB, 32 banks) sit directly on the SM, reachable in roughly 1 and 10 cycles; the constant cache and L1 data cache sit alongside them at similar latency. Below the SM, a 50 MB L2 cache shared across all SMs costs ~100-200 cycles, and HBM3 — where `.global` and `.local` both physically live, at 3.35 TB/s bandwidth but ~500 cycle latency — is the floor. Writing `__shared__` in CUDA C++ compiles to `.shared::cta` automatically; writing `ld.shared` explicitly in `asm()` bypasses that translation and lets you route accesses yourself.*
 
 ### 7.2 Register State Space (.reg) — The Fastest Storage
 
@@ -2505,7 +2179,7 @@ Register Space — What You Need to Know
 ══════════════════════════════════════════════════════════════════════
 
   H100 Register File Capacity:
-    65,536 registers × 32 bits = 2 MB per SM
+    65,536 registers × 32 bits = 256 KB per SM
     With max 256 threads/block: 65536/256 = 256 registers per thread
     But realistic limit: 128-160 registers (higher = less occupancy)
 
@@ -2598,33 +2272,21 @@ Shared Memory — How It's Used and Why It Matters
 ══════════════════════════════════════════════════════════════════════
 
   Properties:
-    Capacity:  228 KB per SM (H100), configurable via setSharedMemConfig
+    Capacity:  228 KB per SM (H100); up to 227 KB per block, opt-in via
+               cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, size)
     Latency:   ~4-10 cycles (if no bank conflicts)
     Scope:     All threads in ONE block (or cluster with .shared::cluster)
     Lifetime:  Duration of the block's execution
 
   The Classic "Tile and Compute" Pattern:
   ─────────────────────────────────────────────────────────────────
+```
 
-  Step 1: Load tile from global memory to SMEM (all threads cooperate)
-  ┌─────────────────────────────────────────────────────────────────┐
-  │ Global Memory [input array, size N]                             │
-  │  [e0][e1][e2]...[e127][e128]...[e255]...                        │
-  │         └────────────────────────┘                              │
-  │           Thread block's tile (128 elements)                    │
-  └──────────────────────────────────────────────┬──────────────────┘
-                                                  │ each thread loads 1 element
-  Step 2: All threads barrier sync                ▼
-  ┌────────────────────────────────────────────────────────────────┐
-  │ Shared Memory [smem, 128 × 4 bytes = 512 bytes]                │
-  │  [e0][e1][e2]...[e127]   ← entire tile is here, fast to read  │
-  └────────────────────────────────────────────────────────────────┘
+![Tile-and-compute pattern — cooperative load from global memory into shared memory, then cheap repeated reads](images/ch02/09-shared-memory-tile-compute.svg)
 
-  Step 3: Each thread reads multiple elements from SMEM (cheap)
-  Thread 0 reads: smem[0], smem[1], smem[2], smem[3]  → 4 fast reads
-  Thread 1 reads: smem[4], smem[5], smem[6], smem[7]  → 4 fast reads
-  (vs: 4 slow global reads each if done directly from global memory)
+*Step 1: all threads in the block cooperate to load the block's 128-element tile from global memory into shared memory, one element per thread. Step 2: a barrier sync ensures the whole tile has landed in SMEM before anyone reads it. Step 3: each thread now reads several elements back out of SMEM — thread 0 reads `smem[0..3]`, thread 1 reads `smem[4..7]`, and so on — at ~10-cycle SMEM latency instead of paying ~500 cycles per element straight from global memory.*
 
+```
   PTX State Space Qualifiers for Shared Memory:
   ─────────────────────────────────────────────────────────────────
   .shared::cta      → this block's SMEM only (default, Hopper+)
@@ -3217,59 +2879,13 @@ The progression from FP32 → BF16 → FP8 trades precision for speed:
 ```
 Deep Learning Float Formats — Complete Bit Layout and Tradeoffs
 ══════════════════════════════════════════════════════════════════════
+```
 
-  Bit position:  31 30      23 22                  0
-  FP32 (float):  ┌─┬────────┬───────────────────────┐
-                 │S│ 8-bit E│    23-bit Mantissa      │
-                 └─┴────────┴───────────────────────┘
-  Range: ±3.4×10^38  │  Precision: ~7 decimal digits
-  PTX type: .f32     │  C++ type: float
-  Tensor Core role: accumulator (C, D matrices)
+![Deep learning float formats — bit layout for FP32, FP16, BF16, TF32, FP8 E4M3, and FP8 E5M2](images/ch02/10-deep-learning-float-formats.svg)
 
-  Bit position:  15 14  10 9         0
-  FP16 (half):  ┌─┬─────┬───────────┐
-                │S│5-bit│ 10-bit M   │
-                └─┴─────┴───────────┘
-  Range: ±65504         │  Precision: ~3.3 decimal digits
-  PTX type: .f16        │  C++ type: __half
-  DANGER: Values > 65504 → Inf! Training gradients can overflow!
-  Tensor Core role: Input (A, B matrices)
+*FP32 spends 8 exponent bits and 23 mantissa bits for ±3.4×10^38 range at ~7 decimal digits of precision; it is the Tensor Core's accumulator format (C, D matrices). FP16 narrows to a 5-bit exponent and 10-bit mantissa — more precision than BF16, but it overflows to `Inf` above 65504, a real risk for training gradients. BF16 keeps FP32's full 8-bit exponent (so it shares FP32's range and never overflows during training) but drops to only 7 mantissa bits, trading precision for safety; it's the dominant input format (A, B matrices) for H100 training. TF32 is stored in the same 32 bits as FP32 but computes with only a ≥10-bit mantissa, applied transparently when Tensor Core ops request TF32 mode. The two FP8 formats split 8 bits between sign, exponent, and mantissa in opposite ways: E4M3 (4-bit exponent, 3-bit mantissa, range ±448) favors precision for the bounded forward pass, while E5M2 (5-bit exponent, 2-bit mantissa, range ±57344) favors range for the wide-swinging backward pass.*
 
-  Bit position:  15 14      7 6     0
-  BF16 (brain):  ┌─┬──────────┬───────┐
-                 │S│ 8-bit E  │ 7-bit │
-                 └─┴──────────┴───────┘
-  Range: ±3.4×10^38   │  Precision: ~2.4 decimal digits
-  PTX type: .b16       │  C++ type: __nv_bfloat16
-  KEY ADVANTAGE: Same range as FP32 — no overflow during training!
-  Tensor Core role: Input (A, B matrices), dominant in H100 training
-
-  Bit position:  31 30      23 22          10 9    0
-  TF32:          ┌─┬──────────┬─────────────┬───────┐
-                 │S│ 8-bit E  │≥10-bit Mant │ zeros │
-                 └─┴──────────┴─────────────┴───────┘
-  Storage: 32 bits (same as FP32)
-  Precision: 10-bit mantissa (less than FP32's 23-bit)
-  PTX type: .b32 (stored as regular 32-bit register)
-  KEY: Same range as FP32, less precision. Used transparently in
-       Tensor Core ops when you request TF32 mode.
-
-  Bit position:  7 6  4 3  0
-  FP8 E4M3:     ┌─┬────┬────┐
-                │S│4-bit│3-bit│
-                └─┴────┴────┘
-  Range: ±448           │  Precision: 3-bit mantissa
-  PTX type: .e4m3 / .b8 │  C++ type: __nv_fp8_e4m3
-  Use case: Forward pass (activations & weights have bounded range)
-
-  Bit position:  7 6    3 2  0
-  FP8 E5M2:     ┌─┬─────┬────┐
-                │S│5-bit│2-bit│
-                └─┴─────┴────┘
-  Range: ±57344          │  Precision: 2-bit mantissa (less!)
-  PTX type: .e5m2 / .b8  │  C++ type: __nv_fp8_e5m2
-  Use case: Backward pass (gradients need wider range, less precision)
-
+```
   Comparison Summary:
   ────────────────────────────────────────────────────────────────
   Format  Bits  Exponent  Mantissa  Max Value   Training Use
@@ -3419,19 +3035,13 @@ The tensor cores REQUIRE packed data. When you feed FP16 data to a WGMMA instruc
 ```
 Packed Types — Memory Layout and Operations
 ══════════════════════════════════════════════════════════════════════
+```
 
-  .f16x2 — Two FP16 values in one 32-bit register:
-  ┌─────────────────────────────────────────────────────────────┐
-  │  Bits 31-16                │  Bits 15-0                     │
-  │  ┌──────────────────────┐  │  ┌──────────────────────┐      │
-  │  │  FP16 value 1        │  │  │  FP16 value 0        │      │
-  │  │  (high 16 bits)      │  │  │  (low 16 bits)       │      │
-  │  └──────────────────────┘  │  └──────────────────────┘      │
-  │                             │                                │
-  │  Packed .b32 register:      │                                │
-  │  [v1_sign|v1_exp|v1_mant   │  v0_sign|v0_exp|v0_mant]     │
-  └─────────────────────────────────────────────────────────────┘
+![Packed .f16x2 register layout — two FP16 values in one 32-bit register](images/ch02/11-packed-f16x2-register.svg)
 
+*A `.f16x2` value occupies one 32-bit register split into two 16-bit halves: FP16 value 0 (its own sign, exponent, and mantissa bits) in bits 15-0, FP16 value 1 in bits 31-16. The low-half/high-half packing order matters when you build or read back a packed register by hand.*
+
+```
   Concrete example: Pack 1.0f and 2.0f into one .f16x2:
     FP16(1.0f) = 0x3C00   (sign=0, exp=15, mant=0)
     FP16(2.0f) = 0x4000   (sign=0, exp=16, mant=0)
@@ -3522,13 +3132,13 @@ In PTX, you always work with raw byte offsets. There is no automatic scaling. Th
 ```
 Byte Addressing — How GPU Memory Works
 ══════════════════════════════════════════════════════════════════════
+```
 
-  Conceptual model: GPU memory as a byte array
-  ─────────────────────────────────────────────────────────────────
-  Address:   0    1    2    3    4    5    6    7    8    9   10   11
-             ├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
-  Data:     [    float a    ][    float b    ][    float c    ]...
+![Byte addressing — GPU memory as a flat byte array, with a float array laid over it](images/ch02/12-byte-addressing.svg)
 
+*GPU memory is just a flat array of bytes, addressed 0, 1, 2, 3, .... A `float` is 4 bytes wide, so `array[0]`, `array[1]`, `array[2]` land at byte offsets 0, 4, and 8 — the element index times `sizeof(float)`. C++ hides this: `ptr + 1` silently multiplies by the pointee's size. PTX does not — every address computation in inline `asm()` is a raw byte offset you compute yourself.*
+
+```
   float array at base address 0x1000:
     float a = array[0] → at address 0x1000 (byte 0)
     float b = array[1] → at address 0x1004 (byte 4 = 1 × sizeof(float))
@@ -3612,13 +3222,13 @@ The "4" is the bank width (4 bytes per bank slot). The "32" is the number of ban
 ```
 Bank Layout — Visual Map
 ══════════════════════════════════════════════════════════════════════
+```
 
-  Shared memory address → Bank mapping (32 banks, 4 bytes each):
+![Bank layout — byte address to bank number strip, 32 banks of 4 bytes wrapping every 128 bytes](images/ch02/13-bank-layout-visual-map.svg)
 
-  Byte address:  0   4   8  12  16  20  24  28  32  36 ... 124 128
-                 │   │   │   │   │   │   │   │   │   │       │   │
-  Bank number:   0   1   2   3   4   5   6   7   8   9  ... 31   0  ← wraps!
+*Byte addresses 0, 4, 8, ... 124 map one-to-one onto banks 0 through 31; at byte 128 — one past the 32nd bank — the mapping wraps back to bank 0, so `smem[32]` lands in the same bank as `smem[0]`.*
 
+```
   4-byte "word" at byte offset B:  word_index = B / 4
   Bank of that word:               bank = word_index % 32
 
@@ -3746,27 +3356,9 @@ Convenient — and, as the next section shows, not free.
 
 UVA maps all GPU memory spaces into a single 64-bit virtual address space. The high bits of any pointer tell the hardware which physical subsystem to route the access to. This is why a single `float*` in CUDA C++ can point to global memory, shared memory, or constant memory — the hardware figures out which one at dereference time by inspecting the address bits.
 
-```
-UVA Address Space — How Regions Are Tagged
-══════════════════════════════════════════════════════════════════════
+![UVA address space — how the high bits of a generic pointer tag its state space](images/ch02/14-uva-address-space.svg)
 
-  Address Range (approximate)           State Space
-  ─────────────────────────────────────────────────────
-  0x0001'0000'xxxx'xxxx                 Global (HBM3)
-  0x0002'0000'xxxx'xxxx                 Local (spill, per-thread)
-  0x0003'0000'xxxx'xxxx                 Shared (per-block SRAM)
-  0x0004'0000'xxxx'xxxx                 Constant
-
-  Exact ranges are implementation-defined — never hard-code them.
-  Always use __cvta_generic_to_shared() etc. to convert.
-
-  How dereference works with a generic pointer:
-    float* ptr = &smem[5];     // address ≈ 0x0003'0000'0000'0014
-    float val = *ptr;
-    // Hardware: reads high bits → 0x0003 → "route to SRAM"
-    //           uses low bits 0x14 → byte offset within SMEM
-    // Cost: 1-2 extra cycles vs explicit state-space address
-```
+*UVA carves the 64-bit virtual address space into regions by high-bit pattern: roughly `0x0001'0000'xxxx'xxxx` for Global (HBM3), `0x0002'...` for Local, `0x0003'...` for Shared, `0x0004'...` for Constant — approximate and implementation-defined, so always convert with `__cvta_generic_to_shared()` and friends rather than hard-coding a range. Dereferencing `float* ptr = &smem[5]` (address ≈ `0x0003'0000'0000'0014`) costs the hardware 1-2 extra cycles versus an explicit state-space address: it reads the high bits (`0x0003` → route to SRAM) before using the low bits (`0x14`) as the byte offset within SMEM.*
 
 ---
 
