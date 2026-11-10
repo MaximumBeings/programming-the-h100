@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="388.8pt" viewBox="0 0 720 388.8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-10T09:54:51.391837</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 388.8 
+L 720 388.8 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 159.848888 110.64 
+L 238.402819 110.64 
+L 238.402819 64.048 
+L 159.848888 64.048 
+z
+" clip-path="url(#pef3ac5551b)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 238.402819 110.64 
+L 631.172475 110.64 
+L 631.172475 64.048 
+L 238.402819 64.048 
+z
+" clip-path="url(#pef3ac5551b)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 159.848888 223.792 
+L 179.90521 223.792 
+L 179.90521 177.2 
+L 159.848888 177.2 
+z
+" clip-path="url(#pef3ac5551b)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 179.90521 223.792 
+L 480.750053 223.792 
+L 480.750053 177.2 
+L 179.90521 177.2 
+z
+" clip-path="url(#pef3ac5551b)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 480.750053 223.792 
+L 631.172475 223.792 
+L 631.172475 177.2 
+L 480.750053 177.2 
+z
+" clip-path="url(#pef3ac5551b)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">Dynamic Shared Memory Layout for TMA — Wrong vs Correct Alignment</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #8a1c1c" x="56.545088" y="87.344" transform="rotate(-0 56.545088 87.344)">WRONG</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(189.121166 84.757477)">mbar</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(188.909791 93.879555)">[0..7]</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(400.868491 84.757773)">data starts byte 8</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(408.108084 93.879258)">(8 % 128 ≠ 0)</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 7.8px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(637.628963 77.981867)">✗ silent</text>
+    <text style="font-weight: 700; font-size: 7.8px; font-family: 'DejaVu Sans'; fill: #8a1c1c" transform="translate(637.628963 87.344)">corruption</text>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #1b5e20" x="56.545088" y="200.496" transform="rotate(-0 56.545088 200.496)">CORRECT</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(159.872361 197.909477)">mbar</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(159.660986 207.031555)">[0..7]</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(298.626132 197.909477)">padding [8..127]</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(308.432507 207.031555)">(120 bytes)</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(523.57042 197.909477)">tile data [128..N]</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(530.718577 207.031555)">128B-aligned</text>
+   </g>
+   <g id="text_10">
+    <text style="font-weight: 700; font-size: 7.8px; font-family: 'DejaVu Sans'; fill: #1b5e20" transform="translate(637.628963 191.133867)">✓ TMA</text>
+    <text style="font-weight: 700; font-size: 7.8px; font-family: 'DejaVu Sans'; fill: #1b5e20" transform="translate(637.628963 200.496)">writes here</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 8.1px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(189.972773 311.482)">data_offset = (sizeof(uint64_t) + 128 − 1) &amp; ~(128 − 1) = (8 + 127) &amp; ~127 = 128</text>
+    <text style="font-size: 8.1px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(54.381305 323.632)">TMA's 128-byte SWIZZLE_128B destination requirement is a hardware constraint, not a convention — get the offset wrong and the corruption is silent.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pef3ac5551b">
+   <rect x="37.175625" y="10.8" width="645.64875" height="359.424"/>
+  </clipPath>
+ </defs>
+</svg>

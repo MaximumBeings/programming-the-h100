@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="331.2pt" viewBox="0 0 720 331.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-10T09:54:51.055393</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 331.2 
+L 720 331.2 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 33.1488 182.047304 
+L 163.0512 182.047304 
+Q 164.448 182.047304 164.448 180.730017 
+L 164.448 97.740939 
+Q 164.448 96.423652 163.0512 96.423652 
+L 33.1488 96.423652 
+Q 31.752 96.423652 31.752 97.740939 
+L 31.752 180.730017 
+Q 31.752 182.047304 33.1488 182.047304 
+z
+" clip-path="url(#p724969f068)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 166.449762 139.235478 
+Q 192.383691 139.235478 216.528767 139.235478 
+" clip-path="url(#p724969f068)" style="fill: none; stroke: #0d47a1; stroke-width: 1.6; stroke-linecap: round"/>
+    <path d="M 210.928767 136.435478 
+L 216.528767 139.235478 
+L 210.928767 142.035478 
+z
+" clip-path="url(#p724969f068)" style="fill: #0d47a1; stroke: #0d47a1; stroke-width: 1.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 221.7168 182.047304 
+L 330.6672 182.047304 
+Q 332.064 182.047304 332.064 180.730017 
+L 332.064 97.740939 
+Q 332.064 96.423652 330.6672 96.423652 
+L 221.7168 96.423652 
+Q 220.32 96.423652 220.32 97.740939 
+L 220.32 180.730017 
+Q 220.32 182.047304 221.7168 182.047304 
+z
+" clip-path="url(#p724969f068)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 382.3488 182.047304 
+L 512.2512 182.047304 
+Q 513.648 182.047304 513.648 180.730017 
+L 513.648 97.740939 
+Q 513.648 96.423652 512.2512 96.423652 
+L 382.3488 96.423652 
+Q 380.952 96.423652 380.952 97.740939 
+L 380.952 180.730017 
+Q 380.952 182.047304 382.3488 182.047304 
+z
+" clip-path="url(#p724969f068)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 515.649762 139.235478 
+Q 541.583691 139.235478 565.728767 139.235478 
+" clip-path="url(#p724969f068)" style="fill: none; stroke: #616161; stroke-width: 1.6; stroke-linecap: round"/>
+    <path d="M 560.128767 136.435478 
+L 565.728767 139.235478 
+L 560.128767 142.035478 
+z
+" clip-path="url(#p724969f068)" style="fill: #616161; stroke: #616161; stroke-width: 1.6; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 570.9168 182.047304 
+L 679.8672 182.047304 
+Q 681.264 182.047304 681.264 180.730017 
+L 681.264 97.740939 
+Q 681.264 96.423652 679.8672 96.423652 
+L 570.9168 96.423652 
+Q 569.52 96.423652 569.52 97.740939 
+L 569.52 180.730017 
+Q 569.52 182.047304 570.9168 182.047304 
+z
+" clip-path="url(#p724969f068)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="37.359885" transform="rotate(-0 360 37.359885)">cp.async.bulk.tensor vs cp.async.bulk — The Key Visual Difference</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 10.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #0d47a1" x="185.4" y="73.37113" transform="rotate(-0 185.4 73.37113)">Tensor layout (with descriptor)</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(82.867734 131.354385)">Global</text>
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(82.311914 142.273564)">Tensor</text>
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(69.130273 152.597744)">[any layout]</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 7.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="192.384" y="119.476174" transform="rotate(-0 192.384 119.476174)">descriptor</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(265.774188 131.283994)">TMA</text>
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(260.964383 142.404385)">knows</text>
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(261.844266 152.630947)">shape</text>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 10.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #616161" x="534.6" y="73.37113" transform="rotate(-0 534.6 73.37113)">Raw layout (no descriptor)</text>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(432.067734 131.354385)">Global</text>
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(427.973125 141.416924)">Memory</text>
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(420.629922 152.597744)">[flat bytes]</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 7.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="541.584" y="119.476174" transform="rotate(-0 541.584 119.476174)">size + addr</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(614.974188 131.283994)">TMA</text>
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(613.368484 142.404385)">blind</text>
+    <text style="font-weight: 700; font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(614.140125 151.748408)">copy</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(114.882578 228.575217)">With .tensor, TMA is handed a 128-byte descriptor and a coordinate — it derives strides, bounds, and swizzle itself.</text>
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(106.823516 241.325217)">Without it, TMA is handed only an address and a byte count: a hardware-accelerated memcpy with no notion of shape.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p724969f068">
+   <rect x="10.8" y="10.8" width="698.4" height="302.976"/>
+  </clipPath>
+ </defs>
+</svg>
