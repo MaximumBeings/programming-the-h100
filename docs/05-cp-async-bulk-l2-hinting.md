@@ -159,7 +159,8 @@ The transfers are offloaded entirely to the TMA (Tensor Memory Accelerator) hard
 cp.async.bulk — Core Properties
 ══════════════════════════════════════════════════════════════════════
 
-  ├── ONE instruction transfers an ENTIRE tile (up to ~1 MB)
+  ├── ONE instruction transfers an ENTIRE tile (up to the destination's
+  │   available shared memory — up to ~227 KB per block on H100)
   ├── Issued by ONE thread; other 127 threads in the block are free
   ├── SM is immediately free after issuing; TMA does all the work
   ├── Supports 1D through 5D multi-dimensional tensor layouts
@@ -195,20 +196,11 @@ TMA Engine — What It Does Internally
   6. When all bytes delivered → signals mbarrier → phase flips → consumers unblock
 
   ALL of steps 1-6 happen in dedicated hardware with ZERO SM involvement.
-
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  Timeline after cp.async.bulk.tensor is issued:                │
-  │                                                                 │
-  │  Thread:  [issue] ─────────────────────────────────────────►   │
-  │           immediately free for compute                          │
-  │                                                                 │
-  │  TMA:           [read desc]→[calc addrs]→[fetch HBM]→[write]  │
-  │                  ←─────── happens in background ──────────►    │
-  │                                                                 │
-  │  mbarrier:                               ↑ tx-count decrements │
-  │                                          → phase flips at done  │
-  └─────────────────────────────────────────────────────────────────┘
 ```
+
+![TMA engine timeline — after cp.async.bulk.tensor is issued](images/ch05/01-tma-engine-timeline.svg)
+
+*The issuing thread runs one instruction and is immediately free — for compute, for tensor cores, for anything else. The TMA engine then works through its four internal steps (read descriptor, calculate addresses, fetch from HBM, write to SMEM) entirely in the background. As bytes land, the mbarrier's transaction count decrements; when it reaches zero, the phase flips and waiting consumers unblock. None of this touches an SM instruction slot after the initial issue.*
 
 ---
 
@@ -260,13 +252,6 @@ Ampere cp.async — Thread Involvement Required
   Uses: LSU (Load/Store Unit) — NOT the TMA engine.
   The copy is "async" only in that the thread can issue multiple inflight
   copies, but the thread ITSELF is consumed by the management work.
-
-  Hardware units occupied:
-  ┌──────────────┬────────────────────────────────────────────────┐
-  │ Warp schedulers│ Issuing cp.async instructions (occupied!)     │
-  │ LSU            │ Handling each 16B chunk (busy!)               │
-  │ Tensor Cores   │ IDLE — threads too busy with copy management  │
-  └──────────────┴────────────────────────────────────────────────┘
 ```
 
 ### 2.2 Hopper cp.async.bulk — True Offload
@@ -301,14 +286,13 @@ Hopper cp.async.bulk — One Instruction, Zero Thread Involvement
   └── Total instructions to launch a 4KB copy: EXACTLY 1
 
   Uses: TMA engine — NOT the LSU. NOT warp schedulers (beyond 1 issue).
+```
 
-  Hardware units occupied:
-  ┌──────────────┬────────────────────────────────────────────────┐
-  │ Warp schedulers│ 1 instruction to start, then completely free  │
-  │ TMA Engine     │ Running independently in background           │
-  │ Tensor Cores   │ RUNNING MATH — fully utilized!                │
-  └──────────────┴────────────────────────────────────────────────┘
+![Ampere cp.async vs Hopper cp.async.bulk — hardware occupancy for a 4 KB tile](images/ch05/02-ampere-vs-hopper-occupancy.svg)
 
+*Ampere's path keeps the warp schedulers occupied issuing 256 `cp.async` calls and the LSU busy handling every 16-byte chunk, leaving the tensor cores idle because the threads are consumed by copy management. Hopper's path issues one instruction, leaves the warp schedulers free immediately, hands the transfer to the TMA engine running independently, and leaves the tensor cores fully available for math.*
+
+```
   ─── Quantified Difference ───────────────────────────────────────
 
   For a 4KB BF16 tile (2048 elements × 2 bytes):
@@ -392,16 +376,11 @@ cp.async.bulk — Two Major Forms
     cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes
         [smem_dest], [gmem_src], 4096, [mbar_addr];
 
-  ─── The Key Visual Difference ───────────────────────────────────
-
-  Tensor layout:                    Raw layout:
-  ┌──────────┐ descriptor ┌───────┐ ┌──────────┐ size+addr ┌───────┐
-  │ Global   │────────────│  TMA  │ │ Global   │───────────│  TMA  │
-  │ Tensor   │            │       │ │ Memory   │           │       │
-  │ [any     │            │ knows │ │ [flat    │           │ blind │
-  │  layout] │            │ shape │ │  bytes]  │           │ copy] │
-  └──────────┘            └───────┘ └──────────┘           └───────┘
 ```
+
+![cp.async.bulk.tensor vs cp.async.bulk — the key visual difference](images/ch05/03-tensor-vs-raw-layout.svg)
+
+*With `.tensor`, TMA is handed a descriptor and derives shape; without it, TMA is handed only a size and an address and performs a blind copy.*
 
 ### 3.2 Full Instruction Template — Every Field Explained
 
@@ -610,23 +589,11 @@ The `.tile` mode (the default for most uses) tells TMA to fetch a dense rectangu
   TMA uses: coordinates → locate top-left corner
             strides     → navigate to each row
             boxDim      → know when to stop
-
-  For 2D matrix, tile at (col=64, row=32), boxDim={32,16}:
-  ┌───────────────────────────────────────────────────────────────┐
-  │  Global Matrix [MAT_ROWS × MAT_COLS]                         │
-  │                                                               │
-  │  Row 32: ... [64][65][66]...[95] ...                         │
-  │  Row 33: ... [64][65][66]...[95] ...                         │
-  │  ...                                                          │
-  │  Row 47: ... [64][65][66]...[95] ...                         │
-  │               └─── boxDim={32,16} ──┘                        │
-  │               32 cols × 16 rows = 512 elements fetched       │
-  └───────────────────────────────────────────────────────────────┘
-
-  TMA computes:  element[r][c] = base + (row+r)*stride + (col+c)*sizeof(T)
-  for r ∈ [0, 15], c ∈ [0, 31]  (a nested loop, done by hardware)
-  Thread involvement: ZERO. TMA runs the loop internally.
 ```
+
+![.tile mode — dense rectangular fetch from a global matrix](images/ch05/04-tile-mode-rectangular-fetch.svg)
+
+*The coordinate `(col=64, row=32)` locates the tile's top-left corner; the descriptor's `boxDim={32,16}` tells TMA how far to extend it — 32 columns by 16 rows, 512 elements. TMA computes `element[r][c] = base + (row+r)·stride + (col+c)·sizeof(T)` for every `r ∈ [0,15]`, `c ∈ [0,31]` as a nested loop run entirely in hardware; thread involvement is zero.*
 
 ### 6.2 im2col — Hardware-Accelerated Convolution
 
@@ -637,35 +604,13 @@ TMA's `im2col` mode eliminates this preprocessing step entirely. You give TMA th
 ```
 im2col Mode — Hardware Convolution Acceleration
 ══════════════════════════════════════════════════════════════════════
+```
 
-  Traditional flow (pre-TMA):
-  ─────────────────────────────────────────────────────────────────
-  [Input image NCHW in HBM]
-         │
-         │ Step 1: im2col kernel (wastes bandwidth!)
-         │   Threads read pixels, compute complex offsets,
-         │   write to a temporary "columns" matrix in global memory
-         ▼
-  [im2col matrix in HBM]  ← wasteful intermediate!
-         │
-         │ Step 2: GEMM (weights × im2col matrix)
-         ▼
-  [Output feature maps]
+![im2col — traditional flow vs TMA hardware convolution](images/ch05/05-im2col-flow-comparison.svg)
 
-  TMA im2col flow:
-  ─────────────────────────────────────────────────────────────────
-  [Input image NCHW in HBM]
-         │
-         │ cp.async.bulk.tensor.im2col: ONE instruction, NO intermediate!
-         │   TMA reads pixels using convolution window logic
-         │   Unrolls them directly into SMEM as a column layout
-         ▼
-  [Column tile in SMEM]   ← directly ready for GEMM!
-         │
-         │ WGMMA or other GEMM instruction
-         ▼
-  [Output feature maps]
+*Traditionally, a separate im2col kernel reads pixels, computes overlapping-window offsets, and writes a wasteful intermediate "columns" matrix to global memory before the GEMM can run. TMA's im2col mode collapses this to one instruction: it reads pixels using convolution-window logic and unrolls them directly into SMEM as a column layout, so the intermediate HBM buffer and the separate kernel launch never happen.*
 
+```
   Benefits:
   ├── Eliminates the intermediate global memory buffer (saves HBM bandwidth)
   ├── Eliminates the im2col kernel launch (saves SM time)
@@ -676,11 +621,12 @@ im2col Mode — Hardware Convolution Acceleration
     cp.async.bulk.tensor.{nd}.shared::cta.global.im2col
         .mbarrier::complete_tx::bytes [smem], [desc], {coords}, [mbar];
 
-  Variants:
-    im2col            → standard im2col (full filter window)
-    im2col::w         → width-only im2col
-    im2col::d         → depth-only im2col (3D convolution)
-    im2col::w::d      → combined width + depth im2col
+  Variants (real PTX ISA spelling — these relate to offset handling,
+  not a width-vs-depth split):
+    im2col              → standard im2col load
+    im2col::w           → im2col, width-offset form
+    im2col_no_offs::w   → im2col, width-offset form, no pixel offsets
+    im2col::w::128      → im2col, width-offset form, 128-element granularity
 ```
 
 ---
@@ -1227,21 +1173,13 @@ TMA Multicast — Bandwidth Analysis
       → Block 2's SMEM: ✓ receives A0
       → Block 3's SMEM: ✓ receives A0
   Total HBM reads: 1 × 4 KB = 4 KB. 4× bandwidth savings!
+```
 
-  ┌────────────────────────────────────────────────────────────────┐
-  │  HBM3: [Tile A0 ────── 4KB read ──────────────────────────────│
-  │                                                                │
-  │  L2 cache controller:  ONE read → BROADCAST to 4 SMEMs        │
-  │                                │                              │
-  │               ┌────────────────┼────────────────┐            │
-  │               ▼                ▼                ▼            │
-  │         SM0 SMEM          SM1 SMEM         SM2 SMEM          │
-  │         (Block 0)         (Block 1)        (Block 2)         │
-  │                                                    ▼          │
-  │                                              SM3 SMEM         │
-  │                                              (Block 3)        │
-  └────────────────────────────────────────────────────────────────┘
+![TMA multicast — one HBM fetch, delivered to every block's SMEM](images/ch05/06-tma-multicast-fanout.svg)
 
+*One HBM read lands in L2, whose controller recognizes the multicast request and broadcasts the tile to every block named in the ctaMask simultaneously — here all four of SM0-SM3's SMEM.*
+
+```
   Multicast savings = (cluster_size - 1) × tile_bytes of HBM bandwidth
   For cluster_size=8: 7 × tile_bytes saved per tile fetch!
 ```
@@ -1411,15 +1349,16 @@ Dynamic Shared Memory Layout for TMA — The Right Way
   // (8 + 127) & ~127 = 135 & ~127 = 128 ← rounds UP to 128
   half* tile_ptr = reinterpret_cast<half*>(smem + data_offset);
 
-  // smem layout:
-  // [0..7]: mbarrier (8B, 8B-aligned) ✓
-  // [8..127]: padding (120B, for 128B alignment)
-  // [128..N]: tile data (128B-aligned) ✓ TMA will write here
-
   // Dynamic SMEM size needed:
   // 128 bytes (mbar + padding) + tile_bytes
   // Pass to kernel launch: my_kernel<<<grid, block, 128+TILE_BYTES>>>(...)
+```
 
+![Dynamic shared memory layout for TMA — wrong vs correct alignment](images/ch05/07-dynamic-smem-alignment.svg)
+
+*Placing data right after the 8-byte mbarrier leaves it at byte offset 8 — not a multiple of 128, which silently corrupts TMA's swizzled writes. Rounding the offset up to the next 128-byte boundary (padding bytes 8-127) gives TMA the alignment its SWIZZLE_128B destination requires.*
+
+```
   ─── Template for Multiple Tiles (double buffering) ───────────────
 
   extern __shared__ char smem[];
@@ -1460,23 +1399,13 @@ guarantee that data will be there.
 cp.async.bulk.prefetch — How It Works
 ══════════════════════════════════════════════════════════════════════
 
-  Without prefetch:
-  ─────────────────────────────────────────────────────────────────
-  Compute tile K (in SMEM already, ~1 μs)
-  Issue cp.async.bulk for tile K+1 → TMA fetches from HBM (~200 μs)
-  Wait for tile K+1 (threads idle ~200 μs if compute finishes first)
+```
 
-  With prefetch:
-  ─────────────────────────────────────────────────────────────────
-  Issue PREFETCH for tile K+1 → starts HBM→L2 transfer early
-  Compute tile K (~1 μs)
-  Issue cp.async.bulk for tile K+1 → L2 HIT → much faster delivery!
-  Wait for tile K+1 (data already partly or fully in L2 from prefetch)
+![cp.async.bulk.prefetch — warming L2 ahead of the real load](images/ch05/08-prefetch-timeline.svg)
 
-  The prefetch gives TMA a "head start" to warm the L2 cache.
-  By the time the actual cp.async.bulk is issued, the data is already
-  in L2 → L2→SMEM transfer is much faster than HBM→SMEM.
+*Without prefetch, the real `cp.async.bulk` is the first thing to touch HBM, so once compute on tile K finishes the threads sit idle for the full ~200 μs HBM round trip. With prefetch issued early, that HBM transfer overlaps with compute on tile K; by the time the real `cp.async.bulk` is issued, L2 is already warm and the transfer is a fast L2 hit instead.*
 
+```
   PTX syntax:
   ─────────────────────────────────────────────────────────────────
   cp.async.bulk.prefetch.L2.tensor.{nd}.global.{cache}
@@ -1617,8 +1546,8 @@ cp.reduce.async — All Variants and Operands
 
   Type     redOps supported          Notes
   ──────────────────────────────────────────────────────────────────
-  .f16     .add only                 FP16 atomic add
-  .bf16    .add only                 BF16 atomic add
+  .f16     .add only (as .add.noftz.f16)   FP16 atomic add — .noftz required
+  .bf16    .add only (as .add.noftz.bf16)  BF16 atomic add — .noftz required
   .b32     .and, .or, .xor          32-bit bitwise ops
   .u32     .add, .min, .max, .inc, .dec, .and, .or, .xor
   .s32     .add, .min, .max         signed 32-bit
@@ -1859,6 +1788,25 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex01: Raw cp.async.bulk + mbarrier + L2 evict_last      ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Config: 6 tiles × 1024 FP32 = 4096 bytes per tile
+
+Checks: 6144 / 6144 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS                                              ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+`GPU:` varies with the card the binary runs on; everything else is deterministic. The host seeds `h_src[i] = (float)i`, so for each of the `K_TILES=6` tiles the verify loop checks `tile[i]` against `(float)(k * TILE_ELEMS + i)` — all `6 × 1024 = 6144` elements match. One cosmetic note: unlike the two-glyph PASS banners in earlier chapters, this one carries only a single 3-byte UTF-8 glyph (`✓`, no trailing em dash), so `%-56s`'s byte-counted padding comes up exactly even with the border instead of landing short.
+
 ### 15.2 Full Example: TMA Store + cp.reduce.async
 
 **Manual Worked Example:**
@@ -2004,6 +1952,27 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex02: cp.reduce.async — Atomic Tile Reduction           ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Config: 4 blocks each adding their value (1,2,3,4) to 256 elements
+Expected result: every element = 1+2+3+4 = 10.0
+
+Errors: 0 / 256 elements
+Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — cp.reduce.async works correctly!         ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+`GPU:` again varies with the card the binary runs on. Block `bid` fills its SMEM tile with `(float)(bid+1)`, so blocks 0-3 contribute 1.0, 2.0, 3.0, 4.0; each block's `cp.reduce.async.bulk...add.f32` atomically adds its tile into `global_acc`, so every one of the `256` elements ends up at `1+2+3+4 = 10.0` and `errors` stays `0`. This banner carries two 3-byte UTF-8 glyphs (`✓` and the em dash in `— cp.reduce.async`), so `%-56s`'s byte-counted padding lands 2 columns short of the border above it — the same quirk documented for the two-glyph banners in Chapters 3 and 4.
+
 ---
 
 ## 16 — Quick Reference
@@ -2099,8 +2068,8 @@ The operation and type matrix. Narrower than you'd expect.
 ```
 Type    Operations
 ──────────────────────────────────────────────────────────────────────────
-.f16    .add
-.bf16   .add
+.f16    .add  (spelled .add.noftz.f16  — .noftz is required)
+.bf16   .add  (spelled .add.noftz.bf16 — .noftz is required)
 .f32    .add
 .f64    .add
 .u32    .add, .min, .max, .inc, .dec, .and, .or, .xor
