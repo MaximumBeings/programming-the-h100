@@ -2897,15 +2897,21 @@ instructions are silently unavailable.</p>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  KEY:
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    wgmma commit/wait groups → sm_90a or sm_100a ONLY
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    stmatrix                  → sm_90a or sm_100a ONLY
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    stmatrix (.b16, 16-bit)   → sm_90a or sm_100a ONLY
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    FP8 wgmma (e4m3/e5m2)    → sm_90a or sm_100a ONLY
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    Sparse wgmma              → sm_90a or sm_100a ONLY
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    ldmatrix with .b8 (FP8)   → sm_100a (Blackwell) ONLY — NOT Hopper!
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    ldmatrix for plain FP8    → NOT available on ANY current architecture
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  IMPORTANT HOPPER FP8 NOTE:
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    On Hopper (sm_90a): cannot use ldmatrix to load FP8 into A registers.
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    Must use descriptor-based (SS path) or manual ld.shared.b32 (RS path).
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    On Blackwell (sm_100a): ldmatrix.b8 is supported for FP8 A loading.
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  IMPORTANT FP8 LOADING NOTE (corrected — see §13.2):
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    ldmatrix has no variant for ordinary 8-bit e4m3/e5m2 FP8, on Hopper OR
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    Blackwell. Its only documented element types are .b16 (sm_75+, i.e. all
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    the way back to Turing) and two Blackwell-only *sub-byte* packed forms
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    (.b8x16.b6x16_p32 / .b8x16.b4x16_p64, sm_100a/sm_110a) built for the
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    6-bit/4-bit microscaling (MX) formats used by 5th-gen tensor cores
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    (tcgen05) — a different feature from plain FP8, not a faster path to it.
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    On every architecture that has FP8 wgmma, FP8 A tiles load via the SS
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    (descriptor) path or manual ld.shared.b32 (RS path). There is no
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    ldmatrix shortcut for FP8 to look forward to on Blackwell either.
 </span></code></pre></div>
 <h3 id="cloud-gpu-rental-lambda-labs">Cloud GPU Rental — Lambda Labs<a class="headerlink" href="#cloud-gpu-rental-lambda-labs" title="Permanent link">&para;</a></h3>
 <p>Usually the cheapest hourly H100.</p>
@@ -2945,12 +2951,15 @@ adds a newer tensor core generation alongside it.</p>
 </span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    └── All code in this guide compiles and runs unchanged on sm_100a
 </span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
 </span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>  WHAT IS NEW IN BLACKWELL:
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    ├── ldmatrix.b8: FP8 A tiles can now be loaded via ldmatrix (Hopper can't!)
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    ├── tcgen05.mma: 5th-gen tensor core instruction (separate from wgmma)
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    ├── FP4 (MX format) support in tcgen05
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    └── tmem (tensor memory) as accumulator location for tcgen05
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>  PORTING: Change -arch=sm_90a to -arch=sm_100a for Blackwell.
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    ├── ldmatrix sub-byte variants (.b8x16.b6x16_p32 / .b4x16_p64) for the
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    │   MX (microscaling) 4-bit/6-bit formats — NOT a plain-FP8 path; ordinary
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    │   e4m3/e5m2 A tiles still load via SS/descriptor or manual ld.shared,
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    │   same as on Hopper (see §13.2)
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    ├── tcgen05.mma: 5th-gen tensor core instruction (separate from wgmma)
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    ├── FP4 (MX format) support in tcgen05
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>    └── tmem (tensor memory) as accumulator location for tcgen05
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>  PORTING: Change -arch=sm_90a to -arch=sm_100a for Blackwell.
 </span></code></pre></div>
 <hr />
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
@@ -3171,6 +3180,8 @@ next tile qualifies. Computing the next set of descriptors qualifies. Reading
 actually go.</p>
 <h3 id="41-the-complete-overlap-pattern">4.1 The Complete Overlap Pattern<a class="headerlink" href="#41-the-complete-overlap-pattern" title="Permanent link">&para;</a></h3>
 <p>The real power of groups becomes clear when you see the full pipeline. The key insight is that you are not just "commit then wait" — you are interleaving math, data preparation, and synchronization so that tensor cores are never idle.</p>
+<p><img alt="wgmma commit/wait groups: naive wait-after-every-batch vs the pipelined pattern, with tensor-core occupancy underneath each" src="../images/ch07/01-commit-wait-pipeline-timeline.svg" /></p>
+<p><em>Naive wait-after-every-batch leaves the tensor cores idle during every wait and store; wait_group&lt;1&gt; keeps the newest batch running while the completed one's epilogue proceeds.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>The Pipelined wgmma Pattern — Complete Timeline
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -3240,6 +3251,8 @@ Read this before you go debugging a pipeline that produces intermittently wrong
 results.</p>
 <h3 id="51-the-two-things-wgmmafence-controls">5.1 The Two Things wgmma.fence Controls<a class="headerlink" href="#51-the-two-things-wgmmafence-controls" title="Permanent link">&para;</a></h3>
 <p>At this point in the course you have seen wgmma.fence appear in multiple contexts. It is worth consolidating exactly what it does and does not do, because the confusion between its roles causes hard-to-debug bugs.</p>
+<p><img alt="wgmma.fence's two roles placed on the same pipeline: group-boundary marker before the K-loop, register-hazard control after wait_group" src="../images/ch07/02-wgmma-fence-placement.svg" /></p>
+<p><em>The same instruction, two placements: once before the first wgmma of a new group (Role 1), once after wait_group&lt;0&gt; and before reading d[] (Role 2).</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>wgmma.fence.sync.aligned — Complete Role Summary
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
@@ -3369,6 +3382,8 @@ read a tile in with one, you can write it out with the other using the same
 address arithmetic.</p>
 <h3 id="71-phase-1-address-responsibility">7.1 Phase 1: Address Responsibility<a class="headerlink" href="#71-phase-1-address-responsibility" title="Permanent link">&para;</a></h3>
 <p>The address assignment in stmatrix follows the SAME pattern as ldmatrix. This symmetry is intentional — if you read with ldmatrix and write with stmatrix using the same address formula, the data is correctly reconstructed.</p>
+<p><img alt="The 16x16 tile split into four quadrants, each owned by a group of 8 lanes" src="../images/ch07/03-stmatrix-address-quadrants.svg" /></p>
+<p><em>Lanes 0-7, 8-15, 16-23 and 24-31 each point into one quadrant — the same quadrant-to-lane mapping ldmatrix used to read the tile in.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>stmatrix Address Phase — Who Points Where
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
@@ -3429,6 +3444,8 @@ address arithmetic.</p>
 </span></code></pre></div>
 <h3 id="72-phase-2-register-source-layout">7.2 Phase 2: Register Source Layout<a class="headerlink" href="#72-phase-2-register-source-layout" title="Permanent link">&para;</a></h3>
 <p>The register layout for stmatrix is the "striped" layout — each thread owns non-contiguous elements across the tile. This is the exact layout that wgmma writes to, so you can feed wgmma output registers directly to stmatrix with no shuffling.</p>
+<p><img alt="Three sample threads' four registers each, and how lanes 0-7 together cover rows 0 and 8 of the destination tile" src="../images/ch07/04-stmatrix-register-scatter.svg" /></p>
+<p><em>Thread T holds columns [2T, 2T+1] in rows 0 and 8 — the same striped pattern wgmma already wrote its output in, so no shuffle sits between the two instructions.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>stmatrix Register Source — The Striped Layout
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
@@ -3632,6 +3649,8 @@ different things, and the Transformer Engine switches between them accordingly.<
 <h3 id="102-e4m3-vs-e5m2-different-tools-for-different-phases">10.2 E4M3 vs E5M2 — Different Tools for Different Phases<a class="headerlink" href="#102-e4m3-vs-e5m2-different-tools-for-different-phases" title="Permanent link">&para;</a></h3>
 <p>The practical division: E4M3 forward, E5M2 backward. The reason is that
 gradients span a far wider range than activations, and range is what E5M2 buys.</p>
+<p><img alt="E4M3's sign/4-bit-exponent/3-bit-mantissa layout next to E5M2's sign/5-bit-exponent/2-bit-mantissa layout" src="../images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg" /></p>
+<p><em>The same 8 bits, split two different ways: E4M3 trades range for precision (forward pass), E5M2 trades precision for range (backward pass).</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>E4M3 vs E5M2 — Why Two Formats Exist
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
@@ -3696,6 +3715,8 @@ byte and you have paid for thirty-two. Packing is how you make sure the other
 thirty-one are useful to you.</p>
 <h3 id="111-why-packing-is-necessary">11.1 Why Packing Is Necessary<a class="headerlink" href="#111-why-packing-is-necessary" title="Permanent link">&para;</a></h3>
 <p>The GPU memory controller never fetches less than 32 bytes (one "sector") at a time. If you request a single FP8 byte, the GPU fetches 32 bytes, delivers your 1 byte, and wastes the other 31. To fix this, FP8 values must always be accessed in packed groups. NVIDIA defines two packing types: <code>x2</code> (two FP8 in 16 bits) and <code>x4</code> (four FP8 in 32 bits).</p>
+<p><img alt="Four FP8 values packed into one 32-bit register (x4) versus two FP8 values packed into one 16-bit register (x2)" src="../images/ch07/06-fp8-packed-x4-x2.svg" /></p>
+<p><em>x4 fills a whole register for storage/transport; x2 matches FP16 width for feeding WGMMA and for cvt output.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>FP8 Packed Types — x2 and x4
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
@@ -3914,67 +3935,72 @@ elements halve.</p>
 <h3 id="132-a-operand-registers-rs-vs-descriptor-ss-for-fp8">13.2 A Operand: Registers (RS) vs Descriptor (SS) for FP8<a class="headerlink" href="#132-a-operand-registers-rs-vs-descriptor-ss-for-fp8" title="Permanent link">&para;</a></h3>
 <p>The two paths for getting <code>A</code> in, and the layout each one demands. This is
 stricter than the BF16 case in Chapter 6 §7.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>FP8 A Loading — SS vs RS Path on Hopper
+<div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>FP8 A Loading — SS vs RS Path (Hopper AND Blackwell)
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>  On Hopper (sm_90a), there is a CRITICAL LIMITATION:
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>  ldmatrix with .b8 (FP8) is NOT supported. Only available on Blackwell (sm_100a).
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>  This means you have two options for loading FP8 A tiles into registers:
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>
-</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>  ─── Option 1: Descriptor-based (SS path) — A from SMEM ──────────
-</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>
-</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>  Use a wgmma descriptor for A (same as B):
-</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>    wgmma.mma_async ... {d_regs}, a_desc, b_desc, ...
-</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>  Both A and B are read directly from SMEM via descriptors.
-</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>  No register loading of A required.
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>  CORRECTION — this is not a Hopper-only limitation:
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>  ldmatrix has no variant for plain 8-bit FP8 (e4m3/e5m2) on ANY current
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>  architecture. Its documented element types are .b16 (sm_75+) and, on
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>  Blackwell only, two sub-byte PACKED forms for the MX microscaling formats
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>  (.b8x16.b6x16_p32, .b8x16.b4x16_p64 — 6-bit/4-bit values for tcgen05, not
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>  ordinary FP8). So the "no ldmatrix for FP8" constraint below applies on
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>  Hopper (sm_90a) and on Blackwell (sm_100a) alike.
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>  This means you have two options for loading FP8 A tiles into registers:
+</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>
+</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>  ─── Option 1: Descriptor-based (SS path) — A from SMEM ──────────
 </span><span id="__span-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>
-</span><span id="__span-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>  Pros: Simple, no ldmatrix complication, avoids FP8 ldmatrix limitation.
-</span><span id="__span-20-17"><a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>  Cons: Doubles SMEM bandwidth pressure (both A and B streaming from SMEM).
-</span><span id="__span-20-18"><a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>  Use when: A is NOT reused, or register pressure is already high.
-</span><span id="__span-20-19"><a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>
-</span><span id="__span-20-20"><a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>  ─── Option 2: Register-based (RS path) — A in registers ──────────
-</span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>
-</span><span id="__span-20-22"><a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a>  Manually load A using plain ld.shared.b32 instructions:
-</span><span id="__span-20-23"><a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a>    uint32_t a_reg[4];   // 4 × 32-bit registers = 16 bytes = 16 FP8 E4M3 values
-</span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>    uint32_t smem_addr = compute_fp8_a_address(tid, k_block, m_block);
-</span><span id="__span-20-25"><a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a>    asm("ld.shared.b32 %0, [%1];" : "=r"(a_reg[0]) : "r"(smem_addr));
-</span><span id="__span-20-26"><a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a>    // Load more registers...
-</span><span id="__span-20-27"><a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a>
-</span><span id="__span-20-28"><a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a>  IMPORTANT: The registers must be arranged in the EXACT layout that
-</span><span id="__span-20-29"><a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a>  FP8 wgmma expects. This is NOT the same as loading one 32-bit chunk per thread.
-</span><span id="__span-20-30"><a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a>  The FP8 RS register layout is tightly coupled to the K=32 structure:
-</span><span id="__span-20-31"><a id="__codelineno-20-31" name="__codelineno-20-31" href="#__codelineno-20-31"></a>    Each 32-bit register holds 4 FP8 values (x4 packing).
-</span><span id="__span-20-32"><a id="__codelineno-20-32" name="__codelineno-20-32" href="#__codelineno-20-32"></a>    The positions of these values correspond to specific K-dimension offsets.
-</span><span id="__span-20-33"><a id="__codelineno-20-33" name="__codelineno-20-33" href="#__codelineno-20-33"></a>
-</span><span id="__span-20-34"><a id="__codelineno-20-34" name="__codelineno-20-34" href="#__codelineno-20-34"></a>  Pros: A data stays in registers for reuse (saves SMEM re-reads for N-loop).
-</span><span id="__span-20-35"><a id="__codelineno-20-35" name="__codelineno-20-35" href="#__codelineno-20-35"></a>  Cons: Complex manual address computation, must match FP8 RS layout exactly.
-</span><span id="__span-20-36"><a id="__codelineno-20-36" name="__codelineno-20-36" href="#__codelineno-20-36"></a>
-</span><span id="__span-20-37"><a id="__codelineno-20-37" name="__codelineno-20-37" href="#__codelineno-20-37"></a>  In practice:
-</span><span id="__span-20-38"><a id="__codelineno-20-38" name="__codelineno-20-38" href="#__codelineno-20-38"></a>  Most H100 FP8 GEMM implementations use the SS (descriptor) path for simplicity.
-</span><span id="__span-20-39"><a id="__codelineno-20-39" name="__codelineno-20-39" href="#__codelineno-20-39"></a>  The RS path is used when A is heavily reused (the K-loop is the outer loop in
-</span><span id="__span-20-40"><a id="__codelineno-20-40" name="__codelineno-20-40" href="#__codelineno-20-40"></a>  some split-K implementations).
+</span><span id="__span-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>  Use a wgmma descriptor for A (same as B):
+</span><span id="__span-20-17"><a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>    wgmma.mma_async ... {d_regs}, a_desc, b_desc, ...
+</span><span id="__span-20-18"><a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>  Both A and B are read directly from SMEM via descriptors.
+</span><span id="__span-20-19"><a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>  No register loading of A required.
+</span><span id="__span-20-20"><a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>
+</span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>  Pros: Simple, no ldmatrix complication, avoids FP8 ldmatrix limitation.
+</span><span id="__span-20-22"><a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a>  Cons: Doubles SMEM bandwidth pressure (both A and B streaming from SMEM).
+</span><span id="__span-20-23"><a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a>  Use when: A is NOT reused, or register pressure is already high.
+</span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>
+</span><span id="__span-20-25"><a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a>  ─── Option 2: Register-based (RS path) — A in registers ──────────
+</span><span id="__span-20-26"><a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a>
+</span><span id="__span-20-27"><a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a>  Manually load A using plain ld.shared.b32 instructions:
+</span><span id="__span-20-28"><a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a>    uint32_t a_reg[4];   // 4 × 32-bit registers = 16 bytes = 16 FP8 E4M3 values
+</span><span id="__span-20-29"><a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a>    uint32_t smem_addr = compute_fp8_a_address(tid, k_block, m_block);
+</span><span id="__span-20-30"><a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a>    asm("ld.shared.b32 %0, [%1];" : "=r"(a_reg[0]) : "r"(smem_addr));
+</span><span id="__span-20-31"><a id="__codelineno-20-31" name="__codelineno-20-31" href="#__codelineno-20-31"></a>    // Load more registers...
+</span><span id="__span-20-32"><a id="__codelineno-20-32" name="__codelineno-20-32" href="#__codelineno-20-32"></a>
+</span><span id="__span-20-33"><a id="__codelineno-20-33" name="__codelineno-20-33" href="#__codelineno-20-33"></a>  IMPORTANT: The registers must be arranged in the EXACT layout that
+</span><span id="__span-20-34"><a id="__codelineno-20-34" name="__codelineno-20-34" href="#__codelineno-20-34"></a>  FP8 wgmma expects. This is NOT the same as loading one 32-bit chunk per thread.
+</span><span id="__span-20-35"><a id="__codelineno-20-35" name="__codelineno-20-35" href="#__codelineno-20-35"></a>  The FP8 RS register layout is tightly coupled to the K=32 structure:
+</span><span id="__span-20-36"><a id="__codelineno-20-36" name="__codelineno-20-36" href="#__codelineno-20-36"></a>    Each 32-bit register holds 4 FP8 values (x4 packing).
+</span><span id="__span-20-37"><a id="__codelineno-20-37" name="__codelineno-20-37" href="#__codelineno-20-37"></a>    The positions of these values correspond to specific K-dimension offsets.
+</span><span id="__span-20-38"><a id="__codelineno-20-38" name="__codelineno-20-38" href="#__codelineno-20-38"></a>
+</span><span id="__span-20-39"><a id="__codelineno-20-39" name="__codelineno-20-39" href="#__codelineno-20-39"></a>  Pros: A data stays in registers for reuse (saves SMEM re-reads for N-loop).
+</span><span id="__span-20-40"><a id="__codelineno-20-40" name="__codelineno-20-40" href="#__codelineno-20-40"></a>  Cons: Complex manual address computation, must match FP8 RS layout exactly.
 </span><span id="__span-20-41"><a id="__codelineno-20-41" name="__codelineno-20-41" href="#__codelineno-20-41"></a>
-</span><span id="__span-20-42"><a id="__codelineno-20-42" name="__codelineno-20-42" href="#__codelineno-20-42"></a>  ─── K-Major Layout Requirement ──────────────────────────────────
-</span><span id="__span-20-43"><a id="__codelineno-20-43" name="__codelineno-20-43" href="#__codelineno-20-43"></a>
-</span><span id="__span-20-44"><a id="__codelineno-20-44" name="__codelineno-20-44" href="#__codelineno-20-44"></a>  Unlike BF16 wgmma (which supports imm-trans to handle MN-major layout),
-</span><span id="__span-20-45"><a id="__codelineno-20-45" name="__codelineno-20-45" href="#__codelineno-20-45"></a>  FP8 wgmma has NO transpose option.
+</span><span id="__span-20-42"><a id="__codelineno-20-42" name="__codelineno-20-42" href="#__codelineno-20-42"></a>  In practice:
+</span><span id="__span-20-43"><a id="__codelineno-20-43" name="__codelineno-20-43" href="#__codelineno-20-43"></a>  Most H100 FP8 GEMM implementations use the SS (descriptor) path for simplicity.
+</span><span id="__span-20-44"><a id="__codelineno-20-44" name="__codelineno-20-44" href="#__codelineno-20-44"></a>  The RS path is used when A is heavily reused (the K-loop is the outer loop in
+</span><span id="__span-20-45"><a id="__codelineno-20-45" name="__codelineno-20-45" href="#__codelineno-20-45"></a>  some split-K implementations).
 </span><span id="__span-20-46"><a id="__codelineno-20-46" name="__codelineno-20-46" href="#__codelineno-20-46"></a>
-</span><span id="__span-20-47"><a id="__codelineno-20-47" name="__codelineno-20-47" href="#__codelineno-20-47"></a>  RULE: FP8 tiles in SMEM MUST be in K-major layout.
-</span><span id="__span-20-48"><a id="__codelineno-20-48" name="__codelineno-20-48" href="#__codelineno-20-48"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-20-49"><a id="__codelineno-20-49" name="__codelineno-20-49" href="#__codelineno-20-49"></a>  K-major for A[M][K]: elements along K are contiguous in memory.
-</span><span id="__span-20-50"><a id="__codelineno-20-50" name="__codelineno-20-50" href="#__codelineno-20-50"></a>    Row 0: A[0][0], A[0][1], ..., A[0][K-1]  (K elements, contiguous)
-</span><span id="__span-20-51"><a id="__codelineno-20-51" name="__codelineno-20-51" href="#__codelineno-20-51"></a>    Row 1: A[1][0], A[1][1], ..., A[1][K-1]
-</span><span id="__span-20-52"><a id="__codelineno-20-52" name="__codelineno-20-52" href="#__codelineno-20-52"></a>    This is standard row-major for the A tile.
-</span><span id="__span-20-53"><a id="__codelineno-20-53" name="__codelineno-20-53" href="#__codelineno-20-53"></a>
-</span><span id="__span-20-54"><a id="__codelineno-20-54" name="__codelineno-20-54" href="#__codelineno-20-54"></a>  K-major for B[K][N]: elements along N are NOT contiguous — K is.
-</span><span id="__span-20-55"><a id="__codelineno-20-55" name="__codelineno-20-55" href="#__codelineno-20-55"></a>    Col 0: B[0][0], B[1][0], ..., B[K-1][0]  (K elements, contiguous)
-</span><span id="__span-20-56"><a id="__codelineno-20-56" name="__codelineno-20-56" href="#__codelineno-20-56"></a>    This is COLUMN-major for B (or equivalently, row-major for B^T).
-</span><span id="__span-20-57"><a id="__codelineno-20-57" name="__codelineno-20-57" href="#__codelineno-20-57"></a>
-</span><span id="__span-20-58"><a id="__codelineno-20-58" name="__codelineno-20-58" href="#__codelineno-20-58"></a>  If your data is in MN-major layout, you MUST transpose it before
-</span><span id="__span-20-59"><a id="__codelineno-20-59" name="__codelineno-20-59" href="#__codelineno-20-59"></a>  staging it in SMEM for FP8 wgmma. There is no hardware shortcut.
-</span><span id="__span-20-60"><a id="__codelineno-20-60" name="__codelineno-20-60" href="#__codelineno-20-60"></a>  Transposing during SMEM staging adds overhead, which is why
-</span><span id="__span-20-61"><a id="__codelineno-20-61" name="__codelineno-20-61" href="#__codelineno-20-61"></a>  staging FP8 data in K-major is the strongly recommended approach.
+</span><span id="__span-20-47"><a id="__codelineno-20-47" name="__codelineno-20-47" href="#__codelineno-20-47"></a>  ─── K-Major Layout Requirement ──────────────────────────────────
+</span><span id="__span-20-48"><a id="__codelineno-20-48" name="__codelineno-20-48" href="#__codelineno-20-48"></a>
+</span><span id="__span-20-49"><a id="__codelineno-20-49" name="__codelineno-20-49" href="#__codelineno-20-49"></a>  Unlike BF16 wgmma (which supports imm-trans to handle MN-major layout),
+</span><span id="__span-20-50"><a id="__codelineno-20-50" name="__codelineno-20-50" href="#__codelineno-20-50"></a>  FP8 wgmma has NO transpose option.
+</span><span id="__span-20-51"><a id="__codelineno-20-51" name="__codelineno-20-51" href="#__codelineno-20-51"></a>
+</span><span id="__span-20-52"><a id="__codelineno-20-52" name="__codelineno-20-52" href="#__codelineno-20-52"></a>  RULE: FP8 tiles in SMEM MUST be in K-major layout.
+</span><span id="__span-20-53"><a id="__codelineno-20-53" name="__codelineno-20-53" href="#__codelineno-20-53"></a>  ─────────────────────────────────────────────────────────────────
+</span><span id="__span-20-54"><a id="__codelineno-20-54" name="__codelineno-20-54" href="#__codelineno-20-54"></a>  K-major for A[M][K]: elements along K are contiguous in memory.
+</span><span id="__span-20-55"><a id="__codelineno-20-55" name="__codelineno-20-55" href="#__codelineno-20-55"></a>    Row 0: A[0][0], A[0][1], ..., A[0][K-1]  (K elements, contiguous)
+</span><span id="__span-20-56"><a id="__codelineno-20-56" name="__codelineno-20-56" href="#__codelineno-20-56"></a>    Row 1: A[1][0], A[1][1], ..., A[1][K-1]
+</span><span id="__span-20-57"><a id="__codelineno-20-57" name="__codelineno-20-57" href="#__codelineno-20-57"></a>    This is standard row-major for the A tile.
+</span><span id="__span-20-58"><a id="__codelineno-20-58" name="__codelineno-20-58" href="#__codelineno-20-58"></a>
+</span><span id="__span-20-59"><a id="__codelineno-20-59" name="__codelineno-20-59" href="#__codelineno-20-59"></a>  K-major for B[K][N]: elements along N are NOT contiguous — K is.
+</span><span id="__span-20-60"><a id="__codelineno-20-60" name="__codelineno-20-60" href="#__codelineno-20-60"></a>    Col 0: B[0][0], B[1][0], ..., B[K-1][0]  (K elements, contiguous)
+</span><span id="__span-20-61"><a id="__codelineno-20-61" name="__codelineno-20-61" href="#__codelineno-20-61"></a>    This is COLUMN-major for B (or equivalently, row-major for B^T).
+</span><span id="__span-20-62"><a id="__codelineno-20-62" name="__codelineno-20-62" href="#__codelineno-20-62"></a>
+</span><span id="__span-20-63"><a id="__codelineno-20-63" name="__codelineno-20-63" href="#__codelineno-20-63"></a>  If your data is in MN-major layout, you MUST transpose it before
+</span><span id="__span-20-64"><a id="__codelineno-20-64" name="__codelineno-20-64" href="#__codelineno-20-64"></a>  staging it in SMEM for FP8 wgmma. There is no hardware shortcut.
+</span><span id="__span-20-65"><a id="__codelineno-20-65" name="__codelineno-20-65" href="#__codelineno-20-65"></a>  Transposing during SMEM staging adds overhead, which is why
+</span><span id="__span-20-66"><a id="__codelineno-20-66" name="__codelineno-20-66" href="#__codelineno-20-66"></a>  staging FP8 data in K-major is the strongly recommended approach.
 </span></code></pre></div>
 <hr />
 <h2 id="14-fp8-precision-pitfalls-k-slicing">14 — FP8 Precision Pitfalls — K-Slicing<a class="headerlink" href="#14-fp8-precision-pitfalls-k-slicing" title="Permanent link">&para;</a></h2>
@@ -3988,7 +4014,7 @@ GEMM quietly loses precision as the reduction gets deeper.</p>
 FP32 between them. This section shows how to decide chunk size, and what it
 costs. If you are shipping FP8 inference, read this one twice.</p>
 <h3 id="141-the-fp22-accumulation-issue">14.1 The "FP22" Accumulation Issue<a class="headerlink" href="#141-the-fp22-accumulation-issue" title="Permanent link">&para;</a></h3>
-<p>Even though FP8 wgmma is documented as using an FP32 accumulator, empirical measurements on H100 reveal that the actual effective accumulation precision is closer to what might be called "FP22" — approximately 8-bit exponent and 13-bit mantissa, rather than FP32's 23-bit mantissa. This means the lowest FP32 mantissa bits may be lost during long dot products.</p>
+<p>Even though FP8 wgmma is documented as using an FP32 accumulator, two independent empirical reports back up the claim that the real precision is lower, and they are worth citing by name rather than treating as one settled industry number. The SageAttention2 paper measured H100/Ada <code>mma(f32f8f8f32)</code> accumulation behaving like roughly FP22 (~13 kept mantissa bits beyond the sign and exponent). DeepSeek-V3's technical report separately measured H800 FP8 GEMM accumulation retaining only about 14 bits — a close but not identical figure, from a different model/kernel. Treat "FP22" as a convenient shorthand for "measurably less than FP32, by low-teens bits, in at least two independent measurements" rather than an exact, hardware-documented constant.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>FP8 Precision Pitfalls — Accumulation Depth
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
@@ -4057,6 +4083,8 @@ values — which is what §16 and §17 are for.</p>
 <h3 id="151-what-sparse-wgmma-is">15.1 What Sparse WGMMA Is<a class="headerlink" href="#151-what-sparse-wgmma-is" title="Permanent link">&para;</a></h3>
 <p>Sparse WGMMA is a variant where matrix A is <strong>structured sparse</strong>: for every group of 4 consecutive elements in each row, exactly 2 are zero. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.</p>
 <p>The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. This information is encoded in a "metadata" register (sp-meta) that accompanies the sparse A matrix.</p>
+<p><img alt="A row of 8 values split into two quartets, compacted down to 4 stored values, with their sp-meta encoding and the 4-thread sp-sel group below" src="../images/ch07/07-sparse-wgmma-2-4-metadata.svg" /></p>
+<p><em>The full chain previewed here and detailed in §16-17: which elements survive (top), how sp-meta packs their positions (middle), and which thread(s) sp-sel reads that metadata from (bottom).</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>2:4 Structured Sparsity — The Pattern and Its Benefits
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
@@ -4187,55 +4215,54 @@ essentially a plumbing detail, but a wrong <code>sp-sel</code> means the hardwar
 metadata from a thread that never wrote any, and the result is wrong numbers
 rather than an error.</p>
 <h3 id="171-what-sp-sel-does">17.1 What sp-sel Does<a class="headerlink" href="#171-what-sp-sel-does" title="Permanent link">&para;</a></h3>
-<p><code>sp-sel</code> (sparsity selector) is a compile-time constant (0 or 1) that tells the hardware which threads within each group of 4 consecutive threads are responsible for providing the metadata register. It exists because not all 128 threads in the warp group need to provide unique metadata — only specific "contributor" threads are read.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>sp-sel — Thread Metadata Responsibility
+<p><code>sp-sel</code> (sparsity selector) is a compile-time constant that tells the hardware which thread(s) within each group of 4 consecutive threads are responsible for providing the metadata register. It exists because not all 128 threads in the warp group need to provide unique metadata — only specific "contributor" threads are read.</p>
+<p><strong>Correction worth flagging up front:</strong> <code>sp-sel</code> is not simply binary. For the related warp-level <code>mma.sp</code> instruction, NVIDIA engineers have confirmed on the developer forums that the selector is a 32-bit compile-time constant valid over <strong>0–3</strong>, not just 0 or 1 — and which lane(s) it names depends on the shape: for a 16-row-per-op shape, one of four threads in the group holds the metadata and the selector picks which one (0→T0, 1→T1, 2→T2, 3→T3); for a shape with twice the K per op, two of four threads hold it and the selector picks which pair. <code>wgmma.mma_async.sp</code> carries the same operand name and almost certainly the same role, but its own PTX ISA entry documents the exact mapping per shape/precision, and that mapping can depend on your CUDA/PTX ISA version — treat the table below as the questions to answer from the current spec, not as hardcoded values to copy into a kernel.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>sp-sel — Thread Metadata Responsibility (confirm exact values against your PTX ISA)
 </span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
 </span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>  The thread groups for sp-sel:
 </span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>  ─────────────────────────────────────────────────────────────────
 </span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>  Threads are grouped into consecutive sets of 4: T0,T1,T2,T3 | T4,T5,T6,T7 | ...
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>  sp-sel = 0: Hardware reads sp-meta from threads T0 and T1 of each group.
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>              Threads T2 and T3 in the group are IGNORED for metadata.
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>  sp-sel = 1: Hardware reads sp-meta from threads T2 and T3 of each group.
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>              Threads T0 and T1 in the group are IGNORED.
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>  ─── When to Use Which sp-sel Value ──────────────────────────────
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>
-</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a>  TF32 sparse (.m64nNk16):
-</span><span id="__span-24-16"><a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a>    sp-sel = 0 for the first K-group (uses T0,T1 → their sp-meta value 14)
-</span><span id="__span-24-17"><a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a>    sp-sel = 1 for the second K-group (uses T2,T3 → their sp-meta value 4)
-</span><span id="__span-24-18"><a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a>
-</span><span id="__span-24-19"><a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a>  FP16/BF16 sparse (.m64nNk32):
-</span><span id="__span-24-20"><a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a>    sp-sel = 0 OR sp-sel = 1 (choose one consistently)
-</span><span id="__span-24-21"><a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a>    Use sp-sel = 0 if you load the SAME sp-meta to ALL threads (simplest).
-</span><span id="__span-24-22"><a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a>    Use sp-sel = 1 only if you split metadata across odd/even thread pairs.
-</span><span id="__span-24-23"><a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a>
-</span><span id="__span-24-24"><a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a>  FP8/INT8 sparse (.m64nNk64):
-</span><span id="__span-24-25"><a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a>    ALL threads contribute metadata → sp-sel MUST be 0.
-</span><span id="__span-24-26"><a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a>    Any other value is undefined behavior.
-</span><span id="__span-24-27"><a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a>
-</span><span id="__span-24-28"><a id="__codelineno-24-28" name="__codelineno-24-28" href="#__codelineno-24-28"></a>  ─── Practical Recommendation ────────────────────────────────────
-</span><span id="__span-24-29"><a id="__codelineno-24-29" name="__codelineno-24-29" href="#__codelineno-24-29"></a>
-</span><span id="__span-24-30"><a id="__codelineno-24-30" name="__codelineno-24-30" href="#__codelineno-24-30"></a>  Simplest (works for FP16/BF16 and FP8):
-</span><span id="__span-24-31"><a id="__codelineno-24-31" name="__codelineno-24-31" href="#__codelineno-24-31"></a>    Load the same sp-meta value to ALL 128 threads.
-</span><span id="__span-24-32"><a id="__codelineno-24-32" name="__codelineno-24-32" href="#__codelineno-24-32"></a>    Use sp-sel = 0.
-</span><span id="__span-24-33"><a id="__codelineno-24-33" name="__codelineno-24-33" href="#__codelineno-24-33"></a>    No thread-specific metadata management needed.
-</span><span id="__span-24-34"><a id="__codelineno-24-34" name="__codelineno-24-34" href="#__codelineno-24-34"></a>    The hardware reads from T0,T1 of each group — they all have the same value.
-</span><span id="__span-24-35"><a id="__codelineno-24-35" name="__codelineno-24-35" href="#__codelineno-24-35"></a>
-</span><span id="__span-24-36"><a id="__codelineno-24-36" name="__codelineno-24-36" href="#__codelineno-24-36"></a>  Advanced (register-saving, rarely needed):
-</span><span id="__span-24-37"><a id="__codelineno-24-37" name="__codelineno-24-37" href="#__codelineno-24-37"></a>    Load sp-meta only to EVEN threads (T0,T2,...), use sp-sel=0.
-</span><span id="__span-24-38"><a id="__codelineno-24-38" name="__codelineno-24-38" href="#__codelineno-24-38"></a>    Odd threads (T1,T3,...) can hold other data.
-</span><span id="__span-24-39"><a id="__codelineno-24-39" name="__codelineno-24-39" href="#__codelineno-24-39"></a>    Reduces sp-meta register pressure at the cost of complexity.
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>  sp-sel is a compile-time constant over a WIDER range than 0/1 — confirmed
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>  0–3 for the related warp-level mma.sp, where it names which of the 4
+</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>  threads (narrower sparsity) or which pair (wider sparsity) supplies
+</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>  metadata. Do not assume a plain 0-vs-1 choice without checking the shape.
+</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>
+</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>  ─── What Varies by Shape/Precision ──────────────────────────────
+</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>
+</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>  TF32 sparse:
+</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a>    Narrower per-op K → one thread of the group holds metadata; which one
+</span><span id="__span-24-16"><a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a>    is named by sp-sel. The chapter's worked example above used toggling
+</span><span id="__span-24-17"><a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a>    between two sp-meta bit patterns (14, 4) for two K-groups — treat the
+</span><span id="__span-24-18"><a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a>    sp-sel VALUE that pairs with each as something to read off the current
+</span><span id="__span-24-19"><a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a>    PTX ISA for your CUDA version, not as a fixed 0/1 rule.
+</span><span id="__span-24-20"><a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a>
+</span><span id="__span-24-21"><a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a>  FP16/BF16 sparse:
+</span><span id="__span-24-22"><a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a>    Wider per-op K → typically a pair of threads holds metadata per
+</span><span id="__span-24-23"><a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a>    selector value; the loop still unrolls 4× to cycle through a full
+</span><span id="__span-24-24"><a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a>    sp-meta register's worth of quartets (§16).
+</span><span id="__span-24-25"><a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a>
+</span><span id="__span-24-26"><a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a>  FP8/INT8 sparse:
+</span><span id="__span-24-27"><a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a>    Widest per-op K → ALL threads in the group contribute, so sp-sel is
+</span><span id="__span-24-28"><a id="__codelineno-24-28" name="__codelineno-24-28" href="#__codelineno-24-28"></a>    reported as hardware-determined / fixed at 0 in community references.
+</span><span id="__span-24-29"><a id="__codelineno-24-29" name="__codelineno-24-29" href="#__codelineno-24-29"></a>    This part of the chapter's original claim holds up; the TF32/FP16/BF16
+</span><span id="__span-24-30"><a id="__codelineno-24-30" name="__codelineno-24-30" href="#__codelineno-24-30"></a>    "0 or 1" claims are what needed correcting.
+</span><span id="__span-24-31"><a id="__codelineno-24-31" name="__codelineno-24-31" href="#__codelineno-24-31"></a>
+</span><span id="__span-24-32"><a id="__codelineno-24-32" name="__codelineno-24-32" href="#__codelineno-24-32"></a>  ─── Practical Recommendation ────────────────────────────────────
+</span><span id="__span-24-33"><a id="__codelineno-24-33" name="__codelineno-24-33" href="#__codelineno-24-33"></a>
+</span><span id="__span-24-34"><a id="__codelineno-24-34" name="__codelineno-24-34" href="#__codelineno-24-34"></a>  Simplest starting point:
+</span><span id="__span-24-35"><a id="__codelineno-24-35" name="__codelineno-24-35" href="#__codelineno-24-35"></a>    Load the same sp-meta value to every thread that could be read,
+</span><span id="__span-24-36"><a id="__codelineno-24-36" name="__codelineno-24-36" href="#__codelineno-24-36"></a>    so the exact selector value is less likely to matter while you get a
+</span><span id="__span-24-37"><a id="__codelineno-24-37" name="__codelineno-24-37" href="#__codelineno-24-37"></a>    sparse kernel correct for the first time. Then narrow down the real
+</span><span id="__span-24-38"><a id="__codelineno-24-38" name="__codelineno-24-38" href="#__codelineno-24-38"></a>    required sp-sel for your target shape from the PTX ISA reference before
+</span><span id="__span-24-39"><a id="__codelineno-24-39" name="__codelineno-24-39" href="#__codelineno-24-39"></a>    trusting performance numbers from it.
 </span><span id="__span-24-40"><a id="__codelineno-24-40" name="__codelineno-24-40" href="#__codelineno-24-40"></a>
-</span><span id="__span-24-41"><a id="__codelineno-24-41" name="__codelineno-24-41" href="#__codelineno-24-41"></a>  ─── Summary Table ───────────────────────────────────────────────
-</span><span id="__span-24-42"><a id="__codelineno-24-42" name="__codelineno-24-42" href="#__codelineno-24-42"></a>
-</span><span id="__span-24-43"><a id="__codelineno-24-43" name="__codelineno-24-43" href="#__codelineno-24-43"></a>  Precision     Sparsity   K per op  sp-sel    sp-meta cycle
-</span><span id="__span-24-44"><a id="__codelineno-24-44" name="__codelineno-24-44" href="#__codelineno-24-44"></a>  ──────────────────────────────────────────────────────────────────
-</span><span id="__span-24-45"><a id="__codelineno-24-45" name="__codelineno-24-45" href="#__codelineno-24-45"></a>  TF32          1:2        k=16      0 or 1    Toggle: 14, 4
-</span><span id="__span-24-46"><a id="__codelineno-24-46" name="__codelineno-24-46" href="#__codelineno-24-46"></a>  FP16/BF16     2:4        k=32      0 or 1    0, 1, 2, 3 (unroll 4×)
-</span><span id="__span-24-47"><a id="__codelineno-24-47" name="__codelineno-24-47" href="#__codelineno-24-47"></a>  FP8 E4M3/E5M2 2:4        k=64      0 only    Hardware-determined
-</span><span id="__span-24-48"><a id="__codelineno-24-48" name="__codelineno-24-48" href="#__codelineno-24-48"></a>  INT8/UINT8    2:4        k=64      0 only    Hardware-determined
+</span><span id="__span-24-41"><a id="__codelineno-24-41" name="__codelineno-24-41" href="#__codelineno-24-41"></a>  Before shipping a sparse wgmma kernel: look up `wgmma.mma_async.sp` in
+</span><span id="__span-24-42"><a id="__codelineno-24-42" name="__codelineno-24-42" href="#__codelineno-24-42"></a>  the PTX ISA version matching your CUDA toolkit and copy its sp-sel table
+</span><span id="__span-24-43"><a id="__codelineno-24-43" name="__codelineno-24-43" href="#__codelineno-24-43"></a>  directly, rather than this book's — NVIDIA's own HTML page did not
+</span><span id="__span-24-44"><a id="__codelineno-24-44" name="__codelineno-24-44" href="#__codelineno-24-44"></a>  render its instruction body through automated tools while fact-checking
+</span><span id="__span-24-45"><a id="__codelineno-24-45" name="__codelineno-24-45" href="#__codelineno-24-45"></a>  this chapter, so the exact per-shape mapping could not be fully verified
+</span><span id="__span-24-46"><a id="__codelineno-24-46" name="__codelineno-24-46" href="#__codelineno-24-46"></a>  here for the warpgroup-level instruction specifically.
 </span></code></pre></div>
 <hr />
 <h2 id="18-putting-it-all-together">18 — Putting It All Together<a class="headerlink" href="#18-putting-it-all-together" title="Permanent link">&para;</a></h2>
@@ -4531,6 +4558,24 @@ fused epilogue on top of exactly this structure.</p>
 </span><span id="__span-27-261"><a id="__codelineno-27-261" name="__codelineno-27-261" href="#__codelineno-27-261"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
 </span><span id="__span-27-262"><a id="__codelineno-27-262" name="__codelineno-27-262" href="#__codelineno-27-262"></a><span class="p">}</span>
 </span></code></pre></div>
+<p><strong>Sample Output:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>║  ex01: wgmma commit/wait pipeline + stmatrix epilogue    ║
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>Shape: m64n64k16, FP16 accumulator, 2 tiles pipelined
+</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>Expected: all acc values = K×0.01² = 0.001600
+</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>
+</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>Threads with non-zero sums in BOTH tiles: 128 / 128
+</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>Sample out_A[0] = 0.001603
+</span><span id="__span-28-11"><a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>
+</span><span id="__span-28-12"><a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-28-13"><a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>║  ✓ ALL PASS — commit/wait pipeline + stmatrix working!  ║
+</span><span id="__span-28-14"><a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<p><code>GPU:</code> varies with the card the binary runs on; everything else is deterministic. The same BF16-rounding gap from Chapter 6 shows up here: <code>__float2bfloat16(0.01)</code> rounds to <code>0.010009765625</code>, not <code>0.01</code> exactly, so the FP16 accumulator actually holds <code>16 × 0.010009765625² ≈ 0.0016031</code>, which prints as <code>0.001603</code> — one digit past the host's own unrounded <code>K×0.01²</code> line, which prints <code>0.001600</code>. Both tiles use identical input data, so if either disagreed with the other the <code>128 / 128</code> count would come in short; it doesn't, because the pipeline only changes <em>when</em> the two tiles' math gets issued and drained, never <em>what</em> either one computes.</p>
+<p>The closing banner repeats Chapter 6's byte-vs-codepoint <code>%-56s</code> quirk, with this chapter's own numbers: <code>✓ ALL PASS — commit/wait pipeline + stmatrix working!</code> is 53 codepoints but 57 UTF-8 bytes (<code>✓</code> and <code>—</code> each cost 3 bytes for 1 displayed column, wasting 2 bytes apiece). Since 57 already exceeds the 56-byte field width, <code>printf</code> pads with nothing, and the line prints at its raw length. Measured in the columns a terminal actually draws, that puts the whole bordered line — the fixed <code>"║  "</code> and <code>"  ║"</code> margins plus 53 content columns, 59 in total — exactly 1 column short of the 60-column border above it, the same shortfall Chapter 6 hit with a differently-worded message of the same coincidental 53-codepoint length.</p>
 <hr />
 <h2 id="19-quick-reference">19 — Quick Reference<a class="headerlink" href="#19-quick-reference" title="Permanent link">&para;</a></h2>
 <p>The chapter as reference cards. As in Chapter 6, the <em>Common Mistakes</em> card at
@@ -4539,92 +4584,104 @@ that compile cleanly.</p>
 <h3 id="wgmma-group-api">wgmma Group API<a class="headerlink" href="#wgmma-group-api" title="Permanent link">&para;</a></h3>
 <p>Commit and wait in one card. Remember that <code>N</code> is how many groups may remain
 outstanding, not how many to wait for.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>Instruction                              Purpose
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>──────────────────────────────────────────────────────────────────────────
-</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>wgmma.commit_group.sync.aligned          Seal pending wgmma ops into a group
-</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>wgmma.wait_group.sync.aligned N          Wait until ≤ N groups still pending
-</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>wgmma.fence.sync.aligned                 Register ordering (before/after wgmma)
-</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
-</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>N=0: drain ALL groups → safe to read d[] for epilogue
-</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>N=1: wait for all except 1 → read older groups while newest runs
-</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>N&gt;1: keep multiple groups in flight → deep pipeline (rare)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Instruction                              Purpose
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>──────────────────────────────────────────────────────────────────────────
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>wgmma.commit_group.sync.aligned          Seal pending wgmma ops into a group
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>wgmma.wait_group.sync.aligned N          Wait until ≤ N groups still pending
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>wgmma.fence.sync.aligned                 Register ordering (before/after wgmma)
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>N=0: drain ALL groups → safe to read d[] for epilogue
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>N=1: wait for all except 1 → read older groups while newest runs
+</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>N&gt;1: keep multiple groups in flight → deep pipeline (rare)
 </span></code></pre></div>
 <h3 id="stmatrix-reference">stmatrix Reference<a class="headerlink" href="#stmatrix-reference" title="Permanent link">&para;</a></h3>
 <p>The instruction forms, and the reminder that there is no 32-bit variant.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Variant                                  Data    Output   Use Case
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>──────────────────────────────────────────────────────────────────────────
-</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>stmatrix.sync.aligned.m8n8.x4.shared.b16  FP16x2  16×16   FP16/BF16 accumulator ★
-</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>stmatrix.sync.aligned.m8n8.x2.shared.b16  FP16x2   8×16   Half-tile writes
-</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>stmatrix.sync.aligned.m8n8.x1.shared.b16  FP16x2   8×8    Minimal tile / boundary
-</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>stmatrix.sync.aligned.m8n8.x4.shared.b8   INT8     16×16  INT8 accumulator (Hopper)
-</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>stmatrix.sync.aligned.m16n8.x4.shared.b8  INT8     32×8   Blackwell FP8 output
-</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>
-</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>FP32 accumulators: stmatrix has NO .f32 variant!
-</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>  Option A: cvt.rn.f16x2.f32 to downcast + pack → stmatrix.b16 (lossy)
-</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>  Option B: st.shared.f32 directly from d[] registers (correct FP32, manual scatter)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Variant                                        Data    Output      Use Case
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>──────────────────────────────────────────────────────────────────────────────
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>stmatrix.sync.aligned.m8n8.x4.shared.b16       FP16x2  16×16      FP16/BF16 accumulator ★
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>stmatrix.sync.aligned.m8n8.x2.shared.b16       FP16x2   8×16      Half-tile writes
+</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>stmatrix.sync.aligned.m8n8.x1.shared.b16       FP16x2   8×8       Minimal tile / boundary
+</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 8-bit   4×(16×8)   Blackwell-family only (sm_100a+)
+</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>stmatrix.sync.aligned.m16n8.x1/x2.trans.shared.b8  8-bit  1-2×(16×8)  Blackwell-family only
+</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>
+</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>CORRECTION: there is no "m8n8 + .b8" stmatrix on Hopper — that combination
+</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>is not a documented instruction. The ONLY 8-bit stmatrix shape is m16n8,
+</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>it is TRANSPOSE-ONLY (.trans is mandatory, not optional), and it requires
+</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>Blackwell-family targets (sm_100a and newer) — not sm_90a. On Hopper, an
+</span><span id="__span-30-13"><a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>INT8 or FP8 accumulator you want in SMEM goes through the FP32 path below
+</span><span id="__span-30-14"><a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>(or a manual scatter), same as any other type stmatrix.b16 can't take.
+</span><span id="__span-30-15"><a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>
+</span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>FP32 accumulators: stmatrix has NO .f32 variant!
+</span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a>  Option A: cvt.rn.f16x2.f32 to downcast + pack → stmatrix.b16 (lossy)
+</span><span id="__span-30-18"><a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a>  Option B: st.shared.f32 directly from d[] registers (correct FP32, manual scatter)
 </span></code></pre></div>
 <h3 id="fp8-formats-at-a-glance">FP8 Formats at a Glance<a class="headerlink" href="#fp8-formats-at-a-glance" title="Permanent link">&para;</a></h3>
 <p>E4M3 and E5M2 side by side — bit layout, range, and which phase each one is for.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Format   Bits  E  M  Max Value  Best For              Notes
-</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>──────────────────────────────────────────────────────────────────────────
-</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>E4M3     8     4  3  448        Forward pass (weights, acts)  Has NaN, no Inf
-</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>E5M2     8     5  2  57344      Backward pass (gradients)     Has Inf and NaN
-</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>e4m3x2   16    —  —  —          WGMMA input, cvt output       2 E4M3 packed
-</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>e4m3x4   32    —  —  —          Storage, transport            4 E4M3 packed
-</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>e5m2x2   16    —  —  —          WGMMA input, cvt output       2 E5M2 packed
-</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>e5m2x4   32    —  —  —          Storage, transport            4 E5M2 packed
+<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>Format   Bits  E  M  Max Value  Best For              Notes
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>──────────────────────────────────────────────────────────────────────────
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>E4M3     8     4  3  448        Forward pass (weights, acts)  Has NaN, no Inf
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>E5M2     8     5  2  57344      Backward pass (gradients)     Has Inf and NaN
+</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>e4m3x2   16    —  —  —          WGMMA input, cvt output       2 E4M3 packed
+</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>e4m3x4   32    —  —  —          Storage, transport            4 E4M3 packed
+</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>e5m2x2   16    —  —  —          WGMMA input, cvt output       2 E5M2 packed
+</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>e5m2x4   32    —  —  —          Storage, transport            4 E5M2 packed
 </span></code></pre></div>
 <h3 id="fp8-quantization-instructions">FP8 Quantization Instructions<a class="headerlink" href="#fp8-quantization-instructions" title="Permanent link">&para;</a></h3>
 <p>The conversion instructions, with their saturation behaviour.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>Instruction                                   Input   Output    Notes
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>──────────────────────────────────────────────────────────────────────────
-</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>cvt.rn.satfinite.e4m3x2.f16x2  fp8, fp16x2   f16x2  e4m3x2   2 FP16 → 2 FP8 E4M3
-</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>cvt.rn.satfinite.e5m2x2.f16x2  fp8, fp16x2   f16x2  e5m2x2   2 FP16 → 2 FP8 E5M2
-</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>cvt.rn.satfinite.e4m3x2.f32    fp8, f32, f32  2×f32  e4m3x2   2 FP32 → 2 FP8 E4M3
-</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>.satfinite: out-of-range values clamp to ±max (don't become Inf/NaN)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>Instruction                                   Input   Output    Notes
+</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>──────────────────────────────────────────────────────────────────────────
+</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>cvt.rn.satfinite.e4m3x2.f16x2  fp8, fp16x2   f16x2  e4m3x2   2 FP16 → 2 FP8 E4M3
+</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>cvt.rn.satfinite.e5m2x2.f16x2  fp8, fp16x2   f16x2  e5m2x2   2 FP16 → 2 FP8 E5M2
+</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>cvt.rn.satfinite.e4m3x2.f32    fp8, f32, f32  2×f32  e4m3x2   2 FP32 → 2 FP8 E4M3
+</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>.satfinite: out-of-range values clamp to ±max (don't become Inf/NaN)
 </span></code></pre></div>
 <h3 id="sparse-wgmma-sp-sel-and-sp-meta-rules">Sparse WGMMA sp-sel and sp-meta Rules<a class="headerlink" href="#sparse-wgmma-sp-sel-and-sp-meta-rules" title="Permanent link">&para;</a></h3>
 <p>Sections 16 and 17 condensed. The encoding table is the part to check against
 rather than recall.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>Precision     Sparsity  K/op  sp-sel   sp-meta cycle       Loop unroll
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>──────────────────────────────────────────────────────────────────────────
-</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>TF32          1:2       k16   0 or 1   Alternate: 14, 4    Unroll 2×
-</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>FP16/BF16     2:4       k32   0 or 1   Cycle: 0,1,2,3      Unroll 4×
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>FP8 E4M3/E5M2 2:4       k64   0 ONLY   Hardware-managed    Unroll 4×
-</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>INT8/UINT8    2:4       k64   0 ONLY   Hardware-managed    Unroll 4×
-</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>
-</span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>sp-sel=0: reads sp-meta from T0,T1 of each 4-thread group.
-</span><span id="__span-32-9"><a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>sp-sel=1: reads sp-meta from T2,T3 of each 4-thread group.
-</span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>For FP8/INT8: all threads contribute → sp-sel MUST be 0.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>Precision     Sparsity  K/op  sp-sel          sp-meta cycle       Loop unroll
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>──────────────────────────────────────────────────────────────────────────────
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>TF32          1:2       k16   narrower range  Alternate: 14, 4    Unroll 2×
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>                               than 0/1 — confirm exact values/meaning
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>                               against the PTX ISA for your CUDA version
+</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>FP16/BF16     2:4       k32   same caveat     Cycle: 0,1,2,3      Unroll 4×
+</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>FP8 E4M3/E5M2 2:4       k64   0 ONLY          Hardware-managed    Unroll 4×
+</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>INT8/UINT8    2:4       k64   0 ONLY          Hardware-managed    Unroll 4×
+</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>
+</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a>CORRECTED: sp-sel is NOT simply 0-or-1. For the related warp-level mma.sp,
+</span><span id="__span-33-11"><a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>NVIDIA engineers confirm on the developer forums it is a compile-time
+</span><span id="__span-33-12"><a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a>constant valid over 0–3, naming which thread(s) of a 4-thread group supply
+</span><span id="__span-33-13"><a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>metadata (narrower shapes: 1 of 4 named directly; wider shapes: a pair).
+</span><span id="__span-33-14"><a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a>Only the FP8/INT8 "all threads contribute, sp-sel=0" row is confirmed as
+</span><span id="__span-33-15"><a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a>stated — read the current PTX ISA before hardcoding the others.
 </span></code></pre></div>
 <h3 id="wgmmafence-placement-checklist">wgmma.fence Placement Checklist<a class="headerlink" href="#wgmmafence-placement-checklist" title="Permanent link">&para;</a></h3>
 <p>Section 5 as a checklist. Run through it when a pipeline produces intermittently
 wrong results.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>  □ BEFORE the first wgmma.mma_async in any new warpgroup sequence
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>  □ AFTER the last wgmma.mma_async (and after wait_group&lt;0&gt;) before reading d[]
-</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>  □ AFTER ldmatrix (if A is loaded to registers) and BEFORE wgmma that uses them
-</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>  □ BETWEEN two wgmma sequences that share the same accumulator registers
-</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>
-</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>  Do NOT use wgmma.fence for:
-</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>  ✗ Ordering SMEM writes visible to wgmma → use mbarrier.try_wait.acquire
-</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>  ✗ Cross-proxy ordering → use fence.proxy.async
-</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>  ✗ Ordering global memory operations → use fence.sc.gpu or similar
+<div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>  □ BEFORE the first wgmma.mma_async in any new warpgroup sequence
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>  □ AFTER the last wgmma.mma_async (and after wait_group&lt;0&gt;) before reading d[]
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>  □ AFTER ldmatrix (if A is loaded to registers) and BEFORE wgmma that uses them
+</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>  □ BETWEEN two wgmma sequences that share the same accumulator registers
+</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>
+</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>  Do NOT use wgmma.fence for:
+</span><span id="__span-34-7"><a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>  ✗ Ordering SMEM writes visible to wgmma → use mbarrier.try_wait.acquire
+</span><span id="__span-34-8"><a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>  ✗ Cross-proxy ordering → use fence.proxy.async
+</span><span id="__span-34-9"><a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a>  ✗ Ordering global memory operations → use fence.sc.gpu or similar
 </span></code></pre></div>
 <h3 id="common-mistakes-and-fixes">Common Mistakes and Fixes<a class="headerlink" href="#common-mistakes-and-fixes" title="Permanent link">&para;</a></h3>
 <p>Each entry is a bug that produces wrong numbers rather than an error message.
 Check here before reaching for a profiler.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>Mistake                                    Symptom              Fix
-</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>──────────────────────────────────────────────────────────────────────────────
-</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>Missing fence before first wgmma.mma_async Wrong accumulator     Add wgmma.fence before
-</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>Missing fence after wait_group&lt;0&gt;           Stale d[] reads       Add wgmma.fence after
-</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>Reading d[] while group still pending       Race condition         wait_group&lt;0&gt; first
-</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>stmatrix.b16 with FP32 d[] registers        Type mismatch compile  cvt to FP16 first
-</span><span id="__span-34-7"><a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>FP8 data in MN-major layout for wgmma      Scrambled results      Stage in K-major SMEM
-</span><span id="__span-34-8"><a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>Using ldmatrix.b8 on Hopper (sm_90a)       Compile error          Use SS path or ld.shared.b32
-</span><span id="__span-34-9"><a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a>sp-sel nonzero for FP8 sparse wgmma        Wrong/undefined result Use sp-sel=0 for FP8/INT8
-</span><span id="__span-34-10"><a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a>sp-meta not cycled 0→1→2→3 (FP16 sparse)  Reuses first K pattern Unroll loop 4×, advance
-</span><span id="__span-34-11"><a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a>TF32 sparse with sp-meta 0,1 (not 14,4)   Hardware misalignment  Use 14 then 4 for TF32
-</span><span id="__span-34-12"><a id="__codelineno-34-12" name="__codelineno-34-12" href="#__codelineno-34-12"></a>Large K FP8 without K-slicing             Precision drift        Slice K ≤ 256, reduce partial
+<div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>Mistake                                    Symptom              Fix
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>──────────────────────────────────────────────────────────────────────────────
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>Missing fence before first wgmma.mma_async Wrong accumulator     Add wgmma.fence before
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>Missing fence after wait_group&lt;0&gt;           Stale d[] reads       Add wgmma.fence after
+</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>Reading d[] while group still pending       Race condition         wait_group&lt;0&gt; first
+</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>stmatrix.b16 with FP32 d[] registers        Type mismatch compile  cvt to FP16 first
+</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>FP8 data in MN-major layout for wgmma      Scrambled results      Stage in K-major SMEM
+</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>Using ldmatrix.b8 on Hopper (sm_90a)       Compile error          Use SS path or ld.shared.b32
+</span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>sp-sel nonzero for FP8 sparse wgmma        Wrong/undefined result Use sp-sel=0 for FP8/INT8
+</span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>sp-meta not cycled 0→1→2→3 (FP16 sparse)  Reuses first K pattern Unroll loop 4×, advance
+</span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>TF32 sparse with sp-meta 0,1 (not 14,4)   Hardware misalignment  Use 14 then 4 for TF32
+</span><span id="__span-35-12"><a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a>Large K FP8 without K-slicing             Precision drift        Slice K ≤ 256, reduce partial
 </span></code></pre></div>
 <hr />
 <blockquote>
