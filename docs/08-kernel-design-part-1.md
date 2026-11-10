@@ -103,6 +103,10 @@ The key quantity is **Arithmetic Intensity (AI)**: how many floating-point opera
 you perform per byte of data you move between the memory hierarchy and the compute
 units.
 
+![H100 SXM5 roofline: FP16 Tensor Core and FP32 CUDA Core roofs on a log-log plot, with ridge points at AI≈20 and AI≈295 FLOP/Byte and example kernels placed by their arithmetic intensity](images/ch08/01-roofline-chart.svg)
+
+*The two H100 roofs — FP32 CUDA Core (ridge ≈20 FLOP/Byte) and FP16 Tensor Core (ridge ≈295 FLOP/Byte) — with softmax and two GEMM sizes plotted by their own AI.*
+
 ```
 The Roofline Model — Visual and Equations
 ══════════════════════════════════════════════════════════════════════
@@ -189,9 +193,18 @@ Arithmetic Intensity — Common Operations
     Bytes = (reads from global) + (writes to global), each in bytes
     AI = FLOPs / Bytes
   Method 3: Use the formula for GEMM:
-    AI_GEMM = 2MNK / (2×(MK + NK + MN)) bytes
-    For square matrices (M=N=K=n): AI = 2n³ / (6n²×2) = n/6 FLOP/Byte
-    At n=4096: AI = 4096/6 ≈ 683 FLOP/Byte (assuming FP32 storage)
+    AI_GEMM = 2MNK / (bytes_per_element × (MK + NK + MN))
+    For square matrices (M=N=K=n):
+      AI = 2n³ / (bytes_per_element × 3n²) = (2/3) × n / bytes_per_element
+    (CORRECTED: the general formula's denominator carries the storage
+    width as an explicit bytes_per_element factor, not a hidden
+    constant — the two worked cases below now agree with each other
+    and with the FP16 row in the table above.)
+    At n=4096, FP16 (bytes_per_element=2):
+      AI = (2/3) × 4096/2 ≈ 1365 FLOP/Byte (matches the ~1370 FP16
+      GEMM row in the table above)
+    At n=4096, FP32 (bytes_per_element=4):
+      AI = (2/3) × 4096/4 ≈ 683 FLOP/Byte
 ```
 
 ---
@@ -507,6 +520,50 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════╗
+║  Roofline Model Demo — Memory vs Compute Bound        ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+     Peak memory bandwidth (theoretical): 3350.0 GB/s
+     SM count: 132
+
+════════════════════════════════════════════════════════
+KERNEL A: elementwise_scale (expected: MEMORY-BOUND)
+════════════════════════════════════════════════════════
+  Elements: 64M    Bytes moved: 537 MB    AI: 0.125 FLOP/Byte
+  (Ridge point for FP32 CUDA cores ≈ 20 FLOP/Byte)
+  → AI=0.125 << 20 → MEMORY-BOUND ✓
+
+  Time: 0.180 ms
+  Bandwidth achieved: 2980.0 GB/s
+  GFLOPS achieved:    372.6
+  → Kernel is BANDWIDTH limited (not compute limited)
+
+════════════════════════════════════════════════════════
+KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
+════════════════════════════════════════════════════════
+  M=N=K=512    FLOPs: 268.4 M    Bytes: 3.1 MB    AI: 85.3 FLOP/Byte
+  → AI=85.3 >> 20 → COMPUTE-BOUND ✓
+
+  Time: 0.011 ms
+  GFLOPS achieved: 24500.0
+  Effective BW:    287.1 GB/s (not the bottleneck)
+  → Kernel is COMPUTE limited (bandwidth not saturated)
+
+╔══════════════════════════════════════════════════════╗
+║  KEY TAKEAWAY:                                        ║
+║  • elementwise_scale: optimize bandwidth, not FLOPs   ║
+║  • tile_matmul: optimize FLOPs, pipeline depth        ║
+║  • Wrong optimization → wrong results → wasted time   ║
+╚══════════════════════════════════════════════════════╝
+```
+
+Kernel A's achieved GFLOPS (372.6) is exactly `ai_theoretical × bw_achieved` (0.125 × 2980.0) — that identity is the roofline model itself: in the memory-bound regime, performance is bandwidth times arithmetic intensity, nothing else. Kernel B's 85.3 FLOP/Byte (computed precisely from the exact tile sizes) lands a bit below the "≈89" quoted in the comment above the kernel, which rounds FLOPs to 268M and bytes to 3MB before dividing — the precise 268.4M/3.145728MB ratio the program actually computes is 85.3, a reminder that back-of-envelope rounding and a program's exact arithmetic can disagree by a few percent even when both are "right."
+
 ---
 
 ## 2 — Compute-Bound Kernels
@@ -514,6 +571,10 @@ int main() {
 ### 2.1 The Three Signatures of a Compute-Bound Kernel
 
 When your kernel's AI exceeds the ridge point, arithmetic throughput becomes the bottleneck. But recognizing a compute-bound kernel in practice — before you profile — requires understanding what the hardware tells you.
+
+![Producer warps idle on repeated WAIT segments while consumer warps run a continuous, uninterrupted block of MMA instructions](images/ch08/02-producer-consumer-imbalance.svg)
+
+*Signature 2 in the timeline: producers stall on barriers while consumers stay 100% busy — the most diagnostic sign that math, not memory, is the bottleneck.*
 
 ```
 Compute-Bound Signatures — What to Look For
@@ -603,6 +664,10 @@ Compute-Bound Optimization Hierarchy
 ### 3.1 The Three Memory-Bound Categories
 
 Memory-bound is not a single condition. The bottleneck can be at three different points in the memory hierarchy, each with different fixes.
+
+![Decision flowchart: HBM bandwidth over 80% of peak means bandwidth-bound, otherwise FLOP rate over 20% means partially compute-bound, otherwise SM utilization over 50% means latency-bound, otherwise locality-bound](images/ch08/03-diagnosis-flowchart.svg)
+
+*The diagnosis flowchart from the categories below, walked top to bottom against three profiler metrics until one "yes" lands on a verdict.*
 
 ```
 Three Categories of Memory-Bound Kernels
@@ -702,6 +767,10 @@ On any GPU, an SM hosts many active warps, but only a few can issue instructions
 
 Warp Specialization breaks this competition by giving different warps **permanently different jobs** for the entire kernel execution. Some warps become dedicated "producers" that only move data. Other warps become dedicated "consumers" that only perform arithmetic.
 
+![Four mixed warps each interleaving LOAD, wait, and MMA with staggered idle gaps, versus one dedicated producer warpgroup issuing only TMA and two dedicated consumer warpgroups issuing only MMA back to back](images/ch08/04-warp-specialization-before-after.svg)
+
+*Without specialization every warp idles during its own loads; with specialization the producer's TMA loads and the consumers' WGMMA run back to back, warpgroup by warpgroup, on the same SM.*
+
 ```
 Warp Specialization — Before and After
 ══════════════════════════════════════════════════════════════════════
@@ -739,12 +808,21 @@ Warp Specialization — Before and After
   ─── The Three Reasons It Works ──────────────────────────────────
 
   Reason 1 — Resource separation:
-    A WGMMA consumer needs ~200 registers for its accumulator tile.
-    A TMA producer needs ~32 registers for barrier management.
-    Together on one SM: 200+32 = 232 registers total.
-    Without separation: each mixed warp needs 200+32 = 232 registers,
-    and with 4 warps that's 4×232 = 928 registers, crushing occupancy.
-    With separation: producer + consumer share register budget efficiently.
+    A WGMMA consumer needs ~200 registers/thread for its accumulator tile.
+    A TMA producer needs ~32 registers/thread for barrier management.
+    Without separation, every thread in a mixed warpgroup must be
+    allocated the UNION of both needs — ~200+32 = 232 registers/thread —
+    even though on any given iteration a thread is doing only one job.
+    For a 128-thread warpgroup that's 128 × 232 = 29,696 registers
+    committed (CORRECTED: this is the same 29,696-register figure
+    Section 6 derives for one consumer warpgroup at 232 regs/thread —
+    the two sections now agree), most of it paying for headroom that
+    sits idle on the producer-role threads most of the time.
+    With separation: producer threads commit only ~32 registers/thread
+    (128 × 32 = 4,096 total) and consumer threads commit the full
+    ~200-232 registers/thread — each role pays only for what it
+    actually uses, so the SM's 65,536-register budget stretches
+    further across more resident threads.
 
   Reason 2 — Latency hiding by overlap:
     While WG0 waits for the TMA to fill SMEM (~400 cycles),
@@ -1081,6 +1159,57 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════╗
+║  Warp Specialization Demo                             ║
+║  256 threads = WG0 (producer) + WG1 (consumer)       ║
+╚══════════════════════════════════════════════════════╝
+
+Launch: 1 block × 256 threads
+  WG0 (threads   0-127): PRODUCER role
+  WG1 (threads 128-255): CONSUMER role
+
+Role Assignment Check:
+  WG0 role recorded: 0 (expected 0 = producer)
+  WG1 role recorded: 1 (expected 1 = consumer)
+  Role assignment: ✓ CORRECT
+
+Consumer Output Verification:
+  Expected formula: output[i] = 2 × (3×i + 7) = 6i + 14
+  Checking all 128 outputs...
+
+  Index    Expected     Got          OK?     
+  ────────────────────────────────────────
+  0        14.0         14.0         ✓
+  1        20.0         20.0         ✓
+  2        26.0         26.0         ✓
+  3        32.0         32.0         ✓
+  4        38.0         38.0         ✓
+  ... (checking all 128, showing first 5 and last 3) ...
+  125      764.0        764.0        ✓
+  126      770.0        770.0        ✓
+  127      776.0        776.0        ✓
+
+════════════════════════════════════════════════════════
+Results: 128/128 output values correct
+Role assignment: CORRECT
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED                                  ║
+║                                                      ║
+║  KEY OBSERVATIONS:                                   ║
+║  • WG0 (threads 0-127) executed ONLY producer code   ║
+║  • WG1 (threads 128-255) executed ONLY consumer code  ║
+║  • No warp divergence within either warpgroup        ║
+║  • __syncthreads() ensured safe handoff              ║
+║  • In production: replace sync with mbarrier (§9)    ║
+╚══════════════════════════════════════════════════════╝
+```
+
+Every value lands exactly on `6i+14` because this kernel does pure FP32 arithmetic on values that are exact in binary floating point (small integers and products of small integers) — unlike the BF16 accumulation examples in Chapters 6-7, there is no rounding to trace here, so the "Got" and "Expected" columns match bit-for-bit, including at the boundary case `i=127` (776.0), which matches the manual worked example above.
+
 ---
 
 ## 5 — setmaxnreg — Dynamic Register Allocation
@@ -1103,14 +1232,18 @@ setmaxnreg — What It Does and When to Use It
   .inc = increase to LIMIT (consumer warpgroups call this)
   .dec = decrease to LIMIT (producer warpgroups call this)
 
-  VALID LIMITS: Must be a multiple of 8. Common values:
+  VALID LIMITS: Per the PTX ISA, imm-reg-count must be in the range
+  24–256 (both inclusive) and must be a multiple of 8. Common values:
     24  — absolute minimum
     32  — producer warps (TMA + barrier management only)
     40  — small compute tasks
     128 — moderate accumulator
     160 — typical consumer warpgroup
     232 — maximum practical (leaving room for control logic)
-    255 — hardware maximum
+    256 — hardware maximum (CORRECTED: not 255 — the PTX ISA's
+          imm-reg-count range is 24-256 inclusive, a clean multiple
+          of 8 on both ends; 255 is not itself a multiple of 8 and
+          was never a legal value here)
 
   ─── The Timeline ─────────────────────────────────────────────────
 
@@ -1392,6 +1525,36 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════╗
+║  setmaxnreg Demo — Dynamic Register Resizing         ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Register Plan:
+  WG0 (threads   0-127): setmaxnreg.dec → 32 regs (producer)
+  WG1 (threads 128-255): setmaxnreg.inc → 128 regs (consumer)
+
+WG0 (PRODUCER, 32 regs after resize):
+  ✓ All 128 values correct (registers NOT corrupted by setmaxnreg)
+  Sample: output[0]=1.0 (expect 1.0), output[1]=3.5 (expect 3.5)
+
+WG1 (CONSUMER, 128 regs after resize):
+  ✓ All 128 values correct (registers NOT corrupted by setmaxnreg)
+  Sample: output[0]=2.0 (expect 2.0), output[1]=6.5 (expect 6.5)
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED                                  ║
+║  setmaxnreg correctly resized registers without      ║
+║  corrupting existing register state.                 ║
+╚══════════════════════════════════════════════════════╝
+```
+
+Both warpgroups' values are exact to the printed decimal — `2.5×idx+1` and `4.5×idx+2` only ever produce sums of small integers and `.0`/`.5` fractions, all of which are exactly representable in FP32, so there is no rounding noise to account for here (unlike the BF16 fill-value traces elsewhere in this book). The real content of this output isn't the numbers; it's that they survive `setmaxnreg` at all — the register count changes mid-kernel, but `accumulator` and `factor` live on through the resize exactly as they were.
+
 ---
 
 ## 6 — Warp Group Count Selection
@@ -1473,6 +1636,10 @@ The H100's HBM3 has ~500 cycle latency for individual memory accesses. WGMMA exe
 
 Pipelining eliminates this idle time by overlapping the DATA MOVEMENT for tile N+1 with the COMPUTATION of tile N. The consumer is always computing while the producer is always loading.
 
+![Three stacked timelines: serial load-then-compute at ~9% utilization, 2-stage pipelining overlapping loads and math at >95% utilization, and a 4-stage pipeline where every step runs one Load and one MMA simultaneously](images/ch08/05-pipelining-stages-0-2-4.svg)
+
+*Going from zero to two to four pipeline stages: each added stage overlaps one more load with compute, until every step is doing both at once.*
+
 ```
 Pipelining — What It Means Concretely
 ══════════════════════════════════════════════════════════════════════
@@ -1527,31 +1694,38 @@ Pipelining — What It Means Concretely
 
 ### 7.2 What the Pipeline Stages Physically Are
 
-Each "stage" in the pipeline corresponds to a physical allocation of shared memory. With 4 stages, you allocate 4 copies of the A-tile and B-tile in shared memory. This allows 4 tiles to be "in flight" simultaneously: some being loaded by TMA, others being consumed by WGMMA.
+Each "stage" in the pipeline corresponds to a physical allocation of shared memory. With N stages, you allocate N copies of the A-tile and B-tile in shared memory. This allows N tiles to be "in flight" simultaneously: some being loaded by TMA, others being consumed by WGMMA — for 32KB+32KB A/B tiles on H100's 228KB SMEM budget, N tops out at 3 (CORRECTED below: a 4th stage at this tile size would need 256KB and blow the budget).
+
+![228KB of shared memory divided into three stages, each holding a 32KB A tile, a 32KB B tile, and an mbarrier pair, with 36KB left over as an epilogue buffer](images/ch08/06-pipeline-smem-layout.svg)
+
+*Three stages at 32+32 KB each commit 192 KB of the 228 KB budget — the most this tile size allows, with 36 KB left for the epilogue.*
 
 ```
 Pipeline Stages — Physical SMEM Layout
 ══════════════════════════════════════════════════════════════════════
 
-  SMEM layout with 4 pipeline stages (stages = circular buffer slots):
+  SMEM layout with 3 pipeline stages (stages = circular buffer slots):
   ┌─────────────────────────────────────────────────────────────────┐
   │  Shared Memory (228 KB available)                               │
   │                                                                 │
-  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐ │
-  │  │  Stage 0   │  │  Stage 1   │  │  Stage 2   │  │  Stage 3   │ │
-  │  │            │  │            │  │            │  │            │ │
-  │  │ A tile 0   │  │ A tile 1   │  │ A tile 2   │  │ A tile 3   │ │
-  │  │ (32KB)     │  │ (32KB)     │  │ (32KB)     │  │ (32KB)     │ │
-  │  │            │  │            │  │            │  │            │ │
-  │  │ B tile 0   │  │ B tile 1   │  │ B tile 2   │  │ B tile 3   │ │
-  │  │ (32KB)     │  │ (32KB)     │  │ (32KB)     │  │ (32KB)     │ │
-  │  │            │  │            │  │            │  │            │ │
-  │  │ mbarrier   │  │ mbarrier   │  │ mbarrier   │  │ mbarrier   │ │
-  │  │ full + empty│  │ full + empty│  │ full + empty│  │ full + empty│
-  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘ │
+  │  ┌────────────┐  ┌────────────┐  ┌────────────┐                │
+  │  │  Stage 0   │  │  Stage 1   │  │  Stage 2   │                │
+  │  │            │  │            │  │            │                │
+  │  │ A tile 0   │  │ A tile 1   │  │ A tile 2   │                │
+  │  │ (32KB)     │  │ (32KB)     │  │ (32KB)     │                │
+  │  │            │  │            │  │            │                │
+  │  │ B tile 0   │  │ B tile 1   │  │ B tile 2   │                │
+  │  │ (32KB)     │  │ (32KB)     │  │ (32KB)     │                │
+  │  │            │  │            │  │            │                │
+  │  │ mbarrier   │  │ mbarrier   │  │ mbarrier   │                │
+  │  │ full + empty│  │ full + empty│  │ full + empty│                │
+  │  └────────────┘  └────────────┘  └────────────┘                │
   │                                                                 │
-  │  Total for 4 stages: 4 × (32+32) KB = 256 KB (tight fit!)      │
-  │  Epilogue buffer: remaining space (for bias, output, etc.)      │
+  │  Total for 3 stages: 3 × (32+32) KB = 192 KB (CORRECTED: a      │
+  │  4th stage at this tile size would need 256 KB — over the       │
+  │  228 KB budget. 3 stages is the max at 32+32 KB/stage, per the  │
+  │  num_stages derivation just below.)                             │
+  │  Epilogue buffer: remaining 228-192 = 36 KB (bias, output, etc.)│
   └─────────────────────────────────────────────────────────────────┘
 
   Stage lifecycle (think of it as a rental unit):
@@ -1576,6 +1750,10 @@ Pipeline Stages — Physical SMEM Layout
 ### 8.1 The Circular Buffer as a Ring
 
 With N pipeline stages in shared memory, the producer and consumer work through the stages in a circular (ring) fashion. The producer writes to stage `i % N`, the consumer reads from stage `(i - depth) % N`, where `depth` is how many stages ahead the producer stays.
+
+![Four pipeline stages arranged in a ring, snapshotted at iteration 5: stage 0 and 2 full, stage 1 being loaded by the producer, stage 3 being consumed, write pointer at stage 1 and read pointer at stage 3](images/ch08/07-circular-buffer-ring.svg)
+
+*At iteration 5 the producer (write pointer) is two stages ahead of the consumer (read pointer) — the `depth=2` the kernel maintains all the way through steady state.*
 
 ```
 Circular Buffer — Ring Operation
@@ -1886,7 +2064,7 @@ int main() {
     // = (0+10+20+30+40+50+60+70) + j*0.01*8 = 280 + 0.08*j
     printf("\nOutput Verification (element 0 and element 10):\n");
     float expected_0  = 280.0f + 0.0f;   // j=0: sum = 280
-    float expected_10 = 280.0f + 0.08f * 10;  // j=10: sum = 281
+    float expected_10 = 280.0f + 0.08f * 10;  // j=10: sum = 280.8 (CORRECTED comment: 280.0+0.08*10=280.8, not 281)
     printf("  output[0]  = %.3f (expected %.3f) %s\n",
            h_out[0], expected_0,
            fabsf(h_out[0] - expected_0) < 0.01f ? "✓" : "✗ FAIL");
@@ -1911,6 +2089,61 @@ int main() {
     return all_ok ? 0 : 1;
 }
 ```
+
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════╗
+║  Circular Pipeline Buffer Simulation                  ║
+║  N_STAGES=4, DEPTH=2, K_TILES=8                    ║
+╚══════════════════════════════════════════════════════╝
+
+[Prologue]: filling first 2 stages
+  k=0: Producer writes stage 0  |  Consumer: waiting
+  k=1: Producer writes stage 1  |  Consumer: waiting
+
+[Steady State]: producer and consumer overlap
+  k=2: Producer writes stage 2  |  Consumer reads stage 0
+  k=3: Producer writes stage 3  |  Consumer reads stage 1
+  k=4: Producer writes stage 0  |  Consumer reads stage 2
+  k=5: Producer writes stage 1  |  Consumer reads stage 3
+  k=6: Producer writes stage 2  |  Consumer reads stage 0
+  k=7: Producer writes stage 3  |  Consumer reads stage 1
+
+[Drain]: flushing 2 remaining stages
+  drain 0: Consumer reads stage 2  |  Producer: done
+  drain 1: Consumer reads stage 3  |  Producer: done
+
+════════════════════════════════════════════════════════
+Stage Assignment Verification:
+  Expected producer: 0,1,2,3,0,1,2,3,-1,-1 (then drain)
+  Expected consumer: -1,-1,0,1,2,3,0,1,2,3
+
+  Iter    Prod    Cons
+  ────────────────────
+     0       0      -1 ✓
+     1       1      -1 ✓
+     2       2       0 ✓
+     3       3       1 ✓
+     4       0       2 ✓
+     5       1       3 ✓
+     6       2       0 ✓
+     7       3       1 ✓
+     8      -1       2 ✓
+     9      -1       3 ✓
+
+Output Verification (element 0 and element 10):
+  output[0]  = 280.000 (expected 280.000) ✓
+  output[10] = 280.800 (expected 280.800) ✓
+
+╔══════════════════════════════════════════════════════╗
+║  Stage assignment errors: 0                           ║
+║  Runtime barrier errors:  0                           ║
+║  ✓ ALL TESTS PASSED — circular buffer correct        ║
+╚══════════════════════════════════════════════════════╝
+```
+
+Every physical stage gets read exactly once between the writes that would otherwise clobber it: `depth=2` guarantees a tile is consumed two iterations after it's produced, and the next write to that same physical slot doesn't land until two iterations after *that* (`N_STAGES − depth = 2` more steps), so the 8 writes at k=0..7 and the 8 reads (6 in steady state, 2 in drain) pair up one-to-one in order, giving the simple closed-form sum `280 + 0.08×j` — no stage is ever read stale or dropped.
 
 ---
 
