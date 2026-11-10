@@ -48,15 +48,21 @@ Hardware Compatibility Matrix
 
   KEY:
     wgmma commit/wait groups → sm_90a or sm_100a ONLY
-    stmatrix                  → sm_90a or sm_100a ONLY
+    stmatrix (.b16, 16-bit)   → sm_90a or sm_100a ONLY
     FP8 wgmma (e4m3/e5m2)    → sm_90a or sm_100a ONLY
     Sparse wgmma              → sm_90a or sm_100a ONLY
-    ldmatrix with .b8 (FP8)   → sm_100a (Blackwell) ONLY — NOT Hopper!
+    ldmatrix for plain FP8    → NOT available on ANY current architecture
 
-  IMPORTANT HOPPER FP8 NOTE:
-    On Hopper (sm_90a): cannot use ldmatrix to load FP8 into A registers.
-    Must use descriptor-based (SS path) or manual ld.shared.b32 (RS path).
-    On Blackwell (sm_100a): ldmatrix.b8 is supported for FP8 A loading.
+  IMPORTANT FP8 LOADING NOTE (corrected — see §13.2):
+    ldmatrix has no variant for ordinary 8-bit e4m3/e5m2 FP8, on Hopper OR
+    Blackwell. Its only documented element types are .b16 (sm_75+, i.e. all
+    the way back to Turing) and two Blackwell-only *sub-byte* packed forms
+    (.b8x16.b6x16_p32 / .b8x16.b4x16_p64, sm_100a/sm_110a) built for the
+    6-bit/4-bit microscaling (MX) formats used by 5th-gen tensor cores
+    (tcgen05) — a different feature from plain FP8, not a faster path to it.
+    On every architecture that has FP8 wgmma, FP8 A tiles load via the SS
+    (descriptor) path or manual ld.shared.b32 (RS path). There is no
+    ldmatrix shortcut for FP8 to look forward to on Blackwell either.
 ```
 
 ### Cloud GPU Rental — Lambda Labs
@@ -108,7 +114,10 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — Lesson 7 Differences
     └── All code in this guide compiles and runs unchanged on sm_100a
 
   WHAT IS NEW IN BLACKWELL:
-    ├── ldmatrix.b8: FP8 A tiles can now be loaded via ldmatrix (Hopper can't!)
+    ├── ldmatrix sub-byte variants (.b8x16.b6x16_p32 / .b4x16_p64) for the
+    │   MX (microscaling) 4-bit/6-bit formats — NOT a plain-FP8 path; ordinary
+    │   e4m3/e5m2 A tiles still load via SS/descriptor or manual ld.shared,
+    │   same as on Hopper (see §13.2)
     ├── tcgen05.mma: 5th-gen tensor core instruction (separate from wgmma)
     ├── FP4 (MX format) support in tcgen05
     └── tmem (tensor memory) as accumulator location for tcgen05
@@ -371,6 +380,10 @@ actually go.
 
 The real power of groups becomes clear when you see the full pipeline. The key insight is that you are not just "commit then wait" — you are interleaving math, data preparation, and synchronization so that tensor cores are never idle.
 
+![wgmma commit/wait groups: naive wait-after-every-batch vs the pipelined pattern, with tensor-core occupancy underneath each](images/ch07/01-commit-wait-pipeline-timeline.svg)
+
+*Naive wait-after-every-batch leaves the tensor cores idle during every wait and store; wait_group<1> keeps the newest batch running while the completed one's epilogue proceeds.*
+
 ```
 The Pipelined wgmma Pattern — Complete Timeline
 ══════════════════════════════════════════════════════════════════════
@@ -448,6 +461,10 @@ results.
 ### 5.1 The Two Things wgmma.fence Controls
 
 At this point in the course you have seen wgmma.fence appear in multiple contexts. It is worth consolidating exactly what it does and does not do, because the confusion between its roles causes hard-to-debug bugs.
+
+![wgmma.fence's two roles placed on the same pipeline: group-boundary marker before the K-loop, register-hazard control after wait_group](images/ch07/02-wgmma-fence-placement.svg)
+
+*The same instruction, two placements: once before the first wgmma of a new group (Role 1), once after wait_group<0> and before reading d[] (Role 2).*
 
 ```
 wgmma.fence.sync.aligned — Complete Role Summary
@@ -598,6 +615,10 @@ address arithmetic.
 
 The address assignment in stmatrix follows the SAME pattern as ldmatrix. This symmetry is intentional — if you read with ldmatrix and write with stmatrix using the same address formula, the data is correctly reconstructed.
 
+![The 16x16 tile split into four quadrants, each owned by a group of 8 lanes](images/ch07/03-stmatrix-address-quadrants.svg)
+
+*Lanes 0-7, 8-15, 16-23 and 24-31 each point into one quadrant — the same quadrant-to-lane mapping ldmatrix used to read the tile in.*
+
 ```
 stmatrix Address Phase — Who Points Where
 ══════════════════════════════════════════════════════════════════════
@@ -661,6 +682,10 @@ stmatrix Address Phase — Who Points Where
 ### 7.2 Phase 2: Register Source Layout
 
 The register layout for stmatrix is the "striped" layout — each thread owns non-contiguous elements across the tile. This is the exact layout that wgmma writes to, so you can feed wgmma output registers directly to stmatrix with no shuffling.
+
+![Three sample threads' four registers each, and how lanes 0-7 together cover rows 0 and 8 of the destination tile](images/ch07/04-stmatrix-register-scatter.svg)
+
+*Thread T holds columns [2T, 2T+1] in rows 0 and 8 — the same striped pattern wgmma already wrote its output in, so no shuffle sits between the two instructions.*
 
 ```
 stmatrix Register Source — The Striped Layout
@@ -896,6 +921,10 @@ Floating Point Format Review — Sign, Exponent, Mantissa
 The practical division: E4M3 forward, E5M2 backward. The reason is that
 gradients span a far wider range than activations, and range is what E5M2 buys.
 
+![E4M3's sign/4-bit-exponent/3-bit-mantissa layout next to E5M2's sign/5-bit-exponent/2-bit-mantissa layout](images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg)
+
+*The same 8 bits, split two different ways: E4M3 trades range for precision (forward pass), E5M2 trades precision for range (backward pass).*
+
 ```
 E4M3 vs E5M2 — Why Two Formats Exist
 ══════════════════════════════════════════════════════════════════════
@@ -967,6 +996,10 @@ thirty-one are useful to you.
 ### 11.1 Why Packing Is Necessary
 
 The GPU memory controller never fetches less than 32 bytes (one "sector") at a time. If you request a single FP8 byte, the GPU fetches 32 bytes, delivers your 1 byte, and wastes the other 31. To fix this, FP8 values must always be accessed in packed groups. NVIDIA defines two packing types: `x2` (two FP8 in 16 bits) and `x4` (four FP8 in 32 bits).
+
+![Four FP8 values packed into one 32-bit register (x4) versus two FP8 values packed into one 16-bit register (x2)](images/ch07/06-fp8-packed-x4-x2.svg)
+
+*x4 fills a whole register for storage/transport; x2 matches FP16 width for feeding WGMMA and for cvt output.*
 
 ```
 FP8 Packed Types — x2 and x4
@@ -1212,11 +1245,16 @@ The two paths for getting `A` in, and the layout each one demands. This is
 stricter than the BF16 case in Chapter 6 §7.
 
 ```
-FP8 A Loading — SS vs RS Path on Hopper
+FP8 A Loading — SS vs RS Path (Hopper AND Blackwell)
 ══════════════════════════════════════════════════════════════════════
 
-  On Hopper (sm_90a), there is a CRITICAL LIMITATION:
-  ldmatrix with .b8 (FP8) is NOT supported. Only available on Blackwell (sm_100a).
+  CORRECTION — this is not a Hopper-only limitation:
+  ldmatrix has no variant for plain 8-bit FP8 (e4m3/e5m2) on ANY current
+  architecture. Its documented element types are .b16 (sm_75+) and, on
+  Blackwell only, two sub-byte PACKED forms for the MX microscaling formats
+  (.b8x16.b6x16_p32, .b8x16.b4x16_p64 — 6-bit/4-bit values for tcgen05, not
+  ordinary FP8). So the "no ldmatrix for FP8" constraint below applies on
+  Hopper (sm_90a) and on Blackwell (sm_100a) alike.
 
   This means you have two options for loading FP8 A tiles into registers:
 
@@ -1293,7 +1331,7 @@ costs. If you are shipping FP8 inference, read this one twice.
 
 ### 14.1 The "FP22" Accumulation Issue
 
-Even though FP8 wgmma is documented as using an FP32 accumulator, empirical measurements on H100 reveal that the actual effective accumulation precision is closer to what might be called "FP22" — approximately 8-bit exponent and 13-bit mantissa, rather than FP32's 23-bit mantissa. This means the lowest FP32 mantissa bits may be lost during long dot products.
+Even though FP8 wgmma is documented as using an FP32 accumulator, two independent empirical reports back up the claim that the real precision is lower, and they are worth citing by name rather than treating as one settled industry number. The SageAttention2 paper measured H100/Ada `mma(f32f8f8f32)` accumulation behaving like roughly FP22 (~13 kept mantissa bits beyond the sign and exponent). DeepSeek-V3's technical report separately measured H800 FP8 GEMM accumulation retaining only about 14 bits — a close but not identical figure, from a different model/kernel. Treat "FP22" as a convenient shorthand for "measurably less than FP32, by low-teens bits, in at least two independent measurements" rather than an exact, hardware-documented constant.
 
 ```
 FP8 Precision Pitfalls — Accumulation Depth
@@ -1372,6 +1410,10 @@ values — which is what §16 and §17 are for.
 Sparse WGMMA is a variant where matrix A is **structured sparse**: for every group of 4 consecutive elements in each row, exactly 2 are zero. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.
 
 The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. This information is encoded in a "metadata" register (sp-meta) that accompanies the sparse A matrix.
+
+![A row of 8 values split into two quartets, compacted down to 4 stored values, with their sp-meta encoding and the 4-thread sp-sel group below](images/ch07/07-sparse-wgmma-2-4-metadata.svg)
+
+*The full chain previewed here and detailed in §16-17: which elements survive (top), how sp-meta packs their positions (middle), and which thread(s) sp-sel reads that metadata from (bottom).*
 
 ```
 2:4 Structured Sparsity — The Pattern and Its Benefits
@@ -1519,57 +1561,57 @@ rather than an error.
 
 ### 17.1 What sp-sel Does
 
-`sp-sel` (sparsity selector) is a compile-time constant (0 or 1) that tells the hardware which threads within each group of 4 consecutive threads are responsible for providing the metadata register. It exists because not all 128 threads in the warp group need to provide unique metadata — only specific "contributor" threads are read.
+`sp-sel` (sparsity selector) is a compile-time constant that tells the hardware which thread(s) within each group of 4 consecutive threads are responsible for providing the metadata register. It exists because not all 128 threads in the warp group need to provide unique metadata — only specific "contributor" threads are read.
+
+**Correction worth flagging up front:** `sp-sel` is not simply binary. For the related warp-level `mma.sp` instruction, NVIDIA engineers have confirmed on the developer forums that the selector is a 32-bit compile-time constant valid over **0–3**, not just 0 or 1 — and which lane(s) it names depends on the shape: for a 16-row-per-op shape, one of four threads in the group holds the metadata and the selector picks which one (0→T0, 1→T1, 2→T2, 3→T3); for a shape with twice the K per op, two of four threads hold it and the selector picks which pair. `wgmma.mma_async.sp` carries the same operand name and almost certainly the same role, but its own PTX ISA entry documents the exact mapping per shape/precision, and that mapping can depend on your CUDA/PTX ISA version — treat the table below as the questions to answer from the current spec, not as hardcoded values to copy into a kernel.
 
 ```
-sp-sel — Thread Metadata Responsibility
+sp-sel — Thread Metadata Responsibility (confirm exact values against your PTX ISA)
 ══════════════════════════════════════════════════════════════════════
 
   The thread groups for sp-sel:
   ─────────────────────────────────────────────────────────────────
   Threads are grouped into consecutive sets of 4: T0,T1,T2,T3 | T4,T5,T6,T7 | ...
+  sp-sel is a compile-time constant over a WIDER range than 0/1 — confirmed
+  0–3 for the related warp-level mma.sp, where it names which of the 4
+  threads (narrower sparsity) or which pair (wider sparsity) supplies
+  metadata. Do not assume a plain 0-vs-1 choice without checking the shape.
 
-  sp-sel = 0: Hardware reads sp-meta from threads T0 and T1 of each group.
-              Threads T2 and T3 in the group are IGNORED for metadata.
-  sp-sel = 1: Hardware reads sp-meta from threads T2 and T3 of each group.
-              Threads T0 and T1 in the group are IGNORED.
+  ─── What Varies by Shape/Precision ──────────────────────────────
 
-  ─── When to Use Which sp-sel Value ──────────────────────────────
+  TF32 sparse:
+    Narrower per-op K → one thread of the group holds metadata; which one
+    is named by sp-sel. The chapter's worked example above used toggling
+    between two sp-meta bit patterns (14, 4) for two K-groups — treat the
+    sp-sel VALUE that pairs with each as something to read off the current
+    PTX ISA for your CUDA version, not as a fixed 0/1 rule.
 
-  TF32 sparse (.m64nNk16):
-    sp-sel = 0 for the first K-group (uses T0,T1 → their sp-meta value 14)
-    sp-sel = 1 for the second K-group (uses T2,T3 → their sp-meta value 4)
+  FP16/BF16 sparse:
+    Wider per-op K → typically a pair of threads holds metadata per
+    selector value; the loop still unrolls 4× to cycle through a full
+    sp-meta register's worth of quartets (§16).
 
-  FP16/BF16 sparse (.m64nNk32):
-    sp-sel = 0 OR sp-sel = 1 (choose one consistently)
-    Use sp-sel = 0 if you load the SAME sp-meta to ALL threads (simplest).
-    Use sp-sel = 1 only if you split metadata across odd/even thread pairs.
-
-  FP8/INT8 sparse (.m64nNk64):
-    ALL threads contribute metadata → sp-sel MUST be 0.
-    Any other value is undefined behavior.
+  FP8/INT8 sparse:
+    Widest per-op K → ALL threads in the group contribute, so sp-sel is
+    reported as hardware-determined / fixed at 0 in community references.
+    This part of the chapter's original claim holds up; the TF32/FP16/BF16
+    "0 or 1" claims are what needed correcting.
 
   ─── Practical Recommendation ────────────────────────────────────
 
-  Simplest (works for FP16/BF16 and FP8):
-    Load the same sp-meta value to ALL 128 threads.
-    Use sp-sel = 0.
-    No thread-specific metadata management needed.
-    The hardware reads from T0,T1 of each group — they all have the same value.
+  Simplest starting point:
+    Load the same sp-meta value to every thread that could be read,
+    so the exact selector value is less likely to matter while you get a
+    sparse kernel correct for the first time. Then narrow down the real
+    required sp-sel for your target shape from the PTX ISA reference before
+    trusting performance numbers from it.
 
-  Advanced (register-saving, rarely needed):
-    Load sp-meta only to EVEN threads (T0,T2,...), use sp-sel=0.
-    Odd threads (T1,T3,...) can hold other data.
-    Reduces sp-meta register pressure at the cost of complexity.
-
-  ─── Summary Table ───────────────────────────────────────────────
-
-  Precision     Sparsity   K per op  sp-sel    sp-meta cycle
-  ──────────────────────────────────────────────────────────────────
-  TF32          1:2        k=16      0 or 1    Toggle: 14, 4
-  FP16/BF16     2:4        k=32      0 or 1    0, 1, 2, 3 (unroll 4×)
-  FP8 E4M3/E5M2 2:4        k=64      0 only    Hardware-determined
-  INT8/UINT8    2:4        k=64      0 only    Hardware-determined
+  Before shipping a sparse wgmma kernel: look up `wgmma.mma_async.sp` in
+  the PTX ISA version matching your CUDA toolkit and copy its sp-sel table
+  directly, rather than this book's — NVIDIA's own HTML page did not
+  render its instruction body through automated tools while fact-checking
+  this chapter, so the exact per-shape mapping could not be fully verified
+  here for the warpgroup-level instruction specifically.
 ```
 
 ---
@@ -1878,6 +1920,29 @@ int main() {
 }
 ```
 
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex01: wgmma commit/wait pipeline + stmatrix epilogue    ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Shape: m64n64k16, FP16 accumulator, 2 tiles pipelined
+Expected: all acc values = K×0.01² = 0.001600
+
+Threads with non-zero sums in BOTH tiles: 128 / 128
+Sample out_A[0] = 0.001603
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — commit/wait pipeline + stmatrix working!  ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+`GPU:` varies with the card the binary runs on; everything else is deterministic. The same BF16-rounding gap from Chapter 6 shows up here: `__float2bfloat16(0.01)` rounds to `0.010009765625`, not `0.01` exactly, so the FP16 accumulator actually holds `16 × 0.010009765625² ≈ 0.0016031`, which prints as `0.001603` — one digit past the host's own unrounded `K×0.01²` line, which prints `0.001600`. Both tiles use identical input data, so if either disagreed with the other the `128 / 128` count would come in short; it doesn't, because the pipeline only changes *when* the two tiles' math gets issued and drained, never *what* either one computes.
+
+The closing banner repeats Chapter 6's byte-vs-codepoint `%-56s` quirk, with this chapter's own numbers: `✓ ALL PASS — commit/wait pipeline + stmatrix working!` is 53 codepoints but 57 UTF-8 bytes (`✓` and `—` each cost 3 bytes for 1 displayed column, wasting 2 bytes apiece). Since 57 already exceeds the 56-byte field width, `printf` pads with nothing, and the line prints at its raw length. Measured in the columns a terminal actually draws, that puts the whole bordered line — the fixed `"║  "` and `"  ║"` margins plus 53 content columns, 59 in total — exactly 1 column short of the 60-column border above it, the same shortfall Chapter 6 hit with a differently-worded message of the same coincidental 53-codepoint length.
+
 ---
 
 ## 19 — Quick Reference
@@ -1908,13 +1973,20 @@ N>1: keep multiple groups in flight → deep pipeline (rare)
 The instruction forms, and the reminder that there is no 32-bit variant.
 
 ```
-Variant                                  Data    Output   Use Case
-──────────────────────────────────────────────────────────────────────────
-stmatrix.sync.aligned.m8n8.x4.shared.b16  FP16x2  16×16   FP16/BF16 accumulator ★
-stmatrix.sync.aligned.m8n8.x2.shared.b16  FP16x2   8×16   Half-tile writes
-stmatrix.sync.aligned.m8n8.x1.shared.b16  FP16x2   8×8    Minimal tile / boundary
-stmatrix.sync.aligned.m8n8.x4.shared.b8   INT8     16×16  INT8 accumulator (Hopper)
-stmatrix.sync.aligned.m16n8.x4.shared.b8  INT8     32×8   Blackwell FP8 output
+Variant                                        Data    Output      Use Case
+──────────────────────────────────────────────────────────────────────────────
+stmatrix.sync.aligned.m8n8.x4.shared.b16       FP16x2  16×16      FP16/BF16 accumulator ★
+stmatrix.sync.aligned.m8n8.x2.shared.b16       FP16x2   8×16      Half-tile writes
+stmatrix.sync.aligned.m8n8.x1.shared.b16       FP16x2   8×8       Minimal tile / boundary
+stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 8-bit   4×(16×8)   Blackwell-family only (sm_100a+)
+stmatrix.sync.aligned.m16n8.x1/x2.trans.shared.b8  8-bit  1-2×(16×8)  Blackwell-family only
+
+CORRECTION: there is no "m8n8 + .b8" stmatrix on Hopper — that combination
+is not a documented instruction. The ONLY 8-bit stmatrix shape is m16n8,
+it is TRANSPOSE-ONLY (.trans is mandatory, not optional), and it requires
+Blackwell-family targets (sm_100a and newer) — not sm_90a. On Hopper, an
+INT8 or FP8 accumulator you want in SMEM goes through the FP32 path below
+(or a manual scatter), same as any other type stmatrix.b16 can't take.
 
 FP32 accumulators: stmatrix has NO .f32 variant!
   Option A: cvt.rn.f16x2.f32 to downcast + pack → stmatrix.b16 (lossy)
@@ -1955,16 +2027,21 @@ Sections 16 and 17 condensed. The encoding table is the part to check against
 rather than recall.
 
 ```
-Precision     Sparsity  K/op  sp-sel   sp-meta cycle       Loop unroll
-──────────────────────────────────────────────────────────────────────────
-TF32          1:2       k16   0 or 1   Alternate: 14, 4    Unroll 2×
-FP16/BF16     2:4       k32   0 or 1   Cycle: 0,1,2,3      Unroll 4×
-FP8 E4M3/E5M2 2:4       k64   0 ONLY   Hardware-managed    Unroll 4×
-INT8/UINT8    2:4       k64   0 ONLY   Hardware-managed    Unroll 4×
+Precision     Sparsity  K/op  sp-sel          sp-meta cycle       Loop unroll
+──────────────────────────────────────────────────────────────────────────────
+TF32          1:2       k16   narrower range  Alternate: 14, 4    Unroll 2×
+                               than 0/1 — confirm exact values/meaning
+                               against the PTX ISA for your CUDA version
+FP16/BF16     2:4       k32   same caveat     Cycle: 0,1,2,3      Unroll 4×
+FP8 E4M3/E5M2 2:4       k64   0 ONLY          Hardware-managed    Unroll 4×
+INT8/UINT8    2:4       k64   0 ONLY          Hardware-managed    Unroll 4×
 
-sp-sel=0: reads sp-meta from T0,T1 of each 4-thread group.
-sp-sel=1: reads sp-meta from T2,T3 of each 4-thread group.
-For FP8/INT8: all threads contribute → sp-sel MUST be 0.
+CORRECTED: sp-sel is NOT simply 0-or-1. For the related warp-level mma.sp,
+NVIDIA engineers confirm on the developer forums it is a compile-time
+constant valid over 0–3, naming which thread(s) of a 4-thread group supply
+metadata (narrower shapes: 1 of 4 named directly; wider shapes: a pair).
+Only the FP8/INT8 "all threads contribute, sp-sel=0" row is confirmed as
+stated — read the current PTX ISA before hardcoding the others.
 ```
 
 ### wgmma.fence Placement Checklist
