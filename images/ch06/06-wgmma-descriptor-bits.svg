@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="756pt" height="331.2pt" viewBox="0 0 756 331.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-10T11:18:41.373743</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 331.2 
+L 756 331.2 
+L 756 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 31.782857 182.047304 
+L 183.252857 182.047304 
+L 183.252857 83.250783 
+L 31.782857 83.250783 
+z
+" clip-path="url(#p99565c1d15)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 183.252857 182.047304 
+L 204.891429 182.047304 
+L 204.891429 83.250783 
+L 183.252857 83.250783 
+z
+" clip-path="url(#p99565c1d15)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 204.891429 182.047304 
+L 356.361429 182.047304 
+L 356.361429 83.250783 
+L 204.891429 83.250783 
+z
+" clip-path="url(#p99565c1d15)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 356.361429 182.047304 
+L 378 182.047304 
+L 378 83.250783 
+L 356.361429 83.250783 
+z
+" clip-path="url(#p99565c1d15)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 378 182.047304 
+L 529.47 182.047304 
+L 529.47 83.250783 
+L 378 83.250783 
+z
+" clip-path="url(#p99565c1d15)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 529.47 182.047304 
+L 561.927857 182.047304 
+L 561.927857 83.250783 
+L 529.47 83.250783 
+z
+" clip-path="url(#p99565c1d15)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 561.927857 182.047304 
+L 702.578571 182.047304 
+L 702.578571 83.250783 
+L 561.927857 83.250783 
+z
+" clip-path="url(#p99565c1d15)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 702.578571 182.047304 
+L 724.217143 182.047304 
+L 724.217143 83.250783 
+L 702.578571 83.250783 
+z
+" clip-path="url(#p99565c1d15)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 31.782857 76.664348 
+L 724.217143 76.664348 
+" clip-path="url(#p99565c1d15)" style="fill: none; stroke: #555555; stroke-width: 0.8; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="378" y="37.359885" transform="rotate(-0 378 37.359885)">The 64-Bit WGMMA Descriptor</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(88.34092 125.501481)">Base addr</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(90.748576 134.623559)">bits 0-13</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(76.395263 143.745637)">smem_addr&gt;&gt;4</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(190.922143 130.504952)">—</text>
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(184.918932 138.066182)">14-15</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(272.977147 125.501184)">LBO</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(261.439397 134.623262)">bits 16-29</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(263.673085 143.74534)">stride/16</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(364.030714 130.504952)">—</text>
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(358.027503 138.066182)">30-31</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(445.790625 125.501184)">SBO</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(434.547969 134.623262)">bits 32-45</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(436.781656 143.74534)">stride/16</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(535.78135 126.724336)">Matrix</text>
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(533.091054 134.286059)">base off</text>
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(536.545718 141.84729)">46-48</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(614.565402 130.06252)">Reserved</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(613.066183 139.184598)">bits 49-61</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(706.293623 130.505198)">Swiz</text>
+    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(704.244646 138.066428)">62-63</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.782857" y="66.784696" transform="rotate(-0 31.782857 66.784696)">bit 0</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #555555" x="724.217143" y="66.784696" transform="rotate(-0 724.217143 66.784696)">bit 63</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(191.944375 245.304507)">Base, LBO, SBO all store stride_bytes / 16 — the hardware re-multiplies by 16 on read.</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(162.266984 257.791304)">Swizzle (bits 62-63): 00=none, 01=128B★, 10=64B, 11=32B — must match the TMA's own swizzle.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p99565c1d15">
+   <rect x="10.8" y="10.8" width="734.4" height="302.976"/>
+  </clipPath>
+ </defs>
+</svg>
