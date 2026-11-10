@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="475.2pt" viewBox="0 0 720 475.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-10T11:18:41.198853</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 475.2 
+L 720 475.2 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 59.688 189.111273 
+L 151.1784 189.111273 
+L 151.1784 100.964945 
+L 59.688 100.964945 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 153.972 189.111273 
+L 245.4624 189.111273 
+L 245.4624 100.964945 
+L 153.972 100.964945 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 59.688 279.949091 
+L 151.1784 279.949091 
+L 151.1784 191.802764 
+L 59.688 191.802764 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 153.972 279.949091 
+L 245.4624 279.949091 
+L 245.4624 191.802764 
+L 153.972 191.802764 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 380.952 120.478255 
+L 464.76 120.478255 
+L 464.76 98.273455 
+L 380.952 98.273455 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 464.76 120.478255 
+L 611.424 120.478255 
+L 611.424 98.273455 
+L 464.76 98.273455 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 380.952 146.720291 
+L 464.76 146.720291 
+L 464.76 124.515491 
+L 380.952 124.515491 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 464.76 146.720291 
+L 611.424 146.720291 
+L 611.424 124.515491 
+L 464.76 124.515491 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 380.952 172.962327 
+L 464.76 172.962327 
+L 464.76 150.757527 
+L 380.952 150.757527 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 464.76 172.962327 
+L 611.424 172.962327 
+L 611.424 150.757527 
+L 464.76 150.757527 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 380.952 199.204364 
+L 464.76 199.204364 
+L 464.76 176.999564 
+L 380.952 176.999564 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 464.76 199.204364 
+L 611.424 199.204364 
+L 611.424 176.999564 
+L 464.76 176.999564 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 380.952 225.4464 
+L 464.76 225.4464 
+L 464.76 203.2416 
+L 380.952 203.2416 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 464.76 225.4464 
+L 611.424 225.4464 
+L 611.424 203.2416 
+L 464.76 203.2416 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 380.952 251.688436 
+L 464.76 251.688436 
+L 464.76 229.483636 
+L 380.952 229.483636 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 464.76 251.688436 
+L 611.424 251.688436 
+L 611.424 229.483636 
+L 464.76 229.483636 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 380.952 277.930473 
+L 464.76 277.930473 
+L 464.76 255.725673 
+L 380.952 255.725673 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 464.76 277.930473 
+L 611.424 277.930473 
+L 611.424 255.725673 
+L 464.76 255.725673 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 380.952 304.172509 
+L 464.76 304.172509 
+L 464.76 281.967709 
+L 380.952 281.967709 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 464.76 304.172509 
+L 611.424 304.172509 
+L 611.424 281.967709 
+L 464.76 281.967709 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 257.236433 189.111273 
+Q 314.602973 189.111273 370.404266 189.111273 
+" clip-path="url(#p8f85d17362)" style="fill: none; stroke: #555555; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 364.804266 186.311273 
+L 370.404266 189.111273 
+L 364.804266 191.911273 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #555555; stroke: #555555; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="patch_23">
+    <path d="M 54.1008 431.345455 
+L 665.8992 431.345455 
+Q 667.296 431.345455 667.296 429.999709 
+L 667.296 355.310836 
+Q 667.296 353.965091 665.8992 353.965091 
+L 54.1008 353.965091 
+Q 52.704 353.965091 52.704 355.310836 
+L 52.704 429.999709 
+Q 52.704 431.345455 54.1008 431.345455 
+z
+" clip-path="url(#p8f85d17362)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 1.3; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360" y="37.857909" transform="rotate(-0 360 37.857909)">ldmatrix.x4 — Address Phase vs Register Phase for a 16×16 BF16 Tile</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 9.6px; font-family: 'DejaVu Sans'; text-anchor: middle" x="178.416" y="74.722909" transform="rotate(-0 178.416 74.722909)">Phase 1 — Address Phase (who POINTS where)</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(100.411341 138.736707)">M0</text>
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(75.826005 146.778539)">rows 0-7, cols 0-7</text>
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(89.983942 154.820371)">lanes 0-7</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(194.695341 138.736707)">M1</text>
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(167.978567 146.778539)">rows 0-7, cols 8-15</text>
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(180.005067 154.820371)">lanes 16-23</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(100.411341 229.574525)">M2</text>
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(73.694567 237.616357)">rows 8-15, cols 0-7</text>
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(87.852505 245.658189)">lanes 8-15</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(194.695341 229.574525)">M3</text>
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(165.84713 237.616357)">rows 8-15, cols 8-15</text>
+    <text style="font-size: 6.7px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(180.005067 245.658189)">lanes 24-31</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(94.900406 293.908793)">left half (lanes 0-15) → cols 0-7</text>
+    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(87.2915 303.499636)">right half (lanes 16-31) → cols 8-15</text>
+   </g>
+   <g id="text_8">
+    <text style="font-weight: 700; font-size: 9.6px; font-family: 'DejaVu Sans'; text-anchor: middle" x="506.664" y="74.722909" transform="rotate(-0 506.664 74.722909)">Phase 2 — Register Phase (who HOLDS data)</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="422.856" y="111.246167" transform="rotate(-0 422.856 111.246167)">Row 0</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="538.092" y="111.246167" transform="rotate(-0 538.092 111.246167)">T0-T3</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="422.856" y="137.488203" transform="rotate(-0 422.856 137.488203)">Row 1</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="538.092" y="137.488203" transform="rotate(-0 538.092 137.488203)">T4-T7</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="422.856" y="163.73024" transform="rotate(-0 422.856 163.73024)">Row 2</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="538.092" y="163.73024" transform="rotate(-0 538.092 163.73024)">T8-T11</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="422.856" y="189.972276" transform="rotate(-0 422.856 189.972276)">Row 3</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="538.092" y="189.972276" transform="rotate(-0 538.092 189.972276)">T12-T15</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="422.856" y="216.214313" transform="rotate(-0 422.856 216.214313)">Row 4</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="538.092" y="216.214313" transform="rotate(-0 538.092 216.214313)">T16-T19</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="422.856" y="242.456349" transform="rotate(-0 422.856 242.456349)">Row 5</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="538.092" y="242.456349" transform="rotate(-0 538.092 242.456349)">T20-T23</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="422.856" y="268.698385" transform="rotate(-0 422.856 268.698385)">Row 6</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="538.092" y="268.698385" transform="rotate(-0 538.092 268.698385)">T24-T27</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="422.856" y="294.940422" transform="rotate(-0 422.856 294.940422)">Row 7</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 7.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="538.092" y="294.940422" transform="rotate(-0 538.092 294.940422)">T28-T31</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(423.041891 318.103055)">(one 8×8 sub-matrix; same row-striped</text>
+    <text style="font-size: 7.4px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(430.260359 327.723055)">pattern repeats for each of M0..M3)</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(184.767609 383.848335)">Critical insight: the thread that PROVIDES an address in Phase 1 is not the thread</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(178.328359 395.028335)">that RECEIVES that data in Phase 2. Thread 0 points to row 0's memory, but threads</text>
+    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(217.791609 406.208335)">0-3 all receive parts of row 0 — the hardware reshuffles internally.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p8f85d17362">
+   <rect x="10.8" y="10.8" width="698.4" height="444.096"/>
+  </clipPath>
+ </defs>
+</svg>

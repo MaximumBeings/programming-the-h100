@@ -162,59 +162,11 @@ consequence of one of them, so it is worth reading before the details start.
 
 Ampere's tensor cores were good. Hopper's are in a different class — not just because of raw FLOP counts, but because of fundamental architectural changes that allow the compute units to stay busy nearly 100% of the time. There are four specific innovations, and each one removes a bottleneck that existed in Ampere.
 
-```
-The Four Hopper MMA Innovations — What Each Fixes
-══════════════════════════════════════════════════════════════════════
+![The four Hopper MMA innovations, Ampere vs Hopper per innovation](images/ch06/01-four-innovations-ampere-vs-hopper.svg)
 
-  INNOVATION 1: Fully Asynchronous Math Instructions
-  ─────────────────────────────────────────────────────────────────
-  Ampere (mma.sync):  BLOCKING — thread STALLS until result written to registers.
-                      No other instruction can proceed until mma finishes.
-  Hopper (wgmma.mma_async): NON-BLOCKING — thread issues the math command,
-                      hardware accepts it into a queue, thread IMMEDIATELY moves on.
+*The four Hopper MMA innovations — what each one fixes relative to Ampere's mma.sync.*
 
-  Effect: Multiple wgmma operations can be in-flight simultaneously.
-  The tensor cores are never forced to idle between instructions.
-
-  INNOVATION 2: Warp Group as the Execution Unit (not single warp)
-  ─────────────────────────────────────────────────────────────────
-  Ampere: One warp (32 threads) per mma.sync operation.
-          Multiple warps must pipeline their mma.sync ops separately.
-          Requires complex inter-warp coordination.
-  Hopper: Four warps (128 threads) fused into one "warp group".
-          A SINGLE wgmma instruction handles 4× more data at once.
-          The warp scheduler fuses the 4 warps and dispatches together.
-          No pipelining overhead between warps.
-
-  Effect: 4× larger tiles per instruction, better tensor core utilization.
-
-  INNOVATION 3: Direct SMEM→Tensor Core Data Path (No Register Staging)
-  ─────────────────────────────────────────────────────────────────
-  Ampere: Data MUST be in registers before mma.sync can use it.
-          Sequence: global → SMEM → [load to registers] → mma.sync
-          The register loading step costs time and consumes register space.
-  Hopper: wgmma can read A and B DIRECTLY from shared memory.
-          Sequence: global → SMEM → wgmma reads from SMEM directly.
-          No register staging needed (unless you choose to load A to regs).
-
-  Effect: Eliminates register loading latency from the critical path.
-          Frees registers for other uses (accumulators, indices, etc.).
-          SMEM bandwidth is now the shared memory → tensor core path.
-
-  INNOVATION 4: Specialized FP8 and Sparsity Hardware
-  ─────────────────────────────────────────────────────────────────
-  Hopper adds dedicated hardware for:
-    FP8 (E4M3, E5M2): 2× throughput vs FP16 on tensor cores.
-    Structured sparsity: 2:4 sparsity (2 non-zero per 4 elements)
-                        enables 2× speedup on sparse matrices.
-  These are first-class instruction variants, not software emulation.
-
-  Combined effect of all four:
-  ─────────────────────────────────────────────────────────────────
-  On Ampere A100: Theoretical peak ≈ 312 TFLOPS (BF16 tensor)
-  On Hopper H100: Theoretical peak ≈ 989 TFLOPS (FP8 tensor)
-  The 3× increase is from these architectural changes, not just bigger chips.
-```
+Each has a consequence worth stating plainly. Async math (1) means multiple `wgmma` operations can be in-flight at once; the tensor cores are never forced to idle between instructions. The warp-group execution unit (2) means a single `wgmma` handles 4× more data per instruction, with the warp scheduler fusing all four warps and dispatching them together — no inter-warp pipelining overhead. The direct SMEM path (3) eliminates register-loading latency from the critical path and frees registers for other uses; the bottleneck shifts to SMEM→tensor-core bandwidth instead. FP8 and structured sparsity (4) are first-class instruction variants, not software emulation — FP8 (E4M3, E5M2) gives 2× throughput over FP16, and 2:4 structured sparsity (2 non-zero elements per 4) gives another 2× on sparse matrices. All four combine to take Ampere's ≈312 TFLOPS (BF16, dense) to Hopper's ≈1,979 TFLOPS (FP8, dense) — more than a 6× jump, and architecture is most of that: H100's own BF16 figure is already ≈989 TFLOPS, so the FP8-specific hardware (innovation 4) accounts for roughly another 2× on top of the architectural gains from innovations 1-3.
 
 ---
 
@@ -239,29 +191,13 @@ A **warp group** is a set of 4 consecutive warps within a thread block that are 
 
 This is a significant paradigm shift. For a decade, the warp (32 threads) was the unit of SIMT execution on NVIDIA GPUs. Every instruction — loads, math, branches — was issued per-warp. Hopper adds warp group as a higher-level concept specifically for tensor core operations.
 
+![Warp group structure: four warps fusing into one wgmma issuer](images/ch06/02-warp-group-structure.svg)
+
+*A warp group is 4 consecutive warps (128 threads) fused by the hardware into a single wgmma issuer; each warp group in a block operates independently on its own tile.*
+
 ```
 Warp Group — Structure and Execution
 ══════════════════════════════════════════════════════════════════════
-
-  A warp group consists of 4 warps with consecutive warp IDs:
-  ┌──────────────────────────────────────────────────────────────────┐
-  │  Warp Group 0 (Warp IDs 0, 1, 2, 3):                           │
-  │                                                                  │
-  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
-  │  │  Warp 0  │  │  Warp 1  │  │  Warp 2  │  │  Warp 3  │        │
-  │  │ Lanes 0-31│  │Lanes 0-31│  │Lanes 0-31│  │Lanes 0-31│        │
-  │  │ (32 thd) │  │ (32 thd) │  │ (32 thd) │  │ (32 thd) │        │
-  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘        │
-  │                       ↓ fused for wgmma ↓                        │
-  │              ┌────────────────────────────┐                      │
-  │              │  128 Threads Combined       │                      │
-  │              │  → ONE wgmma instruction    │                      │
-  │              │  → Operates on m64 tile     │                      │
-  │              └────────────────────────────┘                      │
-  │                                                                  │
-  │  Warp Group 1 (Warp IDs 4, 5, 6, 7):                           │
-  │  [same structure, independent wgmma unit]                        │
-  └──────────────────────────────────────────────────────────────────┘
 
   A 256-thread block has 8 warps = 2 warp groups.
   A 128-thread block has 4 warps = 1 warp group.
@@ -370,24 +306,11 @@ The WGMMA Pipeline — Four Stages
   Then: read accumulator registers (they now contain the result)
   Then: Use stmatrix to write results from registers back to SMEM
         or directly use them for further computation (e.g., softmax in attention).
-
-  ─── Timeline of a Double-Buffered GEMM K-Loop ───────────────────
-
-  Time →
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  K=0: [TMA load A0,B0]  [fence] [wgmma A0*B0] [TMA load A1,B1]│
-  │  K=1:                   [fence] [wgmma A1*B1] [TMA load A2,B2] │
-  │  K=2:                   [fence] [wgmma A2*B2] [TMA load A3,B3] │
-  │  ...                                                            │
-  │  LAST K:                                       [wait][stmatrix] │
-  │                                                                 │
-  │  TMA load:   ████████░░░░░░░░░░░░░  (200ns from HBM, async)    │
-  │  wgmma math:        ▓▓▓▓▓▓▓▓▓▓▓▓   (fully overlapped!)         │
-  │                                                                 │
-  │  KEY: wgmma on tile K overlaps with TMA loading tile K+1.       │
-  │  This is only possible because wgmma is non-blocking (async).   │
-  └─────────────────────────────────────────────────────────────────┘
 ```
+
+![Double-buffered K-loop timeline: TMA load overlapped with wgmma math](images/ch06/03-wgmma-pipeline-timeline.svg)
+
+*wgmma on tile K overlaps the TMA load of tile K+1 — possible only because wgmma.mma_async is non-blocking (async).*
 
 ---
 
@@ -999,65 +922,9 @@ do with each other.
 
 `ldmatrix` works in two distinct phases that are important to understand for writing the correct address calculation.
 
-```
-ldmatrix — The Two-Phase Execution Model
-══════════════════════════════════════════════════════════════════════
+![ldmatrix.x4 two-phase execution: address phase vs register phase for a 16×16 BF16 tile](images/ch06/04-ldmatrix-two-phase.svg)
 
-  Context: Loading a 16×16 BF16 tile (4 × 8×8 sub-matrices) with .x4.
-
-  ─── PHASE 1: Address Phase ("who provides the pointer?") ─────────
-
-  Each of the 32 threads provides a pointer. But the 32 threads don't
-  each point to their own row — they are split into functional groups
-  that point to the START of each 8-wide column segment.
-
-  The warp is split into two "vertical strips":
-    Left half  (Lanes 0-15):  responsible for columns 0-7  (first 8 cols)
-    Right half (Lanes 16-31): responsible for columns 8-15 (second 8 cols)
-
-  Within each vertical strip (16 lanes for 8 rows = 2 lanes per row):
-    Groups of 8 threads handle 8 consecutive rows.
-    Each group of 8 threads points to one row of an 8×8 sub-tile.
-
-  For .x4 (four 8×8 sub-tiles = 4 quadrants of a 16×16 tile):
-    Quadrant layout in the 16×16 tile:
-    ┌──────────────┬──────────────┐
-    │  Sub-tile M0 │  Sub-tile M1 │  ← Top-left and Top-right
-    │  (rows 0-7,  │  (rows 0-7,  │
-    │   cols 0-7)  │   cols 8-15) │
-    ├──────────────┼──────────────┤
-    │  Sub-tile M2 │  Sub-tile M3 │  ← Bottom-left and Bottom-right
-    │  (rows 8-15, │  (rows 8-15, │
-    │   cols 0-7)  │   cols 8-15) │
-    └──────────────┴──────────────┘
-
-  Lanes 0-7:   point to M0 rows 0-7 (left-top)
-  Lanes 8-15:  point to M2 rows 8-15 (left-bottom)
-  Lanes 16-23: point to M1 rows 0-7 (right-top)
-  Lanes 24-31: point to M3 rows 8-15 (right-bottom)
-
-  ─── PHASE 2: Register Phase ("who holds the result?") ────────────
-
-  After the hardware reads from SMEM, it REDISTRIBUTES the data.
-  The distribution pattern is ROW-STRIPED across groups of 4 threads:
-
-  For ANY single 8×8 sub-matrix (M0, M1, M2, or M3):
-    Row 0  → Threads 0-3   (4 threads share 8 elements = 2 per thread)
-    Row 1  → Threads 4-7
-    Row 2  → Threads 8-11
-    Row 3  → Threads 12-15
-    Row 4  → Threads 16-19
-    Row 5  → Threads 20-23
-    Row 6  → Threads 24-27
-    Row 7  → Threads 28-31
-
-  Critical insight: the thread that PROVIDED the address (Phase 1)
-  is NOT necessarily the thread that RECEIVES the data (Phase 2)!
-  Thread 0 may point to row 0's memory, but threads 0-3 all get parts of row 0.
-  Thread 8 (which pointed to row 2's memory) also gets part of row 0.
-  The hardware reshuffles internally — this is transparent to you if you
-  just use the correct address calculation formula.
-```
+*Context: loading a 16×16 BF16 tile (4 × 8×8 sub-matrices) with .x4. Phase 1 (address phase): the warp splits into left/right vertical strips (lanes 0-15 → cols 0-7, lanes 16-31 → cols 8-15), and within each strip, groups of 8 lanes each point to one row of an 8×8 quadrant. Phase 2 (register phase): after the hardware reads from SMEM, it redistributes the data row-striped across groups of 4 threads — the same pattern for every one of M0..M3. The critical insight: the thread that PROVIDED an address in Phase 1 is not necessarily the thread that RECEIVES the data in Phase 2. Thread 0 may point to row 0's memory, but threads 0-3 all get parts of row 0, and thread 8 (which pointed to row 2's memory) also gets part of row 0 — the hardware reshuffles internally, transparently, as long as you use the correct address calculation formula.*
 
 ---
 
@@ -1111,14 +978,13 @@ Swizzle Address Formula — How the XOR Works
 
   Without swizzle: bank = (base + 384)/4 % 32 = bank from linear layout
   With swizzle:    bank = (base + 384 XOR 48)/4 % 32 = different bank!
+```
 
-  For row=0: mask = 0,  bank offset = 0
-  For row=1: mask = 16, bank offset shifts by 4 banks
-  For row=2: mask = 32, bank offset shifts by 8 banks
-  For row=3: mask = 48, bank offset shifts by 12 banks
-  ...
-  All different banks for the same column! No conflicts. ✓
+![128B swizzle: XORing row bits into bank bits, rows 0-3](images/ch06/05-swizzle-xor-address.svg)
 
+*Every row gets a different mask → a different bank shift for the same column. No two rows collide in the same bank — the XOR is what makes the access conflict-free.*
+
+```
   ─── Code Pattern for ldmatrix Address Calculation ───────────────
 
   // Warp-group context:
@@ -1173,18 +1039,13 @@ The WGMMA descriptor is a **64-bit integer** (stored in a register) that encodes
 
 Both A (when reading from SMEM) and B operands require descriptors. The descriptor encodes: base address, leading byte offset (LBO), stride byte offset (SBO), matrix base offset, and swizzle mode.
 
+![The 64-bit WGMMA descriptor, field by field](images/ch06/06-wgmma-descriptor-bits.svg)
+
+*Base, LBO, and SBO each occupy 14 bits (0-13, 16-29, 32-45) and store stride_bytes / 16; bits 14-15 and 30-31 are unused padding that keeps each field 16-bit-aligned within the word. Matrix base offset is 3 bits (46-48), reserved is 13 bits (49-61), and swizzle mode is 2 bits (62-63).*
+
 ```
 WGMMA Descriptor — 64-Bit Layout
 ══════════════════════════════════════════════════════════════════════
-
-  Bit layout (64 bits total):
-  ┌──────────────────────────────────────────────────────────────────┐
-  │ 63-62 │ 61-49   │ 48-46    │ 45-32   │ 31-16    │ 15-0         │
-  ├───────┼─────────┼──────────┼─────────┼──────────┼──────────────┤
-  │Swizzle│ Reserved│ Matrix   │ SBO     │ LBO      │ Base Addr    │
-  │ mode  │ (unused)│ base off │(14 bits)│(14 bits) │ (14 bits)    │
-  │(3 bit)│         │ (3 bits) │         │          │              │
-  └───────┴─────────┴──────────┴─────────┴──────────┴──────────────┘
 
   Field descriptions:
   ─────────────────────────────────────────────────────────────────
@@ -1243,10 +1104,11 @@ Descriptor Construction — Step by Step
     // Right-shift by 4 because hardware multiplies by 16 on read
 
   Step 2: LBO (Leading Byte Offset)
-    For K-major layout: LBO encodes the stride between "column panels"
-    (groups of 8 BF16 rows = 8 × 2 = 16 bytes per K-panel, stepped in N)
-    For 128B swizzle + K-major: LBO = 128B / 16 = 8
-    LBO_field = 8 & 0x3FFF
+    For K-major layout: LBO normally encodes the stride between "column
+    panels" — but for 128B swizzle specifically, the hardware ignores LBO
+    for K-major tiles (it derives the stride from the swizzle pattern
+    itself; see §13.1). Just set it to the minimum encoded value.
+    LBO_field = 1 & 0x3FFF   // = 16 bytes / 16; 0 works equally well
 
   Step 3: SBO (Stride Byte Offset)
     For K-major: SBO encodes the jump of 8 K-rows = 8 × PITCH
@@ -1358,14 +1220,11 @@ SBO (Stride Byte Offset) — Navigating the Non-Leading Dimension
   SBO = distance from first 8 columns to next 8 columns in N/M.
   For N=128, BF16: 8 cols × 2 bytes = 16 bytes.
   SBO_field = 16 / 16 = 1.
-
-  ─── Intuition for LBO vs SBO ────────────────────────────────────
-
-  Think of the matrix tile as a checkerboard of 8×8 BF16 sub-blocks.
-  LBO tells hardware: "to go to the next column of sub-blocks, skip X bytes"
-  SBO tells hardware: "to go to the next row of sub-blocks, skip Y bytes"
-  Together they allow wgmma to traverse any 2D tile layout in SMEM.
 ```
+
+![LBO and SBO as jumps across a checkerboard of 8×8 sub-blocks](images/ch06/07-lbo-sbo-checkerboard.svg)
+
+*Think of the matrix tile as a checkerboard of 8×8 BF16 sub-blocks. LBO tells the hardware "to go to the next column of sub-blocks, skip X bytes"; SBO tells it "to go to the next row of sub-blocks, skip Y bytes." Together they let wgmma traverse any 2D tile layout in SMEM.*
 
 ### 13.3 Matrix Base Offset and Swizzle Mode Bits
 
@@ -1512,9 +1371,12 @@ FP8 Tile Shapes — m64nXk32
           Use for: backward pass (gradients have wider range)
 
   Throughput advantage:
-    FP8 wgmma provides 2× throughput vs BF16 wgmma.
+    FP8 wgmma provides 2× throughput vs BF16 wgmma, on the SAME H100 chip.
     K=32 per tile vs K=16 for BF16 — processes 2× more data per instruction.
-    This is how H100 achieves ~989 TFLOPS (vs ~312 TFLOPS for BF16).
+    H100 dense peaks: ~989 TFLOPS BF16 → ~1,979 TFLOPS FP8 (the 2× figure above).
+    (The ~312 TFLOPS BF16 number from §1 is Ampere A100, not H100 — don't
+    compare it to H100's FP8 number directly; that conflates a precision
+    change with a generation change.)
 
   scale_a, scale_b: NOT available for FP8 variants (no sign flip).
   imm-trans: NOT available for FP8 variants.
@@ -1536,8 +1398,10 @@ INT8 / UINT8 Tile Shapes — m64nXk32 Integer
 
   .satfinite (optional): saturate output to s32 range instead of wrapping.
 
-  Valid N values: 8 to 224 in multiples of 16 (fewer options than float):
-  N ∈ {8, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224}
+  Valid N values: 8 to 224 in multiples of 8 — still 8-wide steps like the
+  float types, just a lower ceiling (28 options instead of 32):
+  N ∈ {8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128,
+       136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224}
   Note: N max = 224 for INT8 (not 256 like float types).
 
   scale_a, scale_b: NOT available for INT8 variants.
@@ -1573,7 +1437,7 @@ stmatrix — The Inverse of ldmatrix
 ══════════════════════════════════════════════════════════════════════
 
   stmatrix.sync.aligned.m8n8.x{1,2,4}.shared.b16 [smem_addr], {d0,...};
-  stmatrix.sync.aligned.m8n8.x{1,2,4}.shared.b32 [smem_addr], {d0,...};  // FP32 acc
+  stmatrix.sync.aligned.m8n8.x{1,2,4}.shared.b8  [smem_addr], {d0,...};
 
   What it does:
   ├── Each thread provides a SMEM address (the destination for its registers)
@@ -1582,33 +1446,38 @@ stmatrix — The Inverse of ldmatrix
   ├── Result in SMEM: a contiguous tile that can be stored to global memory
   └── Handles swizzling in reverse — applies the XOR mapping to write addresses
 
-  .b16 vs .b32:
-    .b16 → for BF16/FP16 accumulators (2 bytes per element)
-    .b32 → for FP32 accumulators (4 bytes per element)
-    Use .b32 when your D registers are FP32 (most common with BF16/TF32 input)
-
-  .x4 → writes 4 × 8×8 = 16×16 tile (typical for FP16/BF16 epilogue)
-  With .b32 (FP32): you need .x4 for 8×8 of FP32 = 256 bytes per stmatrix call.
-  For m64n128k16 FP32: 64×128 FP32 = 32768 bytes.
-    32768 / 256 = 128 stmatrix.x4 calls needed... OR
-    stmatrix.b32.x2 for 8×8 FP32 per call: 128 calls.
-
-  Practical approach: use stmatrix.x4.b16 with FP16 accumulators when possible
-  to minimize stmatrix call count.
-
-  Number of stmatrix calls for m64nXk16 FP32 accumulator:
+  The catch this chapter's intro already flagged: there is no .b32 form.
   ─────────────────────────────────────────────────────────────────
-  stmatrix.x4.b32 writes 8×8 FP32 = 256 bytes per call.
-  For m64n128k16: 64×128×4 = 32768 bytes → 32768/256 = 128 calls.
-  → 128 stmatrix instructions with FP32 accumulators.
+  stmatrix only writes .b16 (BF16/FP16) or .b8 (FP8/INT8) elements. Your
+  wgmma accumulator, though, is FP32 — §8 fixed dtypeD at .f32 for the
+  common BF16/TF32 cases. There is no instruction variant that takes
+  32-bit register values straight to SMEM.
 
-  For 16-bit accumulators (FP16):
+  The fix: convert before you store.
+  ─────────────────────────────────────────────────────────────────
+  Downcast each FP32 accumulator to BF16 (or FP16) in registers — a
+  single __float2bfloat16 per element — THEN call stmatrix.x4.b16 on the
+  packed 16-bit values. This is also where an FP16 accumulator (§6.2's
+  dtypeD=.f16 option) pays off directly: if you accumulated in FP16 to
+  begin with, there is nothing left to convert.
+
+  .x4 → writes 4 × 8×8 = 16×16 tile of 16-bit elements per call (most
+  common epilogue granularity).
+
+  Number of stmatrix.x4.b16 calls for m64nXk16, after downcasting to BF16:
+  ─────────────────────────────────────────────────────────────────
   stmatrix.x4.b16 writes 16×16 BF16 = 512 bytes per call.
-  For m64n128k16: 64×128×2 = 16384 bytes → 16384/512 = 32 calls.
-  → 32 stmatrix instructions with FP16 accumulators.
+  For m64n128k16: 64×128×2 bytes (post-downcast) = 16384 bytes
+    → 16384 / 512 = 32 calls.
+  → 32 stmatrix instructions, regardless of whether the accumulator was
+    originally FP32 (downcast first) or FP16 (no conversion needed) —
+    the call count only depends on the OUTPUT width, not the input.
 
-  This is why FP16 accumulators (for attention kernels where full FP32 precision
-  in the accumulator is not needed) significantly reduce epilogue overhead.
+  What you save by accumulating in FP16 to start with (§6.2, dtypeD=.f16)
+  isn't call count here — it's the downcast step itself, plus half the
+  register pressure during the K-loop. Chapter 7 §6–§8 covers the full
+  epilogue, including the swizzled write-address math stmatrix performs
+  in reverse.
 ```
 
 ---
@@ -1913,6 +1782,28 @@ int main() {
     return ok ? 0 : 1;
 }
 ```
+
+**Sample Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  ex01: wgmma.mma_async — m64n64k16 BF16→FP32            ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Shape: m64n64k16, D_REGS=32 per thread, 128 threads total
+A=0.01 × B=0.01: each output element should be K×0.01²=0.001600
+
+Threads with positive accumulator sum: 128 / 128
+D register values correct: 4096 / 4096
+Sample d[0] = 0.001603 (expected 0.001600)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — wgmma computes correct BF16→FP32 result!  ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+`GPU:` varies with the card the binary runs on; everything else is deterministic. `__float2bfloat16(0.01)` rounds to the nearest representable BF16 value, `0.010009765625`, not `0.01` exactly, so each accumulated element is `K × 0.010009765625² = 16 × 0.000100195...= 0.0016031...`, which prints as `0.001603` — one digit off the host's own `expected_elem` (`16 × 0.01² = 0.0016`, printed `0.001600`). The check's `±0.0005` tolerance absorbs that BF16 rounding gap, so all `128` per-thread sums and all `4096` D-register values still count as correct. The final banner is a new variant of the `%-56s` byte-vs-codepoint quirk from earlier chapters: at 59 UTF-8 bytes (53 codepoints, thanks to the 3-byte `✓` and em dash), the string is already longer than the 56-byte field width before any padding is considered, so `printf` appends none at all — the line lands exactly 1 column short of the border above it, rather than flush or several columns short as in the padded cases.
 
 ---
 
