@@ -2608,6 +2608,7 @@ calls — and you get the following.</p>
 </span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>
 </span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>  Scaling: S grows as N². At N = 32k it is 2.1 GB per head.
 </span></code></pre></div>
+<p><img alt="Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction" src="../images/ch12/01-materialization-traffic.svg" /></p>
 <p>The whole of FlashAttention rests on one observation: <strong><code>S</code> and <code>P</code> never need to
 exist in HBM.</strong> They are intermediates. If you can compute the output tile by
 tile, keeping each <code>S</code> tile in shared memory and throwing it away, the traffic
@@ -2798,6 +2799,7 @@ multiplicative factor.</p>
 </span><span id="__span-7-60"><a id="__codelineno-7-60" name="__codelineno-7-60" href="#__codelineno-7-60"></a>  That single multiply is why attention can be tiled.
 </span><span id="__span-7-61"><a id="__codelineno-7-61" name="__codelineno-7-61" href="#__codelineno-7-61"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
+<p><img alt="Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE" src="../images/ch12/02-online-softmax-timeline.svg" /></p>
 <p><strong>The one thing to notice for later:</strong> step 5 rescales <code>O</code>, which is the
 accumulator living in tensor core registers. That means every time the row max
 moves, the kernel must reach into the WGMMA accumulator and multiply it. Chapter
@@ -2939,6 +2941,7 @@ they are being applied to.</p>
 </span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a>  buys the first 23 points.
 </span><span id="__span-10-30"><a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
+<p><img alt="Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path" src="../images/ch12/07-throughput-ladder.svg" /></p>
 <h3 id="42-tile-shapes-and-the-two-gemms">4.2 Tile Shapes and the Two GEMMs<a class="headerlink" href="#42-tile-shapes-and-the-two-gemms" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>The Two GEMMs Inside Attention
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3036,6 +3039,7 @@ FA2 comes from applying textbook Hopper kernel design to a kernel that had none.
 </span><span id="__span-12-35"><a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>    producer gives up is one the consumer can use to avoid
 </span><span id="__span-12-36"><a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a>    spilling.
 </span></code></pre></div>
+<p><img alt="FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers" src="../images/ch12/03-warpgroup-roles.svg" /></p>
 <h3 id="52-the-producer-loop">5.2 The Producer Loop<a class="headerlink" href="#52-the-producer-loop" title="Permanent link">&para;</a></h3>
 <div class="language-cuda highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1">// REFERENCE — illustrates structure; not compiled or benchmarked.</span>
@@ -3199,6 +3203,7 @@ a <em>different</em> warpgroup to serve.</p>
 </span><span id="__span-15-32"><a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>  is the epilogue, here it is softmax.
 </span><span id="__span-15-33"><a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
+<p><img alt="Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave" src="../images/ch12/04-pingpong-timeline.svg" /></p>
 <h3 id="62-forcing-the-stagger-with-named-barriers">6.2 Forcing the Stagger with Named Barriers<a class="headerlink" href="#62-forcing-the-stagger-with-named-barriers" title="Permanent link">&para;</a></h3>
 <p>The hardware will not stagger the warpgroups for you. Left alone, both consumers
 start at the same instant and stay in lockstep forever. You have to impose the
@@ -3286,39 +3291,53 @@ offset, and named barriers (Chapter 3 §16) are how.</p>
 </span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>    GEMM1 (PV):     2 × 128 × 128 × 128    = 4.19 MFLOP
 </span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    exp():          128 × 128              = 16,384 ops
 </span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>  Per-SM rates (Chapter 1 §19):
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>    tensor BF16:   1024 FLOP/cycle/SM
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>    SFU:             16 ops/cycle/SM
-</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>
-</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>  Cycle costs:
-</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>    GEMM0:   4.19e6 / 1024  =  4,096 cycles
-</span><span id="__span-18-16"><a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>    GEMM1:   4.19e6 / 1024  =  4,096 cycles
-</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>    exp:    16,384 / 16     =  1,024 cycles
-</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>    (plus ~512 cycles of row reductions, rescaling, bookkeeping)
-</span><span id="__span-18-19"><a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a>
-</span><span id="__span-18-20"><a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a>  ─── SERIAL (one warpgroup, §5.3) ────────────────────────────────
-</span><span id="__span-18-21"><a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a>    4096  +  1536  +  4096  =  9,728 cycles per iteration
-</span><span id="__span-18-22"><a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a>    Tensor cores busy: 8,192 / 9,728 = 84%
-</span><span id="__span-18-23"><a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>    ... but with TWO warpgroups both stalling at the same time,
-</span><span id="__span-18-24"><a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a>    the SM-level figure lands nearer 66%.
-</span><span id="__span-18-25"><a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a>
-</span><span id="__span-18-26"><a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a>  ─── PING-PONG (two warpgroups, offset) ──────────────────────────
-</span><span id="__span-18-27"><a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a>    WG1 softmax (1,536 cycles) runs UNDER WG2's GEMM0.
-</span><span id="__span-18-28"><a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>    WG2 softmax runs under WG1's GEMM1.
-</span><span id="__span-18-29"><a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a>
-</span><span id="__span-18-30"><a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a>    Steady-state cost per iteration per warpgroup:
-</span><span id="__span-18-31"><a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a>      max(8192 tensor cycles, 8192 + hidden softmax) ≈ 8,192
-</span><span id="__span-18-32"><a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a>
-</span><span id="__span-18-33"><a id="__codelineno-18-33" name="__codelineno-18-33" href="#__codelineno-18-33"></a>    Tensor cores busy: ~8,192 / 8,704 = 94% (per warpgroup pair)
-</span><span id="__span-18-34"><a id="__codelineno-18-34" name="__codelineno-18-34" href="#__codelineno-18-34"></a>    Measured whole-kernel: 570 → 620 TFLOP/s
-</span><span id="__span-18-35"><a id="__codelineno-18-35" name="__codelineno-18-35" href="#__codelineno-18-35"></a>
-</span><span id="__span-18-36"><a id="__codelineno-18-36" name="__codelineno-18-36" href="#__codelineno-18-36"></a>  ══════════════════════════════════════════════════════════════════
-</span><span id="__span-18-37"><a id="__codelineno-18-37" name="__codelineno-18-37" href="#__codelineno-18-37"></a>  Note the gap between the model (94%) and reality (63% of peak).
-</span><span id="__span-18-38"><a id="__codelineno-18-38" name="__codelineno-18-38" href="#__codelineno-18-38"></a>  The remainder is the register pressure that two big accumulators
-</span><span id="__span-18-39"><a id="__codelineno-18-39" name="__codelineno-18-39" href="#__codelineno-18-39"></a>  create, plus epilogue, plus the tail. Models like this one tell
-</span><span id="__span-18-40"><a id="__codelineno-18-40" name="__codelineno-18-40" href="#__codelineno-18-40"></a>  you the DIRECTION, never the magnitude — which is precisely why
-</span><span id="__span-18-41"><a id="__codelineno-18-41" name="__codelineno-18-41" href="#__codelineno-18-41"></a>  Chapter 13 exists.
-</span><span id="__span-18-42"><a id="__codelineno-18-42" name="__codelineno-18-42" href="#__codelineno-18-42"></a>  ══════════════════════════════════════════════════════════════════
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>  Per-SM rates (Chapter 1 §19 — derived bottom-up from the full-GPU
+</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>  spec, 989.4 TFLOP/s ÷ 132 SMs ÷ 1.98 GHz, not an assumed issue rate):
+</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>    tensor BF16:   ~3,786 FLOP/cycle/SM
+</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>    SFU:             16 ops/cycle/SM
+</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>
+</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>  (Correction: an earlier draft of this table used 1024 FLOP/cycle/SM,
+</span><span id="__span-18-16"><a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>  which contradicts the very figure this chapter cites it from — Chapter
+</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>  1 §19's own number is ~3,786. Using 1024 would imply a full-chip peak
+</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>  of only ~267 TFLOP/s, nowhere near the H100's real 989.4 TFLOP/s. The
+</span><span id="__span-18-19"><a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a>  cycle counts below are recomputed with the correct rate.)
+</span><span id="__span-18-20"><a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a>
+</span><span id="__span-18-21"><a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a>  Cycle costs:
+</span><span id="__span-18-22"><a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a>    GEMM0:   4.19e6 / 3786   ≈  1,108 cycles
+</span><span id="__span-18-23"><a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>    GEMM1:   4.19e6 / 3786   ≈  1,108 cycles
+</span><span id="__span-18-24"><a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a>    exp:    16,384 / 16     =  1,024 cycles
+</span><span id="__span-18-25"><a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a>    (plus ~512 cycles of row reductions, rescaling, bookkeeping)
+</span><span id="__span-18-26"><a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a>
+</span><span id="__span-18-27"><a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a>  ─── SERIAL (one warpgroup, §5.3) ────────────────────────────────
+</span><span id="__span-18-28"><a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>    1108  +  1536  +  1108  ≈  3,752 cycles per iteration
+</span><span id="__span-18-29"><a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a>    Tensor cores busy: 2,216 / 3,752 ≈ 59%
+</span><span id="__span-18-30"><a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a>    ... and with TWO warpgroups both stalling at the same time (no
+</span><span id="__span-18-31"><a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a>    ping-pong), the SM-level figure lands lower still — consistent
+</span><span id="__span-18-32"><a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a>    with FA2-on-H100's measured ~35% of peak (§3.2).
+</span><span id="__span-18-33"><a id="__codelineno-18-33" name="__codelineno-18-33" href="#__codelineno-18-33"></a>
+</span><span id="__span-18-34"><a id="__codelineno-18-34" name="__codelineno-18-34" href="#__codelineno-18-34"></a>  ─── PING-PONG (two warpgroups, offset) ──────────────────────────
+</span><span id="__span-18-35"><a id="__codelineno-18-35" name="__codelineno-18-35" href="#__codelineno-18-35"></a>    One warpgroup's full per-iteration GEMM work (QK + PV) is
+</span><span id="__span-18-36"><a id="__codelineno-18-36" name="__codelineno-18-36" href="#__codelineno-18-36"></a>    1,108 + 1,108 = 2,216 cycles — MORE than the other warpgroup's
+</span><span id="__span-18-37"><a id="__codelineno-18-37" name="__codelineno-18-37" href="#__codelineno-18-37"></a>    1,536-cycle softmax, so in this idealized model the softmax
+</span><span id="__span-18-38"><a id="__codelineno-18-38" name="__codelineno-18-38" href="#__codelineno-18-38"></a>    fits entirely underneath it with ~680 cycles of slack:
+</span><span id="__span-18-39"><a id="__codelineno-18-39" name="__codelineno-18-39" href="#__codelineno-18-39"></a>      WG1 softmax (1,536 cycles) runs UNDER WG2's QK+PV (2,216 cycles).
+</span><span id="__span-18-40"><a id="__codelineno-18-40" name="__codelineno-18-40" href="#__codelineno-18-40"></a>      WG2 softmax runs under WG1's QK+PV.
+</span><span id="__span-18-41"><a id="__codelineno-18-41" name="__codelineno-18-41" href="#__codelineno-18-41"></a>
+</span><span id="__span-18-42"><a id="__codelineno-18-42" name="__codelineno-18-42" href="#__codelineno-18-42"></a>    Steady-state cost per iteration per warpgroup:
+</span><span id="__span-18-43"><a id="__codelineno-18-43" name="__codelineno-18-43" href="#__codelineno-18-43"></a>      max(2,216 tensor cycles, 1,536 softmax) ≈ 2,216 — i.e., in this
+</span><span id="__span-18-44"><a id="__codelineno-18-44" name="__codelineno-18-44" href="#__codelineno-18-44"></a>      idealized accounting the tensor cores are never the ones waiting.
+</span><span id="__span-18-45"><a id="__codelineno-18-45" name="__codelineno-18-45" href="#__codelineno-18-45"></a>
+</span><span id="__span-18-46"><a id="__codelineno-18-46" name="__codelineno-18-46" href="#__codelineno-18-46"></a>    Measured whole-kernel: 570 → 620 TFLOP/s  (63% of peak)
+</span><span id="__span-18-47"><a id="__codelineno-18-47" name="__codelineno-18-47" href="#__codelineno-18-47"></a>
+</span><span id="__span-18-48"><a id="__codelineno-18-48" name="__codelineno-18-48" href="#__codelineno-18-48"></a>  ══════════════════════════════════════════════════════════════════
+</span><span id="__span-18-49"><a id="__codelineno-18-49" name="__codelineno-18-49" href="#__codelineno-18-49"></a>  Note the gap between the model (tensor cores idealized as never
+</span><span id="__span-18-50"><a id="__codelineno-18-50" name="__codelineno-18-50" href="#__codelineno-18-50"></a>  waiting) and reality (63% of peak). The remainder is the register
+</span><span id="__span-18-51"><a id="__codelineno-18-51" name="__codelineno-18-51" href="#__codelineno-18-51"></a>  pressure that two big accumulators create, plus epilogue, plus the
+</span><span id="__span-18-52"><a id="__codelineno-18-52" name="__codelineno-18-52" href="#__codelineno-18-52"></a>  tail, plus everything this toy cycle count leaves out (instruction
+</span><span id="__span-18-53"><a id="__codelineno-18-53" name="__codelineno-18-53" href="#__codelineno-18-53"></a>  issue overhead, imperfect overlap at the loop's prologue/epilogue).
+</span><span id="__span-18-54"><a id="__codelineno-18-54" name="__codelineno-18-54" href="#__codelineno-18-54"></a>  Models like this one tell you the DIRECTION, never the magnitude —
+</span><span id="__span-18-55"><a id="__codelineno-18-55" name="__codelineno-18-55" href="#__codelineno-18-55"></a>  which is precisely why Chapter 13 exists.
+</span><span id="__span-18-56"><a id="__codelineno-18-56" name="__codelineno-18-56" href="#__codelineno-18-56"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
 <hr />
 <h2 id="7-technique-3-intra-warpgroup-2-stage-pipelining">7 — Technique 3 — Intra-Warpgroup 2-Stage Pipelining<a class="headerlink" href="#7-technique-3-intra-warpgroup-2-stage-pipelining" title="Permanent link">&para;</a></h2>
@@ -3367,6 +3386,7 @@ iteration j+1".</p>
 </span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>  flight while the SFUs chew through the previous block's exp().
 </span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
+<p><img alt="2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath" src="../images/ch12/05-twostage-pipeline-timeline.svg" /></p>
 <div class="language-cuda highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="c1">// REFERENCE — illustrates structure; not compiled or benchmarked.</span>
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1">// The 2-stage inner loop. Note that NOTHING waits until after the</span>
@@ -3504,6 +3524,7 @@ than the one it solves.</p>
 </span><span id="__span-22-43"><a id="__codelineno-22-43" name="__codelineno-22-43" href="#__codelineno-22-43"></a>  cannot occur there. Specialising the loop removes it entirely.
 </span><span id="__span-22-44"><a id="__codelineno-22-44" name="__codelineno-22-44" href="#__codelineno-22-44"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
+<p><img alt="Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it" src="../images/ch12/06-causal-masking-grid.svg" /></p>
 <h3 id="82-balancing-the-triangle">8.2 Balancing the Triangle<a class="headerlink" href="#82-balancing-the-triangle" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>The Load Imbalance
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3881,7 +3902,16 @@ somewhere in Chapters 3–9; what is new is only the arrangement.</p>
 </span></code></pre></div>
 <hr />
 <h2 id="11-measured-results">11 — Measured Results<a class="headerlink" href="#11-measured-results" title="Permanent link">&para;</a></h2>
-<p>Numbers from the FlashAttention-3 paper, H100 SXM5.</p>
+<p>Numbers from the FlashAttention-3 paper, H100 SXM5. (Confirmed against the
+paper's own authors' summary on the PyTorch blog and against independent
+coverage from Colfax Research: 740 TFLOP/s / 75% of peak BF16, ~1.2 PFLOP/s
+FP8, the FA2-on-H100 baseline of ~350 TFLOP/s / 35%, the 570→620 TFLOP/s
+step from ping-pong alone, and the 2.6× FP8 error reduction all check out
+exactly. One terminology note: the paper's own headline benchmark reports
+FP16, not BF16 — this chapter follows the rest of the book in saying BF16
+throughout, which is accurate for the <em>numbers</em>, since FP16 and BF16 share
+the same tensor-core throughput class on Hopper (same bit width, same
+rate), but worth knowing if you go compare against the paper's own tables.)</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>FA3 vs FA2 — Forward Pass, BF16
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
