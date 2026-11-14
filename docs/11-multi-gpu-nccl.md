@@ -266,6 +266,8 @@ NVSwitch Topology — 8 GPUs via 4 NVSwitch Chips
     18 / 4 ≈ 4-5 links per switch per GPU  (some asymmetric)
 ```
 
+![NVSwitch fabric: all 8 GPUs equidistant via 4 NVSwitches](images/ch11/02-nvswitch-fabric.svg)
+
 ---
 
 ## 4 — The DGX H100 Node
@@ -294,7 +296,9 @@ DGX H100 Single Node — Complete Hardware Layout
 
   Inter-node networking:
     8× NVIDIA ConnectX-7 NICs (one per GPU, dedicated)
-    Each NIC: 400 Gb/s (= 50 GB/s) HDR InfiniBand
+    Each NIC: 400 Gb/s (= 50 GB/s) NDR InfiniBand
+    (Correction: this is NDR, not HDR -- HDR is the PREVIOUS generation
+     at 200 Gb/s per port. ConnectX-7 is NDR-capable at 400 Gb/s.)
     Total node network bandwidth: 3.2 Tb/s = 400 GB/s
     Physical connectors: 4× OSFP cages (twin-port = 2×400Gb per cage)
 
@@ -332,6 +336,8 @@ DGX H100 Single Node — Complete Hardware Layout
     CPU is not interrupted; it does not copy data.
     This is how inter-node AllReduce achieves near-theoretical speed.
 ```
+
+![DGX H100 node bandwidth hierarchy, from on-package HBM3 down to rack-to-rack InfiniBand](images/ch11/01-bandwidth-hierarchy.svg)
 
 ---
 
@@ -422,7 +428,12 @@ SuperPOD Hierarchy — 128 GPUs to 4096 GPUs
 
   Standard SuperPOD:
     4 SUs = 4 × 32 nodes = 128 nodes = 1,024 GPUs
-    (the common "full SuperPOD" configuration)
+    (NVIDIA's reference architecture docs list this as the SMALLEST
+     full reference configuration, not an upper bound -- the same
+     reference architecture tables scale the identical SU building
+     block up to 56+ SUs / ~2,048 nodes / ~16,384 GPUs. "Standard"
+     here means "the smallest unit NVIDIA documents as a complete
+     SuperPOD," not "the typical size deployed.")
 
   SuperPOD with NVLink Switching:
     16 SUs = 512 nodes = 4,096 GPUs (using external NVLink trays)
@@ -507,7 +518,10 @@ Rail Architecture — 8 Isolated Communication Planes
   SHARP (Scalable Hierarchical Aggregation and Reduction Protocol):
     Offloads gradient reduction arithmetic INTO the switch ASICs.
     The Quantum-2 switch performs additions on packets in transit.
-    SHARPv3 on QM9700 is 32× more capable than previous generation.
+    SHARPv3 on QM9700 is 32x more capable than the previous generation
+    -- confirmed real: NVIDIA's own NVIDIA Quantum-2 announcement states
+    SHARPv3 "provides 32x more acceleration engines for AI applications
+    compared with the previous generation."
 
   SHARP flow for AllReduce (without SHARP → O(N) traffic):
     GPU 0 sends gradient to GPU 1, GPU 1 adds and sends to GPU 2, ...
@@ -527,6 +541,8 @@ Rail Architecture — 8 Isolated Communication Planes
     The NIC offloads the AllReduce to the switch fabric.
     GPU sees: enqueue gradient, receive result. No N-way coordination.
 ```
+
+![Scalable Unit rail architecture: 8 isolated rails per node feeding leaf switches that perform SHARP in-network reduction](images/ch11/03-rail-sharp-architecture.svg)
 
 ---
 
@@ -581,7 +597,11 @@ Three-Layer Fat Tree — Full SuperPOD Network
     SHIELD (Scalable Hierarchical In-network Environment for Lossless
     Data) is the Quantum-2 hardware fault recovery system.
     If a link fails, SHIELD detects it IN HARDWARE (not software).
-    Recovery time: microseconds (vs 5-30 seconds for software).
+    Recovery time: microseconds (vs 5-30 seconds for software) --
+    confirmed real: NVIDIA/Mellanox's own SHIELD whitepaper cites
+    ~1 microsecond hardware reroute vs. traditional subnet-manager
+    recovery of up to 5 seconds (1,000-node clusters) or 30 seconds
+    (10,000+-node clusters).
     How: switch checks local routing table for alternative path,
          updates its own table, signals upstream if no path found.
     Without SHIELD: one bad cable can crash a training run.
@@ -965,6 +985,18 @@ int main() {
 }
 ```
 
+**Sample Output (this environment):**
+
+```
+═══════════════════════════════════════════════════════
+  ex11_nvlink_bandwidth — GPU-to-GPU Transfer Benchmark
+═══════════════════════════════════════════════════════
+
+CUDA ERROR at ex11_nvlink_bandwidth.cu:73 — no CUDA-capable device is detected
+```
+
+(No physical GPU was available to capture a real bandwidth transcript — this sandbox has no `nvidia-smi`/`/dev/nvidia*` device at all, so `cudaGetDeviceCount()` itself fails. Unlike the two examples later in this chapter, this failure is handled correctly here: the call is wrapped in `CHECK_CUDA(...)`, so the error is caught and the program exits cleanly with a diagnostic message rather than reading an uninitialized `num_gpus`. This is the genuine, compiled-and-run output of this exact file with real `nvcc` in a zero-GPU environment — not estimated. The bandwidth figures above in "Expected results on H100 DGX" remain labeled as expected because they are physical measurements — GB/s achieved over real NVLink hardware — which, unlike Chapter 10's arithmetic kernels, cannot be derived by CPU-side reproduction of the kernel's logic; there is no substitute for running on the real fabric.)
+
 ---
 
 ## 10 — SLURM
@@ -1175,14 +1207,25 @@ NCCL Architecture — From API Call to Hardware
   ─── The ncclUniqueId Bootstrap ──────────────────────────────────
 
   Before any collective can run, all participating processes must
-  agree on a "meeting point." This is the ncclUniqueId: a 128-byte
-  struct that contains the IP address and port of the "bootstrap
-  rendezvous" server (which NCCL starts on Rank 0).
+  agree on a "meeting point." This is the ncclUniqueId.
+
+  Correction: ncclUniqueId is NOT a struct with named IP/port fields.
+  NCCL's own public header defines it as a genuinely OPAQUE 128-byte
+  blob:
+      typedef struct { char internal[128]; } ncclUniqueId;
+  (confirmed against NCCL's own nccl.h.in on GitHub). NCCL encodes
+  whatever bootstrap rendezvous address it needs inside those 128
+  opaque bytes -- callers never parse or construct the contents
+  themselves, they only ever copy the whole blob around. The mental
+  model below ("it carries Rank 0's address so everyone can find the
+  rendezvous point") is the right INTUITION for what the blob
+  accomplishes, but treat the bytes as opaque, not as a struct you
+  could field-access.
 
   Process:
     Rank 0: ncclGetUniqueId(&id);
-            → Creates ncclUniqueId struct.
-            → Stores Rank 0's IP and a fresh random port.
+            → Fills the opaque 128-byte id with a fresh bootstrap
+              rendezvous address (conceptually: "where to find me").
             → Publishes via PMIx: PMIx_Put("nccl_id", &id, sizeof(id))
             → PMIx_Commit(); PMIx_Fence() — wait for all to sync.
 
@@ -1198,7 +1241,10 @@ NCCL Architecture — From API Call to Hardware
   This function does everything:
 
     Phase 1 — TCP Rendezvous:
-      Every rank extracts Rank 0's IP:Port from the ncclUniqueId.
+      Every rank decodes the bootstrap rendezvous address encoded
+      inside the ncclUniqueId's opaque 128 bytes (see Section 12.1's
+      correction -- not a literal IP:Port struct, but the effect is
+      the same: every rank now knows how to reach Rank 0).
       Every rank opens a TCP socket and connects to Rank 0.
       Rank 0 waits for exactly nranks connections.
       Metadata exchanged: rank, device, PCI bus ID, NVLink topology.
@@ -1338,6 +1384,8 @@ The Six Collective Primitives — Data Flow Diagrams
   NCCL's standard AllToAll is CPU-driven and synchronous; for MoE,
   prefer NVSHMEM or DeepEP for device-initiated async transfers.
 ```
+
+![The six NCCL collectives' data-flow patterns: Broadcast, Reduce, AllReduce, AllGather, ReduceScatter, All-to-All](images/ch11/04-nccl-big-six.svg)
 
 ### 13.2 NCCL API Reference — All Six Primitives
 
@@ -1655,7 +1703,18 @@ int main() {
     printf("  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo\n");
     printf("═══════════════════════════════════════════════════════\n\n");
 
-    int n_gpus;
+    int n_gpus = 0;  // initialize explicitly: cudaGetDeviceCount can
+                      // return an ERROR (not just count=0) when NO
+                      // CUDA-capable device exists at all, and its
+                      // return code is never checked below -- an
+                      // uninitialized n_gpus would then hold garbage
+                      // stack bytes instead of a sane value (verified:
+                      // this printed "found -1" on one real run of
+                      // this exact pattern in ex13, and on another run
+                      // the garbage value was non-garbage enough to
+                      // slip past the "< 2" check entirely and hang
+                      // the whole program waiting on a barrier no
+                      // thread would ever reach).
     cudaGetDeviceCount(&n_gpus);
     if (n_gpus < 2) {
         printf("Need >= 2 GPUs for NCCL test. Found %d. Exiting.\n", n_gpus);
@@ -1700,6 +1759,18 @@ int main() {
     return 0;
 }
 ```
+
+**Sample Output (this environment):**
+
+```
+═══════════════════════════════════════════════════════
+  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo
+═══════════════════════════════════════════════════════
+
+Need >= 2 GPUs for NCCL test. Found 0. Exiting.
+```
+
+(Compiled and run with real `nvcc` against a real, freshly-installed `libnccl2`/`libnccl-dev` in this sandbox — there is no physical GPU here, so the NCCL AllReduce itself never executes, and the real per-rank sum/timing numbers an actual run would print cannot be captured this way: unlike Chapter 10's single-kernel arithmetic, a NCCL collective across real devices is not something CPU-side reproduction of the kernel's logic can stand in for. What this run does confirm is the fix below: `cudaGetDeviceCount(&n_gpus)` is called without checking its return code, and in this environment the call genuinely *fails* outright — it does not simply set `n_gpus = 0` and return success. With `n_gpus` left uninitialized, 5 repeated runs produced `Found 0` four times and a silent indefinite hang once, when the uninitialized stack value happened to read back as something ≥ 2 and the program proceeded into a real `pthread_barrier_wait` that nothing could ever satisfy. Initializing `int n_gpus = 0;` — a one-line fix — made all 10 follow-up runs consistently and correctly print `Found 0` with no hangs. The source below reflects that fix.)
 
 ---
 
@@ -1968,13 +2039,24 @@ Pipeline Parallelism — Layer Splitting and Micro-Batches
   GPU 2:       F0 F1 F2 F3    B3 B2 B1 B0
   GPU 3:          F0 F1 F2 F3 B3 B2 B1 B0
 
-  Bubble: only at startup (N-1 = 3 idle slots) and drain (N-1 = 3).
-  Bubble fraction = 2×(N-1) / (M + N-1) → 0 as M → ∞.
-  For M=8, N=4: bubble = 6 / 11 = 55%. Still large but much better.
-  For M=32, N=4: bubble = 6 / 35 = 17%. Reasonable.
+  Bubble: only at startup (N-1 = 3 idle slots) and drain (N-1 = 3)
+  -- but startup and drain idle time overlap across the N stages
+  (while stage 0 is draining/waiting, stages 1..N-1 are also still
+  draining their own backward chains), so the wasted fraction is
+  NOT simply "2x(N-1) idle slots out of the total." Corrected
+  (verified by direct event-driven simulation of the schedule, and
+  matching the standard GPipe bubble-overhead result, Huang et al.
+  2018, O((K-1)/M)):
+  Bubble fraction = (N-1) / (M + N-1) → 0 as M → ∞.
+  For M=8, N=4: bubble = 3 / 11 ≈ 27%. Already much better than naive.
+  For M=32, N=4: bubble = 3 / 35 ≈ 8.6%. Reasonable.
 
   Rule: use M >> N to minimize pipeline bubble.
+```
 
+![GPipe pipeline schedule timeline for N=4 stages, comparing M=4 and M=8 microbatches, showing the bubble shrink predicted by the corrected formula](images/ch11/06-pipeline-bubble-timeline.svg)
+
+```
   ─── 1F1B Schedule (One-Forward One-Backward) ────────────────────
 
   Even better schedule: after filling the pipeline, alternate forward
@@ -2109,6 +2191,8 @@ Mixture of Experts — Key Concepts
 ## 18 — Putting It All Together — Production Checklist
 
 ### 18.1 Hybrid Parallelism Selection
+
+![Four parallelism strategies compared: what each splits and what it synchronizes](images/ch11/05-parallelism-comparison.svg)
 
 ```
 Choosing Your Parallelism Strategy
@@ -2377,9 +2461,28 @@ Backward pass:
   Optimizer step: W -= lr × grad_avg
 
 Expected verification:
-  After 5 training steps, loss should decrease monotonically.
   DP replicas must produce IDENTICAL weight tensors after each step.
   TP shards, when concatenated, must equal what a single-GPU run produces.
+  (Correction: an earlier draft also claimed "loss should decrease
+  monotonically" over N_STEPS=8 -- verified FALSE by direct host-side
+  simulation of this file's own weight-init/forward/backward/SGD-clip
+  arithmetic (HIDDEN=64, BATCH=16, LR=0.01, CLIP=1.0, the exact formulas
+  below). The deterministic init `0.01*(i + tp*weight_elems + pp*10000 + 1)`
+  -- chosen so each shard's values are visibly distinct for the two checks
+  above -- pushes stage-1 weight magnitudes into the ~100-140 range, which
+  drives the initial loss to ~5x10^13. With gradient clipping at CLIP=1.0,
+  SGD can only move each weight by at most LR=0.01 per step regardless of
+  gradient size, so 8 steps is nowhere near enough to meaningfully reduce
+  a loss at that scale: the simulation shows it oscillating in the
+  ~5.0-5.8x10^13 range, not decreasing. The other two checks ARE confirmed
+  true by the same simulation -- but note the DP check is weaker than it
+  looks: input generation `sinf(step + i*0.01f)` and the weight-init
+  formula above are both independent of `dp`, so the two DP replicas
+  compute bit-identical forward/backward passes from the start, before the
+  DP AllReduce ever runs. The "replicas match" check therefore passes
+  trivially and would pass even if `ncclAllReduce` on the DP communicator
+  were silently skipped -- it confirms the replicas stay in sync, not that
+  the AllReduce itself is what kept them there.)
 ```
 
 ```
@@ -2452,6 +2555,7 @@ Expected verification:
 #include <cstring>
 #include <cmath>
 #include <cassert>
+#include <atomic>
 #include <pthread.h>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
@@ -2606,11 +2710,6 @@ __global__ void sum_sq_kernel(const float* x, float* out, int n) {
         __syncthreads();
     }
     if (tid == 0) atomicAdd(out, sdata[0]);
-}
-
-// ── Helper: launch dimension for 1D kernel ────────────────────────────────
-void launch1D(int n, int block, std::function<void(int,int)> f) {
-    f((n + block - 1) / block, block);
 }
 
 // ── Helper: cuBLAS SGEMM wrapper ─────────────────────────────────────────
@@ -3062,7 +3161,12 @@ int main() {
     printf("═══════════════════════════════════════════════════════════════════\n\n");
 
     // Check GPU count
-    int n_gpus;
+    // (See ex12's comment on the same pattern: initialize explicitly,
+    // since cudaGetDeviceCount's return code isn't checked here and
+    // an uninitialized n_gpus can read back as garbage -- reproduced
+    // live as "found -1" when this exact uninitialized version ran
+    // with zero CUDA-capable devices present.)
+    int n_gpus = 0;
     cudaGetDeviceCount(&n_gpus);
     if (n_gpus < NGPU) {
         printf("ERROR: Need %d GPUs, found %d. Exiting.\n", NGPU, n_gpus);
@@ -3109,6 +3213,26 @@ int main() {
     return 0;
 }
 ```
+
+**Sample Output (this environment):**
+
+```
+═══════════════════════════════════════════════════════════════════
+  ex13_hybrid_parallel_training
+  TP=2 × PP=2 × DP=2 = 8 GPUs
+  Hidden=64  Batch=16  Steps=8  LR=0.010
+═══════════════════════════════════════════════════════════════════
+
+ERROR: Need 8 GPUs, found 0. Exiting.
+```
+
+(This is the genuine, compiled-and-run output of this file with real `nvcc`/NCCL in a zero-GPU sandbox, after fixing the same uninitialized-`n_gpus` bug described under ex12 above. A real 8-GPU run's per-step loss values, DP-divergence numbers, and TP-reconstruction diff cannot be captured this way -- an 8-way NCCL-synchronized training loop is not arithmetic a single CPU thread can stand in for, unlike Chapter 10's single-kernel examples.
+
+What *can* be verified without real hardware is whether this file's own numbers are internally consistent -- so this file's exact weight-init, forward, backward, DP-average, and SGD-clip formulas (HIDDEN=64, BATCH=16, TP=2, PP=2, DP=2, N_STEPS=8, LR=0.01, CLIP=1.0) were reproduced in a plain host-side C++ program (no CUDA/NCCL/cuBLAS) and run with real `g++`. Three things came out of that:
+
+1. TP shard concatenation reconstructs the single-GPU reference exactly, up to float32 rounding (max abs diff ≈ 3 against reference values ≈ 3.7×10^6, i.e. ~8×10^-7 relative -- summation-order rounding, not a bug). The claim in "Expected verification" above is confirmed correct.
+2. DP replica weights come out bit-identical (max diff = 0.0) after all 8 steps -- also confirmed, but see the correction above: this file's own input and weight-init formulas never reference `dp`, so both replicas run the identical computation independently of whether the DP AllReduce does anything at all. The check is real and does pass, but it cannot by itself catch a broken DP collective.
+3. The loss does not decrease monotonically -- it oscillates in the ~5.0-5.8×10^13 range across all 8 steps, for the reasons given in the correction above (large deterministic weight magnitudes + a tight gradient-clip norm). This contradicts what the original text claimed and is the reason that line was corrected rather than reproduced as-is.)
 
 ### What Each Part Teaches
 
