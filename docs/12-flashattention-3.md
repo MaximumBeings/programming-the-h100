@@ -218,6 +218,8 @@ Naive Attention — Where the Bytes Go
   Scaling: S grows as N². At N = 32k it is 2.1 GB per head.
 ```
 
+![Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction](images/ch12/01-materialization-traffic.svg)
+
 The whole of FlashAttention rests on one observation: **`S` and `P` never need to
 exist in HBM.** They are intermediates. If you can compute the output tile by
 tile, keeping each `S` tile in shared memory and throwing it away, the traffic
@@ -431,6 +433,8 @@ Worked Example — One Row, Two Blocks
   ══════════════════════════════════════════════════════════════════
 ```
 
+![Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE](images/ch12/02-online-softmax-timeline.svg)
+
 **The one thing to notice for later:** step 5 rescales `O`, which is the
 accumulator living in tensor core registers. That means every time the row max
 moves, the kernel must reach into the WGMMA accumulator and multiply it. Chapter
@@ -589,6 +593,8 @@ FA3 — Cumulative Throughput (BF16 forward, H100 SXM5)
   ══════════════════════════════════════════════════════════════════
 ```
 
+![Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path](images/ch12/07-throughput-ladder.svg)
+
 ### 4.2 Tile Shapes and the Two GEMMs
 
 ```
@@ -694,6 +700,8 @@ FA3 Block Layout — Who Does What
     producer gives up is one the consumer can use to avoid
     spilling.
 ```
+
+![FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers](images/ch12/03-warpgroup-roles.svg)
 
 ### 5.2 The Producer Loop
 
@@ -871,6 +879,8 @@ Ping-Pong — Staggering Two Consumers
   ══════════════════════════════════════════════════════════════════
 ```
 
+![Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave](images/ch12/04-pingpong-timeline.svg)
+
 ### 6.2 Forcing the Stagger with Named Barriers
 
 The hardware will not stagger the warpgroups for you. Left alone, both consumers
@@ -966,38 +976,52 @@ Ping-Pong — Cycle Accounting for One Iteration
     GEMM1 (PV):     2 × 128 × 128 × 128    = 4.19 MFLOP
     exp():          128 × 128              = 16,384 ops
 
-  Per-SM rates (Chapter 1 §19):
-    tensor BF16:   1024 FLOP/cycle/SM
+  Per-SM rates (Chapter 1 §19 — derived bottom-up from the full-GPU
+  spec, 989.4 TFLOP/s ÷ 132 SMs ÷ 1.98 GHz, not an assumed issue rate):
+    tensor BF16:   ~3,786 FLOP/cycle/SM
     SFU:             16 ops/cycle/SM
 
+  (Correction: an earlier draft of this table used 1024 FLOP/cycle/SM,
+  which contradicts the very figure this chapter cites it from — Chapter
+  1 §19's own number is ~3,786. Using 1024 would imply a full-chip peak
+  of only ~267 TFLOP/s, nowhere near the H100's real 989.4 TFLOP/s. The
+  cycle counts below are recomputed with the correct rate.)
+
   Cycle costs:
-    GEMM0:   4.19e6 / 1024  =  4,096 cycles
-    GEMM1:   4.19e6 / 1024  =  4,096 cycles
+    GEMM0:   4.19e6 / 3786   ≈  1,108 cycles
+    GEMM1:   4.19e6 / 3786   ≈  1,108 cycles
     exp:    16,384 / 16     =  1,024 cycles
     (plus ~512 cycles of row reductions, rescaling, bookkeeping)
 
   ─── SERIAL (one warpgroup, §5.3) ────────────────────────────────
-    4096  +  1536  +  4096  =  9,728 cycles per iteration
-    Tensor cores busy: 8,192 / 9,728 = 84%
-    ... but with TWO warpgroups both stalling at the same time,
-    the SM-level figure lands nearer 66%.
+    1108  +  1536  +  1108  ≈  3,752 cycles per iteration
+    Tensor cores busy: 2,216 / 3,752 ≈ 59%
+    ... and with TWO warpgroups both stalling at the same time (no
+    ping-pong), the SM-level figure lands lower still — consistent
+    with FA2-on-H100's measured ~35% of peak (§3.2).
 
   ─── PING-PONG (two warpgroups, offset) ──────────────────────────
-    WG1 softmax (1,536 cycles) runs UNDER WG2's GEMM0.
-    WG2 softmax runs under WG1's GEMM1.
+    One warpgroup's full per-iteration GEMM work (QK + PV) is
+    1,108 + 1,108 = 2,216 cycles — MORE than the other warpgroup's
+    1,536-cycle softmax, so in this idealized model the softmax
+    fits entirely underneath it with ~680 cycles of slack:
+      WG1 softmax (1,536 cycles) runs UNDER WG2's QK+PV (2,216 cycles).
+      WG2 softmax runs under WG1's QK+PV.
 
     Steady-state cost per iteration per warpgroup:
-      max(8192 tensor cycles, 8192 + hidden softmax) ≈ 8,192
+      max(2,216 tensor cycles, 1,536 softmax) ≈ 2,216 — i.e., in this
+      idealized accounting the tensor cores are never the ones waiting.
 
-    Tensor cores busy: ~8,192 / 8,704 = 94% (per warpgroup pair)
-    Measured whole-kernel: 570 → 620 TFLOP/s
+    Measured whole-kernel: 570 → 620 TFLOP/s  (63% of peak)
 
   ══════════════════════════════════════════════════════════════════
-  Note the gap between the model (94%) and reality (63% of peak).
-  The remainder is the register pressure that two big accumulators
-  create, plus epilogue, plus the tail. Models like this one tell
-  you the DIRECTION, never the magnitude — which is precisely why
-  Chapter 13 exists.
+  Note the gap between the model (tensor cores idealized as never
+  waiting) and reality (63% of peak). The remainder is the register
+  pressure that two big accumulators create, plus epilogue, plus the
+  tail, plus everything this toy cycle count leaves out (instruction
+  issue overhead, imperfect overlap at the loop's prologue/epilogue).
+  Models like this one tell you the DIRECTION, never the magnitude —
+  which is precisely why Chapter 13 exists.
   ══════════════════════════════════════════════════════════════════
 ```
 
@@ -1054,6 +1078,8 @@ iteration j+1".
   flight while the SFUs chew through the previous block's exp().
   ══════════════════════════════════════════════════════════════════
 ```
+
+![2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath](images/ch12/05-twostage-pipeline-timeline.svg)
 
 ```cuda
 // ─────────────────────────────────────────────────────────────────
@@ -1204,6 +1230,8 @@ Causal Masking — The Block Taxonomy
   cannot occur there. Specialising the loop removes it entirely.
   ══════════════════════════════════════════════════════════════════
 ```
+
+![Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it](images/ch12/06-causal-masking-grid.svg)
 
 ### 8.2 Balancing the Triangle
 
@@ -1612,7 +1640,16 @@ Launch Configuration
 
 ## 11 — Measured Results
 
-Numbers from the FlashAttention-3 paper, H100 SXM5.
+Numbers from the FlashAttention-3 paper, H100 SXM5. (Confirmed against the
+paper's own authors' summary on the PyTorch blog and against independent
+coverage from Colfax Research: 740 TFLOP/s / 75% of peak BF16, ~1.2 PFLOP/s
+FP8, the FA2-on-H100 baseline of ~350 TFLOP/s / 35%, the 570→620 TFLOP/s
+step from ping-pong alone, and the 2.6× FP8 error reduction all check out
+exactly. One terminology note: the paper's own headline benchmark reports
+FP16, not BF16 — this chapter follows the rest of the book in saying BF16
+throughout, which is accurate for the *numbers*, since FP16 and BF16 share
+the same tensor-core throughput class on Hopper (same bit width, same
+rate), but worth knowing if you go compare against the paper's own tables.)
 
 ```
 FA3 vs FA2 — Forward Pass, BF16
