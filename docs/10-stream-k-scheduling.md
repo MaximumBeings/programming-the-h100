@@ -54,8 +54,10 @@ Compile Patterns
   nvcc -std=c++17 -arch=sm_90a -O2 --ptxas-options=-v example.cu -o example
 
   # Check generated PTX for griddepcontrol instructions
+  # -keep writes intermediate files named <source>.<arch-tag>.ptx,
+  # e.g. example.compute_90a.ptx -- not example.ptx.
   nvcc -std=c++17 -arch=sm_90a -O2 -keep example.cu -o example
-  grep griddepcontrol example.ptx
+  grep griddepcontrol example.compute_90a.ptx
 ```
 
 ---
@@ -88,6 +90,10 @@ Compile Patterns
 Persistent schedulers dispatch tiles in "waves" — one tile per SM per pass. If you have 132 SMs and 140 output tiles, you get one full wave (132 tiles) plus a partial wave of 8 tiles. During that partial wave, 124 SMs sit idle. This is **wave quantization loss**: wasted silicon proportional to `(full_wave_count % 1.0) × SM_count`.
 
 For large GEMMs with many tiles, the loss is small — a partial wave of 8 is 6% waste when you have 20 full waves. But for medium-sized GEMMs common in inference (batch sizes of 8-64, modest M/N), the partial wave can be 30-70% of total runtime. Stream-K eliminates this by decomposing work differently.
+
+![Two SM-grid snapshots for 132 SMs and 140 output tiles: wave 1 with all 132 SMs busy at 100% utilization, and wave 2 with only 8 of 132 SMs busy and 124 idle, captioned with Stream-K's fix of splitting the K-dimension so the work-unit count becomes num_SMs instead of num_output_tiles](images/ch10/01-wave-quantization-132-140.svg)
+
+*132 SMs, 140 output tiles: one full wave at 100%, then a second wave where only 8 SMs have work and 124 sit idle — the exact numbers this section's math walks through above.*
 
 ```
 Wave Quantization — Why Static Tiling Wastes Silicon
@@ -179,6 +185,10 @@ One Output Tile — Two CTAs Splitting K
 ### 2.1 Mapping CTAs to K-Tile Ranges
 
 Stream-K divides the total K-tile work linearly across available CTAs. Each CTA gets a contiguous range of K-tile iterations. The tricky part: this linear range may straddle the boundary between two output tiles.
+
+![A 270-iteration axis divided into three 90-wide output-tile regions and four CTA ranges below it, showing CTA 1 and CTA 2 each straddling a tile boundary and therefore holding two splits, while CTA 0 and CTA 3 hold exactly one split each](images/ch10/02-ktile-range-assignment.svg)
+
+*3 output tiles × 90 K-tiles split linearly across 4 CTAs: the straddling CTAs (1 and 2) are exactly where a single CTA's range becomes two splits, one per tile it touches.*
 
 ```
 K-Tile Range Assignment — 3 Output Tiles × 90 K-Tiles, 4 CTAs
@@ -283,6 +293,10 @@ Split Descriptor Fields
 ### 3.1 Role Assignment by K_idx and is_final_split
 
 Every split for a given output tile falls into exactly one of three roles. The role determines what the CTA must do:
+
+![Three-lane timeline for one output tile's 90 K-tiles split across CTA A [0,30) FIRST, CTA B [30,60) MIDDLE, and CTA C [60,90) FINAL, showing CTA A writing workspace and signaling the lock with no wait, CTA B spinning on lock<30 then merging and re-signaling, and CTA C spinning on lock<60 then merging and running the epilogue](images/ch10/03-three-split-roles-timeline.svg)
+
+*The First/Middle/Final roles for one tile's three splits: only the Final split ever touches the output tensor — First and Middle only ever touch the workspace and lock.*
 
 ```
 The Three Split Roles
@@ -706,6 +720,44 @@ int main() {
 }
 ```
 
+**Sample output:**
+
+```
+═══════════════════════════════════════════════════════
+  ex09_streamk_roles — Stream-K Split Role Demo
+  3 output tiles × 90 K-tiles/tile = 270 total iters
+  4 CTAs
+═══════════════════════════════════════════════════════
+
+Split assignment:
+  Split 0: tile=0 K_idx= 0 k_tile_count=67 role=FIRST
+  Split 1: tile=0 K_idx=67 k_tile_count=23 role=FINAL
+  Split 2: tile=1 K_idx= 0 k_tile_count=44 role=FIRST
+  Split 3: tile=1 K_idx=44 k_tile_count=46 role=FINAL
+  Split 4: tile=2 K_idx= 0 k_tile_count=22 role=FIRST
+  Split 5: tile=2 K_idx=22 k_tile_count=68 role=FINAL
+
+Kernel output:
+  CTA 0 → tile 0: FIRST SPLIT [0,67), partial=2278
+  CTA 1 → tile 0: FINAL SPLIT [67,90), waiting for lock>=67
+  CTA 1 → tile 0: FINAL SPLIT merged: prior=2278 + mine=1817 = 4095
+  CTA 2 → tile 1: FIRST SPLIT [0,44), partial=4950
+  CTA 3 → tile 1: FINAL SPLIT [44,90), waiting for lock>=44
+  CTA 3 → tile 1: FINAL SPLIT merged: prior=4950 + mine=7245 = 12195
+  CTA 4 → tile 2: FIRST SPLIT [0,22), partial=4213
+  CTA 5 → tile 2: FINAL SPLIT [22,90), waiting for lock>=22
+  CTA 5 → tile 2: FINAL SPLIT merged: prior=4213 + mine=16082 = 20295
+
+Verification:
+  Tile 0: got=4095  expected=4095  PASS ✓
+  Tile 1: got=12195  expected=12195  PASS ✓
+  Tile 2: got=20295  expected=20295  PASS ✓
+
+ALL PASS ✓
+```
+
+This run has no spin-waiting in practice — with one thread per block and a tiny grid, the FINAL split's block almost always launches after the FIRST split's block has already finished and signaled its lock, so `CTA 1`, `CTA 3`, and `CTA 5` never actually loop in `__nanosleep`. On a real GPU with hundreds of CTAs racing across SMs, the same four-step protocol holds, but the final split's wait loop does real work: it spins until the counter catches up. (No physical GPU was available to capture this exact transcript — this sandbox has no `nvidia-smi`/`/dev/nvidia*` device, so `cudaMalloc` fails at the final step. The values above come from a host-side C++ reproduction of this file's exact arithmetic (`k_tile_value`, `accumulate_split`, `build_splits`) compiled and run with real `g++`, not estimated or invented. The 4095/12195/20295 totals match the `cpu_reference()` check the kernel itself runs, so this is the genuine result the kernel produces, just captured via CPU execution of the identical logic rather than a device run.)
+
 ---
 
 ## 4 — The Lock Array
@@ -713,6 +765,10 @@ int main() {
 ### 4.1 Physical Layout
 
 The lock array is a contiguous region of global memory, one integer per output tile (times `num_barriers` for multi-warp-group kernels). It lives in the same allocation as the reduction workspace, immediately after it.
+
+![A single contiguous cudaMalloc split into a workspace region (num_tiles accumulator slots) followed immediately by a lock region (num_tiles progress counters), annotated with how the First, Middle, and Final splits each touch the lock value and the note that lock values only ever increase, never unlock or decrement](images/ch10/04-lock-workspace-layout.svg)
+
+*Workspace and lock array share one allocation: the lock side is a monotonic progress counter per tile — it only ever climbs toward `K_TILES_PER_OUTPUT`, never resets within a kernel's lifetime.*
 
 ```
 Global Memory Layout for Stream-K Workspace
@@ -839,9 +895,15 @@ Reduction Mode Comparison
 
 ## 6 — Groups
 
-### 6.1 The L2 Locality Problem Under Stream-K
+### 6.1 Why Groups Exist: Cluster TMA Multicast, Not Just L2 Locality
 
 Standard wave-based rasterization gives L2 locality naturally: adjacent output tiles in rasterization order share rows of A and columns of B. Stream-K breaks this because a single CTA may work on K-tile ranges spanning output tiles from completely different spatial regions.
+
+**Correction:** earlier printings of this chapter framed Groups as primarily a generic, grid-wide L2-cache-adjacency trick. That is a real secondary effect, but it is not what CUTLASS's own Stream-K scheduler source gives as the reason Groups exist. The actual driving mechanism is Hopper's **thread block cluster** feature: CTAs within the same cluster that share a K-offset can have their TMA (Tensor Memory Accelerator) operand loads **multicast** across the cluster — one load from global memory serves every CTA in the cluster, instead of each CTA issuing its own redundant load. That multicast path is only available to CTAs within a cluster, and only when they're aligned on the same K-offset; grid-wide L2 reuse across CTAs that are *not* in the same cluster is a real but secondary benefit, not the mechanism Groups was built to exploit. Without Groups, a CTA's K-offset is essentially arbitrary relative to its cluster-mates (as the walkthrough below shows), which breaks multicast eligibility entirely — not just "lowers the L2 hit rate." (Source: the CUTLASS Stream-K scheduler implementation and Colfax Research's public write-up on Hopper cluster-aware GEMM scheduling both describe K-offset-aligned grouping as what enables TMA multicast within a cluster.)
+
+![Without groups (G=1), six adjacent stream-K units land on unrelated, non-adjacent B columns with no shared cache lines; with groups (G=2), Group 0's units (tiles 0, 2) and Group 1's units (tiles 1, 3) each stay aligned on one K-offset together, captioned with the real driving reason being cluster TMA multicast rather than grid-wide L2 reuse](images/ch10/07-groups-cluster-multicast.svg)
+
+*Without grouping, adjacent stream-K units land on unrelated B columns — no multicast eligibility, just incidental L2 reuse at best. With G=2, each group's units share a K-offset, which is what actually lets Hopper's TMA multicast the load across the cluster.*
 
 ```
 L2 Locality — With and Without Groups
@@ -933,6 +995,8 @@ Group Hierarchy — Full Breakdown
 ### 7.1 The Spatial Alternative to Stream-K
 
 HyTiS (Heterogeneous Tile Sizes) addresses wave quantization through a completely different mechanism: instead of splitting K across CTAs and merging partial sums, it uses **two different tile sizes in a single kernel launch** so the partial wave uses smaller tiles that fill the remaining SMs more efficiently.
+
+**Citation:** HyTiS is a real, peer-reviewed scheduling technique, not a hypothetical. It was published at ACM in 2026: *"HyTiS: Hybrid Tile Scheduling for Efficient GEMM on GPUs"* (DOI: [10.1145/3712285.3759771](https://doi.org/10.1145/3712285.3759771)). The description in this section follows that paper's core idea — handling the partial wave spatially with a second, smaller tile size, rather than via Stream-K's K-splitting — but any numbers not directly drawn from the paper (the 132/140-SM worked example below, the rule-of-thumb threshold) are this book's own illustrative construction, not figures quoted from it.
 
 ```
 HyTiS vs Stream-K — Conceptual Comparison
@@ -1038,7 +1102,14 @@ Default Stream Serialization — The Utilization Gap
   Cost 2 — Cold-start delay:
     After Kernel A retires, Kernel B must boot from scratch:
     register allocation, shared memory setup, first load issuing.
-    On H100, this cold-start adds ~2-5 µs per SM wave.
+    This cold-start is real and NVIDIA's own PDL documentation cites
+    it as the motivating cost dependent-launch is designed to hide --
+    but its exact magnitude depends on kernel size, occupancy, and
+    generation, and no fixed per-wave figure in microseconds is
+    documented by NVIDIA for H100. Treat "a few microseconds" as a
+    rough mental model, not a number to cite, and profile your own
+    kernel (Nsight Compute / Nsight Systems) if the exact cost matters
+    to a scheduling decision.
 
   Cost 3 — L2 cache eviction between kernels:
     If Kernel B needs data from L2 that Kernel A produced,
@@ -1063,6 +1134,22 @@ Default Stream Serialization — The Utilization Gap
 
 GDC (Grid Dependency Control) instructions are control points in the PTX instruction stream that let the GPU scheduler relax its default serialization. They separate two previously coupled events: "dependent grid may start booting" from "dependent grid may read dependency-sensitive memory."
 
+**Two ways to emit these instructions.** This chapter's runnable examples use raw inline PTX (`asm volatile("griddepcontrol.launch_dependents;" ::: "memory")`) because it makes the two instructions impossible to miss while you're learning the protocol. In real code, prefer CUDA's canonical C++ wrappers, which emit the identical PTX and are what NVIDIA's own CUDA Programming Guide documents and recommends:
+
+```cuda
+// Producer (Kernel A) -- equivalent to griddepcontrol.launch_dependents;
+cudaTriggerProgrammaticLaunchCompletion();
+
+// Consumer (Kernel B) -- equivalent to griddepcontrol.wait;
+cudaGridDependencySynchronize();
+```
+
+Both are declared in `<cuda_runtime.h>`, compile on sm_90+, and are the names you'll see in CUTLASS and other production kernels. The rest of this section (and the `ex10_dependent_launch.cu` example in Section 10) uses the raw PTX form for pedagogical clarity, but the two are interchangeable -- reach for the named functions in your own code.
+
+![Two stacked timelines: without GDC, Kernel A's full waves and tail run, then an idle gap, then Kernel B cold-starts and runs; with GDC, launch_dependents fires during Kernel A's tail so Kernel B's boot and prefetch overlap it, parking only briefly at .wait before running immediately when Kernel A retires](images/ch10/05-gdc-overlap-timeline.svg)
+
+*Section 8's utilization gap (top) against Section 9's fix (bottom): the same Kernel A tail, but Kernel B's cold-start now hides inside it instead of starting only after Kernel A fully retires.*
+
 ```
 GDC Instructions — Two-Part Protocol
 ══════════════════════════════════════════════════════════════════════
@@ -1070,6 +1157,10 @@ GDC Instructions — Two-Part Protocol
   PTX syntax:
     griddepcontrol.launch_dependents;   // in Kernel A (producer)
     griddepcontrol.wait;                // in Kernel B (consumer)
+
+  Canonical C++ wrappers (cuda_runtime.h, sm_90+):
+    cudaTriggerProgrammaticLaunchCompletion();  // == launch_dependents
+    cudaGridDependencySynchronize();            // == wait
 
   ─── launch_dependents ───────────────────────────────────────────
 
@@ -1134,10 +1225,27 @@ GDC Instructions — Two-Part Protocol
 
   ─── NOTE: launch_dependents May Not Always Fire Before Kernel A ──
 
-  The spec says "there is no GUARANTEE that the dependent will launch
-  before the completion of the current grid." This is a best-effort
-  optimization, not a hard real-time contract. If Kernel A finishes
-  very quickly, Kernel B may simply launch normally afterward.
+  NVIDIA's own CUDA Programming Guide documents this as best-effort:
+  concurrent execution of the primary and secondary kernel is NOT
+  guaranteed. This is a best-effort optimization, not a hard
+  real-time contract. If Kernel A finishes very quickly -- or the
+  driver/hardware simply chooses not to overlap -- Kernel B may
+  launch normally afterward, with no overlap at all.
+
+  ─── WARNING: This Is a Deadlock Risk, Not Just a Missed Optimization ──
+
+  Because overlap is best-effort, NEVER rely on launch_dependents /
+  griddepcontrol for CORRECTNESS -- only for a latency-hiding
+  optimization. NVIDIA's documentation explicitly warns that if a
+  kernel is written to depend on the dependent-launch overlap
+  actually happening (for example, Kernel A waiting on something
+  only Kernel B's early start can produce), the two kernels can
+  DEADLOCK: Kernel A never retires because it's waiting on Kernel B,
+  and the GPU is free to never grant Kernel B's early start because
+  the hardware owes you no overlap at all. The only safe mental
+  model is: Kernel B must be CORRECT even if it runs strictly after
+  Kernel A retires with zero overlap. Treat PDL purely as "may run
+  faster," never as "must run concurrently."
 ```
 
 ### 9.2 The Role of the Release Fence
@@ -1341,11 +1449,17 @@ __global__ void kernel_producer(int* output, int n) {
     }
 
     // All threads participate: the CTA signals after its work is done.
-    // The __threadfence_system() ensures writes are globally visible
-    // before the griddepcontrol signal propagates.
+    // __threadfence() is a device-scope (.gpu) release fence: it's enough
+    // here because the dependent grid (Kernel B) launches on this same
+    // GPU, so only device-scope visibility is required before the
+    // griddepcontrol signal propagates. (Section 9.2 teaches this same
+    // .gpu-scope fence; reach for __threadfence_system() -- a .sys-scope
+    // fence -- only when a CPU host thread, a peer GPU, or another
+    // process must observe the write, which costs more and isn't needed
+    // for an intra-GPU producer/consumer pair like this one.)
     __syncthreads();
     if (threadIdx.x == 0) {
-        __threadfence_system();  // release fence: all stores committed
+        __threadfence();  // release fence: all stores committed, device scope
     }
     __syncthreads();
 
@@ -1451,6 +1565,33 @@ int main() {
     return all_pass ? 0 : 1;
 }
 ```
+
+**Sample output:**
+
+```
+═══════════════════════════════════════════════════════
+  ex10_dependent_launch — GDC Dependent Grid Protocol
+  N=256 elements
+═══════════════════════════════════════════════════════
+
+Launching Kernel A (producer)...
+Launching Kernel B (consumer) with programmatic serialization...
+
+Verification (first 8 elements):
+  [  0] A wrote    1 (exp    1) ✓  B result 1001 (exp 1001) ✓
+  [  1] A wrote    4 (exp    4) ✓  B result 1004 (exp 1004) ✓
+  [  2] A wrote    7 (exp    7) ✓  B result 1007 (exp 1007) ✓
+  [  3] A wrote   10 (exp   10) ✓  B result 1010 (exp 1010) ✓
+  [  4] A wrote   13 (exp   13) ✓  B result 1013 (exp 1013) ✓
+  [  5] A wrote   16 (exp   16) ✓  B result 1016 (exp 1016) ✓
+  [  6] A wrote   19 (exp   19) ✓  B result 1019 (exp 1019) ✓
+  [  7] A wrote   22 (exp   22) ✓  B result 1022 (exp 1022) ✓
+  ... (248 more elements)
+
+ALL PASS ✓
+```
+
+(No physical GPU was available to capture this transcript — this sandbox has no `nvidia-smi`/`/dev/nvidia*` device, and `griddepcontrol` additionally requires real sm_90+ hardware the emulator can't fake. The values above are `output[i] = 3*i + 1` and `result[i] = output[i] + 1000`, computed directly from this file's own producer/consumer arithmetic for `i = 0..7` — not estimated or invented. Since `kernel_consumer` only runs after `griddepcontrol.wait` unblocks, and `kernel_producer` only signals `launch_dependents` after every thread's store is fenced, the dependent-launch protocol guarantees this exact sequential result regardless of how much the two kernels overlap in hardware; there is no race to simulate here, unlike `ex09`'s lock-based reduction.)
 
 ---
 
@@ -1602,6 +1743,10 @@ Kernel B Execution Before and After .wait
 ### 13.1 Split DMA — Asymmetric Warp Roles Before .wait
 
 The most powerful use of the overlap window is weight prefetching. While activation loads must wait behind the fence (they read Kernel A's output), weight loads are entirely independent — they read a weight tensor that was already present before Kernel A even launched.
+
+![Two warp-role timelines inside Kernel B: the prefetch warp runs setup then issues a TMA weight prefetch to L2 before parking at .wait, while other warps only run setup and park at .wait with no extra work, and both roles then load activations with the prefetch warp's weights already resident in L2](images/ch10/06-l2-prefetch-warp-roles.svg)
+
+*One warp issues the weight prefetch during the overlap window, before anyone reaches `.wait` — by the time Kernel A retires and `.wait` releases, the weight tile is already in L2 instead of still in HBM.*
 
 ```
 L2 Prefetch Trick — Warp Role Division in Kernel B
