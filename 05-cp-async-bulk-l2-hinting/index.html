@@ -2909,7 +2909,7 @@ the fences and completion mechanisms later in the chapter make sense.</p>
 </span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
 </span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>  ALL of steps 1-6 happen in dedicated hardware with ZERO SM involvement.
 </span></code></pre></div>
-<p><a href="../images/ch05/01-tma-engine-timeline.svg?v=b0c98f94acfd"><img style="min-width: 1008.00px" alt="TMA engine timeline — after cp.async.bulk.tensor is issued" src="../images/ch05/01-tma-engine-timeline.svg?v=b0c98f94acfd" /></a></p>
+<p><a href="../images/ch05/01-tma-engine-timeline.svg?v=b0c98f94acfd"><img alt="TMA engine timeline — after cp.async.bulk.tensor is issued" src="../images/ch05/01-tma-engine-timeline.svg?v=b0c98f94acfd" /></a></p>
 <p><em>The issuing thread runs one instruction and is immediately free — for compute, for tensor cores, for anything else. The TMA engine then works through its four internal steps (read descriptor, calculate addresses, fetch from HBM, write to SMEM) entirely in the background. As bytes land, the mbarrier's transaction count decrements; when it reaches zero, the phase flips and waiting consumers unblock. None of this touches an SM instruction slot after the initial issue.</em></p>
 <hr />
 <h2 id="2-cpasync-ampere-vs-cpasyncbulk-hopper">2 — cp.async (Ampere) vs cp.async.bulk (Hopper)<a class="headerlink" href="#2-cpasync-ampere-vs-cpasyncbulk-hopper" title="Permanent link">&para;</a></h2>
@@ -2984,7 +2984,7 @@ the Ampere diagram above.</p>
 </span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>
 </span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>  Uses: TMA engine — NOT the LSU. NOT warp schedulers (beyond 1 issue).
 </span></code></pre></div>
-<p><a href="../images/ch05/02-ampere-vs-hopper-occupancy.svg?v=5d056dc6b4b6"><img style="min-width: 1008.00px" alt="Ampere cp.async vs Hopper cp.async.bulk — hardware occupancy for a 4 KB tile" src="../images/ch05/02-ampere-vs-hopper-occupancy.svg?v=5d056dc6b4b6" /></a></p>
+<p><a href="../images/ch05/02-ampere-vs-hopper-occupancy.svg?v=5d056dc6b4b6"><img alt="Ampere cp.async vs Hopper cp.async.bulk — hardware occupancy for a 4 KB tile" src="../images/ch05/02-ampere-vs-hopper-occupancy.svg?v=5d056dc6b4b6" /></a></p>
 <p><em>Ampere's path keeps the warp schedulers occupied issuing 256 <code>cp.async</code> calls and the LSU busy handling every 16-byte chunk, leaving the tensor cores idle because the threads are consumed by copy management. Hopper's path issues one instruction, leaves the warp schedulers free immediately, hands the transfer to the TMA engine running independently, and leaves the tensor cores fully available for math.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>  ─── Quantified Difference ───────────────────────────────────────
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
@@ -3057,7 +3057,7 @@ modifier depends on which one you're in.</p>
 </span><span id="__span-10-28"><a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a>    cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes
 </span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a>        [smem_dest], [gmem_src], 4096, [mbar_addr];
 </span></code></pre></div>
-<p><a href="../images/ch05/03-tensor-vs-raw-layout.svg?v=d3ff612a86c7"><img style="min-width: 1008.00px" alt="cp.async.bulk.tensor vs cp.async.bulk — the key visual difference" src="../images/ch05/03-tensor-vs-raw-layout.svg?v=d3ff612a86c7" /></a></p>
+<p><a href="../images/ch05/03-tensor-vs-raw-layout.svg?v=d3ff612a86c7"><img alt="cp.async.bulk.tensor vs cp.async.bulk — the key visual difference" src="../images/ch05/03-tensor-vs-raw-layout.svg?v=d3ff612a86c7" /></a></p>
 <p><em>With <code>.tensor</code>, TMA is handed a descriptor and derives shape; without it, TMA is handed only a size and an address and performs a blind copy.</em></p>
 <h3 id="32-full-instruction-template-every-field-explained">3.2 Full Instruction Template — Every Field Explained<a class="headerlink" href="#32-full-instruction-template-every-field-explained" title="Permanent link">&para;</a></h3>
 <p>Every field of the instruction, in order. Come back to this whenever a variant
@@ -3238,7 +3238,7 @@ expansion never exists in memory at all.</p>
 </span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>            strides     → navigate to each row
 </span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>            boxDim      → know when to stop
 </span></code></pre></div>
-<p><a href="../images/ch05/04-tile-mode-rectangular-fetch.svg?v=688ae6e52ac4"><img style="min-width: 957.60px" alt=".tile mode — dense rectangular fetch from a global matrix" src="../images/ch05/04-tile-mode-rectangular-fetch.svg?v=688ae6e52ac4" /></a></p>
+<p><a href="../images/ch05/04-tile-mode-rectangular-fetch.svg?v=688ae6e52ac4"><img alt=".tile mode — dense rectangular fetch from a global matrix" src="../images/ch05/04-tile-mode-rectangular-fetch.svg?v=688ae6e52ac4" /></a></p>
 <p><em>The coordinate <code>(col=64, row=32)</code> locates the tile's top-left corner; the descriptor's <code>boxDim={32,16}</code> tells TMA how far to extend it — 32 columns by 16 rows, 512 elements. TMA computes <code>element[r][c] = base + (row+r)·stride + (col+c)·sizeof(T)</code> for every <code>r ∈ [0,15]</code>, <code>c ∈ [0,31]</code> as a nested loop run entirely in hardware; thread involvement is zero.</em></p>
 <h3 id="62-im2col-hardware-accelerated-convolution">6.2 im2col — Hardware-Accelerated Convolution<a class="headerlink" href="#62-im2col-hardware-accelerated-convolution" title="Permanent link">&para;</a></h3>
 <p>The <code>im2col</code> mode is a hardware feature specific to convolution. In traditional GPU convolution, you first transform the input image into a "column matrix" (the im2col transformation) and then perform a GEMM. The im2col step wastes memory bandwidth and register space.</p>
@@ -3246,7 +3246,7 @@ expansion never exists in memory at all.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>im2col Mode — Hardware Convolution Acceleration
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>══════════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><a href="../images/ch05/05-im2col-flow-comparison.svg?v=f5f13f94d007"><img style="min-width: 1008.00px" alt="im2col — traditional flow vs TMA hardware convolution" src="../images/ch05/05-im2col-flow-comparison.svg?v=f5f13f94d007" /></a></p>
+<p><a href="../images/ch05/05-im2col-flow-comparison.svg?v=f5f13f94d007"><img alt="im2col — traditional flow vs TMA hardware convolution" src="../images/ch05/05-im2col-flow-comparison.svg?v=f5f13f94d007" /></a></p>
 <p><em>Traditionally, a separate im2col kernel reads pixels, computes overlapping-window offsets, and writes a wasteful intermediate "columns" matrix to global memory before the GEMM can run. TMA's im2col mode collapses this to one instruction: it reads pixels using convolution-window logic and unrolls them directly into SMEM as a column layout, so the intermediate HBM buffer and the separate kernel launch never happen.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>  Benefits:
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>  ├── Eliminates the intermediate global memory buffer (saves HBM bandwidth)
@@ -3749,7 +3749,7 @@ hangs rather than producing wrong numbers, which is at least an honest failure.<
 </span><span id="__span-25-20"><a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>      → Block 3's SMEM: ✓ receives A0
 </span><span id="__span-25-21"><a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a>  Total HBM reads: 1 × 4 KB = 4 KB. 4× bandwidth savings!
 </span></code></pre></div>
-<p><a href="../images/ch05/06-tma-multicast-fanout.svg?v=2d74fe5e96fd"><img style="min-width: 957.60px" alt="TMA multicast — one HBM fetch, delivered to every block's SMEM" src="../images/ch05/06-tma-multicast-fanout.svg?v=2d74fe5e96fd" /></a></p>
+<p><a href="../images/ch05/06-tma-multicast-fanout.svg?v=2d74fe5e96fd"><img alt="TMA multicast — one HBM fetch, delivered to every block's SMEM" src="../images/ch05/06-tma-multicast-fanout.svg?v=2d74fe5e96fd" /></a></p>
 <p><em>One HBM read lands in L2, whose controller recognizes the multicast request and broadcasts the tile to every block named in the ctaMask simultaneously — here all four of SM0-SM3's SMEM.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>  Multicast savings = (cluster_size - 1) × tile_bytes of HBM bandwidth
 </span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>  For cluster_size=8: 7 × tile_bytes saved per tile fetch!
@@ -3907,7 +3907,7 @@ and getting either wrong is a silent misalignment rather than an error.</p>
 </span><span id="__span-29-29"><a id="__codelineno-29-29" name="__codelineno-29-29" href="#__codelineno-29-29"></a>  // 128 bytes (mbar + padding) + tile_bytes
 </span><span id="__span-29-30"><a id="__codelineno-29-30" name="__codelineno-29-30" href="#__codelineno-29-30"></a>  // Pass to kernel launch: my_kernel&lt;&lt;&lt;grid, block, 128+TILE_BYTES&gt;&gt;&gt;(...)
 </span></code></pre></div>
-<p><a href="../images/ch05/07-dynamic-smem-alignment.svg?v=f11c3ae01cbb"><img style="min-width: 1008.00px" alt="Dynamic shared memory layout for TMA — wrong vs correct alignment" src="../images/ch05/07-dynamic-smem-alignment.svg?v=f11c3ae01cbb" /></a></p>
+<p><a href="../images/ch05/07-dynamic-smem-alignment.svg?v=f11c3ae01cbb"><img alt="Dynamic shared memory layout for TMA — wrong vs correct alignment" src="../images/ch05/07-dynamic-smem-alignment.svg?v=f11c3ae01cbb" /></a></p>
 <p><em>Placing data right after the 8-byte mbarrier leaves it at byte offset 8 — not a multiple of 128, which silently corrupts TMA's swizzled writes. Rounding the offset up to the next 128-byte boundary (padding bytes 8-127) gives TMA the alignment its SWIZZLE_128B destination requires.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>  ─── Template for Multiple Tiles (double buffering) ───────────────
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>
@@ -3940,7 +3940,7 @@ guarantee that data will be there.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>cp.async.bulk.prefetch — How It Works
 </span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>══════════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><a href="../images/ch05/08-prefetch-timeline.svg?v=802a24145390"><img style="min-width: 1008.00px" alt="cp.async.bulk.prefetch — warming L2 ahead of the real load" src="../images/ch05/08-prefetch-timeline.svg?v=802a24145390" /></a></p>
+<p><a href="../images/ch05/08-prefetch-timeline.svg?v=802a24145390"><img alt="cp.async.bulk.prefetch — warming L2 ahead of the real load" src="../images/ch05/08-prefetch-timeline.svg?v=802a24145390" /></a></p>
 <p><em>Without prefetch, the real <code>cp.async.bulk</code> is the first thing to touch HBM, so once compute on tile K finishes the threads sit idle for the full ~200 μs HBM round trip. With prefetch issued early, that HBM transfer overlaps with compute on tile K; by the time the real <code>cp.async.bulk</code> is issued, L2 is already warm and the transfer is a fast L2 hit instead.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>  PTX syntax:
 </span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>  ─────────────────────────────────────────────────────────────────

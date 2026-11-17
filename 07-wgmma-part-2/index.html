@@ -2995,7 +2995,7 @@ next tile qualifies. Computing the next set of descriptors qualifies. Reading
 actually go.</p>
 <h3 id="41-the-complete-overlap-pattern">4.1 The Complete Overlap Pattern<a class="headerlink" href="#41-the-complete-overlap-pattern" title="Permanent link">&para;</a></h3>
 <p>The real power of groups becomes clear when you see the full pipeline. The key insight is that you are not just "commit then wait" — you are interleaving math, data preparation, and synchronization so that tensor cores are never idle.</p>
-<p><a href="../images/ch07/01-commit-wait-pipeline-timeline.svg?v=45455ba6c340"><img style="min-width: 1130.01px" alt="wgmma commit/wait groups: naive wait-after-every-batch vs the pipelined pattern, with tensor-core occupancy underneath each" src="../images/ch07/01-commit-wait-pipeline-timeline.svg?v=45455ba6c340" /></a></p>
+<p><a href="../images/ch07/01-commit-wait-pipeline-timeline.svg?v=45455ba6c340"><img alt="wgmma commit/wait groups: naive wait-after-every-batch vs the pipelined pattern, with tensor-core occupancy underneath each" src="../images/ch07/01-commit-wait-pipeline-timeline.svg?v=45455ba6c340" /></a></p>
 <p><em>Naive wait-after-every-batch leaves the tensor cores idle during every wait and store; wait_group&lt;1&gt; keeps the newest batch running while the completed one's epilogue proceeds.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>The Pipelined wgmma Pattern — Complete Timeline
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3066,7 +3066,7 @@ Read this before you go debugging a pipeline that produces intermittently wrong
 results.</p>
 <h3 id="51-the-two-things-wgmmafence-controls">5.1 The Two Things wgmma.fence Controls<a class="headerlink" href="#51-the-two-things-wgmmafence-controls" title="Permanent link">&para;</a></h3>
 <p>At this point in the course you have seen wgmma.fence appear in multiple contexts. It is worth consolidating exactly what it does and does not do, because the confusion between its roles causes hard-to-debug bugs.</p>
-<p><a href="../images/ch07/02-wgmma-fence-placement.svg?v=131ebf5725a1"><img style="min-width: 996.47px" alt="wgmma.fence's two roles placed on the same pipeline: group-boundary marker before the K-loop, register-hazard control after wait_group" src="../images/ch07/02-wgmma-fence-placement.svg?v=131ebf5725a1" /></a></p>
+<p><a href="../images/ch07/02-wgmma-fence-placement.svg?v=131ebf5725a1"><img alt="wgmma.fence's two roles placed on the same pipeline: group-boundary marker before the K-loop, register-hazard control after wait_group" src="../images/ch07/02-wgmma-fence-placement.svg?v=131ebf5725a1" /></a></p>
 <p><em>The same instruction, two placements: once before the first wgmma of a new group (Role 1), once after wait_group&lt;0&gt; and before reading d[] (Role 2).</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>wgmma.fence.sync.aligned — Complete Role Summary
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3197,7 +3197,7 @@ read a tile in with one, you can write it out with the other using the same
 address arithmetic.</p>
 <h3 id="71-phase-1-address-responsibility">7.1 Phase 1: Address Responsibility<a class="headerlink" href="#71-phase-1-address-responsibility" title="Permanent link">&para;</a></h3>
 <p>The address assignment in stmatrix follows the SAME pattern as ldmatrix. This symmetry is intentional — if you read with ldmatrix and write with stmatrix using the same address formula, the data is correctly reconstructed.</p>
-<p><a href="../images/ch07/03-stmatrix-address-quadrants.svg?v=d4ed929a4418"><img style="min-width: 895.57px" alt="The 16x16 tile split into four quadrants, each owned by a group of 8 lanes" src="../images/ch07/03-stmatrix-address-quadrants.svg?v=d4ed929a4418" /></a></p>
+<p><a href="../images/ch07/03-stmatrix-address-quadrants.svg?v=d4ed929a4418"><img alt="The 16x16 tile split into four quadrants, each owned by a group of 8 lanes" src="../images/ch07/03-stmatrix-address-quadrants.svg?v=d4ed929a4418" /></a></p>
 <p><em>Lanes 0-7, 8-15, 16-23 and 24-31 each point into one quadrant — the same quadrant-to-lane mapping ldmatrix used to read the tile in.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>stmatrix Address Phase — Who Points Where
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3259,7 +3259,7 @@ address arithmetic.</p>
 </span></code></pre></div>
 <h3 id="72-phase-2-register-source-layout">7.2 Phase 2: Register Source Layout<a class="headerlink" href="#72-phase-2-register-source-layout" title="Permanent link">&para;</a></h3>
 <p>The register layout for stmatrix is the "striped" layout — each thread owns non-contiguous elements across the tile. This is the exact layout that wgmma writes to, so you can feed wgmma output registers directly to stmatrix with no shuffling.</p>
-<p><a href="../images/ch07/04-stmatrix-register-scatter.svg?v=83cba2a93509"><img style="min-width: 1309.21px" alt="Three sample threads' four registers each, and how lanes 0-7 together cover rows 0 and 8 of the destination tile" src="../images/ch07/04-stmatrix-register-scatter.svg?v=83cba2a93509" /></a></p>
+<p><a href="../images/ch07/04-stmatrix-register-scatter.svg?v=83cba2a93509"><img alt="Three sample threads' four registers each, and how lanes 0-7 together cover rows 0 and 8 of the destination tile" src="../images/ch07/04-stmatrix-register-scatter.svg?v=83cba2a93509" /></a></p>
 <p><em>Thread T holds columns [2T, 2T+1] in rows 0 and 8 — the same striped pattern wgmma already wrote its output in, so no shuffle sits between the two instructions.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>stmatrix Register Source — The Striped Layout
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3464,7 +3464,7 @@ different things, and the Transformer Engine switches between them accordingly.<
 <h3 id="102-e4m3-vs-e5m2-different-tools-for-different-phases">10.2 E4M3 vs E5M2 — Different Tools for Different Phases<a class="headerlink" href="#102-e4m3-vs-e5m2-different-tools-for-different-phases" title="Permanent link">&para;</a></h3>
 <p>The practical division: E4M3 forward, E5M2 backward. The reason is that
 gradients span a far wider range than activations, and range is what E5M2 buys.</p>
-<p><a href="../images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg?v=5f3bcf5c62e0"><img style="min-width: 941.26px" alt="E4M3's sign/4-bit-exponent/3-bit-mantissa layout next to E5M2's sign/5-bit-exponent/2-bit-mantissa layout" src="../images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg?v=5f3bcf5c62e0" /></a></p>
+<p><a href="../images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg?v=5f3bcf5c62e0"><img alt="E4M3's sign/4-bit-exponent/3-bit-mantissa layout next to E5M2's sign/5-bit-exponent/2-bit-mantissa layout" src="../images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg?v=5f3bcf5c62e0" /></a></p>
 <p><em>The same 8 bits, split two different ways: E4M3 trades range for precision (forward pass), E5M2 trades precision for range (backward pass).</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>E4M3 vs E5M2 — Why Two Formats Exist
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3530,7 +3530,7 @@ byte and you have paid for thirty-two. Packing is how you make sure the other
 thirty-one are useful to you.</p>
 <h3 id="111-why-packing-is-necessary">11.1 Why Packing Is Necessary<a class="headerlink" href="#111-why-packing-is-necessary" title="Permanent link">&para;</a></h3>
 <p>The GPU memory controller never fetches less than 32 bytes (one "sector") at a time. If you request a single FP8 byte, the GPU fetches 32 bytes, delivers your 1 byte, and wastes the other 31. To fix this, FP8 values must always be accessed in packed groups. NVIDIA defines two packing types: <code>x2</code> (two FP8 in 16 bits) and <code>x4</code> (four FP8 in 32 bits).</p>
-<p><a href="../images/ch07/06-fp8-packed-x4-x2.svg?v=297710f46f9e"><img style="min-width: 1157.80px" alt="Four FP8 values packed into one 32-bit register (x4) versus two FP8 values packed into one 16-bit register (x2)" src="../images/ch07/06-fp8-packed-x4-x2.svg?v=297710f46f9e" /></a></p>
+<p><a href="../images/ch07/06-fp8-packed-x4-x2.svg?v=297710f46f9e"><img alt="Four FP8 values packed into one 32-bit register (x4) versus two FP8 values packed into one 16-bit register (x2)" src="../images/ch07/06-fp8-packed-x4-x2.svg?v=297710f46f9e" /></a></p>
 <p><em>x4 fills a whole register for storage/transport; x2 matches FP16 width for feeding WGMMA and for cvt output.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>FP8 Packed Types — x2 and x4
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3898,7 +3898,7 @@ values — which is what §16 and §17 are for.</p>
 <h3 id="151-what-sparse-wgmma-is">15.1 What Sparse WGMMA Is<a class="headerlink" href="#151-what-sparse-wgmma-is" title="Permanent link">&para;</a></h3>
 <p>Sparse WGMMA is a variant where matrix A is <strong>structured sparse</strong>: for every group of 4 consecutive elements in each row, exactly 2 are zero. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.</p>
 <p>The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. This information is encoded in a "metadata" register (sp-meta) that accompanies the sparse A matrix.</p>
-<p><a href="../images/ch07/07-sparse-wgmma-2-4-metadata.svg?v=66b3d923c6b7"><img style="min-width: 1065.22px" alt="A row of 8 values split into two quartets, compacted down to 4 stored values, with their sp-meta encoding and the 4-thread sp-sel group below" src="../images/ch07/07-sparse-wgmma-2-4-metadata.svg?v=66b3d923c6b7" /></a></p>
+<p><a href="../images/ch07/07-sparse-wgmma-2-4-metadata.svg?v=66b3d923c6b7"><img alt="A row of 8 values split into two quartets, compacted down to 4 stored values, with their sp-meta encoding and the 4-thread sp-sel group below" src="../images/ch07/07-sparse-wgmma-2-4-metadata.svg?v=66b3d923c6b7" /></a></p>
 <p><em>The full chain previewed here and detailed in §16-17: which elements survive (top), how sp-meta packs their positions (middle), and which thread(s) sp-sel reads that metadata from (bottom).</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>2:4 Structured Sparsity — The Pattern and Its Benefits
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>══════════════════════════════════════════════════════════════════════

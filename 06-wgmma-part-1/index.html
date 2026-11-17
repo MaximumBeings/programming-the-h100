@@ -2854,7 +2854,7 @@ than computing. Hopper changes all four of those things at once.</p>
 consequence of one of them, so it is worth reading before the details start.</p>
 <h3 id="11-what-changed-in-hoppers-tensor-cores">1.1 What Changed in Hopper's Tensor Cores<a class="headerlink" href="#11-what-changed-in-hoppers-tensor-cores" title="Permanent link">&para;</a></h3>
 <p>Ampere's tensor cores were good. Hopper's are in a different class — not just because of raw FLOP counts, but because of fundamental architectural changes that allow the compute units to stay busy nearly 100% of the time. There are four specific innovations, and each one removes a bottleneck that existed in Ampere.</p>
-<p><a href="../images/ch06/01-four-innovations-ampere-vs-hopper.svg?v=62899ec8c5a0"><img style="min-width: 1008.00px" alt="The four Hopper MMA innovations, Ampere vs Hopper per innovation" src="../images/ch06/01-four-innovations-ampere-vs-hopper.svg?v=62899ec8c5a0" /></a></p>
+<p><a href="../images/ch06/01-four-innovations-ampere-vs-hopper.svg?v=62899ec8c5a0"><img alt="The four Hopper MMA innovations, Ampere vs Hopper per innovation" src="../images/ch06/01-four-innovations-ampere-vs-hopper.svg?v=62899ec8c5a0" /></a></p>
 <p><em>The four Hopper MMA innovations — what each one fixes relative to Ampere's mma.sync.</em></p>
 <p>Each has a consequence worth stating plainly. Async math (1) means multiple <code>wgmma</code> operations can be in-flight at once; the tensor cores are never forced to idle between instructions. The warp-group execution unit (2) means a single <code>wgmma</code> handles 4× more data per instruction, with the warp scheduler fusing all four warps and dispatching them together — no inter-warp pipelining overhead. The direct SMEM path (3) eliminates register-loading latency from the critical path and frees registers for other uses; the bottleneck shifts to SMEM→tensor-core bandwidth instead. FP8 and structured sparsity (4) are first-class instruction variants, not software emulation — FP8 (E4M3, E5M2) gives 2× throughput over FP16, and 2:4 structured sparsity (2 non-zero elements per 4) gives another 2× on sparse matrices. All four combine to take Ampere's ≈312 TFLOPS (BF16, dense) to Hopper's ≈1,979 TFLOPS (FP8, dense) — more than a 6× jump, and architecture is most of that: H100's own BF16 figure is already ≈989 TFLOPS, so the FP8-specific hardware (innovation 4) accounts for roughly another 2× on top of the architectural gains from innovations 1-3.</p>
 <hr />
@@ -2872,7 +2872,7 @@ which is what §8 is about.</p>
 <h3 id="21-what-is-a-warp-group">2.1 What Is a Warp Group?<a class="headerlink" href="#21-what-is-a-warp-group" title="Permanent link">&para;</a></h3>
 <p>A <strong>warp group</strong> is a set of 4 consecutive warps within a thread block that are fused together by the hardware for wgmma execution. A warp has 32 threads; a warp group has 4 × 32 = <strong>128 threads</strong>. The warp group is the new fundamental unit of tensor core computation on Hopper.</p>
 <p>This is a significant paradigm shift. For a decade, the warp (32 threads) was the unit of SIMT execution on NVIDIA GPUs. Every instruction — loads, math, branches — was issued per-warp. Hopper adds warp group as a higher-level concept specifically for tensor core operations.</p>
-<p><a href="../images/ch06/02-warp-group-structure.svg?v=9aee18121968"><img style="min-width: 1008.00px" alt="Warp group structure: four warps fusing into one wgmma issuer" src="../images/ch06/02-warp-group-structure.svg?v=9aee18121968" /></a></p>
+<p><a href="../images/ch06/02-warp-group-structure.svg?v=9aee18121968"><img alt="Warp group structure: four warps fusing into one wgmma issuer" src="../images/ch06/02-warp-group-structure.svg?v=9aee18121968" /></a></p>
 <p><em>A warp group is 4 consecutive warps (128 threads) fused by the hardware into a single wgmma issuer; each warp group in a block operates independently on its own tile.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Warp Group — Structure and Execution
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
@@ -2932,7 +2932,7 @@ to stop the compiler from rearranging what follows.</p>
 </span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>  Then: Use stmatrix to write results from registers back to SMEM
 </span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>        or directly use them for further computation (e.g., softmax in attention).
 </span></code></pre></div>
-<p><a href="../images/ch06/03-wgmma-pipeline-timeline.svg?v=0218c5f93a43"><img style="min-width: 1008.00px" alt="Double-buffered K-loop timeline: TMA load overlapped with wgmma math" src="../images/ch06/03-wgmma-pipeline-timeline.svg?v=0218c5f93a43" /></a></p>
+<p><a href="../images/ch06/03-wgmma-pipeline-timeline.svg?v=0218c5f93a43"><img alt="Double-buffered K-loop timeline: TMA load overlapped with wgmma math" src="../images/ch06/03-wgmma-pipeline-timeline.svg?v=0218c5f93a43" /></a></p>
 <p><em>wgmma on tile K overlaps the TMA load of tile K+1 — possible only because wgmma.mma_async is non-blocking (async).</em></p>
 <hr />
 <h2 id="4-wgmmafencesyncaligned-the-register-barrier">4 — wgmma.fence.sync.aligned — The Register Barrier<a class="headerlink" href="#4-wgmmafencesyncaligned-the-register-barrier" title="Permanent link">&para;</a></h2>
@@ -3384,7 +3384,7 @@ usually not the thread that receives that data. The two phases have nothing to
 do with each other.</p>
 <h3 id="101-the-two-phase-execution">10.1 The Two-Phase Execution<a class="headerlink" href="#101-the-two-phase-execution" title="Permanent link">&para;</a></h3>
 <p><code>ldmatrix</code> works in two distinct phases that are important to understand for writing the correct address calculation.</p>
-<p><a href="../images/ch06/04-ldmatrix-two-phase.svg?v=e46f96dad4f0"><img style="min-width: 1008.00px" alt="ldmatrix.x4 two-phase execution: address phase vs register phase for a 16×16 BF16 tile" src="../images/ch06/04-ldmatrix-two-phase.svg?v=e46f96dad4f0" /></a></p>
+<p><a href="../images/ch06/04-ldmatrix-two-phase.svg?v=e46f96dad4f0"><img alt="ldmatrix.x4 two-phase execution: address phase vs register phase for a 16×16 BF16 tile" src="../images/ch06/04-ldmatrix-two-phase.svg?v=e46f96dad4f0" /></a></p>
 <p><em>Context: loading a 16×16 BF16 tile (4 × 8×8 sub-matrices) with .x4. Phase 1 (address phase): the warp splits into left/right vertical strips (lanes 0-15 → cols 0-7, lanes 16-31 → cols 8-15), and within each strip, groups of 8 lanes each point to one row of an 8×8 quadrant. Phase 2 (register phase): after the hardware reads from SMEM, it redistributes the data row-striped across groups of 4 threads — the same pattern for every one of M0..M3. The critical insight: the thread that PROVIDED an address in Phase 1 is not necessarily the thread that RECEIVES the data in Phase 2. Thread 0 may point to row 0's memory, but threads 0-3 all get parts of row 0, and thread 8 (which pointed to row 2's memory) also gets part of row 0 — the hardware reshuffles internally, transparently, as long as you use the correct address calculation formula.</em></p>
 <hr />
 <h2 id="11-swizzle-address-calculation">11 — Swizzle Address Calculation<a class="headerlink" href="#11-swizzle-address-calculation" title="Permanent link">&para;</a></h2>
@@ -3432,7 +3432,7 @@ code you write against it.</p>
 </span><span id="__span-14-33"><a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>  Without swizzle: bank = (base + 384)/4 % 32 = bank from linear layout
 </span><span id="__span-14-34"><a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>  With swizzle:    bank = (base + 384 XOR 48)/4 % 32 = different bank!
 </span></code></pre></div>
-<p><a href="../images/ch06/05-swizzle-xor-address.svg?v=8e46ff65be27"><img style="min-width: 1008.00px" alt="128B swizzle: XORing row bits into bank bits, rows 0-3" src="../images/ch06/05-swizzle-xor-address.svg?v=8e46ff65be27" /></a></p>
+<p><a href="../images/ch06/05-swizzle-xor-address.svg?v=8e46ff65be27"><img alt="128B swizzle: XORing row bits into bank bits, rows 0-3" src="../images/ch06/05-swizzle-xor-address.svg?v=8e46ff65be27" /></a></p>
 <p><em>Every row gets a different mask → a different bank shift for the same column. No two rows collide in the same bank — the XOR is what makes the access conflict-free.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>  ─── Code Pattern for ldmatrix Address Calculation ───────────────
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
@@ -3479,7 +3479,7 @@ and wgmma reads the correct memory in the wrong order — again, silently.</p>
 <h3 id="121-what-the-descriptor-is">12.1 What the Descriptor Is<a class="headerlink" href="#121-what-the-descriptor-is" title="Permanent link">&para;</a></h3>
 <p>The WGMMA descriptor is a <strong>64-bit integer</strong> (stored in a register) that encodes everything wgmma needs to find and read a matrix tile from shared memory. It replaces the need for threads to compute element addresses at runtime — the hardware interprets the descriptor and generates all required SMEM accesses internally.</p>
 <p>Both A (when reading from SMEM) and B operands require descriptors. The descriptor encodes: base address, leading byte offset (LBO), stride byte offset (SBO), matrix base offset, and swizzle mode.</p>
-<p><a href="../images/ch06/06-wgmma-descriptor-bits.svg?v=5dd14628eb72"><img style="min-width: 1210.00px" alt="The 64-bit WGMMA descriptor, field by field" src="../images/ch06/06-wgmma-descriptor-bits.svg?v=5dd14628eb72" /></a></p>
+<p><a href="../images/ch06/06-wgmma-descriptor-bits.svg?v=5dd14628eb72"><img alt="The 64-bit WGMMA descriptor, field by field" src="../images/ch06/06-wgmma-descriptor-bits.svg?v=5dd14628eb72" /></a></p>
 <p><em>Base, LBO, and SBO each occupy 14 bits (0-13, 16-29, 32-45) and store stride_bytes / 16; bits 14-15 and 30-31 are unused padding that keeps each field 16-bit-aligned within the word. Matrix base offset is 3 bits (49-51), reserved is 13 bits (46-48 and 52-61), and swizzle mode is 2 bits (62-63).</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>WGMMA Descriptor — 64-Bit Layout
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3641,7 +3641,7 @@ see which of the two you need.</p>
 </span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>  For N=128, BF16: 8 cols × 2 bytes = 16 bytes.
 </span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>  SBO_field = 16 / 16 = 1.
 </span></code></pre></div>
-<p><a href="../images/ch06/07-lbo-sbo-checkerboard.svg?v=f12051314b27"><img style="min-width: 967.68px" alt="LBO and SBO as jumps across a checkerboard of 8×8 sub-blocks" src="../images/ch06/07-lbo-sbo-checkerboard.svg?v=f12051314b27" /></a></p>
+<p><a href="../images/ch06/07-lbo-sbo-checkerboard.svg?v=f12051314b27"><img alt="LBO and SBO as jumps across a checkerboard of 8×8 sub-blocks" src="../images/ch06/07-lbo-sbo-checkerboard.svg?v=f12051314b27" /></a></p>
 <p><em>Think of the matrix tile as a checkerboard of 8×8 BF16 sub-blocks. LBO tells the hardware "to go to the next column of sub-blocks, skip X bytes"; SBO tells it "to go to the next row of sub-blocks, skip Y bytes." Together they let wgmma traverse any 2D tile layout in SMEM.</em></p>
 <h3 id="133-matrix-base-offset-and-swizzle-mode-bits">13.3 Matrix Base Offset and Swizzle Mode Bits<a class="headerlink" href="#133-matrix-base-offset-and-swizzle-mode-bits" title="Permanent link">&para;</a></h3>
 <p>The remaining fields. The swizzle bits must agree with what the TMA did when it

@@ -2649,7 +2649,7 @@ calls — and you get the following.</p>
 </span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>
 </span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>  Scaling: S grows as N². At N = 32k it is 2.1 GB per head.
 </span></code></pre></div>
-<p><a href="../images/ch12/01-materialization-traffic.svg?v=51168e5d9b2a"><img style="min-width: 676.37px" alt="Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction" src="../images/ch12/01-materialization-traffic.svg?v=51168e5d9b2a" /></a></p>
+<p><a href="../images/ch12/01-materialization-traffic.svg?v=51168e5d9b2a"><img alt="Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction" src="../images/ch12/01-materialization-traffic.svg?v=51168e5d9b2a" /></a></p>
 <p>The whole of FlashAttention rests on one observation: <strong><code>S</code> and <code>P</code> never need to
 exist in HBM.</strong> They are intermediates. If you can compute the output tile by
 tile, keeping each <code>S</code> tile in shared memory and throwing it away, the traffic
@@ -2840,7 +2840,7 @@ multiplicative factor.</p>
 </span><span id="__span-7-60"><a id="__codelineno-7-60" name="__codelineno-7-60" href="#__codelineno-7-60"></a>  That single multiply is why attention can be tiled.
 </span><span id="__span-7-61"><a id="__codelineno-7-61" name="__codelineno-7-61" href="#__codelineno-7-61"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><a href="../images/ch12/02-online-softmax-timeline.svg?v=14d2c9f7e51b"><img style="min-width: 833.45px" alt="Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE" src="../images/ch12/02-online-softmax-timeline.svg?v=14d2c9f7e51b" /></a></p>
+<p><a href="../images/ch12/02-online-softmax-timeline.svg?v=14d2c9f7e51b"><img alt="Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE" src="../images/ch12/02-online-softmax-timeline.svg?v=14d2c9f7e51b" /></a></p>
 <p><strong>The one thing to notice for later:</strong> step 5 rescales <code>O</code>, which is the
 accumulator living in tensor core registers. That means every time the row max
 moves, the kernel must reach into the WGMMA accumulator and multiply it. Chapter
@@ -2982,7 +2982,7 @@ they are being applied to.</p>
 </span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a>  buys the first 23 points.
 </span><span id="__span-10-30"><a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><a href="../images/ch12/07-throughput-ladder.svg?v=57b1790e15d0"><img style="min-width: 770.11px" alt="Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path" src="../images/ch12/07-throughput-ladder.svg?v=57b1790e15d0" /></a></p>
+<p><a href="../images/ch12/07-throughput-ladder.svg?v=57b1790e15d0"><img alt="Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path" src="../images/ch12/07-throughput-ladder.svg?v=57b1790e15d0" /></a></p>
 <h3 id="42-tile-shapes-and-the-two-gemms">4.2 Tile Shapes and the Two GEMMs<a class="headerlink" href="#42-tile-shapes-and-the-two-gemms" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>The Two GEMMs Inside Attention
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3080,7 +3080,7 @@ FA2 comes from applying textbook Hopper kernel design to a kernel that had none.
 </span><span id="__span-12-35"><a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>    producer gives up is one the consumer can use to avoid
 </span><span id="__span-12-36"><a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a>    spilling.
 </span></code></pre></div>
-<p><a href="../images/ch12/03-warpgroup-roles.svg?v=27903330667c"><img style="min-width: 707.62px" alt="FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers" src="../images/ch12/03-warpgroup-roles.svg?v=27903330667c" /></a></p>
+<p><a href="../images/ch12/03-warpgroup-roles.svg?v=27903330667c"><img alt="FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers" src="../images/ch12/03-warpgroup-roles.svg?v=27903330667c" /></a></p>
 <h3 id="52-the-producer-loop">5.2 The Producer Loop<a class="headerlink" href="#52-the-producer-loop" title="Permanent link">&para;</a></h3>
 <div class="language-cuda highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1">// REFERENCE — illustrates structure; not compiled or benchmarked.</span>
@@ -3244,7 +3244,7 @@ a <em>different</em> warpgroup to serve.</p>
 </span><span id="__span-15-32"><a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>  is the epilogue, here it is softmax.
 </span><span id="__span-15-33"><a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><a href="../images/ch12/04-pingpong-timeline.svg?v=e36e2840d4f6"><img style="min-width: 968.37px" alt="Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave" src="../images/ch12/04-pingpong-timeline.svg?v=e36e2840d4f6" /></a></p>
+<p><a href="../images/ch12/04-pingpong-timeline.svg?v=e36e2840d4f6"><img alt="Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave" src="../images/ch12/04-pingpong-timeline.svg?v=e36e2840d4f6" /></a></p>
 <h3 id="62-forcing-the-stagger-with-named-barriers">6.2 Forcing the Stagger with Named Barriers<a class="headerlink" href="#62-forcing-the-stagger-with-named-barriers" title="Permanent link">&para;</a></h3>
 <p>The hardware will not stagger the warpgroups for you. Left alone, both consumers
 start at the same instant and stay in lockstep forever. You have to impose the
@@ -3427,7 +3427,7 @@ iteration j+1".</p>
 </span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>  flight while the SFUs chew through the previous block's exp().
 </span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><a href="../images/ch12/05-twostage-pipeline-timeline.svg?v=eedf69b7fb8a"><img style="min-width: 840.53px" alt="2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath" src="../images/ch12/05-twostage-pipeline-timeline.svg?v=eedf69b7fb8a" /></a></p>
+<p><a href="../images/ch12/05-twostage-pipeline-timeline.svg?v=eedf69b7fb8a"><img alt="2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath" src="../images/ch12/05-twostage-pipeline-timeline.svg?v=eedf69b7fb8a" /></a></p>
 <div class="language-cuda highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="c1">// REFERENCE — illustrates structure; not compiled or benchmarked.</span>
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1">// The 2-stage inner loop. Note that NOTHING waits until after the</span>
@@ -3565,7 +3565,7 @@ than the one it solves.</p>
 </span><span id="__span-22-43"><a id="__codelineno-22-43" name="__codelineno-22-43" href="#__codelineno-22-43"></a>  cannot occur there. Specialising the loop removes it entirely.
 </span><span id="__span-22-44"><a id="__codelineno-22-44" name="__codelineno-22-44" href="#__codelineno-22-44"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><a href="../images/ch12/06-causal-masking-grid.svg?v=96d9e66f7bf5"><img style="min-width: 638.91px" alt="Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it" src="../images/ch12/06-causal-masking-grid.svg?v=96d9e66f7bf5" /></a></p>
+<p><a href="../images/ch12/06-causal-masking-grid.svg?v=96d9e66f7bf5"><img alt="Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it" src="../images/ch12/06-causal-masking-grid.svg?v=96d9e66f7bf5" /></a></p>
 <h3 id="82-balancing-the-triangle">8.2 Balancing the Triangle<a class="headerlink" href="#82-balancing-the-triangle" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>The Load Imbalance
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>══════════════════════════════════════════════════════════════════════
