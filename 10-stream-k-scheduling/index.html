@@ -2608,8 +2608,8 @@
 <h3 id="11-the-wave-quantization-problem">1.1 The Wave Quantization Problem<a class="headerlink" href="#11-the-wave-quantization-problem" title="Permanent link">&para;</a></h3>
 <p>Persistent schedulers dispatch tiles in "waves" — one tile per SM per pass. If you have 132 SMs and 140 output tiles, you get one full wave (132 tiles) plus a partial wave of 8 tiles. During that partial wave, 124 SMs sit idle. This is <strong>wave quantization loss</strong>: wasted silicon proportional to <code>(full_wave_count % 1.0) × SM_count</code>.</p>
 <p>For large GEMMs with many tiles, the loss is small — a partial wave of 8 is 6% waste when you have 20 full waves. But for medium-sized GEMMs common in inference (batch sizes of 8-64, modest M/N), the partial wave can be 30-70% of total runtime. Stream-K eliminates this by decomposing work differently.</p>
-<p><a href="../images/ch10/01-wave-quantization-132-140.svg?v=01783e80b966"><img alt="Two SM-grid snapshots for 132 SMs and 140 output tiles: wave 1 with all 132 SMs busy at 100% utilization, and wave 2 with only 8 of 132 SMs busy and 124 idle, captioned with Stream-K's fix of splitting the K-dimension so the work-unit count becomes num_SMs instead of num_output_tiles" src="../images/ch10/01-wave-quantization-132-140.svg?v=01783e80b966" /></a></p>
-<p><em>132 SMs, 140 output tiles: one full wave at 100%, then a second wave where only 8 SMs have work and 124 sit idle — the exact numbers this section's math walks through above.</em></p>
+<p><a href="../images/ch10/01-wave-quantization-132-140.svg?v=9448701333c2"><img alt="140 tiles on 132 SMs: the last wave" src="../images/ch10/01-wave-quantization-132-140.svg?v=9448701333c2" /></a></p>
+<p><em>Equal-duration tile model with one resident tile per SM. This is a scheduling illustration.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Wave Quantization — Why Static Tiling Wastes Silicon
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -2636,19 +2636,21 @@
 </span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>  the partial sums.
 </span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>
 </span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>  Now you can create exactly num_SMs work units regardless of the
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>  output tile count. Every SM is busy all the time.
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>  Cost: fixup — a small reduction pass over partial sums in workspace.
-</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>  Gain: near-perfect SM utilization for any problem size.
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>  ─── Concrete Comparison ──────────────────────────────────────────
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>  output tile count when there are enough divisible K iterations. This
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>  balances iteration counts, not necessarily elapsed time or SM utilization.
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>  Cost: fixup — a small reduction pass over partial sums in workspace.
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>  Potential gain: less wave quantization when enough reduction work exists.
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>  Fixup, small K, locality and resource limits can outweigh that gain.
 </span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>
-</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>              Static Tiling                   Stream-K
-</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>              ─────────────────────           ─────────────────────
-</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>  Work units: num_output_tiles                num_SMs (configurable)
-</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>  Load balance: uneven (wave quant.)          even (K is divisible)
-</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>  Fixup:      none                            yes (workspace + locks)
-</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>  Best for:   large M×N, many tiles           all sizes, esp. medium
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>  ─── Concrete Comparison ──────────────────────────────────────────
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>              Static Tiling                   Stream-K
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>              ─────────────────────           ─────────────────────
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>  Work units: num_output_tiles                num_SMs (configurable)
+</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>  Load balance: uneven (wave quant.)          even (K is divisible)
+</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>  Fixup:      none                            yes (workspace + locks)
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>  Best for:   large M×N, many tiles           shapes where balance offsets fixup cost
 </span></code></pre></div>
 <h3 id="12-the-first-principles">1.2 The First Principles<a class="headerlink" href="#12-the-first-principles" title="Permanent link">&para;</a></h3>
 <p>A single output tile C_tile requires:
@@ -2688,8 +2690,8 @@
 <h2 id="2-work-units-and-splits">2 — Work Units and Splits<a class="headerlink" href="#2-work-units-and-splits" title="Permanent link">&para;</a></h2>
 <h3 id="21-mapping-ctas-to-k-tile-ranges">2.1 Mapping CTAs to K-Tile Ranges<a class="headerlink" href="#21-mapping-ctas-to-k-tile-ranges" title="Permanent link">&para;</a></h3>
 <p>Stream-K divides the total K-tile work linearly across available CTAs. Each CTA gets a contiguous range of K-tile iterations. The tricky part: this linear range may straddle the boundary between two output tiles.</p>
-<p><a href="../images/ch10/02-ktile-range-assignment.svg?v=0b84420749ef"><img alt="A 270-iteration axis divided into three 90-wide output-tile regions and four CTA ranges below it, showing CTA 1 and CTA 2 each straddling a tile boundary and therefore holding two splits, while CTA 0 and CTA 3 hold exactly one split each" src="../images/ch10/02-ktile-range-assignment.svg?v=0b84420749ef" /></a></p>
-<p><em>3 output tiles × 90 K-tiles split linearly across 4 CTAs: the straddling CTAs (1 and 2) are exactly where a single CTA's range becomes two splits, one per tile it touches.</em></p>
+<p><a href="../images/ch10/02-ktile-range-assignment.svg?v=d86aff1d14ae"><img alt="Partition a linear K-work space" src="../images/ch10/02-ktile-range-assignment.svg?v=d86aff1d14ae" /></a></p>
+<p><em>Three output tiles × 90 K-iterations = 270 work units, divided among four CTAs.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>K-Tile Range Assignment — 3 Output Tiles × 90 K-Tiles, 4 CTAs
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
@@ -2784,8 +2786,8 @@
 <h2 id="3-the-triplet-first-middle-and-final-splits">3 — The Triplet: First, Middle, and Final Splits<a class="headerlink" href="#3-the-triplet-first-middle-and-final-splits" title="Permanent link">&para;</a></h2>
 <h3 id="31-role-assignment-by-k_idx-and-is_final_split">3.1 Role Assignment by K_idx and is_final_split<a class="headerlink" href="#31-role-assignment-by-k_idx-and-is_final_split" title="Permanent link">&para;</a></h3>
 <p>Every split for a given output tile falls into exactly one of three roles. The role determines what the CTA must do:</p>
-<p>[![Three-lane timeline for one output tile's 90 K-tiles split across CTA A [0,30) FIRST, CTA B <a href="../images/ch10/03-three-split-roles-timeline.svg">30,60) MIDDLE, and CTA C [60,90) FINAL, showing CTA A writing workspace and signaling the lock with no wait, CTA B spinning on lock&lt;30 then merging and re-signaling, and CTA C spinning on lock&lt;60 then merging and running the epilogue](images/ch10/03-three-split-roles-timeline.svg)</a></p>
-<p><em>The First/Middle/Final roles for one tile's three splits: only the Final split ever touches the output tensor — First and Middle only ever touch the workspace and lock.</em></p>
+<p><a href="../images/ch10/03-three-split-roles-timeline.svg?v=b81936d7547d"><img alt="Three split roles, one final epilogue" src="../images/ch10/03-three-split-roles-timeline.svg?v=b81936d7547d" /></a></p>
+<p><em>A sequential workspace-reduction design for one output tile.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>The Three Split Roles
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -2877,35 +2879,49 @@
 </span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a>       ├─ is_final_split():    Final split → wait, merge, epilogue
 </span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>       └─ everything else:     Middle split → wait, merge, signal
 </span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a>
-</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>  ─── Code skeleton ────────────────────────────────────────────────
-</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>
-</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>  if (!requires_fixup(k_tile_count, k_tiles_per_output_tile)) {
-</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>      // Full tile: accumulate + direct epilogue
-</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a>      for (int k = 0; k &lt; k_tile_count; ++k) load_and_mma(k);
-</span><span id="__span-8-33"><a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a>      run_epilogue(accum, m_idx, n_idx);
-</span><span id="__span-8-34"><a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a>
-</span><span id="__span-8-35"><a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a>  } else if (K_idx == 0) {
-</span><span id="__span-8-36"><a id="__codelineno-8-36" name="__codelineno-8-36" href="#__codelineno-8-36"></a>      // First split
-</span><span id="__span-8-37"><a id="__codelineno-8-37" name="__codelineno-8-37" href="#__codelineno-8-37"></a>      for (int k = 0; k &lt; k_tile_count; ++k) load_and_mma(k);
-</span><span id="__span-8-38"><a id="__codelineno-8-38" name="__codelineno-8-38" href="#__codelineno-8-38"></a>      store_to_workspace(accum, tile_id);
-</span><span id="__span-8-39"><a id="__codelineno-8-39" name="__codelineno-8-39" href="#__codelineno-8-39"></a>      atomicAdd(&amp;lock[tile_id], k_tile_count);
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>  // Illustrative single-publisher skeleton: progress is a device-scope
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>  // cuda::atomic_ref&lt;int&gt; referring to lock[tile_id], initialized to zero.
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>  // A cooperative CTA must finish all workspace stores before its publisher
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>  // releases progress, and synchronize consumers after the acquire.
+</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a>  // Legacy atomicAdd alone supplies no publication ordering.
+</span><span id="__span-8-33"><a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a>
+</span><span id="__span-8-34"><a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a>  ─── Code skeleton ────────────────────────────────────────────────
+</span><span id="__span-8-35"><a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a>
+</span><span id="__span-8-36"><a id="__codelineno-8-36" name="__codelineno-8-36" href="#__codelineno-8-36"></a>  if (!requires_fixup(k_tile_count, k_tiles_per_output_tile)) {
+</span><span id="__span-8-37"><a id="__codelineno-8-37" name="__codelineno-8-37" href="#__codelineno-8-37"></a>      // Full tile: accumulate + direct epilogue
+</span><span id="__span-8-38"><a id="__codelineno-8-38" name="__codelineno-8-38" href="#__codelineno-8-38"></a>      for (int k = 0; k &lt; k_tile_count; ++k) load_and_mma(k);
+</span><span id="__span-8-39"><a id="__codelineno-8-39" name="__codelineno-8-39" href="#__codelineno-8-39"></a>      run_epilogue(accum, m_idx, n_idx);
 </span><span id="__span-8-40"><a id="__codelineno-8-40" name="__codelineno-8-40" href="#__codelineno-8-40"></a>
-</span><span id="__span-8-41"><a id="__codelineno-8-41" name="__codelineno-8-41" href="#__codelineno-8-41"></a>  } else if (is_final_split()) {
-</span><span id="__span-8-42"><a id="__codelineno-8-42" name="__codelineno-8-42" href="#__codelineno-8-42"></a>      // Final split
+</span><span id="__span-8-41"><a id="__codelineno-8-41" name="__codelineno-8-41" href="#__codelineno-8-41"></a>  } else if (K_idx == 0) {
+</span><span id="__span-8-42"><a id="__codelineno-8-42" name="__codelineno-8-42" href="#__codelineno-8-42"></a>      // First split
 </span><span id="__span-8-43"><a id="__codelineno-8-43" name="__codelineno-8-43" href="#__codelineno-8-43"></a>      for (int k = 0; k &lt; k_tile_count; ++k) load_and_mma(k);
-</span><span id="__span-8-44"><a id="__codelineno-8-44" name="__codelineno-8-44" href="#__codelineno-8-44"></a>      while (atomicAdd(&amp;lock[tile_id], 0) &lt; K_idx) { /*spin*/ }
-</span><span id="__span-8-45"><a id="__codelineno-8-45" name="__codelineno-8-45" href="#__codelineno-8-45"></a>      load_and_accumulate_workspace(accum, tile_id);
-</span><span id="__span-8-46"><a id="__codelineno-8-46" name="__codelineno-8-46" href="#__codelineno-8-46"></a>      run_epilogue(accum, m_idx, n_idx);
-</span><span id="__span-8-47"><a id="__codelineno-8-47" name="__codelineno-8-47" href="#__codelineno-8-47"></a>
-</span><span id="__span-8-48"><a id="__codelineno-8-48" name="__codelineno-8-48" href="#__codelineno-8-48"></a>  } else {
-</span><span id="__span-8-49"><a id="__codelineno-8-49" name="__codelineno-8-49" href="#__codelineno-8-49"></a>      // Middle split
-</span><span id="__span-8-50"><a id="__codelineno-8-50" name="__codelineno-8-50" href="#__codelineno-8-50"></a>      for (int k = 0; k &lt; k_tile_count; ++k) load_and_mma(k);
-</span><span id="__span-8-51"><a id="__codelineno-8-51" name="__codelineno-8-51" href="#__codelineno-8-51"></a>      while (atomicAdd(&amp;lock[tile_id], 0) &lt; K_idx) { /*spin*/ }
-</span><span id="__span-8-52"><a id="__codelineno-8-52" name="__codelineno-8-52" href="#__codelineno-8-52"></a>      load_and_accumulate_workspace(accum, tile_id);
-</span><span id="__span-8-53"><a id="__codelineno-8-53" name="__codelineno-8-53" href="#__codelineno-8-53"></a>      store_to_workspace(accum, tile_id);
-</span><span id="__span-8-54"><a id="__codelineno-8-54" name="__codelineno-8-54" href="#__codelineno-8-54"></a>      atomicAdd(&amp;lock[tile_id], k_tile_count);
-</span><span id="__span-8-55"><a id="__codelineno-8-55" name="__codelineno-8-55" href="#__codelineno-8-55"></a>  }
+</span><span id="__span-8-44"><a id="__codelineno-8-44" name="__codelineno-8-44" href="#__codelineno-8-44"></a>      store_to_workspace(accum, tile_id);
+</span><span id="__span-8-45"><a id="__codelineno-8-45" name="__codelineno-8-45" href="#__codelineno-8-45"></a>      progress.fetch_add(k_tile_count, cuda::memory_order_release);
+</span><span id="__span-8-46"><a id="__codelineno-8-46" name="__codelineno-8-46" href="#__codelineno-8-46"></a>
+</span><span id="__span-8-47"><a id="__codelineno-8-47" name="__codelineno-8-47" href="#__codelineno-8-47"></a>  } else if (is_final_split()) {
+</span><span id="__span-8-48"><a id="__codelineno-8-48" name="__codelineno-8-48" href="#__codelineno-8-48"></a>      // Final split
+</span><span id="__span-8-49"><a id="__codelineno-8-49" name="__codelineno-8-49" href="#__codelineno-8-49"></a>      for (int k = 0; k &lt; k_tile_count; ++k) load_and_mma(k);
+</span><span id="__span-8-50"><a id="__codelineno-8-50" name="__codelineno-8-50" href="#__codelineno-8-50"></a>      while (progress.load(cuda::memory_order_acquire) &lt; K_idx) { /*spin*/ }
+</span><span id="__span-8-51"><a id="__codelineno-8-51" name="__codelineno-8-51" href="#__codelineno-8-51"></a>      load_and_accumulate_workspace(accum, tile_id);
+</span><span id="__span-8-52"><a id="__codelineno-8-52" name="__codelineno-8-52" href="#__codelineno-8-52"></a>      run_epilogue(accum, m_idx, n_idx);
+</span><span id="__span-8-53"><a id="__codelineno-8-53" name="__codelineno-8-53" href="#__codelineno-8-53"></a>
+</span><span id="__span-8-54"><a id="__codelineno-8-54" name="__codelineno-8-54" href="#__codelineno-8-54"></a>  } else {
+</span><span id="__span-8-55"><a id="__codelineno-8-55" name="__codelineno-8-55" href="#__codelineno-8-55"></a>      // Middle split
+</span><span id="__span-8-56"><a id="__codelineno-8-56" name="__codelineno-8-56" href="#__codelineno-8-56"></a>      for (int k = 0; k &lt; k_tile_count; ++k) load_and_mma(k);
+</span><span id="__span-8-57"><a id="__codelineno-8-57" name="__codelineno-8-57" href="#__codelineno-8-57"></a>      while (progress.load(cuda::memory_order_acquire) &lt; K_idx) { /*spin*/ }
+</span><span id="__span-8-58"><a id="__codelineno-8-58" name="__codelineno-8-58" href="#__codelineno-8-58"></a>      load_and_accumulate_workspace(accum, tile_id);
+</span><span id="__span-8-59"><a id="__codelineno-8-59" name="__codelineno-8-59" href="#__codelineno-8-59"></a>      store_to_workspace(accum, tile_id);
+</span><span id="__span-8-60"><a id="__codelineno-8-60" name="__codelineno-8-60" href="#__codelineno-8-60"></a>      progress.fetch_add(k_tile_count, cuda::memory_order_release);
+</span><span id="__span-8-61"><a id="__codelineno-8-61" name="__codelineno-8-61" href="#__codelineno-8-61"></a>  }
 </span></code></pre></div>
+<p>The final owner applies alpha, beta times the old C, bias and activation once,
+after combining all partial sums. Applying a nonlinear epilogue to each partial
+changes the result. A spin-waiting implementation must also guarantee forward
+progress: waiting resident CTAs must not prevent their prerequisite CTAs from
+being scheduled. A persistent grid needs a resource-aware admission/scheduling
+rule; arbitrary oversubscription is unsafe.</p>
+<p>Sources: <a href="https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#atomic-functions">CUDA atomic memory ordering</a>,
+<a href="https://arxiv.org/abs/2301.03598">Stream-K paper</a>.</p>
 <hr />
 <h3 id="section-3-runnable-code-stream-k-split-roles">★ Section 3 — Runnable Code: Stream-K Split Roles<a class="headerlink" href="#section-3-runnable-code-stream-k-split-roles" title="Permanent link">&para;</a></h3>
 <p><strong>Manual Worked Example:</strong></p>
@@ -3239,13 +3255,13 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span></code></pre></div>
 <!-- validation:end:ex09_streamk_roles.cu -->
 
-<p>This run has no spin-waiting in practice — with one thread per block and a tiny grid, the FINAL split's block almost always launches after the FIRST split's block has already finished and signaled its lock, so <code>CTA 1</code>, <code>CTA 3</code>, and <code>CTA 5</code> never actually loop in <code>__nanosleep</code>. On a real GPU with hundreds of CTAs racing across SMs, the same four-step protocol holds, but the final split's wait loop does real work: it spins until the counter catches up. (No physical GPU was available to capture this exact transcript — this sandbox has no <code>nvidia-smi</code>/<code>/dev/nvidia*</code> device, so <code>cudaMalloc</code> fails at the final step. The values above come from a host-side C++ reproduction of this file's exact arithmetic (<code>k_tile_value</code>, <code>accumulate_split</code>, <code>build_splits</code>) compiled and run with real <code>g++</code>, not estimated or invented. The 4095/12195/20295 totals match the <code>cpu_reference()</code> check the kernel itself runs, so this is the genuine result the kernel produces, just captured via CPU execution of the identical logic rather than a device run.)</p>
+<p>The dated H100 run above passed the per-tile CPU-reference checks. CTA execution and print order can vary. This correctness test does not measure how long a particular split spends waiting or establish the performance of a larger launch.</p>
 <hr />
 <h2 id="4-the-lock-array">4 — The Lock Array<a class="headerlink" href="#4-the-lock-array" title="Permanent link">&para;</a></h2>
 <h3 id="41-physical-layout">4.1 Physical Layout<a class="headerlink" href="#41-physical-layout" title="Permanent link">&para;</a></h3>
 <p>The lock array is a contiguous region of global memory, one integer per output tile (times <code>num_barriers</code> for multi-warp-group kernels). It lives in the same allocation as the reduction workspace, immediately after it.</p>
-<p><a href="../images/ch10/04-lock-workspace-layout.svg?v=aa29c892c013"><img alt="A single contiguous cudaMalloc split into a workspace region (num_tiles accumulator slots) followed immediately by a lock region (num_tiles progress counters), annotated with how the First, Middle, and Final splits each touch the lock value and the note that lock values only ever increase, never unlock or decrement" src="../images/ch10/04-lock-workspace-layout.svg?v=aa29c892c013" /></a></p>
-<p><em>Workspace and lock array share one allocation: the lock side is a monotonic progress counter per tile — it only ever climbs toward <code>K_TILES_PER_OUTPUT</code>, never resets within a kernel's lifetime.</em></p>
+<p><a href="../images/ch10/04-lock-workspace-layout.svg?v=e4b34b6043e6"><img alt="Workspace separates partials from final output" src="../images/ch10/04-lock-workspace-layout.svg?v=e4b34b6043e6" /></a></p>
+<p><em>Reduction metadata and numeric accumulators have different roles.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Global Memory Layout for Stream-K Workspace
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
@@ -3326,8 +3342,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>
 </span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>  The workspace is updated ONE split at a time, never concurrently.
 </span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>
-</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>  Advantage: bit-reproducible results across runs.
-</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>             Floating-point addition order is fixed.
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>  Advantage: fixed split-reduction order for the same kernel/configuration.
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>             This does not promise a bitwise match to a differently ordered reference.
 </span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>  Disadvantage: each split must wait for the previous one to
 </span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>                fully complete before proceeding.
 </span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>
@@ -3338,31 +3354,33 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>  reduce their partial sum into the workspace using floating-point
 </span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>  atomicAdd.
 </span><span id="__span-16-25"><a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>
-</span><span id="__span-16-26"><a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>  Race is safe because atomicAdd on FP32/FP64 is hardware-serialized
-</span><span id="__span-16-27"><a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a>  at the memory controller — no partial writes.
-</span><span id="__span-16-28"><a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a>
-</span><span id="__span-16-29"><a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a>  Advantage: no serialization between middle splits.
-</span><span id="__span-16-30"><a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a>             Can be faster when many splits exist.
-</span><span id="__span-16-31"><a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a>  Disadvantage: floating-point addition order varies by execution
-</span><span id="__span-16-32"><a id="__codelineno-16-32" name="__codelineno-16-32" href="#__codelineno-16-32"></a>                order → results may differ between runs.
-</span><span id="__span-16-33"><a id="__codelineno-16-33" name="__codelineno-16-33" href="#__codelineno-16-33"></a>
-</span><span id="__span-16-34"><a id="__codelineno-16-34" name="__codelineno-16-34" href="#__codelineno-16-34"></a>  ─── When to Use Each ────────────────────────────────────────────
+</span><span id="__span-16-26"><a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>  Element updates are atomic, but readiness still requires a publication
+</span><span id="__span-16-27"><a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a>  protocol: initialize first, publish completion after all numeric updates,
+</span><span id="__span-16-28"><a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a>  and acquire every contribution before finalization. Atomicity alone does
+</span><span id="__span-16-29"><a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a>  not establish these dependencies.
+</span><span id="__span-16-30"><a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a>
+</span><span id="__span-16-31"><a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a>  Advantage: no serialization between middle splits.
+</span><span id="__span-16-32"><a id="__codelineno-16-32" name="__codelineno-16-32" href="#__codelineno-16-32"></a>             Can be faster when many splits exist.
+</span><span id="__span-16-33"><a id="__codelineno-16-33" name="__codelineno-16-33" href="#__codelineno-16-33"></a>  Disadvantage: floating-point addition order varies by execution
+</span><span id="__span-16-34"><a id="__codelineno-16-34" name="__codelineno-16-34" href="#__codelineno-16-34"></a>                order → results may differ between runs.
 </span><span id="__span-16-35"><a id="__codelineno-16-35" name="__codelineno-16-35" href="#__codelineno-16-35"></a>
-</span><span id="__span-16-36"><a id="__codelineno-16-36" name="__codelineno-16-36" href="#__codelineno-16-36"></a>  Deterministic: scientific computing, test suites, anywhere results
-</span><span id="__span-16-37"><a id="__codelineno-16-37" name="__codelineno-16-37" href="#__codelineno-16-37"></a>                 must match a reference bit-for-bit.
-</span><span id="__span-16-38"><a id="__codelineno-16-38" name="__codelineno-16-38" href="#__codelineno-16-38"></a>  Non-deterministic: inference, training where mild non-determinism
-</span><span id="__span-16-39"><a id="__codelineno-16-39" name="__codelineno-16-39" href="#__codelineno-16-39"></a>                     is acceptable and speed matters.
-</span><span id="__span-16-40"><a id="__codelineno-16-40" name="__codelineno-16-40" href="#__codelineno-16-40"></a>
-</span><span id="__span-16-41"><a id="__codelineno-16-41" name="__codelineno-16-41" href="#__codelineno-16-41"></a>  Most production CUTLASS kernels default to deterministic mode.
-</span><span id="__span-16-42"><a id="__codelineno-16-42" name="__codelineno-16-42" href="#__codelineno-16-42"></a>  Non-deterministic is opt-in and requires hardware FP atomics.
+</span><span id="__span-16-36"><a id="__codelineno-16-36" name="__codelineno-16-36" href="#__codelineno-16-36"></a>  ─── When to Use Each ────────────────────────────────────────────
+</span><span id="__span-16-37"><a id="__codelineno-16-37" name="__codelineno-16-37" href="#__codelineno-16-37"></a>
+</span><span id="__span-16-38"><a id="__codelineno-16-38" name="__codelineno-16-38" href="#__codelineno-16-38"></a>  Deterministic: use when repeatability for a fixed execution configuration
+</span><span id="__span-16-39"><a id="__codelineno-16-39" name="__codelineno-16-39" href="#__codelineno-16-39"></a>                 matters; compare other implementations with suitable tolerances.
+</span><span id="__span-16-40"><a id="__codelineno-16-40" name="__codelineno-16-40" href="#__codelineno-16-40"></a>  Non-deterministic: inference, training where mild non-determinism
+</span><span id="__span-16-41"><a id="__codelineno-16-41" name="__codelineno-16-41" href="#__codelineno-16-41"></a>                     is acceptable and speed matters.
+</span><span id="__span-16-42"><a id="__codelineno-16-42" name="__codelineno-16-42" href="#__codelineno-16-42"></a>
+</span><span id="__span-16-43"><a id="__codelineno-16-43" name="__codelineno-16-43" href="#__codelineno-16-43"></a>  Most production CUTLASS kernels default to deterministic mode.
+</span><span id="__span-16-44"><a id="__codelineno-16-44" name="__codelineno-16-44" href="#__codelineno-16-44"></a>  Non-deterministic is opt-in and requires hardware FP atomics.
 </span></code></pre></div>
 <hr />
 <h2 id="6-groups">6 — Groups<a class="headerlink" href="#6-groups" title="Permanent link">&para;</a></h2>
 <h3 id="61-why-groups-exist-cluster-tma-multicast-not-just-l2-locality">6.1 Why Groups Exist: Cluster TMA Multicast, Not Just L2 Locality<a class="headerlink" href="#61-why-groups-exist-cluster-tma-multicast-not-just-l2-locality" title="Permanent link">&para;</a></h3>
 <p>Standard wave-based rasterization gives L2 locality naturally: adjacent output tiles in rasterization order share rows of A and columns of B. Stream-K breaks this because a single CTA may work on K-tile ranges spanning output tiles from completely different spatial regions.</p>
 <p><strong>Correction:</strong> earlier printings of this chapter framed Groups as primarily a generic, grid-wide L2-cache-adjacency trick. That is a real secondary effect, but it is not what CUTLASS's own Stream-K scheduler source gives as the reason Groups exist. The actual driving mechanism is Hopper's <strong>thread block cluster</strong> feature: CTAs within the same cluster that share a K-offset can have their TMA (Tensor Memory Accelerator) operand loads <strong>multicast</strong> across the cluster — one load from global memory serves every CTA in the cluster, instead of each CTA issuing its own redundant load. That multicast path is only available to CTAs within a cluster, and only when they're aligned on the same K-offset; grid-wide L2 reuse across CTAs that are <em>not</em> in the same cluster is a real but secondary benefit, not the mechanism Groups was built to exploit. Without Groups, a CTA's K-offset is essentially arbitrary relative to its cluster-mates (as the walkthrough below shows), which breaks multicast eligibility entirely — not just "lowers the L2 hit rate." (Source: the CUTLASS Stream-K scheduler implementation and Colfax Research's public write-up on Hopper cluster-aware GEMM scheduling both describe K-offset-aligned grouping as what enables TMA multicast within a cluster.)</p>
-<p><a href="../images/ch10/07-groups-cluster-multicast.svg?v=2fccd2e4e8a3"><img alt="Without groups (G=1), six adjacent stream-K units land on unrelated, non-adjacent B columns with no shared cache lines; with groups (G=2), Group 0's units (tiles 0, 2) and Group 1's units (tiles 1, 3) each stay aligned on one K-offset together, captioned with the real driving reason being cluster TMA multicast rather than grid-wide L2 reuse" src="../images/ch10/07-groups-cluster-multicast.svg?v=2fccd2e4e8a3" /></a></p>
-<p><em>Without grouping, adjacent stream-K units land on unrelated B columns — no multicast eligibility, just incidental L2 reuse at best. With G=2, each group's units share a K-offset, which is what actually lets Hopper's TMA multicast the load across the cluster.</em></p>
+<p><a href="../images/ch10/07-groups-cluster-multicast.svg?v=a85a0403c2fd"><img alt="Align grouped work with operand reuse" src="../images/ch10/07-groups-cluster-multicast.svg?v=a85a0403c2fd" /></a></p>
+<p><em>Cluster peers can share a multicast operand only when their requests are compatible.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>L2 Locality — With and Without Groups
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
@@ -3501,7 +3519,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <hr />
 <h2 id="8-stream-serialization-the-utilization-gap">8 — Stream Serialization — The Utilization Gap<a class="headerlink" href="#8-stream-serialization-the-utilization-gap" title="Permanent link">&para;</a></h2>
 <h3 id="81-the-default-hardware-behavior">8.1 The Default Hardware Behavior<a class="headerlink" href="#81-the-default-hardware-behavior" title="Permanent link">&para;</a></h3>
-<p>When you launch two kernels on the same CUDA stream, the hardware enforces strict serialization: <strong>Kernel B cannot dispatch any thread blocks until Kernel A has globally retired</strong>. This means every SM sits idle during Kernel A's tail — the partial wave where only a fraction of SMs still have active work.</p>
+<p>When you launch two kernels on the same CUDA stream, the hardware enforces strict serialization: <strong>Kernel B cannot dispatch any thread blocks until Kernel A has globally retired</strong>. During Kernel A's tail, only a fraction of SMs may still have active blocks; the other SMs cannot begin Kernel B under this ordinary same-stream ordering.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>Default Stream Serialization — The Utilization Gap
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
@@ -3578,8 +3596,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="n">cudaGridDependencySynchronize</span><span class="p">();</span>
 </span></code></pre></div>
 <p>Both are declared in <code>&lt;cuda_runtime.h&gt;</code>, compile on sm_90+, and are the names you'll see in CUTLASS and other production kernels. The rest of this section (and the <code>ex10_dependent_launch.cu</code> example in Section 10) uses the raw PTX form for pedagogical clarity, but the two are interchangeable -- reach for the named functions in your own code.</p>
-<p><a href="../images/ch10/05-gdc-overlap-timeline.svg?v=bd0bd6a55fd7"><img alt="Two stacked timelines: without GDC, Kernel A's full waves and tail run, then an idle gap, then Kernel B cold-starts and runs; with GDC, launch_dependents fires during Kernel A's tail so Kernel B's boot and prefetch overlap it, parking only briefly at .wait before running immediately when Kernel A retires" src="../images/ch10/05-gdc-overlap-timeline.svg?v=bd0bd6a55fd7" /></a></p>
-<p><em>Section 8's utilization gap (top) against Section 9's fix (bottom): the same Kernel A tail, but Kernel B's cold-start now hides inside it instead of starting only after Kernel A fully retires.</em></p>
+<p><a href="../images/ch10/05-gdc-overlap-timeline.svg?v=ebdcff5485a9"><img alt="Dependent launch can overlap a tail" src="../images/ch10/05-gdc-overlap-timeline.svg?v=ebdcff5485a9" /></a></p>
+<p><em>Programmatic dependent launch exposes a dependency point, not a real-time scheduling promise.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>GDC Instructions — Two-Part Protocol
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
@@ -3598,7 +3616,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a>           are now ELIGIBLE for scheduling
 </span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a>
 </span><span id="__span-22-18"><a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a>  Hardware effect:
-</span><span id="__span-22-19"><a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a>    When ALL active CTAs in Kernel A have issued this instruction
+</span><span id="__span-22-19"><a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a>    When ALL CTAs in Kernel A have issued this instruction
 </span><span id="__span-22-20"><a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a>    (or have retired), the CP releases Kernel B's blocks for
 </span><span id="__span-22-21"><a id="__codelineno-22-21" name="__codelineno-22-21" href="#__codelineno-22-21"></a>    dispatch to free SMs.
 </span><span id="__span-22-22"><a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a>
@@ -3677,41 +3695,27 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-22-95"><a id="__codelineno-22-95" name="__codelineno-22-95" href="#__codelineno-22-95"></a>  faster," never as "must run concurrently."
 </span></code></pre></div>
 <h3 id="92-the-role-of-the-release-fence">9.2 The Role of the Release Fence<a class="headerlink" href="#92-the-role-of-the-release-fence" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>Memory Ordering with GDC
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>  Problem: Kernel A writes data to global memory. Kernel B reads it.
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>  Without ordering, Kernel B might see stale values.
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>  Correct pattern in Kernel A:
-</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>    // 1. Complete all writes that Kernel B will need
-</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>    store to output tensor...
-</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>    store to auxiliary buffers...
-</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>
-</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>    // 2. Issue a release fence BEFORE launch_dependents
-</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>    //    This ensures all prior stores are visible at gpu scope
-</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>    fence.release.gpu;         // PTX: fence with .gpu scope
-</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>
-</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>    // 3. Signal the scheduler
-</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>    griddepcontrol.launch_dependents;
-</span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a>
-</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>    // 4. Continue draining remaining work (or exit)
-</span><span id="__span-23-20"><a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a>    ...
-</span><span id="__span-23-21"><a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a>
-</span><span id="__span-23-22"><a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a>  Correct pattern in Kernel B:
-</span><span id="__span-23-23"><a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a>    // 1. Park at the wait fence
-</span><span id="__span-23-24"><a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a>    griddepcontrol.wait;       // blocks until prerequisite done
-</span><span id="__span-23-25"><a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a>
-</span><span id="__span-23-26"><a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a>    // 2. Now safe to read dependency-sensitive data
-</span><span id="__span-23-27"><a id="__codelineno-23-27" name="__codelineno-23-27" href="#__codelineno-23-27"></a>    load from Kernel A's output tensor...
-</span><span id="__span-23-28"><a id="__codelineno-23-28" name="__codelineno-23-28" href="#__codelineno-23-28"></a>
-</span><span id="__span-23-29"><a id="__codelineno-23-29" name="__codelineno-23-29" href="#__codelineno-23-29"></a>  Why fence before launch_dependents (not after)?
-</span><span id="__span-23-30"><a id="__codelineno-23-30" name="__codelineno-23-30" href="#__codelineno-23-30"></a>    The release fence synchronizes-with the START of Kernel B's
-</span><span id="__span-23-31"><a id="__codelineno-23-31" name="__codelineno-23-31" href="#__codelineno-23-31"></a>    execution (specifically, with Kernel B's .wait release).
-</span><span id="__span-23-32"><a id="__codelineno-23-32" name="__codelineno-23-32" href="#__codelineno-23-32"></a>    If the fence comes after launch_dependents, there's a window
-</span><span id="__span-23-33"><a id="__codelineno-23-33" name="__codelineno-23-33" href="#__codelineno-23-33"></a>    where Kernel B's warps could bypass .wait and read stale data
-</span><span id="__span-23-34"><a id="__codelineno-23-34" name="__codelineno-23-34" href="#__codelineno-23-34"></a>    before the fence completes. Always fence first, then signal.
+<p><code>griddepcontrol.launch_dependents</code> makes a dependent grid eligible to launch
+once every prerequisite CTA has signaled or completed. It does not imply that
+the producer has finished writing its output. The producer may signal before
+its final output stores and then finish them normally.</p>
+<p>The dependent executes <code>griddepcontrol.wait</code> before accessing producer output.
+This wait covers <strong>all runtime-designated prerequisite grids still in flight</strong>:
+it returns after they complete and their memory operations are visible to the
+current grid. A separate producer release fence is not required merely to make
+those output loads safe after this wait.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>  Kernel A: prepare ...; launch_dependents; finish output stores; exit
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>  Kernel B: independent setup / prefetch; wait; load Kernel A output
 </span></code></pre></div>
+<p>A release fence before the launch signal can participate in a separate
+publication protocol to the start of a dependent grid under the specified
+memory-domain and scope rules. That guarantee concerns writes preceding the
+release; it is distinct from waiting for all prerequisite output. It does not
+allow a thread to bypass <code>griddepcontrol.wait</code> for unfinished producer data.</p>
+<p>The preserved tested program below uses conservative producer fences. Their
+presence does not make them a universal prerequisite for PDL, and its timing
+cannot establish that the runtime overlapped the two grids.</p>
+<p>Source: <a href="https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol">CUDA 12.8 PTX <code>griddepcontrol</code></a>.</p>
 <hr />
 <h2 id="10-host-launch-authority-programmatic-serialization">10 — Host Launch Authority — Programmatic Serialization<a class="headerlink" href="#10-host-launch-authority-programmatic-serialization" title="Permanent link">&para;</a></h2>
 <h3 id="101-why-the-host-must-authorize">10.1 Why the Host Must Authorize<a class="headerlink" href="#101-why-the-host-must-authorize" title="Permanent link">&para;</a></h3>
@@ -3789,7 +3793,9 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-25-19"><a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a>    Consumer  (Kernel B): must emit wait
 </span><span id="__span-25-20"><a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>    Host:                 must set the authorization attribute
 </span><span id="__span-25-21"><a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a>
-</span><span id="__span-25-22"><a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a>  All three are required. Missing any one breaks correctness.
+</span><span id="__span-25-22"><a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a>  Producer signaling and host opt-in enable early launch; without them the
+</span><span id="__span-25-23"><a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a>  normal serialized execution can remain correct. With early launch enabled,
+</span><span id="__span-25-24"><a id="__codelineno-25-24" name="__codelineno-25-24" href="#__codelineno-25-24"></a>  omitting the dependent wait before producer-data access breaks correctness.
 </span></code></pre></div>
 <hr />
 <h3 id="section-10-runnable-code-dependent-grid-launch">★ Section 10 — Runnable Code: Dependent Grid Launch<a class="headerlink" href="#section-10-runnable-code-dependent-grid-launch" title="Permanent link">&para;</a></h3>
@@ -4007,7 +4013,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span></code></pre></div>
 <!-- validation:end:ex10_dependent_launch.cu -->
 
-<p>(No physical GPU was available to capture this transcript — this sandbox has no <code>nvidia-smi</code>/<code>/dev/nvidia*</code> device, and <code>griddepcontrol</code> additionally requires real sm_90+ hardware the emulator can't fake. The values above are <code>output[i] = 3*i + 1</code> and <code>result[i] = output[i] + 1000</code>, computed directly from this file's own producer/consumer arithmetic for <code>i = 0..7</code> — not estimated or invented. Since <code>kernel_consumer</code> only runs after <code>griddepcontrol.wait</code> unblocks, and <code>kernel_producer</code> only signals <code>launch_dependents</code> after every thread's store is fenced, the dependent-launch protocol guarantees this exact sequential result regardless of how much the two kernels overlap in hardware; there is no race to simulate here, unlike <code>ex09</code>'s lock-based reduction.)</p>
+<p>The dated H100 device run above produced the expected producer/consumer values. The dependent wait supplies the required dependency completion and visibility; the amount of useful launch overlap is workload- and scheduler-dependent.</p>
 <hr />
 <h2 id="11-the-producers-green-light">11 — The Producer's Green Light<a class="headerlink" href="#11-the-producers-green-light" title="Permanent link">&para;</a></h2>
 <h3 id="111-placement-of-launch_dependents-in-production-kernels">11.1 Placement of launch_dependents in Production Kernels<a class="headerlink" href="#111-placement-of-launch_dependents-in-production-kernels" title="Permanent link">&para;</a></h3>
@@ -4038,41 +4044,42 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-31-24"><a id="__codelineno-31-24" name="__codelineno-31-24" href="#__codelineno-31-24"></a>  ─── Persistent Kernel A (one block processes many tiles in a loop) ─
 </span><span id="__span-31-25"><a id="__codelineno-31-25" name="__codelineno-31-25" href="#__codelineno-31-25"></a>
 </span><span id="__span-31-26"><a id="__codelineno-31-26" name="__codelineno-31-26" href="#__codelineno-31-26"></a>  The block runs a loop processing tile_0, tile_1, ..., tile_last.
-</span><span id="__span-31-27"><a id="__codelineno-31-27" name="__codelineno-31-27" href="#__codelineno-31-27"></a>  The signal MUST align with actual pipeline completion, not the
-</span><span id="__span-31-28"><a id="__codelineno-31-28" name="__codelineno-31-28" href="#__codelineno-31-28"></a>  end of the last loop iteration in code.
-</span><span id="__span-31-29"><a id="__codelineno-31-29" name="__codelineno-31-29" href="#__codelineno-31-29"></a>
-</span><span id="__span-31-30"><a id="__codelineno-31-30" name="__codelineno-31-30" href="#__codelineno-31-30"></a>  WRONG — fires too late (after all work including epilogue):
-</span><span id="__span-31-31"><a id="__codelineno-31-31" name="__codelineno-31-31" href="#__codelineno-31-31"></a>    while (has_more_tiles()) {
-</span><span id="__span-31-32"><a id="__codelineno-31-32" name="__codelineno-31-32" href="#__codelineno-31-32"></a>        process_tile();         // TMA load → WGMMA → epilogue → store
-</span><span id="__span-31-33"><a id="__codelineno-31-33" name="__codelineno-31-33" href="#__codelineno-31-33"></a>    }
-</span><span id="__span-31-34"><a id="__codelineno-31-34" name="__codelineno-31-34" href="#__codelineno-31-34"></a>    griddepcontrol.launch_dependents;  // ← kernel is basically done
-</span><span id="__span-31-35"><a id="__codelineno-31-35" name="__codelineno-31-35" href="#__codelineno-31-35"></a>
-</span><span id="__span-31-36"><a id="__codelineno-31-36" name="__codelineno-31-36" href="#__codelineno-31-36"></a>  BETTER — fire after the final tile's epilogue store is committed:
-</span><span id="__span-31-37"><a id="__codelineno-31-37" name="__codelineno-31-37" href="#__codelineno-31-37"></a>    while (has_more_tiles()) {
-</span><span id="__span-31-38"><a id="__codelineno-31-38" name="__codelineno-31-38" href="#__codelineno-31-38"></a>        process_tile_mainloop();     // TMA + WGMMA
-</span><span id="__span-31-39"><a id="__codelineno-31-39" name="__codelineno-31-39" href="#__codelineno-31-39"></a>        process_tile_epilogue();     // stores to output
-</span><span id="__span-31-40"><a id="__codelineno-31-40" name="__codelineno-31-40" href="#__codelineno-31-40"></a>        if (is_last_tile()) {
-</span><span id="__span-31-41"><a id="__codelineno-31-41" name="__codelineno-31-41" href="#__codelineno-31-41"></a>            __threadfence();
-</span><span id="__span-31-42"><a id="__codelineno-31-42" name="__codelineno-31-42" href="#__codelineno-31-42"></a>            if (threadIdx.x == 0) {
-</span><span id="__span-31-43"><a id="__codelineno-31-43" name="__codelineno-31-43" href="#__codelineno-31-43"></a>                griddepcontrol.launch_dependents;
-</span><span id="__span-31-44"><a id="__codelineno-31-44" name="__codelineno-31-44" href="#__codelineno-31-44"></a>            }
-</span><span id="__span-31-45"><a id="__codelineno-31-45" name="__codelineno-31-45" href="#__codelineno-31-45"></a>        }
-</span><span id="__span-31-46"><a id="__codelineno-31-46" name="__codelineno-31-46" href="#__codelineno-31-46"></a>    }
-</span><span id="__span-31-47"><a id="__codelineno-31-47" name="__codelineno-31-47" href="#__codelineno-31-47"></a>    // Kernel A now only drains pipeline state; no more output writes.
-</span><span id="__span-31-48"><a id="__codelineno-31-48" name="__codelineno-31-48" href="#__codelineno-31-48"></a>
-</span><span id="__span-31-49"><a id="__codelineno-31-49" name="__codelineno-31-49" href="#__codelineno-31-49"></a>  ─── With warp specialization (producer/consumer warpgroups) ─────
-</span><span id="__span-31-50"><a id="__codelineno-31-50" name="__codelineno-31-50" href="#__codelineno-31-50"></a>
-</span><span id="__span-31-51"><a id="__codelineno-31-51" name="__codelineno-31-51" href="#__codelineno-31-51"></a>  Consumer warpgroup owns the epilogue stores.
-</span><span id="__span-31-52"><a id="__codelineno-31-52" name="__codelineno-31-52" href="#__codelineno-31-52"></a>  Signal should come from the consumer warpgroup AFTER its final
-</span><span id="__span-31-53"><a id="__codelineno-31-53" name="__codelineno-31-53" href="#__codelineno-31-53"></a>  tma_store commits.
-</span><span id="__span-31-54"><a id="__codelineno-31-54" name="__codelineno-31-54" href="#__codelineno-31-54"></a>
-</span><span id="__span-31-55"><a id="__codelineno-31-55" name="__codelineno-31-55" href="#__codelineno-31-55"></a>  if (is_consumer_warpgroup &amp;&amp; is_last_tile) {
-</span><span id="__span-31-56"><a id="__codelineno-31-56" name="__codelineno-31-56" href="#__codelineno-31-56"></a>      // after cp.async.bulk.commit_group for final tile:
-</span><span id="__span-31-57"><a id="__codelineno-31-57" name="__codelineno-31-57" href="#__codelineno-31-57"></a>      __threadfence();
-</span><span id="__span-31-58"><a id="__codelineno-31-58" name="__codelineno-31-58" href="#__codelineno-31-58"></a>      if (warpgroup_elected_thread) {
-</span><span id="__span-31-59"><a id="__codelineno-31-59" name="__codelineno-31-59" href="#__codelineno-31-59"></a>          griddepcontrol.launch_dependents;
-</span><span id="__span-31-60"><a id="__codelineno-31-60" name="__codelineno-31-60" href="#__codelineno-31-60"></a>      }
-</span><span id="__span-31-61"><a id="__codelineno-31-61" name="__codelineno-31-61" href="#__codelineno-31-61"></a>  }
+</span><span id="__span-31-27"><a id="__codelineno-31-27" name="__codelineno-31-27" href="#__codelineno-31-27"></a>  Signal placement is a performance choice. It can precede pipeline
+</span><span id="__span-31-28"><a id="__codelineno-31-28" name="__codelineno-31-28" href="#__codelineno-31-28"></a>  completion because the dependent waits before reading producer output.
+</span><span id="__span-31-29"><a id="__codelineno-31-29" name="__codelineno-31-29" href="#__codelineno-31-29"></a>  The producer must still drain its own async operations before exit.
+</span><span id="__span-31-30"><a id="__codelineno-31-30" name="__codelineno-31-30" href="#__codelineno-31-30"></a>
+</span><span id="__span-31-31"><a id="__codelineno-31-31" name="__codelineno-31-31" href="#__codelineno-31-31"></a>  WRONG — fires too late (after all work including epilogue):
+</span><span id="__span-31-32"><a id="__codelineno-31-32" name="__codelineno-31-32" href="#__codelineno-31-32"></a>    while (has_more_tiles()) {
+</span><span id="__span-31-33"><a id="__codelineno-31-33" name="__codelineno-31-33" href="#__codelineno-31-33"></a>        process_tile();         // TMA load → WGMMA → epilogue → store
+</span><span id="__span-31-34"><a id="__codelineno-31-34" name="__codelineno-31-34" href="#__codelineno-31-34"></a>    }
+</span><span id="__span-31-35"><a id="__codelineno-31-35" name="__codelineno-31-35" href="#__codelineno-31-35"></a>    griddepcontrol.launch_dependents;  // ← kernel is basically done
+</span><span id="__span-31-36"><a id="__codelineno-31-36" name="__codelineno-31-36" href="#__codelineno-31-36"></a>
+</span><span id="__span-31-37"><a id="__codelineno-31-37" name="__codelineno-31-37" href="#__codelineno-31-37"></a>  BETTER — fire after the final tile's epilogue store is committed:
+</span><span id="__span-31-38"><a id="__codelineno-31-38" name="__codelineno-31-38" href="#__codelineno-31-38"></a>    while (has_more_tiles()) {
+</span><span id="__span-31-39"><a id="__codelineno-31-39" name="__codelineno-31-39" href="#__codelineno-31-39"></a>        process_tile_mainloop();     // TMA + WGMMA
+</span><span id="__span-31-40"><a id="__codelineno-31-40" name="__codelineno-31-40" href="#__codelineno-31-40"></a>        process_tile_epilogue();     // stores to output
+</span><span id="__span-31-41"><a id="__codelineno-31-41" name="__codelineno-31-41" href="#__codelineno-31-41"></a>        if (is_last_tile()) {
+</span><span id="__span-31-42"><a id="__codelineno-31-42" name="__codelineno-31-42" href="#__codelineno-31-42"></a>            __threadfence();
+</span><span id="__span-31-43"><a id="__codelineno-31-43" name="__codelineno-31-43" href="#__codelineno-31-43"></a>            if (threadIdx.x == 0) {
+</span><span id="__span-31-44"><a id="__codelineno-31-44" name="__codelineno-31-44" href="#__codelineno-31-44"></a>                griddepcontrol.launch_dependents;
+</span><span id="__span-31-45"><a id="__codelineno-31-45" name="__codelineno-31-45" href="#__codelineno-31-45"></a>            }
+</span><span id="__span-31-46"><a id="__codelineno-31-46" name="__codelineno-31-46" href="#__codelineno-31-46"></a>        }
+</span><span id="__span-31-47"><a id="__codelineno-31-47" name="__codelineno-31-47" href="#__codelineno-31-47"></a>    }
+</span><span id="__span-31-48"><a id="__codelineno-31-48" name="__codelineno-31-48" href="#__codelineno-31-48"></a>    // Kernel A now only drains pipeline state; no more output writes.
+</span><span id="__span-31-49"><a id="__codelineno-31-49" name="__codelineno-31-49" href="#__codelineno-31-49"></a>
+</span><span id="__span-31-50"><a id="__codelineno-31-50" name="__codelineno-31-50" href="#__codelineno-31-50"></a>  ─── With warp specialization (producer/consumer warpgroups) ─────
+</span><span id="__span-31-51"><a id="__codelineno-31-51" name="__codelineno-31-51" href="#__codelineno-31-51"></a>
+</span><span id="__span-31-52"><a id="__codelineno-31-52" name="__codelineno-31-52" href="#__codelineno-31-52"></a>  Consumer warpgroup owns the epilogue stores.
+</span><span id="__span-31-53"><a id="__codelineno-31-53" name="__codelineno-31-53" href="#__codelineno-31-53"></a>  Signal should come from the consumer warpgroup AFTER its final
+</span><span id="__span-31-54"><a id="__codelineno-31-54" name="__codelineno-31-54" href="#__codelineno-31-54"></a>  tma_store commits.
+</span><span id="__span-31-55"><a id="__codelineno-31-55" name="__codelineno-31-55" href="#__codelineno-31-55"></a>
+</span><span id="__span-31-56"><a id="__codelineno-31-56" name="__codelineno-31-56" href="#__codelineno-31-56"></a>  if (is_consumer_warpgroup &amp;&amp; is_last_tile) {
+</span><span id="__span-31-57"><a id="__codelineno-31-57" name="__codelineno-31-57" href="#__codelineno-31-57"></a>      // after cp.async.bulk.commit_group for final tile:
+</span><span id="__span-31-58"><a id="__codelineno-31-58" name="__codelineno-31-58" href="#__codelineno-31-58"></a>      __threadfence();
+</span><span id="__span-31-59"><a id="__codelineno-31-59" name="__codelineno-31-59" href="#__codelineno-31-59"></a>      if (warpgroup_elected_thread) {
+</span><span id="__span-31-60"><a id="__codelineno-31-60" name="__codelineno-31-60" href="#__codelineno-31-60"></a>          griddepcontrol.launch_dependents;
+</span><span id="__span-31-61"><a id="__codelineno-31-61" name="__codelineno-31-61" href="#__codelineno-31-61"></a>      }
+</span><span id="__span-31-62"><a id="__codelineno-31-62" name="__codelineno-31-62" href="#__codelineno-31-62"></a>  }
 </span></code></pre></div>
 <hr />
 <h2 id="12-the-dependents-wall">12 — The Dependent's Wall<a class="headerlink" href="#12-the-dependents-wall" title="Permanent link">&para;</a></h2>
@@ -4143,8 +4150,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h2 id="13-the-l2-prefetch-trick">13 — The L2 Prefetch Trick<a class="headerlink" href="#13-the-l2-prefetch-trick" title="Permanent link">&para;</a></h2>
 <h3 id="131-split-dma-asymmetric-warp-roles-before-wait">13.1 Split DMA — Asymmetric Warp Roles Before .wait<a class="headerlink" href="#131-split-dma-asymmetric-warp-roles-before-wait" title="Permanent link">&para;</a></h3>
 <p>The most powerful use of the overlap window is weight prefetching. While activation loads must wait behind the fence (they read Kernel A's output), weight loads are entirely independent — they read a weight tensor that was already present before Kernel A even launched.</p>
-<p><a href="../images/ch10/06-l2-prefetch-warp-roles.svg?v=a1cfe265751a"><img alt="Two warp-role timelines inside Kernel B: the prefetch warp runs setup then issues a TMA weight prefetch to L2 before parking at .wait, while other warps only run setup and park at .wait with no extra work, and both roles then load activations with the prefetch warp's weights already resident in L2" src="../images/ch10/06-l2-prefetch-warp-roles.svg?v=a1cfe265751a" /></a></p>
-<p><em>One warp issues the weight prefetch during the overlap window, before anyone reaches <code>.wait</code> — by the time Kernel A retires and <code>.wait</code> releases, the weight tile is already in L2 instead of still in HBM.</em></p>
+<p><a href="../images/ch10/06-l2-prefetch-warp-roles.svg?v=fef4fbdbcec3"><img alt="Prefetch only dependency-independent inputs" src="../images/ch10/06-l2-prefetch-warp-roles.svg?v=fef4fbdbcec3" /></a></p>
+<p><em>A later kernel can prepare reusable weights while waiting on earlier output.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>L2 Prefetch Trick — Warp Role Division in Kernel B
 </span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
@@ -4359,10 +4366,10 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-36-7"><a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>          - Kernel B has non-trivial cold-start (large register state)
 </span><span id="__span-36-8"><a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>          - Weight tensors in Kernel B are large and reused
 </span><span id="__span-36-9"><a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a>
-</span><span id="__span-36-10"><a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a>  □ 2. VERIFY MEMORY ORDERING IN KERNEL A
-</span><span id="__span-36-11"><a id="__codelineno-36-11" name="__codelineno-36-11" href="#__codelineno-36-11"></a>        Every output write must precede the release fence.
-</span><span id="__span-36-12"><a id="__codelineno-36-12" name="__codelineno-36-12" href="#__codelineno-36-12"></a>        Fence must precede launch_dependents in program order.
-</span><span id="__span-36-13"><a id="__codelineno-36-13" name="__codelineno-36-13" href="#__codelineno-36-13"></a>        Use __threadfence() or fence.release.gpu in PTX.
+</span><span id="__span-36-10"><a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a>  □ 2. VERIFY THE PRODUCER / DEPENDENT CONTRACT
+</span><span id="__span-36-11"><a id="__codelineno-36-11" name="__codelineno-36-11" href="#__codelineno-36-11"></a>        Kernel A must complete its own stores and async operations before exit.
+</span><span id="__span-36-12"><a id="__codelineno-36-12" name="__codelineno-36-12" href="#__codelineno-36-12"></a>        Kernel B must wait before reading prerequisite output.
+</span><span id="__span-36-13"><a id="__codelineno-36-13" name="__codelineno-36-13" href="#__codelineno-36-13"></a>        A separate release fence is only needed for an additional publication protocol.
 </span><span id="__span-36-14"><a id="__codelineno-36-14" name="__codelineno-36-14" href="#__codelineno-36-14"></a>
 </span><span id="__span-36-15"><a id="__codelineno-36-15" name="__codelineno-36-15" href="#__codelineno-36-15"></a>  □ 3. PLACE launch_dependents AT THE CORRECT POINT
 </span><span id="__span-36-16"><a id="__codelineno-36-16" name="__codelineno-36-16" href="#__codelineno-36-16"></a>        Non-persistent: after last write, before block exit.
@@ -4433,7 +4440,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>
 </span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>  griddepcontrol.launch_dependents  (in Kernel A — producer)
 </span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>    → Scheduler gate opens for Kernel B
-</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>    → Fire AFTER release fence, BEFORE block exit
+</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>    → May signal before remaining producer work; dependent still waits
 </span><span id="__span-38-7"><a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a>    → First invocation per CTA only; repeated calls no-op
 </span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>    → No effect unless host set programmaticStreamSerialization=1
 </span><span id="__span-38-9"><a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>
@@ -4450,7 +4457,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-38-20"><a id="__codelineno-38-20" name="__codelineno-38-20" href="#__codelineno-38-20"></a>    cudaLaunchKernelEx(&amp;cfg, kernel_B, ...);
 </span><span id="__span-38-21"><a id="__codelineno-38-21" name="__codelineno-38-21" href="#__codelineno-38-21"></a>
 </span><span id="__span-38-22"><a id="__codelineno-38-22" name="__codelineno-38-22" href="#__codelineno-38-22"></a>  Memory ordering:
-</span><span id="__span-38-23"><a id="__codelineno-38-23" name="__codelineno-38-23" href="#__codelineno-38-23"></a>    Kernel A:  store → __threadfence() → launch_dependents
+</span><span id="__span-38-23"><a id="__codelineno-38-23" name="__codelineno-38-23" href="#__codelineno-38-23"></a>    Kernel A:  launch_dependents → remaining stores / async completion → exit
 </span><span id="__span-38-24"><a id="__codelineno-38-24" name="__codelineno-38-24" href="#__codelineno-38-24"></a>    Kernel B:  [prefetch weights] → .wait → load activations
 </span><span id="__span-38-25"><a id="__codelineno-38-25" name="__codelineno-38-25" href="#__codelineno-38-25"></a>
 </span><span id="__span-38-26"><a id="__codelineno-38-26" name="__codelineno-38-26" href="#__codelineno-38-26"></a>  Overlap anatomy:

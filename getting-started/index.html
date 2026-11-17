@@ -1566,6 +1566,7 @@
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>ALL TESTS PASSED — Clusters working correctly!
 </span></code></pre></div>
 <p>The program's exit status was <strong>0</strong>. GPU <code>printf</code> ordering and the device name may differ on another host. Compare the checks and final pass status, not incidental line ordering. <a href="../validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu">Exact tested source</a> · <a href="../validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/run.log">Full captured output</a>.</p>
+<p><strong>Learning checkpoint:</strong> For a one-dimensional cluster of two blocks, predict the local rank of global block 3 and its partner block. Check the cluster/rank fields in the program output. The prediction is rank 1 with partner global block 2: global numbering and rank-within-cluster are different quantities. This is a reasoning exercise, not an additional recorded GPU run.</p>
 <p>Return to the repository root after this example:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>../..
 </span></code></pre></div>

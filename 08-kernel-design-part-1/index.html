@@ -992,10 +992,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-why-every-kernel-is-either-compute-bound-or-memory-bound" class="md-nav__link">
+  <a href="#11-two-roofline-bounds-then-a-measured-bottleneck" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Why Every Kernel Is Either Compute-Bound or Memory-Bound
+        1.1 Two Roofline Bounds, Then a Measured Bottleneck
       
     </span>
   </a>
@@ -1690,10 +1690,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-why-every-kernel-is-either-compute-bound-or-memory-bound" class="md-nav__link">
+  <a href="#11-two-roofline-bounds-then-a-measured-bottleneck" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Why Every Kernel Is Either Compute-Bound or Memory-Bound
+        1.1 Two Roofline Bounds, Then a Measured Bottleneck
       
     </span>
   </a>
@@ -2106,7 +2106,7 @@
 <li><a href="#8-circular-buffering-and-multi-stage-pipelines">Circular Buffering and Multi-Stage Pipelines</a></li>
 <li><a href="../09-kernel-design-part-2/#9-mbarrier-the-two-barrier-handshake">mbarrier — The Two-Barrier Handshake</a></li>
 <li><a href="../09-kernel-design-part-2/#10-aba-ambiguity-and-phase-bits">ABA Ambiguity and Phase Bits</a></li>
-<li><a href="#11-why-every-kernel-is-either-compute-bound-or-memory-bound">Producer Flow — The Full TMA Pipeline Loop</a></li>
+<li><a href="#11-two-roofline-bounds-then-a-measured-bottleneck">Producer Flow — The Full TMA Pipeline Loop</a></li>
 <li><a href="#12-computing-ai-for-real-operations">Consumer Flow — WGMMA Pipelining</a></li>
 <li><a href="../09-kernel-design-part-2/#13-the-cooperative-pipeline-architecture">The Cooperative Pipeline Architecture</a></li>
 <li><a href="../09-kernel-design-part-2/#14-the-ping-pong-pipeline-architecture">The Ping-Pong Pipeline Architecture</a></li>
@@ -2119,16 +2119,18 @@
 </ol>
 <hr />
 <h2 id="1-the-roofline-model">1 — The Roofline Model<a class="headerlink" href="#1-the-roofline-model" title="Permanent link">&para;</a></h2>
-<h3 id="11-why-every-kernel-is-either-compute-bound-or-memory-bound">1.1 Why Every Kernel Is Either Compute-Bound or Memory-Bound<a class="headerlink" href="#11-why-every-kernel-is-either-compute-bound-or-memory-bound" title="Permanent link">&para;</a></h3>
-<p>Every GPU kernel has exactly one bottleneck: either the hardware is waiting for data
-to arrive (memory-bound), or the hardware is waiting for arithmetic units to finish
-(compute-bound). The roofline model gives you the mathematical tool to determine
-which one you are — and how far from peak performance you currently sit.</p>
+<h3 id="11-two-roofline-bounds-then-a-measured-bottleneck">1.1 Two Roofline Bounds, Then a Measured Bottleneck<a class="headerlink" href="#11-two-roofline-bounds-then-a-measured-bottleneck" title="Permanent link">&para;</a></h3>
+<p>The roofline model compares two throughput bounds: the rate at which memory can
+supply bytes and the rate at which the selected arithmetic units can execute work.
+The lower bound defines the modeled ceiling. A real kernel can run below both
+because of dependencies, instruction issue, synchronization, or too little parallel
+work. Use arithmetic intensity to predict a ceiling, then profile to identify the
+implementation’s actual bottleneck.</p>
 <p>The key quantity is <strong>Arithmetic Intensity (AI)</strong>: how many floating-point operations
 you perform per byte of data you move between the memory hierarchy and the compute
 units.</p>
-<p><a href="../images/ch08/01-roofline-chart.svg?v=52ae7389f2ca"><img alt="H100 SXM5 roofline: FP16 Tensor Core and FP32 CUDA Core roofs on a log-log plot, with ridge points at AI≈20 and AI≈295 FLOP/Byte and example kernels placed by their arithmetic intensity" src="../images/ch08/01-roofline-chart.svg?v=52ae7389f2ca" /></a></p>
-<p><em>The two H100 roofs — FP32 CUDA Core (ridge ≈20 FLOP/Byte) and FP16 Tensor Core (ridge ≈295 FLOP/Byte) — with softmax and two GEMM sizes plotted by their own AI.</em></p>
+<p><a href="../images/ch08/01-roofline-chart.svg?v=e5ce4b5ead4d"><img alt="Two compute roofs, one memory ceiling" src="../images/ch08/01-roofline-chart.svg?v=e5ce4b5ead4d" /></a></p>
+<p><em>H100 SXM product-peak model. Arithmetic intensity uses useful FLOPs divided by transferred bytes.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>The Roofline Model — Visual and Equations
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -2163,14 +2165,15 @@ units.</p>
 </span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>  └─────────────────────────────────────────────────────────────────┘
 </span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>
 </span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>  Reading the chart:
-</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>    • If your kernel's AI &lt; ridge point → memory-bound
-</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>      Performance ∝ AI × bandwidth (more intensity = more throughput)
-</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>    • If your kernel's AI &gt; ridge point → compute-bound
-</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>      Performance ∝ Peak FLOPS (more intensity won't help)
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>    • AI &lt; ridge point → the modeled memory ceiling is lower.
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>      Throughput ≤ AI × bandwidth.
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>    • AI &gt; ridge point → the selected arithmetic ceiling is lower.
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>      Throughput ≤ peak FLOPS.
 </span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>
-</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>  KEY INSIGHT: The roofline tells you WHERE to focus your optimization.
-</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>    Memory-bound? Reduce bytes moved (tiling, caching, fusion).
-</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>    Compute-bound? Maximize FLOPs per SM cycle (warp specialization, pipelines).
+</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>  KEY INSIGHT: The roofline proposes a limit to investigate.
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>    Measured bandwidth limit? Reduce traffic (tiling, caching, fusion).
+</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>    Measured arithmetic limit? Improve use of the relevant execution units.
+</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>    Far below both roofs? Inspect parallelism, dependencies and issue stalls.
 </span></code></pre></div>
 <h3 id="12-computing-ai-for-real-operations">1.2 Computing AI for Real Operations<a class="headerlink" href="#12-computing-ai-for-real-operations" title="Permanent link">&para;</a></h3>
 <p>Let's calculate the AI for common deep learning operations. This tells you immediately which class each operation falls into.</p>
@@ -2583,8 +2586,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h2 id="2-compute-bound-kernels">2 — Compute-Bound Kernels<a class="headerlink" href="#2-compute-bound-kernels" title="Permanent link">&para;</a></h2>
 <h3 id="21-the-three-signatures-of-a-compute-bound-kernel">2.1 The Three Signatures of a Compute-Bound Kernel<a class="headerlink" href="#21-the-three-signatures-of-a-compute-bound-kernel" title="Permanent link">&para;</a></h3>
 <p>When your kernel's AI exceeds the ridge point, arithmetic throughput becomes the bottleneck. But recognizing a compute-bound kernel in practice — before you profile — requires understanding what the hardware tells you.</p>
-<p><a href="../images/ch08/02-producer-consumer-imbalance.svg?v=97e718b8cee0"><img alt="Producer warps idle on repeated WAIT segments while consumer warps run a continuous, uninterrupted block of MMA instructions" src="../images/ch08/02-producer-consumer-imbalance.svg?v=97e718b8cee0" /></a></p>
-<p><em>Signature 2 in the timeline: producers stall on barriers while consumers stay 100% busy — the most diagnostic sign that math, not memory, is the bottleneck.</em></p>
+<p><a href="../images/ch08/02-producer-consumer-imbalance.svg?v=91823a5fd310"><img alt="A producer can wait on a busy consumer" src="../images/ch08/02-producer-consumer-imbalance.svg?v=91823a5fd310" /></a></p>
+<p><em>One qualitative signature of imbalance; use counters and timings to confirm it.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Compute-Bound Signatures — What to Look For
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
@@ -2664,8 +2667,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h2 id="3-memory-bound-kernels">3 — Memory-Bound Kernels<a class="headerlink" href="#3-memory-bound-kernels" title="Permanent link">&para;</a></h2>
 <h3 id="31-the-three-memory-bound-categories">3.1 The Three Memory-Bound Categories<a class="headerlink" href="#31-the-three-memory-bound-categories" title="Permanent link">&para;</a></h3>
 <p>Memory-bound is not a single condition. The bottleneck can be at three different points in the memory hierarchy, each with different fixes.</p>
-<p><a href="../images/ch08/03-diagnosis-flowchart.svg?v=8fb6b490e95b"><img alt="Decision flowchart: HBM bandwidth over 80% of peak means bandwidth-bound, otherwise FLOP rate over 20% means partially compute-bound, otherwise SM utilization over 50% means latency-bound, otherwise locality-bound" src="../images/ch08/03-diagnosis-flowchart.svg?v=8fb6b490e95b" /></a></p>
-<p><em>The diagnosis flowchart from the categories below, walked top to bottom against three profiler metrics until one "yes" lands on a verdict.</em></p>
+<p><a href="../images/ch08/03-diagnosis-flowchart.svg?v=98cdc2755db3"><img alt="Diagnose from evidence, then change one cause" src="../images/ch08/03-diagnosis-flowchart.svg?v=98cdc2755db3" /></a></p>
+<p><em>Combine timing, traffic, instruction progress and resource constraints.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Three Categories of Memory-Bound Kernels
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
@@ -2753,8 +2756,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h3 id="41-the-core-concept-intentional-role-division">4.1 The Core Concept — Intentional Role Division<a class="headerlink" href="#41-the-core-concept-intentional-role-division" title="Permanent link">&para;</a></h3>
 <p>On any GPU, an SM hosts many active warps, but only a few can issue instructions each cycle. The default scheduling model lets all warps do the same type of work (e.g., all warps do loads AND math). This creates competition: warps doing math occupy slots that warps needing to do loads could use.</p>
 <p>Warp Specialization breaks this competition by giving different warps <strong>permanently different jobs</strong> for the entire kernel execution. Some warps become dedicated "producers" that only move data. Other warps become dedicated "consumers" that only perform arithmetic.</p>
-<p><a href="../images/ch08/04-warp-specialization-before-after.svg?v=f0b806c57486"><img alt="Four mixed warps each interleaving LOAD, wait, and MMA with staggered idle gaps, versus one dedicated producer warpgroup issuing only TMA and two dedicated consumer warpgroups issuing only MMA back to back" src="../images/ch08/04-warp-specialization-before-after.svg?v=f0b806c57486" /></a></p>
-<p><em>Without specialization every warp idles during its own loads; with specialization the producer's TMA loads and the consumers' WGMMA run back to back, warpgroup by warpgroup, on the same SM.</em></p>
+<p><a href="../images/ch08/04-warp-specialization-before-after.svg?v=711b7bc00bfc"><img alt="Warp specialisation separates responsibilities" src="../images/ch08/04-warp-specialization-before-after.svg?v=711b7bc00bfc" /></a></p>
+<p><em>Dedicated producer and consumer roles can simplify a deep pipeline.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Warp Specialization — Before and After
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
@@ -3593,8 +3596,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h3 id="71-why-pipelining-is-mandatory">7.1 Why Pipelining Is Mandatory<a class="headerlink" href="#71-why-pipelining-is-mandatory" title="Permanent link">&para;</a></h3>
 <p>The H100's HBM3 has ~500 cycle latency for individual memory accesses. WGMMA executes in ~30-60 cycles. Without pipelining, every time the consumer needs new tile data, it waits 500 cycles of doing nothing. This is a 10-17× utilization gap.</p>
 <p>Pipelining eliminates this idle time by overlapping the DATA MOVEMENT for tile N+1 with the COMPUTATION of tile N. The consumer is always computing while the producer is always loading.</p>
-<p><a href="../images/ch08/05-pipelining-stages-0-2-4.svg?v=3b80c138233e"><img alt="Three stacked timelines: serial load-then-compute at ~9% utilization, 2-stage pipelining overlapping loads and math at &gt;95% utilization, and a 4-stage pipeline where every step runs one Load and one MMA simultaneously" src="../images/ch08/05-pipelining-stages-0-2-4.svg?v=3b80c138233e" /></a></p>
-<p><em>Going from zero to two to four pipeline stages: each added stage overlaps one more load with compute, until every step is doing both at once.</em></p>
+<p><a href="../images/ch08/05-pipelining-stages-0-2-4.svg?v=917ad2a182fb"><img alt="Pipeline depth creates room for overlap" src="../images/ch08/05-pipelining-stages-0-2-4.svg?v=917ad2a182fb" /></a></p>
+<p><em>Deeper buffering helps only when its resource cost is affordable.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>Pipelining — What It Means Concretely
 </span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>
@@ -3647,8 +3650,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span></code></pre></div>
 <h3 id="72-what-the-pipeline-stages-physically-are">7.2 What the Pipeline Stages Physically Are<a class="headerlink" href="#72-what-the-pipeline-stages-physically-are" title="Permanent link">&para;</a></h3>
 <p>Each "stage" in the pipeline corresponds to a physical allocation of shared memory. With N stages, you allocate N copies of the A-tile and B-tile in shared memory. This allows N tiles to be "in flight" simultaneously: some being loaded by TMA, others being consumed by WGMMA — for 32KB+32KB A/B tiles on H100's 228KB SMEM budget, N tops out at 3 (CORRECTED below: a 4th stage at this tile size would need 256KB and blow the budget).</p>
-<p><a href="../images/ch08/06-pipeline-smem-layout.svg?v=e9e71c7c2e9b"><img alt="228KB of shared memory divided into three stages, each holding a 32KB A tile, a 32KB B tile, and an mbarrier pair, with 36KB left over as an epilogue buffer" src="../images/ch08/06-pipeline-smem-layout.svg?v=e9e71c7c2e9b" /></a></p>
-<p><em>Three stages at 32+32 KB each commit 192 KB of the 228 KB budget — the most this tile size allows, with 36 KB left for the epilogue.</em></p>
+<p><a href="../images/ch08/06-pipeline-smem-layout.svg?v=e02cae7e2bce"><img alt="Stage depth is a shared-memory budget" src="../images/ch08/06-pipeline-smem-layout.svg?v=e02cae7e2bce" /></a></p>
+<p><em>Example allocation: three stages, each with 32 KiB of A and 32 KiB of B.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>Pipeline Stages — Physical SMEM Layout
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
@@ -3694,8 +3697,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h2 id="8-circular-buffering-and-multi-stage-pipelines">8 — Circular Buffering and Multi-Stage Pipelines<a class="headerlink" href="#8-circular-buffering-and-multi-stage-pipelines" title="Permanent link">&para;</a></h2>
 <h3 id="81-the-circular-buffer-as-a-ring">8.1 The Circular Buffer as a Ring<a class="headerlink" href="#81-the-circular-buffer-as-a-ring" title="Permanent link">&para;</a></h3>
 <p>With N pipeline stages in shared memory, the producer and consumer work through the stages in a circular (ring) fashion. The producer writes to stage <code>i % N</code>, the consumer reads from stage <code>(i - depth) % N</code>, where <code>depth</code> is how many stages ahead the producer stays.</p>
-<p><a href="../images/ch08/07-circular-buffer-ring.svg?v=d966dcc06826"><img alt="Four pipeline stages arranged in a ring, snapshotted at iteration 5: stage 0 and 2 full, stage 1 being loaded by the producer, stage 3 being consumed, write pointer at stage 1 and read pointer at stage 3" src="../images/ch08/07-circular-buffer-ring.svg?v=d966dcc06826" /></a></p>
-<p><em>At iteration 5 the producer (write pointer) is two stages ahead of the consumer (read pointer) — the <code>depth=2</code> the kernel maintains all the way through steady state.</em></p>
+<p><a href="../images/ch08/07-circular-buffer-ring.svg?v=e89984dc6008"><img alt="A circular buffer recycles storage, not time" src="../images/ch08/07-circular-buffer-ring.svg?v=e89984dc6008" /></a></p>
+<p><em>Producers and consumers track both stage ownership and generation.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Circular Buffer — Ring Operation
 </span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>

@@ -2482,6 +2482,7 @@ line."</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>ncu<span class="w"> </span>--set<span class="w"> </span>basic<span class="w"> </span>--target-processes<span class="w"> </span>all<span class="w"> </span>./wgmma_example
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>sudo<span class="w"> </span>ncu<span class="w"> </span>--set<span class="w"> </span>basic<span class="w"> </span>--target-processes<span class="w"> </span>all<span class="w"> </span>./wgmma_example
 </span></code></pre></div>
+<p>The captured build above omits <code>-lineinfo</code>; it supports the basic counter report below but does not provide CUDA source-line attribution. For subsequent source-level profiling, add <code>-lineinfo</code> as described below. The recorded command is preserved exactly.</p>
 <p>Captured excerpts (single CTA, 128 threads; these are correctness-demo measurements, not optimized GEMM throughput):</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Nsight Compute version: 2025.1.1.0 (build 35528883)
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Ordinary user: ERR_NVGPUCTRPERM
@@ -2562,6 +2563,7 @@ line."</p>
 </ol>
 <hr />
 <h2 id="1-why-profile-at-all">1 — Why Profile at All<a class="headerlink" href="#1-why-profile-at-all" title="Permanent link">&para;</a></h2>
+<p>The FA3 comparison below uses the <a href="https://tridao.me/publications/flash3/flash3.pdf">authors’ published ping-pong example (§3.1)</a>: FP16 forward, head dimension 128, sequence length 8192, improving from 570 to 620–640 TFLOP/s. The approximately 63% figure uses the lower endpoint divided by the book’s 989 TFLOP/s nominal dense FP16 roof; it is not a new measurement.</p>
 <p>You have just spent twelve chapters learning to reason about GPU performance from
 first principles. This section argues that the reasoning is necessary and not
 sufficient, which is a slightly awkward thing for a book to say about itself.</p>
@@ -2582,29 +2584,31 @@ sufficient, which is a slightly awkward thing for a book to say about itself.</p
 </span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
 </span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>  Chapter 12 §6.3 is an honest example. A careful cycle model
 </span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>  predicted ~94% tensor core utilisation for the ping-pong
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>  pipeline. Measured: 63% of peak. The model was not wrong about
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>  the technique — ping-pong genuinely helps — it was wrong about
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>  everything else that was also happening.
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>
-</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>  ══════════════════════════════════════════════════════════════════
-</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>  THINGS THAT ROUTINELY SURPRISE PEOPLE, AND WHICH ONLY A
-</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>  PROFILER WILL TELL YOU:
-</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>
-</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>  ├── The compiler spilled registers you did not expect
-</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>  ├── The kernel is limited by instruction issue, not by any
-</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>  │   resource you were thinking about
-</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>  ├── A memory access you assumed coalesced does not
-</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>  ├── Two-thirds of the runtime is in a prologue you never
-</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>  │   considered
-</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>  ├── Occupancy is 12% because of one array you forgot about
-</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a>  └── The kernel you have been optimising is 4% of total runtime
-</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>  ══════════════════════════════════════════════════════════════════
-</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a>
-</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>  The workflow this chapter argues for:
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>  pipeline. Published FA3 result: about 63% of peak at 620 TFLOP/s.
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>  This is a paper result, not this book’s validation measurement.
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>  The model was not wrong about
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>  the technique — ping-pong genuinely helps — it was wrong about
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>  everything else that was also happening.
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>  ══════════════════════════════════════════════════════════════════
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>  THINGS THAT ROUTINELY SURPRISE PEOPLE, AND WHICH ONLY A
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>  PROFILER WILL TELL YOU:
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>  ├── The compiler spilled registers you did not expect
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>  ├── The kernel is limited by instruction issue, not by any
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>  │   resource you were thinking about
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>  ├── A memory access you assumed coalesced does not
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>  ├── Two-thirds of the runtime is in a prologue you never
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a>  │   considered
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>  ├── Occupancy is 12% because of one array you forgot about
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a>  └── The kernel you have been optimising is 4% of total runtime
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>  ══════════════════════════════════════════════════════════════════
 </span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a>
-</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>      reason  →  implement  →  MEASURE  →  reason again
+</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>  The workflow this chapter argues for:
 </span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>
-</span><span id="__span-4-40"><a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a>  Not: reason → implement → ship.
+</span><span id="__span-4-40"><a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a>      reason  →  implement  →  MEASURE  →  reason again
+</span><span id="__span-4-41"><a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a>
+</span><span id="__span-4-42"><a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a>  Not: reason → implement → ship.
 </span></code></pre></div>
 <hr />
 <h2 id="2-getting-ncu-running">2 — Getting ncu Running<a class="headerlink" href="#2-getting-ncu-running" title="Permanent link">&para;</a></h2>

@@ -1260,10 +1260,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#173-stream-k-scheduling-eliminating-wave-quantization" class="md-nav__link">
+  <a href="#173-stream-k-scheduling-reducing-wave-quantization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        17.3 Stream-K Scheduling — Eliminating Wave Quantization
+        17.3 Stream-K Scheduling — Reducing Wave Quantization
       
     </span>
   </a>
@@ -2047,10 +2047,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#173-stream-k-scheduling-eliminating-wave-quantization" class="md-nav__link">
+  <a href="#173-stream-k-scheduling-reducing-wave-quantization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        17.3 Stream-K Scheduling — Eliminating Wave Quantization
+        17.3 Stream-K Scheduling — Reducing Wave Quantization
       
     </span>
   </a>
@@ -2278,8 +2278,8 @@
 <h3 id="91-why-__syncthreads-is-not-enough">9.1 Why __syncthreads() Is Not Enough<a class="headerlink" href="#91-why-__syncthreads-is-not-enough" title="Permanent link">&para;</a></h3>
 <p><code>__syncthreads()</code> synchronizes ALL threads in a block. In a warp-specialized kernel, this is too coarse: when the producer fills a stage, only the consumer needs to know — not every thread in the block needs to rendezvous. Using <code>__syncthreads()</code> for producer-consumer signaling would force BOTH warpgroups to reach the barrier simultaneously, eliminating all pipeline overlap.</p>
 <p><code>mbarrier</code> (memory barrier) is a fine-grained, asynchronous synchronization primitive that fixes this. It allows specific threads (or TMA hardware) to signal a barrier, and specific threads to wait on it, without involving anyone else.</p>
-<p><a href="../images/ch09/01-two-barrier-handshake.svg?v=3e6b2c2e0171"><img alt="Three-lane timeline showing a producer waiting on EMPTY and issuing a TMA load, TMA hardware moving bytes from HBM to shared memory and signaling FULL, and a consumer waiting on FULL, running WGMMA, confirming completion, and signaling EMPTY so the producer can reload the same stage" src="../images/ch09/01-two-barrier-handshake.svg?v=3e6b2c2e0171" /></a></p>
-<p><em>One stage's full lifecycle, numbered exactly as the text below: the FULL barrier flows producer→TMA→consumer, the EMPTY barrier flows consumer back to producer — two separate signals instead of one block-wide rendezvous.</em></p>
+<p><a href="../images/ch09/01-two-barrier-handshake.svg?v=1d2c91247cea"><img alt="One stage, two ownership handoffs" src="../images/ch09/01-two-barrier-handshake.svg?v=1d2c91247cea" /></a></p>
+<p><em>FULL publishes data readiness; EMPTY publishes storage reusability.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mbarrier — The Core Concept
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
@@ -2727,8 +2727,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h3 id="101-the-aba-problem-in-circular-barriers">10.1 The ABA Problem in Circular Barriers<a class="headerlink" href="#101-the-aba-problem-in-circular-barriers" title="Permanent link">&para;</a></h3>
 <p>In a circular buffer with N stages, the same barrier is reused once every N rounds. If a thread is very fast and laps a slow thread, it might arrive at the barrier for ROUND N before the slow thread finishes waiting for ROUND 0. Both arrivals look the same without a disambiguation mechanism.</p>
 <p>This is the ABA problem: <strong>A</strong> (round 0) looks like <strong>A</strong> (round N) because the barrier counter has wrapped.</p>
-<p><a href="../images/ch09/02-aba-phase-bits.svg?v=5a90809de8c9"><img alt="Nine-step iteration trace over a 4-stage circular buffer, with stage 0's three reuses at iterations 0, 4, and 8 highlighted, each tagged with the phase bit (0, 1, 0) that lets a waiter tell the three passes apart" src="../images/ch09/02-aba-phase-bits.svg?v=5a90809de8c9" /></a></p>
-<p><em>Stage 0 physically fires three times in this trace; only the alternating phase bit (0→1→0) tells <code>try_wait.parity</code> which generation it's looking at.</em></p>
+<p><a href="../images/ch09/02-aba-phase-bits.svg?v=313c0fdffa45"><img alt="A stage index needs a generation" src="../images/ch09/02-aba-phase-bits.svg?v=313c0fdffa45" /></a></p>
+<p><em>Four physical stages are reused repeatedly. Phase distinguishes successive passes.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ABA Problem Illustrated
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -2892,8 +2892,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h3 id="121-the-consumers-read-release-lag">12.1 The Consumer's Read-Release Lag<a class="headerlink" href="#121-the-consumers-read-release-lag" title="Permanent link">&para;</a></h3>
 <p>The consumer has a more complex state machine than the producer, because WGMMA is <strong>asynchronous</strong> — issuing a WGMMA instruction does NOT mean it's finished immediately. The consumer must track which WGMMAs have been issued and which have completed.</p>
 <p>This creates the <strong>read-release lag</strong>: the consumer can start reading stage N (issue WGMMA on it) before it's finished with stage N-1's WGMMA. Only after confirming stage N-1's WGMMA is done can the consumer release stage N-1 back to the producer.</p>
-<p><a href="../images/ch09/03-read-release-lag.svg?v=f9d464b95cd7"><img alt="Five-iteration grid over 4 stages showing the READ pointer advancing to a new stage each iteration while the RELEASE pointer confirms and frees the stage one step behind it" src="../images/ch09/03-read-release-lag.svg?v=f9d464b95cd7" /></a></p>
-<p><em>The RELEASE pointer (red) always trails the READ pointer (blue) by exactly one stage — the WGMMA pipeline depth — so a stage is never freed while its WGMMA is still in flight.</em></p>
+<p><a href="../images/ch09/03-read-release-lag.svg?v=f50f0eaeb15f"><img alt="Reading can run ahead of release" src="../images/ch09/03-read-release-lag.svg?v=f50f0eaeb15f" /></a></p>
+<p><em>Example: keep one newest WGMMA group pending while releasing an older stage.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Consumer's Read Pointer and Release Pointer
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
@@ -2982,8 +2982,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 - WG1: Consumer 0 — computes top half of the output tile via WGMMA
 - WG2: Consumer 1 — computes bottom half of the output tile via WGMMA</p>
 <p>Both consumer warpgroups read THE SAME A and B tiles from shared memory (they consume the same loaded data). The "cooperation" is not about merging accumulators — each WG accumulates independently in its own registers. The cooperation is about sharing the loaded tile.</p>
-<p><a href="../images/ch09/04-cooperative-gap.svg?v=a7b0ec2914fe"><img alt="One 128x128 output tile split by row between two consumer warpgroups each accumulating independently in half the registers, both fed by one producer's TMA loads, with a timeline below showing both consumers running their epilogues at the same time while tensor cores sit idle" src="../images/ch09/04-cooperative-gap.svg?v=a7b0ec2914fe" /></a></p>
-<p><em>WG1 and WG2 split the registers by halving the rows, but because they run in lockstep, both hit their epilogue at the same moment — the "Cooperative Gap" that Ping-Pong (§14) closes.</em></p>
+<p><a href="../images/ch09/04-cooperative-gap.svg?v=acce0fde4c4b"><img alt="Cooperation can split an output tile" src="../images/ch09/04-cooperative-gap.svg?v=acce0fde4c4b" /></a></p>
+<p><em>Two consumer warpgroups share operand delivery while accumulating different output regions.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Cooperative Pipeline — Tile Division and Execution
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
@@ -3038,8 +3038,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h2 id="14-the-ping-pong-pipeline-architecture">14 — The Ping-Pong Pipeline Architecture<a class="headerlink" href="#14-the-ping-pong-pipeline-architecture" title="Permanent link">&para;</a></h2>
 <h3 id="141-solving-the-cooperative-gap">14.1 Solving the Cooperative Gap<a class="headerlink" href="#141-solving-the-cooperative-gap" title="Permanent link">&para;</a></h3>
 <p>The Ping-Pong pipeline eliminates idle tensor core time by having Consumer 0 run its epilogue at EXACTLY the same time Consumer 1 runs its WGMMA on the NEXT tile.</p>
-<p><a href="../images/ch09/05-ping-pong-overlap.svg?v=b4798646d05e"><img alt="Two timelines stacked: the Cooperative pipeline where both consumers run MMA and epilogue in lockstep leaving tensor cores idle during every epilogue, versus Ping-Pong where Consumer 1's MMA on the odd tile overlaps Consumer 0's epilogue on the even tile so tensor cores never idle" src="../images/ch09/05-ping-pong-overlap.svg?v=b4798646d05e" /></a></p>
-<p><em>Staggering C1 by half a tile makes its MMA fill exactly the slot where C0's epilogue would otherwise leave the tensor cores idle — the fix only works if epilogue time and MMA time per tile are close to equal.</em></p>
+<p><a href="../images/ch09/05-ping-pong-overlap.svg?v=7ace883f1a99"><img alt="Stagger consumers to cover epilogue work" src="../images/ch09/05-ping-pong-overlap.svg?v=7ace883f1a99" /></a></p>
+<p><em>Illustrative ping-pong scheduling; the benefit depends on the relative task durations.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Ping-Pong Pipeline — The Key Insight
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
@@ -3908,8 +3908,8 @@ earlier worked example for one.]</p>
 <h2 id="17-persistent-scheduling">17 — Persistent Scheduling<a class="headerlink" href="#17-persistent-scheduling" title="Permanent link">&para;</a></h2>
 <h3 id="171-why-kernels-are-launched-persistently">17.1 Why Kernels Are Launched Persistently<a class="headerlink" href="#171-why-kernels-are-launched-persistently" title="Permanent link">&para;</a></h3>
 <p>Non-persistent kernels launch one thread block per output tile. This has three problems: kernel launch overhead, wave quantization (last partial wave wastes SM capacity), and poor cache locality (tiles assigned in a bad order). Persistent scheduling fixes all three.</p>
-<p><a href="../images/ch09/06-wave-quantization.svg?v=55cafaf7dc80"><img alt="Two SM-grid snapshots for 133 tiles on 132 SMs: wave 1 with every SM busy, and wave 2 with only 1 SM working while 131 sit idle, labeled with the 0.8% last-wave efficiency" src="../images/ch09/06-wave-quantization.svg?v=55cafaf7dc80" /></a></p>
-<p><em>One tile too many for the SM count turns the second wave into 131 idle SMs babysitting a single busy one — persistent scheduling removes the wave boundary entirely.</em></p>
+<p><a href="../images/ch09/06-wave-quantization.svg?v=41aaeb5786aa"><img alt="133 tiles on 132 SMs: the last wave" src="../images/ch09/06-wave-quantization.svg?v=41aaeb5786aa" /></a></p>
+<p><em>Equal-duration tile model with one resident tile per SM. This is a scheduling illustration.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>Persistent vs Non-Persistent Scheduling
 </span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
@@ -3983,76 +3983,86 @@ earlier worked example for one.]</p>
 </span><span id="__span-26-17"><a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a>  // Within each block, traverse in column-major order
 </span><span id="__span-26-18"><a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a>  tile_block = tile_idx / (S × tiles_n)   // which super-block
 </span><span id="__span-26-19"><a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a>  pos_in_block = tile_idx % (S × tiles_n)
-</span><span id="__span-26-20"><a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a>  local_m = pos_in_block / tiles_n         // 0 to S-1
-</span><span id="__span-26-21"><a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a>  local_n = pos_in_block % tiles_n         // 0 to tiles_n-1
-</span><span id="__span-26-22"><a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a>  tile_m = tile_block * S + local_m
-</span><span id="__span-26-23"><a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>  tile_n = local_n
-</span><span id="__span-26-24"><a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a>  // This sweeps S×tiles_n tiles before moving to the next block.
-</span><span id="__span-26-25"><a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a>  // The S rows of the block share their B tile reads in L2.
+</span><span id="__span-26-20"><a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a>  tiles_m = ceil(M / TILE_M)
+</span><span id="__span-26-21"><a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a>  group_m = min(S, tiles_m - tile_block * S) // final group may be shorter
+</span><span id="__span-26-22"><a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a>  local_m = pos_in_block % group_m         // M varies fastest
+</span><span id="__span-26-23"><a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>  local_n = pos_in_block / group_m
+</span><span id="__span-26-24"><a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a>  tile_m = tile_block * S + local_m
+</span><span id="__span-26-25"><a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a>  tile_n = local_n
+</span><span id="__span-26-26"><a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a>  // Valid tile_idx values sweep group_m×tiles_n tiles in this group.
+</span><span id="__span-26-27"><a id="__codelineno-26-27" name="__codelineno-26-27" href="#__codelineno-26-27"></a>  // The group_m rows can reuse each B tile through L2.
 </span></code></pre></div>
-<h3 id="173-stream-k-scheduling-eliminating-wave-quantization">17.3 Stream-K Scheduling — Eliminating Wave Quantization<a class="headerlink" href="#173-stream-k-scheduling-eliminating-wave-quantization" title="Permanent link">&para;</a></h3>
-<p>Stream-K treats the ENTIRE problem as a 1D stream of arithmetic operations, divided exactly evenly among all SMs. This eliminates the "last wave" problem completely.</p>
+<p>For <code>tiles_m=3</code>, <code>tiles_n=3</code>, and <code>S=2</code>, the first six coordinates are
+<code>(0,0), (1,0), (0,1), (1,1), (0,2), (1,2)</code>. The final group has
+<code>group_m=1</code>, so its coordinates are <code>(2,0), (2,1), (2,2)</code>: no invalid fourth row.</p>
+<h3 id="173-stream-k-scheduling-reducing-wave-quantization">17.3 Stream-K Scheduling — Reducing Wave Quantization<a class="headerlink" href="#173-stream-k-scheduling-reducing-wave-quantization" title="Permanent link">&para;</a></h3>
+<p>Stream-K partitions a linear stream of K-tile iterations across worker CTAs,
+reducing the imbalance of a sparsely populated final wave. Integer work units
+leave some imbalance, and split output tiles add reduction and synchronization
+costs. CTAs are scheduled onto SMs; the SM labels below describe a simplified
+one-worker-per-SM model.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>Stream-K — Core Idea and Implementation
 </span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>
 </span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>  Standard scheduling: 133 tiles, 132 SMs → 2 waves (last wave: 1 SM)
-</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>  Stream-K: 133 tiles, 132 SMs → 132 equal chunks of work
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>  Stream-K: 133 tiles, 132 workers → nearly equal chunks of K work
 </span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>
-</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>  How stream-K avoids the last-wave problem:
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>  How Stream-K reduces the last-wave imbalance:
 </span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>  ─────────────────────────────────────────────────────────────────
 </span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>  Total math = total_tiles × K_TILES_PER_OUTPUT_TILE
 </span><span id="__span-27-10"><a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>  Work per SM = ceil(total_math / NUM_SMs)
 </span><span id="__span-27-11"><a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>
 </span><span id="__span-27-12"><a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>  If total_tiles = 133 and K_TILES = 64, each output tile has 64 k-tiles:
 </span><span id="__span-27-13"><a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>    Total k-tile iterations = 133 × 64 = 8512
-</span><span id="__span-27-14"><a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a>    Per SM: ceil(8512 / 132) = 65 k-tile iterations
-</span><span id="__span-27-15"><a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a>
-</span><span id="__span-27-16"><a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>  SM 0: k-tiles 0..64   (all in tile 0 + first slice of tile 1)
-</span><span id="__span-27-17"><a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a>  SM 1: k-tiles 65..129 (rest of tile 1 + first slice of tile 2)
-</span><span id="__span-27-18"><a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a>  ...
-</span><span id="__span-27-19"><a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a>
-</span><span id="__span-27-20"><a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>  Some SMs "own" a full output tile:
-</span><span id="__span-27-21"><a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a>    They compute all K_TILES for that tile → write output directly.
-</span><span id="__span-27-22"><a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a>  Some SMs "split" a tile with a neighbor:
-</span><span id="__span-27-23"><a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a>    They compute K/2 of the K-tiles → write partial to scratchpad.
-</span><span id="__span-27-24"><a id="__codelineno-27-24" name="__codelineno-27-24" href="#__codelineno-27-24"></a>    The neighbor reads the scratchpad, adds its partial → writes output.
-</span><span id="__span-27-25"><a id="__codelineno-27-25" name="__codelineno-27-25" href="#__codelineno-27-25"></a>
-</span><span id="__span-27-26"><a id="__codelineno-27-26" name="__codelineno-27-26" href="#__codelineno-27-26"></a>  ─── The Fixup Step ──────────────────────────────────────────────
-</span><span id="__span-27-27"><a id="__codelineno-27-27" name="__codelineno-27-27" href="#__codelineno-27-27"></a>  Split tiles require partial reduction between two SMs.
-</span><span id="__span-27-28"><a id="__codelineno-27-28" name="__codelineno-27-28" href="#__codelineno-27-28"></a>
-</span><span id="__span-27-29"><a id="__codelineno-27-29" name="__codelineno-27-29" href="#__codelineno-27-29"></a>  SM A computes first half of tile T (k=0..31):
-</span><span id="__span-27-30"><a id="__codelineno-27-30" name="__codelineno-27-30" href="#__codelineno-27-30"></a>    Accumulates into partial_A.
-</span><span id="__span-27-31"><a id="__codelineno-27-31" name="__codelineno-27-31" href="#__codelineno-27-31"></a>    Writes partial_A to global workspace[T].
-</span><span id="__span-27-32"><a id="__codelineno-27-32" name="__codelineno-27-32" href="#__codelineno-27-32"></a>    Sets workspace_ready[T] = true (atomic flag).
-</span><span id="__span-27-33"><a id="__codelineno-27-33" name="__codelineno-27-33" href="#__codelineno-27-33"></a>
-</span><span id="__span-27-34"><a id="__codelineno-27-34" name="__codelineno-27-34" href="#__codelineno-27-34"></a>  SM B computes second half of tile T (k=32..63):
-</span><span id="__span-27-35"><a id="__codelineno-27-35" name="__codelineno-27-35" href="#__codelineno-27-35"></a>    Accumulates into partial_B.
-</span><span id="__span-27-36"><a id="__codelineno-27-36" name="__codelineno-27-36" href="#__codelineno-27-36"></a>    Checks workspace_ready[T] (spin until true).
-</span><span id="__span-27-37"><a id="__codelineno-27-37" name="__codelineno-27-37" href="#__codelineno-27-37"></a>    Reads partial_A from workspace[T].
-</span><span id="__span-27-38"><a id="__codelineno-27-38" name="__codelineno-27-38" href="#__codelineno-27-38"></a>    result = partial_A + partial_B.
-</span><span id="__span-27-39"><a id="__codelineno-27-39" name="__codelineno-27-39" href="#__codelineno-27-39"></a>    Writes result to output[T]. (Epilogue applied here.)
-</span><span id="__span-27-40"><a id="__codelineno-27-40" name="__codelineno-27-40" href="#__codelineno-27-40"></a>
-</span><span id="__span-27-41"><a id="__codelineno-27-41" name="__codelineno-27-41" href="#__codelineno-27-41"></a>  The workspace is a global memory buffer of size = num_split_tiles × tile_bytes.
-</span><span id="__span-27-42"><a id="__codelineno-27-42" name="__codelineno-27-42" href="#__codelineno-27-42"></a>  Only the "tail" tiles near wave boundaries are split.
-</span><span id="__span-27-43"><a id="__codelineno-27-43" name="__codelineno-27-43" href="#__codelineno-27-43"></a>
-</span><span id="__span-27-44"><a id="__codelineno-27-44" name="__codelineno-27-44" href="#__codelineno-27-44"></a>  ─── Hybrid Strategy (most production kernels) ────────────────────
-</span><span id="__span-27-45"><a id="__codelineno-27-45" name="__codelineno-27-45" href="#__codelineno-27-45"></a>  Apply standard data-parallel scheduling to tiles that DON'T cross wave
-</span><span id="__span-27-46"><a id="__codelineno-27-46" name="__codelineno-27-46" href="#__codelineno-27-46"></a>  boundaries (the "bulk" of the work). Apply stream-K ONLY to the last
-</span><span id="__span-27-47"><a id="__codelineno-27-47" name="__codelineno-27-47" href="#__codelineno-27-47"></a>  partial wave (the "tail").
-</span><span id="__span-27-48"><a id="__codelineno-27-48" name="__codelineno-27-48" href="#__codelineno-27-48"></a>
-</span><span id="__span-27-49"><a id="__codelineno-27-49" name="__codelineno-27-49" href="#__codelineno-27-49"></a>  Why? Because split tiles have reduction overhead (global workspace write,
-</span><span id="__span-27-50"><a id="__codelineno-27-50" name="__codelineno-27-50" href="#__codelineno-27-50"></a>  atomic synchronization). For tiles that don't need splitting, standard
-</span><span id="__span-27-51"><a id="__codelineno-27-51" name="__codelineno-27-51" href="#__codelineno-27-51"></a>  scheduling is faster and simpler. Only the tail needs Stream-K.
-</span><span id="__span-27-52"><a id="__codelineno-27-52" name="__codelineno-27-52" href="#__codelineno-27-52"></a>
-</span><span id="__span-27-53"><a id="__codelineno-27-53" name="__codelineno-27-53" href="#__codelineno-27-53"></a>  Threshold: If tail wave is &gt; 50% full, use data-parallel.
-</span><span id="__span-27-54"><a id="__codelineno-27-54" name="__codelineno-27-54" href="#__codelineno-27-54"></a>             If tail wave is &lt; 50% full, use Stream-K for the tail.
+</span><span id="__span-27-14"><a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a>    Maximum per worker: ceil(8512 / 132) = 65 k-tile iterations
+</span><span id="__span-27-15"><a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a>    The final range must be clipped at 8512; not every worker gets 65.
+</span><span id="__span-27-16"><a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>
+</span><span id="__span-27-17"><a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a>  SM 0: k-tiles 0..64   (all in tile 0 + first slice of tile 1)
+</span><span id="__span-27-18"><a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a>  SM 1: k-tiles 65..129 (rest of tile 1 + first slice of tile 2)
+</span><span id="__span-27-19"><a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a>  ...
+</span><span id="__span-27-20"><a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>
+</span><span id="__span-27-21"><a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a>  Some SMs "own" a full output tile:
+</span><span id="__span-27-22"><a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a>    They compute all K_TILES for that tile → write output directly.
+</span><span id="__span-27-23"><a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a>  Some SMs "split" a tile with a neighbor:
+</span><span id="__span-27-24"><a id="__codelineno-27-24" name="__codelineno-27-24" href="#__codelineno-27-24"></a>    They compute K/2 of the K-tiles → write partial to scratchpad.
+</span><span id="__span-27-25"><a id="__codelineno-27-25" name="__codelineno-27-25" href="#__codelineno-27-25"></a>    The neighbor reads the scratchpad, adds its partial → writes output.
+</span><span id="__span-27-26"><a id="__codelineno-27-26" name="__codelineno-27-26" href="#__codelineno-27-26"></a>
+</span><span id="__span-27-27"><a id="__codelineno-27-27" name="__codelineno-27-27" href="#__codelineno-27-27"></a>  ─── The Fixup Step ──────────────────────────────────────────────
+</span><span id="__span-27-28"><a id="__codelineno-27-28" name="__codelineno-27-28" href="#__codelineno-27-28"></a>  Split tiles require partial reduction between two SMs.
+</span><span id="__span-27-29"><a id="__codelineno-27-29" name="__codelineno-27-29" href="#__codelineno-27-29"></a>
+</span><span id="__span-27-30"><a id="__codelineno-27-30" name="__codelineno-27-30" href="#__codelineno-27-30"></a>  SM A computes first half of tile T (k=0..31):
+</span><span id="__span-27-31"><a id="__codelineno-27-31" name="__codelineno-27-31" href="#__codelineno-27-31"></a>    Accumulates into partial_A.
+</span><span id="__span-27-32"><a id="__codelineno-27-32" name="__codelineno-27-32" href="#__codelineno-27-32"></a>    Writes partial_A to global workspace[T].
+</span><span id="__span-27-33"><a id="__codelineno-27-33" name="__codelineno-27-33" href="#__codelineno-27-33"></a>    Sets workspace_ready[T] = true (atomic flag).
+</span><span id="__span-27-34"><a id="__codelineno-27-34" name="__codelineno-27-34" href="#__codelineno-27-34"></a>
+</span><span id="__span-27-35"><a id="__codelineno-27-35" name="__codelineno-27-35" href="#__codelineno-27-35"></a>  SM B computes second half of tile T (k=32..63):
+</span><span id="__span-27-36"><a id="__codelineno-27-36" name="__codelineno-27-36" href="#__codelineno-27-36"></a>    Accumulates into partial_B.
+</span><span id="__span-27-37"><a id="__codelineno-27-37" name="__codelineno-27-37" href="#__codelineno-27-37"></a>    Checks workspace_ready[T] (spin until true).
+</span><span id="__span-27-38"><a id="__codelineno-27-38" name="__codelineno-27-38" href="#__codelineno-27-38"></a>    Reads partial_A from workspace[T].
+</span><span id="__span-27-39"><a id="__codelineno-27-39" name="__codelineno-27-39" href="#__codelineno-27-39"></a>    result = partial_A + partial_B.
+</span><span id="__span-27-40"><a id="__codelineno-27-40" name="__codelineno-27-40" href="#__codelineno-27-40"></a>    Writes result to output[T]. (Epilogue applied here.)
+</span><span id="__span-27-41"><a id="__codelineno-27-41" name="__codelineno-27-41" href="#__codelineno-27-41"></a>
+</span><span id="__span-27-42"><a id="__codelineno-27-42" name="__codelineno-27-42" href="#__codelineno-27-42"></a>  The workspace is a global memory buffer of size = num_split_tiles × tile_bytes.
+</span><span id="__span-27-43"><a id="__codelineno-27-43" name="__codelineno-27-43" href="#__codelineno-27-43"></a>  Only the "tail" tiles near wave boundaries are split.
+</span><span id="__span-27-44"><a id="__codelineno-27-44" name="__codelineno-27-44" href="#__codelineno-27-44"></a>
+</span><span id="__span-27-45"><a id="__codelineno-27-45" name="__codelineno-27-45" href="#__codelineno-27-45"></a>  ─── Hybrid Strategy (most production kernels) ────────────────────
+</span><span id="__span-27-46"><a id="__codelineno-27-46" name="__codelineno-27-46" href="#__codelineno-27-46"></a>  Apply standard data-parallel scheduling to tiles that DON'T cross wave
+</span><span id="__span-27-47"><a id="__codelineno-27-47" name="__codelineno-27-47" href="#__codelineno-27-47"></a>  boundaries (the "bulk" of the work). Apply stream-K ONLY to the last
+</span><span id="__span-27-48"><a id="__codelineno-27-48" name="__codelineno-27-48" href="#__codelineno-27-48"></a>  partial wave (the "tail").
+</span><span id="__span-27-49"><a id="__codelineno-27-49" name="__codelineno-27-49" href="#__codelineno-27-49"></a>
+</span><span id="__span-27-50"><a id="__codelineno-27-50" name="__codelineno-27-50" href="#__codelineno-27-50"></a>  Why? Because split tiles have reduction overhead (global workspace write,
+</span><span id="__span-27-51"><a id="__codelineno-27-51" name="__codelineno-27-51" href="#__codelineno-27-51"></a>  atomic synchronization). For tiles that don't need splitting, standard
+</span><span id="__span-27-52"><a id="__codelineno-27-52" name="__codelineno-27-52" href="#__codelineno-27-52"></a>  scheduling is faster and simpler. Only the tail needs Stream-K.
+</span><span id="__span-27-53"><a id="__codelineno-27-53" name="__codelineno-27-53" href="#__codelineno-27-53"></a>
+</span><span id="__span-27-54"><a id="__codelineno-27-54" name="__codelineno-27-54" href="#__codelineno-27-54"></a>  Threshold: If tail wave is &gt; 50% full, use data-parallel.
+</span><span id="__span-27-55"><a id="__codelineno-27-55" name="__codelineno-27-55" href="#__codelineno-27-55"></a>             If tail wave is &lt; 50% full, use Stream-K for the tail.
 </span></code></pre></div>
 <hr />
 <h2 id="18-rasterization-and-l2-cache-locality">18 — Rasterization and L2 Cache Locality<a class="headerlink" href="#18-rasterization-and-l2-cache-locality" title="Permanent link">&para;</a></h2>
 <h3 id="181-why-traversal-order-determines-performance">18.1 Why Traversal Order Determines Performance<a class="headerlink" href="#181-why-traversal-order-determines-performance" title="Permanent link">&para;</a></h3>
 <p>Two kernels with identical arithmetic but different tile traversal orders can differ by 2-3× in performance because of L2 cache behavior. The tile that was evicted before it was needed forces an expensive HBM reload.</p>
-<p><a href="../images/ch09/07-rasterization-swizzle.svg?v=55fa03e2addb"><img alt="Three 4x4 tile-visit-order grids with numbered arrows: row-major keeping A warm but evicting B every row, column-major keeping B warm but evicting A every column, and swizzle=2 sweeping two M-tiles per column so both A and B stay live in L2" src="../images/ch09/07-rasterization-swizzle.svg?v=55fa03e2addb" /></a></p>
-<p><em>Row-major and column-major each keep only one matrix's tiles warm in L2; sweeping a thick 2-tile strip before advancing columns keeps both warm at once.</em></p>
+<p><a href="../images/ch09/07-rasterization-swizzle.svg?v=ace63e45313c"><img alt="Tile order changes the reuse window" src="../images/ch09/07-rasterization-swizzle.svg?v=ace63e45313c" /></a></p>
+<p><em>Numbers show visit order for a 4 × 4 output-tile grid.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>Rasterization — Why L2 Locality Matters
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
@@ -4133,58 +4143,63 @@ earlier worked example for one.]</p>
 </span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>
 </span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>  STEP 1: Classify the kernel
 </span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>    □ Compute AI = 2MNK / ((MK+NK+MN)×dtype_bytes)
-</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>    □ AI &gt; 295 FLOP/Byte (FP16 tensor) → compute-bound
-</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>    □ AI &lt; 20 FLOP/Byte (FP32 cores)  → memory-bound → fuse into epilogue
-</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>
-</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>  STEP 2: Choose tile shape
-</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>    □ Large tiles maximize AI (reuse A and B more per byte loaded)
-</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>    □ TILE_M × TILE_N ≤ 128×128 → 1 consumer WG
-</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>    □ TILE_M × TILE_N ≤ 256×128 → 2 consumer WGs (cooperative)
-</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>    □ Epilogue is expensive → 2 consumer WGs (ping-pong)
-</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>
-</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>  STEP 3: Set pipeline depth
-</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>    □ N_STAGES = 3 or 4 (more = more SMEM pressure)
-</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>    □ Verify: N_STAGES × TILE_BYTES ≤ SMEM_BUDGET - EPILOGUE_SMEM
-</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>
-</span><span id="__span-29-19"><a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>  STEP 4: Configure warp specialization
-</span><span id="__span-29-20"><a id="__codelineno-29-20" name="__codelineno-29-20" href="#__codelineno-29-20"></a>    □ 1 producer WG (128 threads) → setmaxnreg.dec(32)
-</span><span id="__span-29-21"><a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a>    □ 1 or 2 consumer WGs (128 threads each) → setmaxnreg.inc(232)
-</span><span id="__span-29-22"><a id="__codelineno-29-22" name="__codelineno-29-22" href="#__codelineno-29-22"></a>    □ Total threads: 128 (prod) + 128 or 256 (cons) = 256 or 384
-</span><span id="__span-29-23"><a id="__codelineno-29-23" name="__codelineno-29-23" href="#__codelineno-29-23"></a>
-</span><span id="__span-29-24"><a id="__codelineno-29-24" name="__codelineno-29-24" href="#__codelineno-29-24"></a>  STEP 5: Choose scheduling
-</span><span id="__span-29-25"><a id="__codelineno-29-25" name="__codelineno-29-25" href="#__codelineno-29-25"></a>    □ total_tiles &lt;&lt; num_SMs → all-Stream-K
-</span><span id="__span-29-26"><a id="__codelineno-29-26" name="__codelineno-29-26" href="#__codelineno-29-26"></a>    □ total_tiles &gt;&gt; num_SMs and divisible → static persistent
-</span><span id="__span-29-27"><a id="__codelineno-29-27" name="__codelineno-29-27" href="#__codelineno-29-27"></a>    □ total_tiles not divisible → hybrid (bulk static + tail Stream-K)
-</span><span id="__span-29-28"><a id="__codelineno-29-28" name="__codelineno-29-28" href="#__codelineno-29-28"></a>    □ Multiple GEMMs of varying sizes → grouped persistent
-</span><span id="__span-29-29"><a id="__codelineno-29-29" name="__codelineno-29-29" href="#__codelineno-29-29"></a>
-</span><span id="__span-29-30"><a id="__codelineno-29-30" name="__codelineno-29-30" href="#__codelineno-29-30"></a>  STEP 6: Choose rasterization
-</span><span id="__span-29-31"><a id="__codelineno-29-31" name="__codelineno-29-31" href="#__codelineno-29-31"></a>    □ M &gt;&gt; N: use column-major traversal (B gets reuse)
-</span><span id="__span-29-32"><a id="__codelineno-29-32" name="__codelineno-29-32" href="#__codelineno-29-32"></a>    □ N &gt;&gt; M: use row-major traversal (A gets reuse)
-</span><span id="__span-29-33"><a id="__codelineno-29-33" name="__codelineno-29-33" href="#__codelineno-29-33"></a>    □ M ≈ N: use swizzle=2 or 4 for both dimensions
-</span><span id="__span-29-34"><a id="__codelineno-29-34" name="__codelineno-29-34" href="#__codelineno-29-34"></a>    □ Using clusters: align cluster shape to rasterization direction
-</span><span id="__span-29-35"><a id="__codelineno-29-35" name="__codelineno-29-35" href="#__codelineno-29-35"></a>
-</span><span id="__span-29-36"><a id="__codelineno-29-36" name="__codelineno-29-36" href="#__codelineno-29-36"></a>  STEP 7: Design epilogue
-</span><span id="__span-29-37"><a id="__codelineno-29-37" name="__codelineno-29-37" href="#__codelineno-29-37"></a>    □ Which ops to fuse? (bias, activation, scaling, residual)
-</span><span id="__span-29-38"><a id="__codelineno-29-38" name="__codelineno-29-38" href="#__codelineno-29-38"></a>    □ FP8 output? Need amax reduction in epilogue.
-</span><span id="__span-29-39"><a id="__codelineno-29-39" name="__codelineno-29-39" href="#__codelineno-29-39"></a>    □ How many SMEM buffers for epilogue pipeline?
-</span><span id="__span-29-40"><a id="__codelineno-29-40" name="__codelineno-29-40" href="#__codelineno-29-40"></a>    □ Does epilogue DMA warp need a dedicated slot in the WG layout?
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>    □ Select the arithmetic roof matching dtype and instruction family
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>    □ Compare AI with that roof’s ridge to predict the lower ceiling
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>    □ Profile actual traffic, parallelism and stalls before choosing a fix
+</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>
+</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>  STEP 2: Choose tile shape
+</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>    □ Large tiles maximize AI (reuse A and B more per byte loaded)
+</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>    □ TILE_M × TILE_N ≤ 128×128 → 1 consumer WG
+</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>    □ TILE_M × TILE_N ≤ 256×128 → 2 consumer WGs (cooperative)
+</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>    □ Epilogue is expensive → 2 consumer WGs (ping-pong)
+</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>
+</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>  STEP 3: Set pipeline depth
+</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>    □ N_STAGES = 3 or 4 (more = more SMEM pressure)
+</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>    □ Verify: N_STAGES × TILE_BYTES ≤ SMEM_BUDGET - EPILOGUE_SMEM
+</span><span id="__span-29-19"><a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>
+</span><span id="__span-29-20"><a id="__codelineno-29-20" name="__codelineno-29-20" href="#__codelineno-29-20"></a>  STEP 4: Configure warp specialization
+</span><span id="__span-29-21"><a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a>    □ 1 producer WG (128 threads) → setmaxnreg.dec(32)
+</span><span id="__span-29-22"><a id="__codelineno-29-22" name="__codelineno-29-22" href="#__codelineno-29-22"></a>    □ 1 or 2 consumer WGs (128 threads each) → setmaxnreg.inc(232)
+</span><span id="__span-29-23"><a id="__codelineno-29-23" name="__codelineno-29-23" href="#__codelineno-29-23"></a>    □ Total threads: 128 (prod) + 128 or 256 (cons) = 256 or 384
+</span><span id="__span-29-24"><a id="__codelineno-29-24" name="__codelineno-29-24" href="#__codelineno-29-24"></a>
+</span><span id="__span-29-25"><a id="__codelineno-29-25" name="__codelineno-29-25" href="#__codelineno-29-25"></a>  STEP 5: Choose scheduling
+</span><span id="__span-29-26"><a id="__codelineno-29-26" name="__codelineno-29-26" href="#__codelineno-29-26"></a>    □ total_tiles &lt;&lt; num_SMs → all-Stream-K
+</span><span id="__span-29-27"><a id="__codelineno-29-27" name="__codelineno-29-27" href="#__codelineno-29-27"></a>    □ total_tiles &gt;&gt; num_SMs and divisible → static persistent
+</span><span id="__span-29-28"><a id="__codelineno-29-28" name="__codelineno-29-28" href="#__codelineno-29-28"></a>    □ total_tiles not divisible → hybrid (bulk static + tail Stream-K)
+</span><span id="__span-29-29"><a id="__codelineno-29-29" name="__codelineno-29-29" href="#__codelineno-29-29"></a>    □ Multiple GEMMs of varying sizes → grouped persistent
+</span><span id="__span-29-30"><a id="__codelineno-29-30" name="__codelineno-29-30" href="#__codelineno-29-30"></a>
+</span><span id="__span-29-31"><a id="__codelineno-29-31" name="__codelineno-29-31" href="#__codelineno-29-31"></a>  STEP 6: Choose rasterization
+</span><span id="__span-29-32"><a id="__codelineno-29-32" name="__codelineno-29-32" href="#__codelineno-29-32"></a>    □ M &gt;&gt; N: use column-major traversal (B gets reuse)
+</span><span id="__span-29-33"><a id="__codelineno-29-33" name="__codelineno-29-33" href="#__codelineno-29-33"></a>    □ N &gt;&gt; M: use row-major traversal (A gets reuse)
+</span><span id="__span-29-34"><a id="__codelineno-29-34" name="__codelineno-29-34" href="#__codelineno-29-34"></a>    □ M ≈ N: use swizzle=2 or 4 for both dimensions
+</span><span id="__span-29-35"><a id="__codelineno-29-35" name="__codelineno-29-35" href="#__codelineno-29-35"></a>    □ Using clusters: align cluster shape to rasterization direction
+</span><span id="__span-29-36"><a id="__codelineno-29-36" name="__codelineno-29-36" href="#__codelineno-29-36"></a>
+</span><span id="__span-29-37"><a id="__codelineno-29-37" name="__codelineno-29-37" href="#__codelineno-29-37"></a>  STEP 7: Design epilogue
+</span><span id="__span-29-38"><a id="__codelineno-29-38" name="__codelineno-29-38" href="#__codelineno-29-38"></a>    □ Which ops to fuse? (bias, activation, scaling, residual)
+</span><span id="__span-29-39"><a id="__codelineno-29-39" name="__codelineno-29-39" href="#__codelineno-29-39"></a>    □ FP8 output? Need amax reduction in epilogue.
+</span><span id="__span-29-40"><a id="__codelineno-29-40" name="__codelineno-29-40" href="#__codelineno-29-40"></a>    □ How many SMEM buffers for epilogue pipeline?
+</span><span id="__span-29-41"><a id="__codelineno-29-41" name="__codelineno-29-41" href="#__codelineno-29-41"></a>    □ Does epilogue DMA warp need a dedicated slot in the WG layout?
 </span></code></pre></div>
 <hr />
 <h3 id="final-comprehensive-example">★ Final Comprehensive Example<a class="headerlink" href="#final-comprehensive-example" title="Permanent link">&para;</a></h3>
 <p><strong>Manual Worked Example:</strong></p>
-<p>We implement a complete persistent warp-specialized pipeline:
-- M=256, N=256, K=256 matrix multiply (float32)
-  [CORRECTED: the shipped code originally used M=128, N=128, K=64 in
-  main(), which both undersized the demo (4 tiles, not the 16 claimed
-  below) and made it memory-bound (AI=16 FLOP/Byte, below the 20
-  FLOP/Byte FP32 ridge point from §20) — the opposite of what a
-  "compute-bound capstone" is meant to demonstrate. M=N=K=256 restores
-  both the 16-tile count and AI≈43 (compute-bound).]
-- Tile: 64×64 per CTA
-- Pipeline: 3 stages
-- Warp specialization: WG0=producer, WG1=consumer
-- Epilogue: ReLU activation fused
-- Scheduling: static persistent with swizzled rasterization</p>
+<p>We implement a persistent GEMM teaching reference with separate producer and
+consumer roles. Block-wide barriers serialize loading and computation; this
+example demonstrates storage, scheduling and ownership structure rather than
+production TMA/WGMMA overlap. The complete executable below uses scalar float32
+arithmetic.</p>
+<ul>
+<li>M=256, N=256, K=256 matrix multiply (float32)</li>
+<li>Whole-problem traffic model: AI = 2×256³ / (3×256²×4) ≈ 42.7 FLOP/byte.
+  This exceeds the SXM FP32 ridge used in this chapter, so that model's arithmetic
+  ceiling is lower. It does not establish the teaching kernel's actual bottleneck,
+  particularly with its single-CTA launch and repeated tiled loads.</li>
+<li>Tile: 64×64 per CTA</li>
+<li>Pipeline: 3 stages</li>
+<li>Warp specialization: WG0=producer, WG1=consumer</li>
+<li>Epilogue: ReLU activation fused</li>
+<li>Scheduling: static persistent with swizzled rasterization</li>
+</ul>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Total tiles: ceil(256/64) × ceil(256/64) = 4 × 4 = 16 tiles
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>With 1 CTA (for demo): processes all 16 tiles sequentially.
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>Persistent inner loop: for tile=0..15: do K-loop (256/16=16 k-tiles), epilogue.
@@ -4598,8 +4613,9 @@ above is deterministic given the fill in main() and is reproduced exactly.]</p>
 </span><span id="__span-36-5"><a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>  FP32 CUDA Core:   ~67 TFLOPS / 3.35 TB/s  ≈  20 FLOP/Byte
 </span><span id="__span-36-6"><a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>  BF16 Tensor Core: same as FP16
 </span><span id="__span-36-7"><a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>
-</span><span id="__span-36-8"><a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>If AI &lt; ridge point → memory-bound → fuse ops, reduce bytes
-</span><span id="__span-36-9"><a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a>If AI &gt; ridge point → compute-bound → pipeline, warp specialize
+</span><span id="__span-36-8"><a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>If AI &lt; ridge point → modeled memory ceiling is lower
+</span><span id="__span-36-9"><a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a>If AI &gt; ridge point → modeled arithmetic ceiling is lower
+</span><span id="__span-36-10"><a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a>Use measured traffic and stalls to identify the actual bottleneck.
 </span></code></pre></div>
 <h3 id="warp-specialization-quick-reference">Warp Specialization Quick Reference<a class="headerlink" href="#warp-specialization-quick-reference" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>Concept             Value                  Notes
@@ -4687,12 +4703,14 @@ above is deterministic given the fill in main() and is reproduced exactly.]</p>
 </span><span id="__span-42-7"><a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a>Swizzle formula:
 </span><span id="__span-42-8"><a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a>  block_size = swizzle × tiles_n
 </span><span id="__span-42-9"><a id="__codelineno-42-9" name="__codelineno-42-9" href="#__codelineno-42-9"></a>  block_id   = tile_idx / block_size
-</span><span id="__span-42-10"><a id="__codelineno-42-10" name="__codelineno-42-10" href="#__codelineno-42-10"></a>  local_m    = (tile_idx % block_size) / tiles_n
-</span><span id="__span-42-11"><a id="__codelineno-42-11" name="__codelineno-42-11" href="#__codelineno-42-11"></a>  local_n    = (tile_idx % block_size) % tiles_n
-</span><span id="__span-42-12"><a id="__codelineno-42-12" name="__codelineno-42-12" href="#__codelineno-42-12"></a>  tile_m = block_id * swizzle + local_m
-</span><span id="__span-42-13"><a id="__codelineno-42-13" name="__codelineno-42-13" href="#__codelineno-42-13"></a>  tile_n = local_n
-</span><span id="__span-42-14"><a id="__codelineno-42-14" name="__codelineno-42-14" href="#__codelineno-42-14"></a>
-</span><span id="__span-42-15"><a id="__codelineno-42-15" name="__codelineno-42-15" href="#__codelineno-42-15"></a>Recommended swizzle: 2-4 for most GEMMs on H100 (L2=50MB)
+</span><span id="__span-42-10"><a id="__codelineno-42-10" name="__codelineno-42-10" href="#__codelineno-42-10"></a>  pos        = tile_idx % block_size
+</span><span id="__span-42-11"><a id="__codelineno-42-11" name="__codelineno-42-11" href="#__codelineno-42-11"></a>  group_m    = min(swizzle, tiles_m - block_id * swizzle)
+</span><span id="__span-42-12"><a id="__codelineno-42-12" name="__codelineno-42-12" href="#__codelineno-42-12"></a>  local_m    = pos % group_m
+</span><span id="__span-42-13"><a id="__codelineno-42-13" name="__codelineno-42-13" href="#__codelineno-42-13"></a>  local_n    = pos / group_m
+</span><span id="__span-42-14"><a id="__codelineno-42-14" name="__codelineno-42-14" href="#__codelineno-42-14"></a>  tile_m = block_id * swizzle + local_m
+</span><span id="__span-42-15"><a id="__codelineno-42-15" name="__codelineno-42-15" href="#__codelineno-42-15"></a>  tile_n = local_n
+</span><span id="__span-42-16"><a id="__codelineno-42-16" name="__codelineno-42-16" href="#__codelineno-42-16"></a>
+</span><span id="__span-42-17"><a id="__codelineno-42-17" name="__codelineno-42-17" href="#__codelineno-42-17"></a>Recommended swizzle: 2-4 for most GEMMs on H100 (L2=50MB)
 </span></code></pre></div>
 <h3 id="the-five-commandments-of-compute-bound-kernels">The Five Commandments of Compute-Bound Kernels<a class="headerlink" href="#the-five-commandments-of-compute-bound-kernels" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>1. CLASSIFY FIRST

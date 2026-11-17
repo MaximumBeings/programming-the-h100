@@ -2869,7 +2869,7 @@ than PCIe Gen 5.</p>
 </span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>  NVLink path (direct):
 </span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>    GPU A → NVLink fabric → GPU B
 </span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>    Latency: ~1-2 µs for a round trip
-</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>    Bandwidth: 900 GB/s
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>    Per-GPU budget: 900 GB/s bidirectional; 450 GB/s per direction
 </span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>
 </span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>  For gradient AllReduce at 1 GB of gradients:
 </span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>    PCIe path: 1 GB / 128 GB/s ≈ 7.8 ms per transfer
@@ -2894,8 +2894,7 @@ than PCIe Gen 5.</p>
 <h2 id="3-nvswitch">3 — NVSwitch<a class="headerlink" href="#3-nvswitch" title="Permanent link">&para;</a></h2>
 <h3 id="31-full-non-blocking-fabric">3.1 Full Non-Blocking Fabric<a class="headerlink" href="#31-full-non-blocking-fabric" title="Permanent link">&para;</a></h3>
 <p>On an 8-GPU HGX board (like in the DGX H100), four NVSwitch chips connect all
-eight GPUs. The key property: fully non-blocking — any GPU can send to any other
-GPU at full 900 GB/s simultaneously, with no contention.</p>
+eight GPUs. Each H100 SXM has a product-peak NVLink budget of <strong>900 GB/s aggregate bidirectional bandwidth</strong>, or <strong>450 GB/s per direction</strong>. That endpoint budget is shared across its peers; each pair does not receive an independent 900 GB/s allocation. A non-blocking fabric supports simultaneous routes within the endpoint and fabric budgets, while achieved throughput depends on the traffic pattern and software. See <a href="https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/">NVIDIA’s Hopper architecture description</a>.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>NVSwitch Topology — 8 GPUs via 4 NVSwitch Chips
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
@@ -2907,7 +2906,7 @@ GPU at full 900 GB/s simultaneously, with no contention.</p>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>  GPU 0 ─── SW3 ─── GPU 4     Each switch connects to all 8 GPUs
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>  ...
 </span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>  Connectivity matrix (✓ = direct NVLink path, all at 900 GB/s):
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>  Connectivity matrix (✓ = switched peer path; shared endpoint budget):
 </span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>  ┌─────┬────┬────┬────┬────┬────┬────┬────┬────┐
 </span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>  │     │ G0 │ G1 │ G2 │ G3 │ G4 │ G5 │ G6 │ G7 │
 </span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>  ├─────┼────┼────┼────┼────┼────┼────┼────┼────┤
@@ -2950,7 +2949,7 @@ GPU at full 900 GB/s simultaneously, with no contention.</p>
 </span><span id="__span-4-52"><a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a>    Each GPU has 18 total NVLink links → split across 4 switches:
 </span><span id="__span-4-53"><a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a>    18 / 4 ≈ 4-5 links per switch per GPU  (some asymmetric)
 </span></code></pre></div>
-<p><a href="../images/ch11/02-nvswitch-fabric.svg?v=1c68e5b94b7a"><img alt="NVSwitch fabric: all 8 GPUs equidistant via 4 NVSwitches" src="../images/ch11/02-nvswitch-fabric.svg?v=1c68e5b94b7a" /></a></p>
+<p><a href="../images/ch11/02-nvswitch-fabric.svg?v=99e12e6ef826"><img alt="NVSwitch gives peer GPUs a switched fabric" src="../images/ch11/02-nvswitch-fabric.svg?v=99e12e6ef826" /></a></p>
 <hr />
 <h2 id="4-the-dgx-h100-node">4 — The DGX H100 Node<a class="headerlink" href="#4-the-dgx-h100-node" title="Permanent link">&para;</a></h2>
 <h3 id="41-full-hardware-layout-and-bandwidth-budget">4.1 Full Hardware Layout and Bandwidth Budget<a class="headerlink" href="#41-full-hardware-layout-and-bandwidth-budget" title="Permanent link">&para;</a></h3>
@@ -3014,14 +3013,11 @@ where the bottlenecks are.</p>
 </span><span id="__span-5-55"><a id="__codelineno-5-55" name="__codelineno-5-55" href="#__codelineno-5-55"></a>    CPU is not interrupted; it does not copy data.
 </span><span id="__span-5-56"><a id="__codelineno-5-56" name="__codelineno-5-56" href="#__codelineno-5-56"></a>    This is how inter-node AllReduce achieves near-theoretical speed.
 </span></code></pre></div>
-<p><a href="../images/ch11/01-bandwidth-hierarchy.svg?v=f6fd82029f3a"><img alt="DGX H100 node bandwidth hierarchy, from on-package HBM3 down to rack-to-rack InfiniBand" src="../images/ch11/01-bandwidth-hierarchy.svg?v=f6fd82029f3a" /></a></p>
+<p><a href="../images/ch11/01-bandwidth-hierarchy.svg?v=6a3df175d78a"><img alt="A bandwidth hierarchy needs a direction" src="../images/ch11/01-bandwidth-hierarchy.svg?v=6a3df175d78a" /></a></p>
 <hr />
 <h2 id="5-connectx-7-and-the-inter-node-bottleneck">5 — ConnectX-7 and the Inter-Node Bottleneck<a class="headerlink" href="#5-connectx-7-and-the-inter-node-bottleneck" title="Permanent link">&para;</a></h2>
 <h3 id="51-the-9-drop-engineering-the-handoff">5.1 The 9× Drop — Engineering the Handoff<a class="headerlink" href="#51-the-9-drop-engineering-the-handoff" title="Permanent link">&para;</a></h3>
-<p>When two H100 GPUs communicate within the same DGX node, they use NVLink
-at 900 GB/s. When they are in different nodes, every byte must traverse
-ConnectX-7 NICs and InfiniBand switches — a 9× bandwidth reduction. Every
-architectural decision in cluster design is an attempt to minimize this penalty.</p>
+<p>Within a DGX H100 node, each GPU shares an NVLink budget of 450 GB/s per direction across its peers. Across nodes, traffic also traverses ConnectX-7 NICs and InfiniBand switches. Compare budgets with the same direction convention and account for the NICs assigned to each GPU; the difference is a link-budget model, not a fixed application slowdown.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>The Inter-Node Bandwidth Gap
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
@@ -3200,7 +3196,7 @@ own dedicated, isolated plane of switches.</p>
 </span><span id="__span-8-60"><a id="__codelineno-8-60" name="__codelineno-8-60" href="#__codelineno-8-60"></a>    The NIC offloads the AllReduce to the switch fabric.
 </span><span id="__span-8-61"><a id="__codelineno-8-61" name="__codelineno-8-61" href="#__codelineno-8-61"></a>    GPU sees: enqueue gradient, receive result. No N-way coordination.
 </span></code></pre></div>
-<p><a href="../images/ch11/03-rail-sharp-architecture.svg?v=4fa40a8591f7"><img alt="Scalable Unit rail architecture: 8 isolated rails per node feeding leaf switches that perform SHARP in-network reduction" src="../images/ch11/03-rail-sharp-architecture.svg?v=4fa40a8591f7" /></a></p>
+<p><a href="../images/ch11/03-rail-sharp-architecture.svg?v=fe22c36ee7f5"><img alt="Rails organise the scale-out network" src="../images/ch11/03-rail-sharp-architecture.svg?v=fe22c36ee7f5" /></a></p>
 <hr />
 <h2 id="8-infiniband-topology-leaf-spine-core">8 — InfiniBand Topology: Leaf, Spine, Core<a class="headerlink" href="#8-infiniband-topology-leaf-spine-core" title="Permanent link">&para;</a></h2>
 <h3 id="81-the-three-layer-fat-tree">8.1 The Three-Layer Fat Tree<a class="headerlink" href="#81-the-three-layer-fat-tree" title="Permanent link">&para;</a></h3>
@@ -3643,7 +3639,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span></code></pre></div>
 <!-- validation:end:ex11_nvlink_bandwidth.cu -->
 
-<p>(No physical GPU was available to capture a real bandwidth transcript — this sandbox has no <code>nvidia-smi</code>/<code>/dev/nvidia*</code> device at all, so <code>cudaGetDeviceCount()</code> itself fails. Unlike the two examples later in this chapter, this failure is handled correctly here: the call is wrapped in <code>CHECK_CUDA(...)</code>, so the error is caught and the program exits cleanly with a diagnostic message rather than reading an uninitialized <code>num_gpus</code>. This is the genuine, compiled-and-run output of this exact file with real <code>nvcc</code> in a zero-GPU environment — not estimated. The bandwidth figures above in "Expected results on H100 DGX" remain labeled as expected because they are physical measurements — GB/s achieved over real NVLink hardware — which, unlike Chapter 10's arithmetic kernels, cannot be derived by CPU-side reproduction of the kernel's logic; there is no substitute for running on the real fabric.)</p>
+<p>The captured one-GPU run verifies the prerequisite diagnostic, not peer bandwidth. The two-GPU workload remains unexecuted; the figures labeled expected are hardware-dependent estimates, not measurements from this validation host.</p>
 <hr />
 <h2 id="10-slurm">10 — SLURM<a class="headerlink" href="#10-slurm" title="Permanent link">&para;</a></h2>
 <h3 id="101-workload-management-and-rank-identity">10.1 Workload Management and Rank Identity<a class="headerlink" href="#101-workload-management-and-rank-identity" title="Permanent link">&para;</a></h3>
@@ -4005,10 +4001,13 @@ distributed training. Understanding their data flows tells you when to use each.
 </span><span id="__span-19-87"><a id="__codelineno-19-87" name="__codelineno-19-87" href="#__codelineno-19-87"></a>  Math: recvbuf_k[j] = sendbuf_j[k]  (matrix transpose of data)
 </span><span id="__span-19-88"><a id="__codelineno-19-88" name="__codelineno-19-88" href="#__codelineno-19-88"></a>  Use in training: Expert Parallelism (route tokens to experts).
 </span><span id="__span-19-89"><a id="__codelineno-19-89" name="__codelineno-19-89" href="#__codelineno-19-89"></a>  Bandwidth intensive: N×(N-1) point-to-point transfers.
-</span><span id="__span-19-90"><a id="__codelineno-19-90" name="__codelineno-19-90" href="#__codelineno-19-90"></a>  NCCL's standard AllToAll is CPU-driven and synchronous; for MoE,
-</span><span id="__span-19-91"><a id="__codelineno-19-91" name="__codelineno-19-91" href="#__codelineno-19-91"></a>  prefer NVSHMEM or DeepEP for device-initiated async transfers.
+</span><span id="__span-19-90"><a id="__codelineno-19-90" name="__codelineno-19-90" href="#__codelineno-19-90"></a>  Host-issued NCCL calls enqueue communication on a CUDA stream.
+</span><span id="__span-19-91"><a id="__codelineno-19-91" name="__codelineno-19-91" href="#__codelineno-19-91"></a>  Device execution is asynchronous; consumers must observe completion.
+</span><span id="__span-19-92"><a id="__codelineno-19-92" name="__codelineno-19-92" href="#__codelineno-19-92"></a>  For MoE, compare packing, variable counts and transfer granularity
+</span><span id="__span-19-93"><a id="__codelineno-19-93" name="__codelineno-19-93" href="#__codelineno-19-93"></a>  against a specialised communication implementation.
 </span></code></pre></div>
-<p><a href="../images/ch11/04-nccl-big-six.svg?v=ef48db8f2ee3"><img alt="The six NCCL collectives' data-flow patterns: Broadcast, Reduce, AllReduce, AllGather, ReduceScatter, All-to-All" src="../images/ch11/04-nccl-big-six.svg?v=ef48db8f2ee3" /></a></p>
+<p><a href="../images/ch11/04-nccl-big-six.svg?v=001424dc121d"><img alt="Six collective dataflow patterns" src="../images/ch11/04-nccl-big-six.svg?v=001424dc121d" /></a></p>
+<p>NCCL’s <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/streams.html">CUDA stream semantics</a> distinguish host enqueue from asynchronous device execution. Use stream ordering or CUDA events to establish when received data is ready.</p>
 <h3 id="132-nccl-api-reference-all-six-primitives">13.2 NCCL API Reference — All Six Primitives<a class="headerlink" href="#132-nccl-api-reference-all-six-primitives" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>NCCL Function Signatures — Complete Reference
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>══════════════════════════════════════════════════════════════════════
@@ -4389,7 +4388,7 @@ Compiler exit: <code>0</code>; process exit: <code>1</code>. Timings and print o
 </span></code></pre></div>
 <!-- validation:end:ex12_nccl_allreduce.cu -->
 
-<p>(Compiled and run with real <code>nvcc</code> against a real, freshly-installed <code>libnccl2</code>/<code>libnccl-dev</code> in this sandbox — there is no physical GPU here, so the NCCL AllReduce itself never executes, and the real per-rank sum/timing numbers an actual run would print cannot be captured this way: unlike Chapter 10's single-kernel arithmetic, a NCCL collective across real devices is not something CPU-side reproduction of the kernel's logic can stand in for. What this run does confirm is the fix below: <code>cudaGetDeviceCount(&amp;n_gpus)</code> is called without checking its return code, and in this environment the call genuinely <em>fails</em> outright — it does not simply set <code>n_gpus = 0</code> and return success. With <code>n_gpus</code> left uninitialized, 5 repeated runs produced <code>Found 0</code> four times and a silent indefinite hang once, when the uninitialized stack value happened to read back as something ≥ 2 and the program proceeded into a real <code>pthread_barrier_wait</code> that nothing could ever satisfy. Initializing <code>int n_gpus = 0;</code> — a one-line fix — made all 10 follow-up runs consistently and correctly print <code>Found 0</code> with no hangs. The source below reflects that fix.)</p>
+<p>The dated compiler and execution logs above show a successful build and the one-GPU prerequisite exit. They do not validate a multi-rank AllReduce or its timing. The initialized device count avoids using an indeterminate value if device enumeration fails; CUDA API errors should still be checked explicitly.</p>
 <hr />
 <h2 id="14-data-parallelism">14 — Data Parallelism<a class="headerlink" href="#14-data-parallelism" title="Permanent link">&para;</a></h2>
 <h3 id="141-mechanics-and-nccl-operations">14.1 Mechanics and NCCL Operations<a class="headerlink" href="#141-mechanics-and-nccl-operations" title="Permanent link">&para;</a></h3>
@@ -4651,7 +4650,7 @@ L/N to 2L/N, and so on.</p>
 </span><span id="__span-29-43"><a id="__codelineno-29-43" name="__codelineno-29-43" href="#__codelineno-29-43"></a>
 </span><span id="__span-29-44"><a id="__codelineno-29-44" name="__codelineno-29-44" href="#__codelineno-29-44"></a>  Rule: use M &gt;&gt; N to minimize pipeline bubble.
 </span></code></pre></div>
-<p><a href="../images/ch11/06-pipeline-bubble-timeline.svg?v=502744672468"><img alt="GPipe pipeline schedule timeline for N=4 stages, comparing M=4 and M=8 microbatches, showing the bubble shrink predicted by the corrected formula" src="../images/ch11/06-pipeline-bubble-timeline.svg?v=502744672468" /></a></p>
+<p><a href="../images/ch11/06-pipeline-bubble-timeline.svg?v=b6ba2e6912bc"><img alt="More microbatches amortise pipeline fill" src="../images/ch11/06-pipeline-bubble-timeline.svg?v=b6ba2e6912bc" /></a></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>  ─── 1F1B Schedule (One-Forward One-Backward) ────────────────────
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>  Even better schedule: after filling the pipeline, alternate forward
@@ -4744,40 +4743,44 @@ scaling compute.</p>
 </span><span id="__span-31-48"><a id="__codelineno-31-48" name="__codelineno-31-48" href="#__codelineno-31-48"></a>    GPU 0 runs its experts on received tokens.
 </span><span id="__span-31-49"><a id="__codelineno-31-49" name="__codelineno-31-49" href="#__codelineno-31-49"></a>    Another All-to-All: send results back to origin GPUs.
 </span><span id="__span-31-50"><a id="__codelineno-31-50" name="__codelineno-31-50" href="#__codelineno-31-50"></a>
-</span><span id="__span-31-51"><a id="__codelineno-31-51" name="__codelineno-31-51" href="#__codelineno-31-51"></a>  ─── Why NCCL AllToAll Is Inadequate for MoE ─────────────────────
+</span><span id="__span-31-51"><a id="__codelineno-31-51" name="__codelineno-31-51" href="#__codelineno-31-51"></a>  ─── Communication Choices for MoE ─────────────────────────────
 </span><span id="__span-31-52"><a id="__codelineno-31-52" name="__codelineno-31-52" href="#__codelineno-31-52"></a>
-</span><span id="__span-31-53"><a id="__codelineno-31-53" name="__codelineno-31-53" href="#__codelineno-31-53"></a>  NCCL ncclAllToAll problems:
-</span><span id="__span-31-54"><a id="__codelineno-31-54" name="__codelineno-31-54" href="#__codelineno-31-54"></a>    CPU-driven: CPU issues the call, blocks until complete → latency.
-</span><span id="__span-31-55"><a id="__codelineno-31-55" name="__codelineno-31-55" href="#__codelineno-31-55"></a>    Static sizes: NCCL expects equal-sized blocks. MoE routing is
-</span><span id="__span-31-56"><a id="__codelineno-31-56" name="__codelineno-31-56" href="#__codelineno-31-56"></a>      dynamic: some GPUs get more tokens than others (load imbalance).
-</span><span id="__span-31-57"><a id="__codelineno-31-57" name="__codelineno-31-57" href="#__codelineno-31-57"></a>    Contiguous data: NCCL requires blocks to be contiguous in memory.
-</span><span id="__span-31-58"><a id="__codelineno-31-58" name="__codelineno-31-58" href="#__codelineno-31-58"></a>      MoE selected tokens may be scattered.
-</span><span id="__span-31-59"><a id="__codelineno-31-59" name="__codelineno-31-59" href="#__codelineno-31-59"></a>    Blocking: next computation can't start until AllToAll finishes.
-</span><span id="__span-31-60"><a id="__codelineno-31-60" name="__codelineno-31-60" href="#__codelineno-31-60"></a>
-</span><span id="__span-31-61"><a id="__codelineno-31-61" name="__codelineno-31-61" href="#__codelineno-31-61"></a>  Solution: DeepEP (used by DeepSeek and others):
-</span><span id="__span-31-62"><a id="__codelineno-31-62" name="__codelineno-31-62" href="#__codelineno-31-62"></a>    Device-initiated: GPU launches the transfer itself (NVSHMEM).
-</span><span id="__span-31-63"><a id="__codelineno-31-63" name="__codelineno-31-63" href="#__codelineno-31-63"></a>    Dynamic sizes: handles variable token counts per expert.
-</span><span id="__span-31-64"><a id="__codelineno-31-64" name="__codelineno-31-64" href="#__codelineno-31-64"></a>    Asynchronous: inter-node data starts moving before intra-node done.
-</span><span id="__span-31-65"><a id="__codelineno-31-65" name="__codelineno-31-65" href="#__codelineno-31-65"></a>    Two-phase strategy:
-</span><span id="__span-31-66"><a id="__codelineno-31-66" name="__codelineno-31-66" href="#__codelineno-31-66"></a>      Phase 1: inter-node transfers (slow IB) start first → hide latency.
-</span><span id="__span-31-67"><a id="__codelineno-31-67" name="__codelineno-31-67" href="#__codelineno-31-67"></a>      Phase 2: intra-node NVLink transfers (fast) complete immediately.
-</span><span id="__span-31-68"><a id="__codelineno-31-68" name="__codelineno-31-68" href="#__codelineno-31-68"></a>    By the time inter-node arrives, NVLink is already done.
-</span><span id="__span-31-69"><a id="__codelineno-31-69" name="__codelineno-31-69" href="#__codelineno-31-69"></a>    Net: near-optimal utilization of both fabrics.
-</span><span id="__span-31-70"><a id="__codelineno-31-70" name="__codelineno-31-70" href="#__codelineno-31-70"></a>
-</span><span id="__span-31-71"><a id="__codelineno-31-71" name="__codelineno-31-71" href="#__codelineno-31-71"></a>  ─── Load Balancing ───────────────────────────────────────────────
-</span><span id="__span-31-72"><a id="__codelineno-31-72" name="__codelineno-31-72" href="#__codelineno-31-72"></a>
-</span><span id="__span-31-73"><a id="__codelineno-31-73" name="__codelineno-31-73" href="#__codelineno-31-73"></a>  A perfectly trained MoE router routes tokens UNEQUALLY:
-</span><span id="__span-31-74"><a id="__codelineno-31-74" name="__codelineno-31-74" href="#__codelineno-31-74"></a>    Some experts become "popular" → GPU overloaded → other GPUs idle.
-</span><span id="__span-31-75"><a id="__codelineno-31-75" name="__codelineno-31-75" href="#__codelineno-31-75"></a>  Fix: auxiliary load-balancing loss term during training.
-</span><span id="__span-31-76"><a id="__codelineno-31-76" name="__codelineno-31-76" href="#__codelineno-31-76"></a>    Penalizes unequal expert utilization → more uniform routing.
-</span><span id="__span-31-77"><a id="__codelineno-31-77" name="__codelineno-31-77" href="#__codelineno-31-77"></a>    Added to main loss: total_loss = task_loss + λ × balance_loss.
-</span><span id="__span-31-78"><a id="__codelineno-31-78" name="__codelineno-31-78" href="#__codelineno-31-78"></a>  Capacity factor: if expert overflow &gt; capacity, tokens are DROPPED.
-</span><span id="__span-31-79"><a id="__codelineno-31-79" name="__codelineno-31-79" href="#__codelineno-31-79"></a>    Set capacity_factor &gt; 1 (e.g., 1.25) to absorb routing variance.
+</span><span id="__span-31-53"><a id="__codelineno-31-53" name="__codelineno-31-53" href="#__codelineno-31-53"></a>  Considerations for NCCL-based All-to-All:
+</span><span id="__span-31-54"><a id="__codelineno-31-54" name="__codelineno-31-54" href="#__codelineno-31-54"></a>    Host-issued: calls enqueue work on the supplied CUDA stream.
+</span><span id="__span-31-55"><a id="__codelineno-31-55" name="__codelineno-31-55" href="#__codelineno-31-55"></a>      Host return does not imply device transfer completion.
+</span><span id="__span-31-56"><a id="__codelineno-31-56" name="__codelineno-31-56" href="#__codelineno-31-56"></a>    Counts: equal-count collective layouts may need padding; grouped
+</span><span id="__span-31-57"><a id="__codelineno-31-57" name="__codelineno-31-57" href="#__codelineno-31-57"></a>      point-to-point sends/receives can express per-peer counts.
+</span><span id="__span-31-58"><a id="__codelineno-31-58" name="__codelineno-31-58" href="#__codelineno-31-58"></a>    Packing: scattered selected tokens need a suitable communication
+</span><span id="__span-31-59"><a id="__codelineno-31-59" name="__codelineno-31-59" href="#__codelineno-31-59"></a>      buffer layout and matching unpacking on receipt.
+</span><span id="__span-31-60"><a id="__codelineno-31-60" name="__codelineno-31-60" href="#__codelineno-31-60"></a>    Dependencies: consumers wait for their required received data.
+</span><span id="__span-31-61"><a id="__codelineno-31-61" name="__codelineno-31-61" href="#__codelineno-31-61"></a>      Independent work can overlap on other streams when resources
+</span><span id="__span-31-62"><a id="__codelineno-31-62" name="__codelineno-31-62" href="#__codelineno-31-62"></a>      and stream/event dependencies permit.
+</span><span id="__span-31-63"><a id="__codelineno-31-63" name="__codelineno-31-63" href="#__codelineno-31-63"></a>
+</span><span id="__span-31-64"><a id="__codelineno-31-64" name="__codelineno-31-64" href="#__codelineno-31-64"></a>  Specialised alternative: DeepEP (used by DeepSeek and others):
+</span><span id="__span-31-65"><a id="__codelineno-31-65" name="__codelineno-31-65" href="#__codelineno-31-65"></a>    Device-initiated: GPU launches the transfer itself (NVSHMEM).
+</span><span id="__span-31-66"><a id="__codelineno-31-66" name="__codelineno-31-66" href="#__codelineno-31-66"></a>    Dynamic sizes: handles variable token counts per expert.
+</span><span id="__span-31-67"><a id="__codelineno-31-67" name="__codelineno-31-67" href="#__codelineno-31-67"></a>    Asynchronous: inter-node data starts moving before intra-node done.
+</span><span id="__span-31-68"><a id="__codelineno-31-68" name="__codelineno-31-68" href="#__codelineno-31-68"></a>    Two-phase strategy:
+</span><span id="__span-31-69"><a id="__codelineno-31-69" name="__codelineno-31-69" href="#__codelineno-31-69"></a>      Phase 1: inter-node transfers (slow IB) start first → hide latency.
+</span><span id="__span-31-70"><a id="__codelineno-31-70" name="__codelineno-31-70" href="#__codelineno-31-70"></a>      Phase 2: intra-node NVLink transfers (fast) complete immediately.
+</span><span id="__span-31-71"><a id="__codelineno-31-71" name="__codelineno-31-71" href="#__codelineno-31-71"></a>    By the time inter-node arrives, NVLink is already done.
+</span><span id="__span-31-72"><a id="__codelineno-31-72" name="__codelineno-31-72" href="#__codelineno-31-72"></a>    Net: near-optimal utilization of both fabrics.
+</span><span id="__span-31-73"><a id="__codelineno-31-73" name="__codelineno-31-73" href="#__codelineno-31-73"></a>
+</span><span id="__span-31-74"><a id="__codelineno-31-74" name="__codelineno-31-74" href="#__codelineno-31-74"></a>  ─── Load Balancing ───────────────────────────────────────────────
+</span><span id="__span-31-75"><a id="__codelineno-31-75" name="__codelineno-31-75" href="#__codelineno-31-75"></a>
+</span><span id="__span-31-76"><a id="__codelineno-31-76" name="__codelineno-31-76" href="#__codelineno-31-76"></a>  A perfectly trained MoE router routes tokens UNEQUALLY:
+</span><span id="__span-31-77"><a id="__codelineno-31-77" name="__codelineno-31-77" href="#__codelineno-31-77"></a>    Some experts become "popular" → GPU overloaded → other GPUs idle.
+</span><span id="__span-31-78"><a id="__codelineno-31-78" name="__codelineno-31-78" href="#__codelineno-31-78"></a>  Fix: auxiliary load-balancing loss term during training.
+</span><span id="__span-31-79"><a id="__codelineno-31-79" name="__codelineno-31-79" href="#__codelineno-31-79"></a>    Penalizes unequal expert utilization → more uniform routing.
+</span><span id="__span-31-80"><a id="__codelineno-31-80" name="__codelineno-31-80" href="#__codelineno-31-80"></a>    Added to main loss: total_loss = task_loss + λ × balance_loss.
+</span><span id="__span-31-81"><a id="__codelineno-31-81" name="__codelineno-31-81" href="#__codelineno-31-81"></a>  Capacity factor: if expert overflow &gt; capacity, tokens are DROPPED.
+</span><span id="__span-31-82"><a id="__codelineno-31-82" name="__codelineno-31-82" href="#__codelineno-31-82"></a>    Set capacity_factor &gt; 1 (e.g., 1.25) to absorb routing variance.
 </span></code></pre></div>
+<p>These host-enqueue and completion rules follow <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/streams.html">NCCL’s documented CUDA stream semantics</a>. NCCL’s <a href="https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/p2p.html">grouped point-to-point patterns</a> also support differing per-peer sizes with matching send/receive counts. Compare specialised MoE implementations on the actual routing workload.</p>
 <hr />
 <h2 id="18-putting-it-all-together-production-checklist">18 — Putting It All Together — Production Checklist<a class="headerlink" href="#18-putting-it-all-together-production-checklist" title="Permanent link">&para;</a></h2>
 <h3 id="181-hybrid-parallelism-selection">18.1 Hybrid Parallelism Selection<a class="headerlink" href="#181-hybrid-parallelism-selection" title="Permanent link">&para;</a></h3>
-<p><a href="../images/ch11/05-parallelism-comparison.svg?v=d98cb56ba130"><img alt="Four parallelism strategies compared: what each splits and what it synchronizes" src="../images/ch11/05-parallelism-comparison.svg?v=d98cb56ba130" /></a></p>
+<p><a href="../images/ch11/05-parallelism-comparison.svg?v=423a093163fb"><img alt="What gets split across GPUs?" src="../images/ch11/05-parallelism-comparison.svg?v=423a093163fb" /></a></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>Choosing Your Parallelism Strategy
 </span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
@@ -5791,13 +5794,7 @@ Compiler exit: <code>0</code>; process exit: <code>1</code>. Timings and print o
 </span></code></pre></div>
 <!-- validation:end:ex13_hybrid_parallel_training.cu -->
 
-<p>(This is the genuine, compiled-and-run output of this file with real <code>nvcc</code>/NCCL in a zero-GPU sandbox, after fixing the same uninitialized-<code>n_gpus</code> bug described under ex12 above. A real 8-GPU run's per-step loss values, DP-divergence numbers, and TP-reconstruction diff cannot be captured this way -- an 8-way NCCL-synchronized training loop is not arithmetic a single CPU thread can stand in for, unlike Chapter 10's single-kernel examples.</p>
-<p>What <em>can</em> be verified without real hardware is whether this file's own numbers are internally consistent -- so this file's exact weight-init, forward, backward, DP-average, and SGD-clip formulas (HIDDEN=64, BATCH=16, TP=2, PP=2, DP=2, N_STEPS=8, LR=0.01, CLIP=1.0) were reproduced in a plain host-side C++ program (no CUDA/NCCL/cuBLAS) and run with real <code>g++</code>. Three things came out of that:</p>
-<ol>
-<li>TP shard concatenation reconstructs the single-GPU reference exactly, up to float32 rounding (max abs diff ≈ 3 against reference values ≈ 3.7×10^6, i.e. ~8×10^-7 relative -- summation-order rounding, not a bug). The claim in "Expected verification" above is confirmed correct.</li>
-<li>DP replica weights come out bit-identical (max diff = 0.0) after all 8 steps -- also confirmed, but see the correction above: this file's own input and weight-init formulas never reference <code>dp</code>, so both replicas run the identical computation independently of whether the DP AllReduce does anything at all. The check is real and does pass, but it cannot by itself catch a broken DP collective.</li>
-<li>The loss does not decrease monotonically -- it oscillates in the ~5.0-5.8×10^13 range across all 8 steps, for the reasons given in the correction above (large deterministic weight magnitudes + a tight gradient-clip norm). This contradicts what the original text claimed and is the reason that line was corrected rather than reproduced as-is.)</li>
-</ol>
+<p>The dated run above stopped at the eight-GPU prerequisite check on a one-GPU host. No distributed training steps, loss trajectory, replica comparison or TP reconstruction were measured in that run. Those checks require an eight-GPU execution; CPU arithmetic alone cannot establish NCCL communication correctness.</p>
 <h3 id="what-each-part-teaches">What Each Part Teaches<a class="headerlink" href="#what-each-part-teaches" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>Code Component → Concept It Demonstrates
 </span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>══════════════════════════════════════════════════════════════════════

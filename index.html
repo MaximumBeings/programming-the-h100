@@ -1364,6 +1364,7 @@ read line by line.
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on Hopper hardware matching the compiled target. Use the complete per-example command, including any driver, NCCL or cuBLAS linker flags.</p>
 </blockquote>
 <h2 id="how-to-read-this">How to read this<a class="headerlink" href="#how-to-read-this" title="Permanent link">&para;</a></h2>
+<p><strong>CUDA prerequisites:</strong> Be comfortable with thread/block indexing, launch dimensions, shared-memory lifetime, block synchronisation and CUDA error checking. If these are new, first work through <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/index.html">NVIDIA’s CUDA programming introduction</a>, then follow this book’s <a href="getting-started/#5-compile-and-execute-your-first-verified-program">first verified run</a>.</p>
 <p>The chapters build on each other. Chapter 1 is pure architecture — no code,
 just the machine. Chapters 2–3 give you the instruction-level vocabulary
 (clusters, inline PTX, state spaces, <code>mbarrier</code>). Chapters 4–5 are about
@@ -1608,11 +1609,10 @@ collectives, and data / tensor / pipeline / expert parallelism.</p>
 <p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m13.13 22.19-1.63-3.83c1.57-.58 3.04-1.36 4.4-2.27zM5.64 12.5l-3.83-1.63 6.1-2.77C7 9.46 6.22 10.93 5.64 12.5M21.61 2.39S16.66.269 11 5.93c-2.19 2.19-3.5 4.6-4.35 6.71-.28.75-.09 1.57.46 2.13l2.13 2.12c.55.56 1.37.74 2.12.46A19.1 19.1 0 0 0 18.07 13c5.66-5.66 3.54-10.61 3.54-10.61m-7.07 7.07c-.78-.78-.78-2.05 0-2.83s2.05-.78 2.83 0c.77.78.78 2.05 0 2.83s-2.05.78-2.83 0m-5.66 7.07-1.41-1.41zM6.24 22l3.64-3.64c-.34-.09-.67-.24-.97-.45L4.83 22zM2 22h1.41l4.77-4.76-1.42-1.41L2 20.59zm0-2.83 4.09-4.08c-.21-.3-.36-.62-.45-.97L2 17.76z"/></svg></span> <strong>Part VII — Putting It to Work</strong></p>
 <hr />
 <p><strong><a href="12-flashattention-3/">12. FlashAttention-3 on the H100</a></strong></p>
-<p>Why attention is memory-bound and how fusing it crosses the ridge point;
+<p>How tiling avoids quadratic attention intermediates, and how to build a traffic-aware roofline model;
 the online softmax recurrence worked by hand; then the three Hopper
 techniques — producer/consumer warp specialization, ping-pong scheduling,
-and 2-stage intra-warpgroup pipelining — that take it from 35% to 75% of
-peak. Causal masking and load balance, and the FP8 path: block
+and 2-stage intra-warpgroup pipelining — behind the cited FA3 paper’s reported increase from about 35% to 75% of peak. Those paper benchmarks are separate from this book’s executed numerical reference. Causal masking and load balance, and the FP8 path: block
 quantization, the K-major transpose of V, and Hadamard incoherent
 processing.</p>
 <p><strong><a href="13-nsight-compute/">13. Profiling with Nsight Compute</a></strong></p>
