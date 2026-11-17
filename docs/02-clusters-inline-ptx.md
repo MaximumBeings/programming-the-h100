@@ -1,6 +1,11 @@
 # Clusters, Inline PTX, Data Types & Pointers
 ## Lesson 2 Companion Guide — Programming the H100 & Beyond
 
+> **Validation — November 17, 2026.** 6 complete CUDA programs compiled and executed successfully.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 **How to read this chapter.** It is long, and it is really three chapters
 stacked together. Sections 1–3 are about *clusters* — the new level of the CUDA
 hierarchy that lets thread blocks read each other's shared memory. Sections 4–6
@@ -61,7 +66,7 @@ Lambda Labs Setup Instructions
   1. Go to: https://lambdalabs.com/
   2. Sign up and add payment method
   3. Launch an H100 instance (1x or 8x H100 SXM5)
-     → Instance type: "1x H100 PCIe" (cheapest for learning)
+     → Instance type: "1x H100 PCIe" (sufficient for the single-GPU examples)
      → Select a region with availability
   4. SSH into your instance:
        ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
@@ -71,10 +76,9 @@ Lambda Labs Setup Instructions
        nvidia-smi                  # should show H100 GPU
 
   6. If CUDA not found, install:
-       wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-       sudo dpkg -i cuda-keyring_1.1-1_all.deb
-       sudo apt-get update
-       sudo apt-get -y install cuda-toolkit-12-4
+       # Select your actual OS release and architecture in NVIDIA’s installer:
+       # https://developer.nvidia.com/cuda-downloads
+       # Do not add an Ubuntu 22.04 repository to an Ubuntu 24.04 image.
 
   7. Add to PATH (add to ~/.bashrc for persistence):
        export PATH=/usr/local/cuda/bin:$PATH
@@ -265,7 +269,7 @@ Why does this matter? Because previously, the only way for two thread blocks to 
 
 Think of it this way: before clusters, each block was an island. If block A needed data computed by block B, it had to write to global memory and block B had to read from global memory. With clusters, blocks within the same cluster can directly read and write each other's shared memory as if it were their own (with some address translation, covered in Section 16).
 
-![CUDA programming hierarchy — pre-Hopper's three levels vs. Hopper's four](images/ch02/01-cuda-hierarchy-pre-post-hopper.svg)
+[![CUDA programming hierarchy — pre-Hopper's three levels vs. Hopper's four](images/ch02/01-cuda-hierarchy-pre-post-hopper.svg)](images/ch02/01-cuda-hierarchy-pre-post-hopper.svg)
 
 *Pre-Hopper, grid and block are the whole story: four blocks, each pinned to its own SM, with no way to talk to each other except a round trip through global memory at ~500 cycles. Hopper inserts a fourth level, the cluster, between block and grid. Blocks 0 and 1 are co-scheduled onto adjacent SMs inside the same cluster and get a direct DSMEM link at ~50-80 cycles — Block 0 can read Block 1's 228 KB of shared memory as if it were an extension of its own, so a cluster of size N exposes N × 228 KB with no global-memory round trip required.*
 
@@ -282,7 +286,7 @@ For algorithms like attention (where blocks need to cooperate on softmax normali
 
 Clusters solve this by extending the hardware to allow shared-memory cross-access within a group of co-scheduled blocks. The key hardware enabling this is the SM-to-SM DSMEM interconnect within a GPC (Graphics Processing Cluster). When blocks are placed in the same cluster, the hardware routes their shared-memory accesses through this dedicated interconnect instead of global memory.
 
-![The communication problem — with and without clusters](images/ch02/02-communication-with-without-clusters.svg)
+[![The communication problem — with and without clusters](images/ch02/02-communication-with-without-clusters.svg)](images/ch02/02-communication-with-without-clusters.svg)
 
 *Without clusters, Block A has one path to Block B: write to global memory, Block B reads it back — ~400-1000 cycles plus whatever HBM bandwidth that round trip consumes. With clusters, the same exchange is a single DSMEM hop at ~50-80 cycles, with no HBM traffic at all — a 5-10× speedup for intra-cluster communication. This is the mechanism behind FlashAttention 3's softmax reduction, GEMM's shared input tiles, top-k filtering's partial-list merges, and any all-reduce within a small group of blocks.*
 
@@ -314,7 +318,7 @@ Step 4: thread in Block 0 reaching into Block 1's SMEM
   // This load travels via the SM-to-SM DSMEM interconnect
 ```
 
-![Cluster mechanics — GPC co-scheduling and the cross-block SMEM view](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)
+[![Cluster mechanics — GPC co-scheduling and the cross-block SMEM view](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)
 
 *Step 2: the scheduler places both of a cluster's blocks on SMs within the same GPC — here Cluster 0's Block 0 and Block 1 land on adjacent SMs 3 and 4, Cluster 1's on SMs 7 and 8 — and guarantees they co-run concurrently, which is what makes Step 3's promise hold. That guarantee is what lets Step 4 work: a thread in Block 0 calls `mapa` to retarget a local SMEM address at Block 1 (rank 1), then `ld.shared::cluster` on that address — hardware checks the rank bits and routes to Block 1's shared-memory controller in ~50-80 cycles. The right-hand panel shows what that looks like from inside the cluster: each block still privately owns its own 228 KB, but Block 0's threads can read, write, and atomically operate on Block 1's share via DSMEM, not just their own.*
 
@@ -809,14 +813,28 @@ int main() {
 }
 ```
 
-**Sample Output** (H100 SXM5, grid of 4 blocks, cluster size 2):
+<!-- validation:start:ex01_cluster_inspect.cu -->
+**Captured output — ex01_cluster_inspect.cu**
 
+> **Executed:** 2026-11-17T21:28:33.276960+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu) as `ex01_cluster_inspect.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_cluster_inspect.cu -o ex01_cluster_inspect
+./ex01_cluster_inspect
 ```
+
+[Compiler log](validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/compile.log) · [Execution log](validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  Thread Block Cluster Inspection — H100 Demo         ║
 ╚══════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 
 Per-Block Report:
 Block(global) Cluster Rank   Cluster Size   My SMEM Val  Partner Val  Exchange OK?
@@ -835,6 +853,9 @@ Cluster Metadata Verification:
 ALL TESTS PASSED — Clusters working correctly!
 ════════════════════════════════════════════════
 ```
+<!-- validation:end:ex01_cluster_inspect.cu -->
+
+
 
 With a size-2 cluster, blocks 0–1 form cluster 0 and blocks 2–3 form cluster 1. Each block writes `global_block_id × 100` into its own shared memory, then reads index 0 of its partner's shared memory across the DSMEM interconnect — block 0 reads block 1's value (100), block 1 reads block 0's value (0), and the same pattern repeats for the second cluster. `prop.name` and the exact SM count/clock reported by `cudaGetDeviceProperties` will vary by the specific H100 SKU (SXM5 vs PCIe) and driver version; everything below the GPU line is deterministic given this launch configuration.
 
@@ -862,7 +883,7 @@ Distributed Shared Memory is the hardware feature that makes clusters useful. It
 
 The key insight is that each SM has 228 KB of SRAM, and this SRAM is used for shared memory. When a thread block runs on SM 0, its `__shared__` allocations live in SM 0's SRAM. When two blocks form a cluster on SMs 0 and 1, the thread block on SM 0 can now issue memory operations that target SM 1's SRAM. The DSMEM interconnect (a dedicated SM-to-SM network within the GPC) routes these operations.
 
-![DSMEM — distributed shared memory architecture](images/ch02/04-dsmem-architecture.svg)
+[![DSMEM — distributed shared memory architecture](images/ch02/04-dsmem-architecture.svg)](images/ch02/04-dsmem-architecture.svg)
 
 *DSMEM is not a new memory pool — it's each SM's existing 228 KB of SRAM, plus a dedicated SM-to-SM interconnect within the GPC that lets Block A issue `ld.shared::cluster` / `st.shared::cluster` / `atom.shared::cluster` against Block B's SRAM and have the hardware route it there in ~50-80 cycles round trip. That only works within the same cluster (same GPC) — cross-GPC access still has to go through L2 or global memory. A cluster of 4 blocks therefore exposes 4 × 228 KB = 912 KB of combined shared memory, a 4× increase over the 228 KB a single block sees on its own.*
 
@@ -885,7 +906,7 @@ DSMEM Interconnect:
   - Estimated: ~256 GB/s SM-to-SM per cluster (estimated)
 ```
 
-![Transfer time for 1 MB, Block A to Block B — global memory vs. L2 vs. DSMEM](images/ch02/05-dsmem-bandwidth-comparison.svg)
+[![Transfer time for 1 MB, Block A to Block B — global memory vs. L2 vs. DSMEM](images/ch02/05-dsmem-bandwidth-comparison.svg)](images/ch02/05-dsmem-bandwidth-comparison.svg)
 
 *The three routes for Block A to hand 1 MB to Block B. Through global memory: a 1 MB write plus a 1 MB read, each at the ~25 GB/s a single SM gets of the shared 3.35 TB/s HBM3 pool, for ~80 μs total. Through L2, optimistically assuming the write stays resident for Block B's read at ~90 GB/s per-SM L2 share: ~12 μs. Through DSMEM — Block A fills SMEM, `cluster.sync()`, Block B reads it back at an estimated ~256 GB/s SM-to-SM — the transfer itself is ~4 μs, and the `cluster.sync()` overhead (~87 cycles at ~1.5 GHz, ~58 ns) is close enough to zero to ignore. DSMEM helps when blocks exchange large amounts of data across multiple communication rounds and the data fits inside `228 KB × cluster_size`; it does nothing for a kernel that's compute-bound or that rarely communicates.*
 
@@ -909,7 +930,7 @@ TMA (Tensor Memory Accelerator) is the H100's hardware unit for copying large ti
 
 This is especially powerful for GEMM (matrix multiplication) kernels. In a typical GEMM, every block in a cluster needs the same tile of matrix A. Without multicast, each block issues its own TMA fetch, causing N redundant HBM reads for cluster size N. With multicast, a single TMA fetch delivers the data to all N SMs at once.
 
-![TMA multicast — one HBM fetch delivered to all blocks](images/ch02/06-tma-multicast-bandwidth.svg)
+[![TMA multicast — one HBM fetch delivered to all blocks](images/ch02/06-tma-multicast-bandwidth.svg)](images/ch02/06-tma-multicast-bandwidth.svg)
 
 *GEMM scenario: a cluster of 4 blocks that all need the same Tile A. Without multicast, each block issues its own TMA fetch — 4 separate reads of identical data, 4× bandwidth waste. With multicast, a single elected thread issues one TMA request; the TMA unit fetches Tile A from HBM once and fans the copy out to all 4 SMs' shared memory in hardware, so one HBM read satisfies every block in the cluster.*
 
@@ -919,7 +940,7 @@ For a GEMM kernel computing output tiles `C = A × B`, each output tile needs a 
 Code pattern — only one thread per cluster issues the TMA:
   if (cluster.block_rank() == 0 && threadIdx.x == 0) {
       // Issue TMA multicast: delivers to ALL blocks in cluster
-      cp.async.bulk.tensor.2d.shared::cluster.global [smem_desc], [gmem_desc];
+      cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes [smem_desc], [gmem_desc];
   }
   cluster.sync();  // All blocks wait until TMA completes
   // Now all blocks' SMEM contains the loaded tile
@@ -949,7 +970,7 @@ Think of PTX as analogous to Java bytecode or LLVM IR — it's a stable intermed
 
 As a programmer, PTX is important for two reasons: (1) some H100 features simply have no C++ equivalents and can only be accessed through PTX, and (2) understanding PTX helps you read the assembly output of your kernels and understand what the compiler is actually generating.
 
-![CUDA compilation pipeline — from source to execution](images/ch02/07-cuda-compilation-pipeline.svg)
+[![CUDA compilation pipeline — from source to execution](images/ch02/07-cuda-compilation-pipeline.svg)](images/ch02/07-cuda-compilation-pipeline.svg)
 
 *`nvcc` runs in two stages: its frontend parses the CUDA extensions, splits off host code, and compiles device code to `mykernel.ptx` — PTX, a stable virtual ISA. `ptxas` then assembles that PTX into `mykernel.cubin`, hardware-specific SASS for the target architecture, which the GPU driver loads and runs on the SMs. PTX is stable across GPU generations (old PTX gets JIT-recompiled on a new GPU's driver); SASS is not (`sm_90a` SASS will not run on `sm_80`). A shipped binary carries both — SASS as the fast path for the GPU it was built for, PTX as the fallback for whatever comes next.*
 
@@ -1504,7 +1525,7 @@ __global__ void test_volatile_memory(uint32_t* out) {
 // TEST 11: Warp-Level Intrinsic via PTX — __ballot_sync equivalent
 // ═══════════════════════════════════════════════════════════════════
 //
-// vote.ballot.b32 computes a 32-bit mask where bit i is set if
+// vote.sync.ballot.b32 computes a 32-bit mask where bit i is set if
 // thread i in the warp has the input predicate set.
 // This is exactly what __ballot_sync(mask, predicate) does in C++.
 //
@@ -1512,7 +1533,7 @@ __global__ void test_volatile_memory(uint32_t* out) {
 // thin wrappers around PTX instructions.
 //
 // Manual trace (all 32 threads have predicate = true):
-//   vote.ballot.b32 result, true
+//   vote.sync.ballot.b32 result, true, 0xffffffff
 //   → result = 0xFFFFFFFF (all 32 bits set)
 //
 // If only even threads (0,2,4,...30) have predicate=true:
@@ -1524,7 +1545,8 @@ __global__ void test_ballot(uint32_t* out) {
     uint32_t predicate = (lane % 2 == 0) ? 1 : 0;
 
     uint32_t ballot_result;
-    asm("vote.ballot.b32 %0, %1;"
+    asm volatile("{ .reg .pred p; setp.ne.u32 p, %1, 0; "
+                 "vote.sync.ballot.b32 %0, p, 0xffffffff; }"
         : "=r"(ballot_result)
         : "r"(predicate)
     );
@@ -1775,9 +1797,23 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex02_ptx_basics.cu -->
+**Captured output — ex02_ptx_basics.cu**
 
+> **Executed:** 2026-11-17T21:28:39.443220+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu) as `ex02_ptx_basics.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_ptx_basics.cu -o ex02_ptx_basics
+./ex02_ptx_basics
 ```
+
+[Compiler log](validation/2026-11-17/02-clusters-inline-ptx/ex02_ptx_basics/compile.log) · [Execution log](validation/2026-11-17/02-clusters-inline-ptx/ex02_ptx_basics/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  Inline PTX Basics — Full Test Suite                  ║
 ╚══════════════════════════════════════════════════════╝
@@ -1797,7 +1833,7 @@ Test 4: predicate max
 
 Test 5: special registers (%tid.x, %ctaid.x, %laneid)
   ✓ PASS: tid.x = 0
-  INFO: ctaid.x = 0 (block index, not checked — scheduling dependent)
+  INFO: ctaid.x = 1 (block index, not checked — scheduling dependent)
   INFO: laneid = 0 (should be 0 since tid=0)
 
 Test 6: bitwise ops (a=0xFF00, b=0x0F0F)
@@ -1828,6 +1864,9 @@ Test 11: vote.ballot (even lanes → 0x55555555)
 ║  ✓ ALL PASS                                          ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex02_ptx_basics.cu -->
+
+
 
 Test 5's `ctaid.x` and `laneid` lines are printed as `INFO`, not `PASS` — only `tid.x == 0` is actually asserted, since which block happens to write first is a scheduling detail, not something the test should depend on. Every other line is deterministic for this launch configuration; `%05X`/`%08X` field widths are why `and`, `or`, `xor` and `shr` print with a leading zero (`0x00F00` not `0xF00`).
 
@@ -2164,7 +2203,7 @@ State Space Map — Physical Location vs. Software View
   Parameter     .param           Special registers     1-2 cycles
 ```
 
-![State space memory hierarchy — from on-SM register file down to off-chip HBM3](images/ch02/08-state-space-memory-hierarchy.svg)
+[![State space memory hierarchy — from on-SM register file down to off-chip HBM3](images/ch02/08-state-space-memory-hierarchy.svg)](images/ch02/08-state-space-memory-hierarchy.svg)
 
 *Each state space pins to one physical location. The register file and shared memory (228 KB, 32 banks) sit directly on the SM, reachable in roughly 1 and 10 cycles; the constant cache and L1 data cache sit alongside them at similar latency. Below the SM, a 50 MB L2 cache shared across all SMs costs ~100-200 cycles, and HBM3 — where `.global` and `.local` both physically live, at 3.35 TB/s bandwidth but ~500 cycle latency — is the floor. Writing `__shared__` in CUDA C++ compiles to `.shared::cta` automatically; writing `ld.shared` explicitly in `asm()` bypasses that translation and lets you route accesses yourself.*
 
@@ -2282,7 +2321,7 @@ Shared Memory — How It's Used and Why It Matters
   ─────────────────────────────────────────────────────────────────
 ```
 
-![Tile-and-compute pattern — cooperative load from global memory into shared memory, then cheap repeated reads](images/ch02/09-shared-memory-tile-compute.svg)
+[![Tile-and-compute pattern — cooperative load from global memory into shared memory, then cheap repeated reads](images/ch02/09-shared-memory-tile-compute.svg)](images/ch02/09-shared-memory-tile-compute.svg)
 
 *Step 1: all threads in the block cooperate to load the block's 128-element tile from global memory into shared memory, one element per thread. Step 2: a barrier sync ensures the whole tile has landed in SMEM before anyone reads it. Step 3: each thread now reads several elements back out of SMEM — thread 0 reads `smem[0..3]`, thread 1 reads `smem[4..7]`, and so on — at ~10-cycle SMEM latency instead of paying ~500 cycles per element straight from global memory.*
 
@@ -2745,9 +2784,23 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex03_state_spaces.cu -->
+**Captured output — ex03_state_spaces.cu**
 
+> **Executed:** 2026-11-17T21:28:42.267177+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/02-clusters-inline-ptx/ex03_state_spaces/ex03_state_spaces.cu) as `ex03_state_spaces.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex03_state_spaces.cu -o ex03_state_spaces
+./ex03_state_spaces
 ```
+
+[Compiler log](validation/2026-11-17/02-clusters-inline-ptx/ex03_state_spaces/compile.log) · [Execution log](validation/2026-11-17/02-clusters-inline-ptx/ex03_state_spaces/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  PTX State Spaces — Test Suite                        ║
 ╚══════════════════════════════════════════════════════╝
@@ -2768,6 +2821,9 @@ Test 6: Combined — global→SMEM→compute with SCALE_FACTOR[0]=2.0
 ║  Results: 4/4 tests passed                            ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex03_state_spaces.cu -->
+
+
 
 Tests are numbered 2, 3, 4 and 6 rather than 1–4 because they follow the file's own "Test N: .state_space" numbering scheme from the comment headers above (Test 1 is `.reg`, shown only as a comment since register values need no device round-trip to verify, and Test 5, `.local`, is a diagnostic spill case covered in prose rather than as a counted pass/fail check).
 
@@ -2881,7 +2937,7 @@ Deep Learning Float Formats — Complete Bit Layout and Tradeoffs
 ══════════════════════════════════════════════════════════════════════
 ```
 
-![Deep learning float formats — bit layout for FP32, FP16, BF16, TF32, FP8 E4M3, and FP8 E5M2](images/ch02/10-deep-learning-float-formats.svg)
+[![Deep learning float formats — bit layout for FP32, FP16, BF16, TF32, FP8 E4M3, and FP8 E5M2](images/ch02/10-deep-learning-float-formats.svg)](images/ch02/10-deep-learning-float-formats.svg)
 
 *FP32 spends 8 exponent bits and 23 mantissa bits for ±3.4×10^38 range at ~7 decimal digits of precision; it is the Tensor Core's accumulator format (C, D matrices). FP16 narrows to a 5-bit exponent and 10-bit mantissa — more precision than BF16, but it overflows to `Inf` above 65504, a real risk for training gradients. BF16 keeps FP32's full 8-bit exponent (so it shares FP32's range and never overflows during training) but drops to only 7 mantissa bits, trading precision for safety; it's the dominant input format (A, B matrices) for H100 training. TF32 is stored in the same 32 bits as FP32 but computes with only a ≥10-bit mantissa, applied transparently when Tensor Core ops request TF32 mode. The two FP8 formats split 8 bits between sign, exponent, and mantissa in opposite ways: E4M3 (4-bit exponent, 3-bit mantissa, range ±448) favors precision for the bounded forward pass, while E5M2 (5-bit exponent, 2-bit mantissa, range ±57344) favors range for the wide-swinging backward pass.*
 
@@ -3037,7 +3093,7 @@ Packed Types — Memory Layout and Operations
 ══════════════════════════════════════════════════════════════════════
 ```
 
-![Packed .f16x2 register layout — two FP16 values in one 32-bit register](images/ch02/11-packed-f16x2-register.svg)
+[![Packed .f16x2 register layout — two FP16 values in one 32-bit register](images/ch02/11-packed-f16x2-register.svg)](images/ch02/11-packed-f16x2-register.svg)
 
 *A `.f16x2` value occupies one 32-bit register split into two 16-bit halves: FP16 value 0 (its own sign, exponent, and mantissa bits) in bits 15-0, FP16 value 1 in bits 31-16. The low-half/high-half packing order matters when you build or read back a packed register by hand.*
 
@@ -3134,7 +3190,7 @@ Byte Addressing — How GPU Memory Works
 ══════════════════════════════════════════════════════════════════════
 ```
 
-![Byte addressing — GPU memory as a flat byte array, with a float array laid over it](images/ch02/12-byte-addressing.svg)
+[![Byte addressing — GPU memory as a flat byte array, with a float array laid over it](images/ch02/12-byte-addressing.svg)](images/ch02/12-byte-addressing.svg)
 
 *GPU memory is just a flat array of bytes, addressed 0, 1, 2, 3, .... A `float` is 4 bytes wide, so `array[0]`, `array[1]`, `array[2]` land at byte offsets 0, 4, and 8 — the element index times `sizeof(float)`. C++ hides this: `ptr + 1` silently multiplies by the pointee's size. PTX does not — every address computation in inline `asm()` is a raw byte offset you compute yourself.*
 
@@ -3224,7 +3280,7 @@ Bank Layout — Visual Map
 ══════════════════════════════════════════════════════════════════════
 ```
 
-![Bank layout — byte address to bank number strip, 32 banks of 4 bytes wrapping every 128 bytes](images/ch02/13-bank-layout-visual-map.svg)
+[![Bank layout — byte address to bank number strip, 32 banks of 4 bytes wrapping every 128 bytes](images/ch02/13-bank-layout-visual-map.svg)](images/ch02/13-bank-layout-visual-map.svg)
 
 *Byte addresses 0, 4, 8, ... 124 map one-to-one onto banks 0 through 31; at byte 128 — one past the 32nd bank — the mapping wraps back to bank 0, so `smem[32]` lands in the same bank as `smem[0]`.*
 
@@ -3356,7 +3412,7 @@ Convenient — and, as the next section shows, not free.
 
 UVA maps all GPU memory spaces into a single 64-bit virtual address space. The high bits of any pointer tell the hardware which physical subsystem to route the access to. This is why a single `float*` in CUDA C++ can point to global memory, shared memory, or constant memory — the hardware figures out which one at dereference time by inspecting the address bits.
 
-![UVA address space — how the high bits of a generic pointer tag its state space](images/ch02/14-uva-address-space.svg)
+[![UVA address space — how the high bits of a generic pointer tag its state space](images/ch02/14-uva-address-space.svg)](images/ch02/14-uva-address-space.svg)
 
 *UVA carves the 64-bit virtual address space into regions by high-bit pattern: roughly `0x0001'0000'xxxx'xxxx` for Global (HBM3), `0x0002'...` for Local, `0x0003'...` for Shared, `0x0004'...` for Constant — approximate and implementation-defined, so always convert with `__cvta_generic_to_shared()` and friends rather than hard-coding a range. Dereferencing `float* ptr = &smem[5]` (address ≈ `0x0003'0000'0000'0014`) costs the hardware 1-2 extra cycles versus an explicit state-space address: it reads the high bits (`0x0003` → route to SRAM) before using the low bits (`0x14`) as the byte offset within SMEM.*
 
@@ -3538,6 +3594,7 @@ After cvt.f32.f16:  r0=4.0f, r1=6.0f  ✓
 // ex04_ptx_pointers.cu — State spaces, cvta, packed FP16, bit reinterpret
 
 #include <cstdio>
+#include <cstring>
 #include <cstdint>
 #include <cmath>
 #include <cuda_fp16.h>
@@ -3680,6 +3737,13 @@ __global__ void test_bit_reinterpret(uint32_t* out) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────
+// Copy the representation without aliasing or device-only intrinsics.
+static float host_uint_as_float(uint32_t bits) {
+    float value;
+    std::memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
 int main() {
     printf("╔══════════════════════════════════════════════════════╗\n");
     printf("║  ex04: PTX Pointers, State Spaces & Packed Types      ║\n");
@@ -3695,7 +3759,7 @@ int main() {
         test_cvta_shared<<<1,1>>>(d);
         CHECK_CUDA(cudaDeviceSynchronize());
         CHECK_CUDA(cudaMemcpy(h,d,12,cudaMemcpyDeviceToHost));
-        float v0=__uint_as_float(h[0]), v1=__uint_as_float(h[1]);
+        float v0=host_uint_as_float(h[0]), v1=host_uint_as_float(h[1]);
         tests++;
         if (fabsf(v0-42.0f)<1e-5f && fabsf(v1-99.0f)<1e-5f) {
             passed++;
@@ -3760,7 +3824,7 @@ int main() {
         test_packed_fp16<<<1,1>>>(d, 1.0f,2.0f, 3.0f,4.0f);
         CHECK_CUDA(cudaDeviceSynchronize());
         CHECK_CUDA(cudaMemcpy(h,d,12,cudaMemcpyDeviceToHost));
-        float r0=__uint_as_float(h[1]), r1=__uint_as_float(h[2]);
+        float r0=host_uint_as_float(h[1]), r1=host_uint_as_float(h[2]);
         tests++;
         if(fabsf(r0-4.0f)<0.01f && fabsf(r1-6.0f)<0.01f){
             passed++; printf("  ✓ PASS: slot0=%.1f slot1=%.1f\n",r0,r1);
@@ -3792,15 +3856,29 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex04_ptx_pointers.cu -->
+**Captured output — ex04_ptx_pointers.cu**
 
+> **Executed:** 2026-11-17T21:28:44.942444+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu) as `ex04_ptx_pointers.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex04_ptx_pointers.cu -o ex04_ptx_pointers
+./ex04_ptx_pointers
 ```
+
+[Compiler log](validation/2026-11-17/02-clusters-inline-ptx/ex04_ptx_pointers/compile.log) · [Execution log](validation/2026-11-17/02-clusters-inline-ptx/ex04_ptx_pointers/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  ex04: PTX Pointers, State Spaces & Packed Types      ║
 ╚══════════════════════════════════════════════════════╝
 
 Test 1: cvta + ld.shared (smem[0]=42, smem[1]=99)
-  ✓ PASS: loaded 42.0 and 99.0, SMEM offset=0x0
+  ✓ PASS: loaded 42.0 and 99.0, SMEM offset=0x400
 
 Test 2: st.shared/ld.shared neighbor (expect 7.0 and 17.0)
   ✓ PASS: my=7.0 neighbor=17.0
@@ -3818,9 +3896,12 @@ Test 6: mov.b32 bit reinterpret (float↔uint32)
   ✓ PASS: pi bits=0x40490FD0, roundtrip matches
 
 ╔══════════════════════════════════════════════════════╗
-║  6/6 tests passed   ✓ ALL PASS                      ║
+║  6/6 tests passed   ✓ ALL PASS                    ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex04_ptx_pointers.cu -->
+
+
 
 The `SMEM offset=0x%X` value in Test 1 is whatever small 32-bit offset `__cvta_generic_to_shared` happens to assign — it is driver/compiler-chosen, not a fixed address, so don't expect `0x0` specifically on your own run; the surrounding PASS depends only on the two loaded values being 42.0 and 99.0, not on that offset. `0x40490FD0` is the exact IEEE-754 single-precision bit pattern for `3.14159f` — that part is architecture-independent and will match on any run.
 
@@ -3856,6 +3937,7 @@ So FP16(1.5f) = 0x3C00 + 0x0200 = 0x3E00 ✓
 // ex05_ptx_datatypes.cu — PTX data types: FP16/BF16/FP64/packed ops
 
 #include <cstdio>
+#include <cstring>
 #include <cstdint>
 #include <cmath>
 #include <cuda_fp16.h>
@@ -3953,6 +4035,13 @@ __global__ void test_mad_full(uint32_t* out, uint32_t a, uint32_t b, uint32_t c)
     out[1] = hi;
 }
 
+// Copy the representation without aliasing or device-only intrinsics.
+static float host_uint_as_float(uint32_t bits) {
+    float value;
+    std::memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
 int main() {
     printf("╔══════════════════════════════════════════════════════╗\n");
     printf("║  ex05: PTX Data Types & Packed Operations             ║\n");
@@ -4000,7 +4089,7 @@ int main() {
         test_bf16_add<<<1,1>>>(d,2.0f,3.0f);
         CHECK_CUDA(cudaDeviceSynchronize());
         CHECK_CUDA(cudaMemcpy(h,d,8,cudaMemcpyDeviceToHost));
-        float r0=__uint_as_float(h[0]), r1=__uint_as_float(h[1]);
+        float r0=host_uint_as_float(h[0]), r1=host_uint_as_float(h[1]);
         tests++;
         if(fabsf(r0-5.0f)<0.05f && fabsf(r1-5.0f)<0.05f){
             passed++; printf("  ✓ PASS: lo=%.2f hi=%.2f\n",r0,r1);
@@ -4049,9 +4138,23 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex05_ptx_datatypes.cu -->
+**Captured output — ex05_ptx_datatypes.cu**
 
+> **Executed:** 2026-11-17T21:28:48.110117+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/02-clusters-inline-ptx/ex05_ptx_datatypes/ex05_ptx_datatypes.cu) as `ex05_ptx_datatypes.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex05_ptx_datatypes.cu -o ex05_ptx_datatypes
+./ex05_ptx_datatypes
 ```
+
+[Compiler log](validation/2026-11-17/02-clusters-inline-ptx/ex05_ptx_datatypes/compile.log) · [Execution log](validation/2026-11-17/02-clusters-inline-ptx/ex05_ptx_datatypes/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  ex05: PTX Data Types & Packed Operations             ║
 ╚══════════════════════════════════════════════════════╝
@@ -4072,9 +4175,12 @@ Test 5: mad hi+lo (0xFFFFFFFF * 0xFFFFFFFF)
   ✓ PASS: lo=0x00000001 hi=0xFFFFFFFE
 
 ╔══════════════════════════════════════════════════════╗
-║  5/5 tests passed   ✓ ALL PASS                      ║
+║  5/5 tests passed   ✓ ALL PASS                    ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex05_ptx_datatypes.cu -->
+
+
 
 Test 5 is the one worth tracing by hand: `0xFFFFFFFF × 0xFFFFFFFF = 0xFFFFFFFE00000001` as a full 64-bit product (that's `(2³²−1)² = 2⁶⁴ − 2³³ + 1`), so `mad.lo.u32` (the low 32 bits) gives `0x00000001` and `mad.hi.u32` (the high 32 bits) gives `0xFFFFFFFE` — exactly what the two halves need to be to reconstruct the 64-bit result.
 
@@ -4559,14 +4665,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex06_comprehensive.cu -->
+**Captured output — ex06_comprehensive.cu**
 
+> **Executed:** 2026-11-17T21:28:51.667149+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu) as `ex06_comprehensive.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex06_comprehensive.cu -o ex06_comprehensive
+./ex06_comprehensive
 ```
+
+[Compiler log](validation/2026-11-17/02-clusters-inline-ptx/ex06_comprehensive/compile.log) · [Execution log](validation/2026-11-17/02-clusters-inline-ptx/ex06_comprehensive/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex06: Comprehensive Capstone — Clusters + PTX + DSMEM   ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
        ✓ Hopper/Blackwell GPU detected — clusters supported.
 
 Launch config:
@@ -4606,6 +4726,9 @@ Verification (first 8 and last 4 elements):
 ║  ✓ ALL TESTS PASSED — Comprehensive example complete!     ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex06_comprehensive.cu -->
+
+
 
 Index 0 and index 64 both land on "Expected 64.0" because they're DSMEM partners: thread 0 of Block 0 reads `input[0]=0` plus Block 1's partner value `input[64]=64`, while thread 0 of Block 1 reads `input[64]=64` plus Block 0's partner value `input[0]=0` — same pair, same sum, read through the DSMEM interconnect in opposite directions. `prop.name` will reflect whatever H100 SKU (or B100/B200) you actually run this on; everything from "Launch config" down is deterministic for N=128.
 

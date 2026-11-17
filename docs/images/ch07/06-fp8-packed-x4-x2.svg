@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="900pt" height="388.8pt" viewBox="0 0 900 388.8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg role="img" xmlns:xlink="http://www.w3.org/1999/xlink" width="900pt" height="388.8pt" viewBox="0 0 900 388.8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title>Four FP8 values packed into one 32-bit register (x4) versus two FP8 values packed into one 16-bit register (x2)</title>
+ <desc>Technical diagram for Programming the H100; see the adjacent chapter text for the full explanation.</desc>
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
@@ -21,104 +23,104 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 388.8 
-L 900 388.8 
-L 900 0 
-L 0 0 
+   <path d="M 0 388.8
+L 900 388.8
+L 900 0
+L 0 0
 z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 31.43745 133.936 
-L 96.789375 133.936 
-L 96.789375 84.016 
-L 31.43745 84.016 
+    <path d="M 31.43745 133.936
+L 96.789375 133.936
+L 96.789375 84.016
+L 31.43745 84.016
 z
 " clip-path="url(#p6b27b0d96b)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
-    <path d="M 96.789375 133.936 
-L 162.1413 133.936 
-L 162.1413 84.016 
-L 96.789375 84.016 
+    <path d="M 96.789375 133.936
+L 162.1413 133.936
+L 162.1413 84.016
+L 96.789375 84.016
 z
 " clip-path="url(#p6b27b0d96b)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
-    <path d="M 162.1413 133.936 
-L 227.493225 133.936 
-L 227.493225 84.016 
-L 162.1413 84.016 
+    <path d="M 162.1413 133.936
+L 227.493225 133.936
+L 227.493225 84.016
+L 162.1413 84.016
 z
 " clip-path="url(#p6b27b0d96b)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
-    <path d="M 227.493225 133.936 
-L 292.84515 133.936 
-L 292.84515 84.016 
-L 227.493225 84.016 
+    <path d="M 227.493225 133.936
+L 292.84515 133.936
+L 292.84515 84.016
+L 227.493225 84.016
 z
 " clip-path="url(#p6b27b0d96b)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
-    <path d="M 31.43745 287.024 
-L 162.1413 287.024 
-L 162.1413 237.104 
-L 31.43745 237.104 
+    <path d="M 31.43745 287.024
+L 162.1413 287.024
+L 162.1413 237.104
+L 31.43745 237.104
 z
 " clip-path="url(#p6b27b0d96b)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_7">
-    <path d="M 162.1413 287.024 
-L 292.84515 287.024 
-L 292.84515 237.104 
-L 162.1413 237.104 
+    <path d="M 162.1413 287.024
+L 292.84515 287.024
+L 292.84515 237.104
+L 162.1413 237.104
 z
 " clip-path="url(#p6b27b0d96b)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 700; font-size: 16.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="440.746875" y="38.304836" transform="rotate(-0 440.746875 38.304836)">FP8 Packed Types — Filling the Register, Not Wasting the Sector</text>
+    <text style="font-weight: 700; font-size: 16.2px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="440.746875" y="38.304836" transform="rotate(-0 440.746875 38.304836)">FP8 Packed Types — Filling the Register, Not Wasting the Sector</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 700; font-size: 12.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #00695c" x="31.43745" y="67.376" transform="rotate(-0 31.43745 67.376)">x4 pack — one 32-bit register, four FP8 values (.e4m3x4 / .e5m2x4)</text>
+    <text style="font-weight: 700; font-size: 12.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #00695c" x="31.43745" y="67.376" transform="rotate(-0 31.43745 67.376)">x4 pack — one 32-bit register, four FP8 values (.e4m3x4 / .e5m2x4)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(41.561983 104.926514)">Elem 3</text>
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(43.933616 119.208838)">(MSB)</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(41.561983 104.926514)">Elem 3</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(43.933616 119.208838)">(MSB)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="129.465338" y="112.067676" transform="rotate(-0 129.465338 112.067676)">Elem 2</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="129.465338" y="112.067676" transform="rotate(-0 129.465338 112.067676)">Elem 2</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="194.817263" y="112.067676" transform="rotate(-0 194.817263 112.067676)">Elem 1</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="194.817263" y="112.067676" transform="rotate(-0 194.817263 112.067676)">Elem 1</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(237.617758 104.926514)">Elem 0</text>
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(242.119305 119.208838)">(LSB)</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(237.617758 104.926514)">Elem 0</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(242.119305 119.208838)">(LSB)</text>
    </g>
    <g id="text_7">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.43745" y="150.576" transform="rotate(-0 31.43745 150.576)">bits 31–24        bits 23–16        bits 15–8        bits 7–0</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.43745" y="150.576" transform="rotate(-0 31.43745 150.576)">bits 31–24        bits 23–16        bits 15–8        bits 7–0</text>
    </g>
    <g id="text_8">
-    <text style="font-style: italic; font-size: 11.3px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="306.60345" y="177.2" transform="rotate(-0 306.60345 177.2)">use: storage / transport, max-reduction for scale search — one load fills the register</text>
+    <text style="font-style: italic; font-size: 11.3px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="306.60345" y="177.2" transform="rotate(-0 306.60345 177.2)">use: storage / transport, max-reduction for scale search — one load fills the register</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 700; font-size: 12.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #4527a0" x="31.43745" y="220.464" transform="rotate(-0 31.43745 220.464)">x2 pack — one 16-bit register, two FP8 values (.e4m3x2 / .e5m2x2) — matches FP16 width</text>
+    <text style="font-weight: 700; font-size: 12.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #4527a0" x="31.43745" y="220.464" transform="rotate(-0 31.43745 220.464)">x2 pack — one 16-bit register, two FP8 values (.e4m3x2 / .e5m2x2) — matches FP16 width</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(74.237945 258.014049)">Elem 1</text>
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(67.986727 272.297303)">(hi byte)</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(74.237945 258.014049)">Elem 1</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(67.986727 272.297303)">(hi byte)</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(204.941795 258.014049)">Elem 0</text>
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(198.838397 272.297303)">(lo byte)</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(204.941795 258.014049)">Elem 0</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(198.838397 272.297303)">(lo byte)</text>
    </g>
    <g id="text_12">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.43745" y="303.664" transform="rotate(-0 31.43745 303.664)">bits 15–8                          bits 7–0</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.43745" y="303.664" transform="rotate(-0 31.43745 303.664)">bits 15–8                          bits 7–0</text>
    </g>
    <g id="text_13">
-    <text style="font-style: italic; font-size: 11.3px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="306.60345" y="330.288" transform="rotate(-0 306.60345 330.288)">use: feeding WGMMA (tensor core ingests 16-bit chunks) and cvt output</text>
+    <text style="font-style: italic; font-size: 11.3px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="306.60345" y="330.288" transform="rotate(-0 306.60345 330.288)">use: feeding WGMMA (tensor core ingests 16-bit chunks) and cvt output</text>
    </g>
   </g>
  </g>

@@ -1,9 +1,13 @@
 # WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
 ## Lesson 7 Companion Guide — Programming the H100
 
-> **Verified on:** CUDA 12.x + Hopper GPU (sm_90a).
+> **Validation — November 17, 2026.** 1 complete CUDA program compiled and executed successfully.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
-> **Run with:** `./<out>` on any H100 or B200 instance.
+> **Run with:** `./<out>` on a Hopper H100/H200 instance.
 
 **What this covers:** Everything from Lesson 7 — commit/wait group mechanics for overlapping wgmma with data preparation (the pipeline-friendly API), wgmma.fence dual roles (group boundary + register hazard control), stmatrix for cooperative accumulator writeback (address phase, register layout, x1/x2/x4 variants, FP32 vs FP16 accumulator paths), the FP8 paradigm shift (E4M3 vs E5M2 formats, scaling factors, packed types e4m3x2/x4, the cvt.satfinite quantization instruction, K-major layout requirement, precision pitfalls with large K), and Sparse WGMMA (2:4 structured sparsity, sp-meta register, sp-sel thread selector, metadata packing for FP16/BF16/FP8/TF32). Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
@@ -33,48 +37,27 @@ already have a machine set up.
 
 ### What Hardware Can You Use?
 
-`sm_90a` or `sm_100a`. The trailing `a` matters — without it the wgmma
-instructions are silently unavailable.
+The WGMMA examples target **Hopper `sm_90a`**. Compile with the architecture-specific `a` target. Plain `sm_90` does not enable WGMMA; assembly fails rather than silently removing the instruction.
 
 ```
-Hardware Compatibility Matrix
-══════════════════════════════════════════════════════════════════════
-
-  Architecture   Chip     SM Target   Example GPUs           Lesson 7 Features
-  ──────────────────────────────────────────────────────────────────────────────
-  Ampere         GA100    sm_80       A100 (AWS p4d, Lambda)  NONE (no wgmma)
-  Hopper         GH100    sm_90a      H100 (AWS p5, Lambda)   ALL sections ★
-  Blackwell      GB100    sm_100a     B100/B200               ALL + FP8 ldmatrix
-
-  KEY:
-    wgmma commit/wait groups → sm_90a or sm_100a ONLY
-    stmatrix (.b16, 16-bit)   → sm_90a or sm_100a ONLY
-    FP8 wgmma (e4m3/e5m2)    → sm_90a or sm_100a ONLY
-    Sparse wgmma              → sm_90a or sm_100a ONLY
-    ldmatrix for plain FP8    → NOT available on ANY current architecture
-
-  IMPORTANT FP8 LOADING NOTE (corrected — see §13.2):
-    ldmatrix has no variant for ordinary 8-bit e4m3/e5m2 FP8, on Hopper OR
-    Blackwell. Its only documented element types are .b16 (sm_75+, i.e. all
-    the way back to Turing) and two Blackwell-only *sub-byte* packed forms
-    (.b8x16.b6x16_p32 / .b8x16.b4x16_p64, sm_100a/sm_110a) built for the
-    6-bit/4-bit microscaling (MX) formats used by 5th-gen tensor cores
-    (tcgen05) — a different feature from plain FP8, not a faster path to it.
-    On every architecture that has FP8 wgmma, FP8 A tiles load via the SS
-    (descriptor) path or manual ld.shared.b32 (RS path). There is no
-    ldmatrix shortcut for FP8 to look forward to on Blackwell either.
+Architecture   Example GPUs   WGMMA examples in this chapter
+Ampere         A100           Unsupported; use a separate mma.sync implementation
+Hopper         H100/H200      sm_90a; H100 PCIe tested on November 17, 2026
+Blackwell      B100/B200      Unsupported; requires a tcgen05 implementation
 ```
+
+`stmatrix.b16` and other individual instructions have their own target rules. Their availability on a later GPU does not make a whole WGMMA kernel portable.
 
 ### Cloud GPU Rental — Lambda Labs
 
-Usually the cheapest hourly H100.
+Check current provider availability and pricing.
 
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
 
   1. https://lambdalabs.com/ → sign up → Launch Instance
-  2. Choose "1x H100 PCIe" (cheapest for learning)
+  2. Choose "1x H100 PCIe" (sufficient for the single-GPU examples)
   3. SSH: ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
   4. Verify: nvcc --version && nvidia-smi
   5. Compile: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out && ./out
@@ -97,33 +80,8 @@ AWS p5 Setup (H100)
 
 ### Hopper vs Blackwell — What Changes
 
-Read once if you are on Blackwell. Everything here still runs; Blackwell simply
-adds a newer tensor core generation alongside it.
+Blackwell does **not** execute Hopper WGMMA kernels unchanged. It uses the `tcgen05` Tensor Core programming model, including tensor memory, with different instructions and synchronization. Changing `-arch=sm_90a` to `-arch=sm_100a` is insufficient. NVIDIA's [Blackwell CUTLASS example](https://github.com/NVIDIA/cutlass/blob/main/examples/70_blackwell_gemm/70_blackwell_fp16_gemm.cu) explicitly documents this incompatibility. Architecture-specific Hopper PTX is also not forward compatible with Blackwell; see the [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html).
 
-```
-Hopper (sm_90a) vs Blackwell (sm_100a) — Lesson 7 Differences
-══════════════════════════════════════════════════════════════════════
-
-  WHAT STAYS IDENTICAL on Blackwell:
-    ├── commit_group / wait_group semantics and syntax
-    ├── wgmma.fence.sync.aligned roles and placement rules
-    ├── stmatrix variants (x1, x2, x4, b16, b8) — same syntax
-    ├── FP8 instruction shapes (m64nNk32), scale operands
-    ├── FP8 packed types (e4m3x2/x4, e5m2x2/x4) and cvt.satfinite
-    ├── Sparse wgmma (sp-meta, sp-sel, 2:4 sparsity) — same rules
-    └── All code in this guide compiles and runs unchanged on sm_100a
-
-  WHAT IS NEW IN BLACKWELL:
-    ├── ldmatrix sub-byte variants (.b8x16.b6x16_p32 / .b4x16_p64) for the
-    │   MX (microscaling) 4-bit/6-bit formats — NOT a plain-FP8 path; ordinary
-    │   e4m3/e5m2 A tiles still load via SS/descriptor or manual ld.shared,
-    │   same as on Hopper (see §13.2)
-    ├── tcgen05.mma: 5th-gen tensor core instruction (separate from wgmma)
-    ├── FP4 (MX format) support in tcgen05
-    └── tmem (tensor memory) as accumulator location for tcgen05
-
-  PORTING: Change -arch=sm_90a to -arch=sm_100a for Blackwell.
-```
 
 ---
 
@@ -380,7 +338,7 @@ actually go.
 
 The real power of groups becomes clear when you see the full pipeline. The key insight is that you are not just "commit then wait" — you are interleaving math, data preparation, and synchronization so that tensor cores are never idle.
 
-![wgmma commit/wait groups: naive wait-after-every-batch vs the pipelined pattern, with tensor-core occupancy underneath each](images/ch07/01-commit-wait-pipeline-timeline.svg)
+[![wgmma commit/wait groups: naive wait-after-every-batch vs the pipelined pattern, with tensor-core occupancy underneath each](images/ch07/01-commit-wait-pipeline-timeline.svg)](images/ch07/01-commit-wait-pipeline-timeline.svg)
 
 *Naive wait-after-every-batch leaves the tensor cores idle during every wait and store; wait_group<1> keeps the newest batch running while the completed one's epilogue proceeds.*
 
@@ -462,7 +420,7 @@ results.
 
 At this point in the course you have seen wgmma.fence appear in multiple contexts. It is worth consolidating exactly what it does and does not do, because the confusion between its roles causes hard-to-debug bugs.
 
-![wgmma.fence's two roles placed on the same pipeline: group-boundary marker before the K-loop, register-hazard control after wait_group](images/ch07/02-wgmma-fence-placement.svg)
+[![wgmma.fence's two roles placed on the same pipeline: group-boundary marker before the K-loop, register-hazard control after wait_group](images/ch07/02-wgmma-fence-placement.svg)](images/ch07/02-wgmma-fence-placement.svg)
 
 *The same instruction, two placements: once before the first wgmma of a new group (Role 1), once after wait_group<0> and before reading d[] (Role 2).*
 
@@ -615,7 +573,7 @@ address arithmetic.
 
 The address assignment in stmatrix follows the SAME pattern as ldmatrix. This symmetry is intentional — if you read with ldmatrix and write with stmatrix using the same address formula, the data is correctly reconstructed.
 
-![The 16x16 tile split into four quadrants, each owned by a group of 8 lanes](images/ch07/03-stmatrix-address-quadrants.svg)
+[![The 16x16 tile split into four quadrants, each owned by a group of 8 lanes](images/ch07/03-stmatrix-address-quadrants.svg)](images/ch07/03-stmatrix-address-quadrants.svg)
 
 *Lanes 0-7, 8-15, 16-23 and 24-31 each point into one quadrant — the same quadrant-to-lane mapping ldmatrix used to read the tile in.*
 
@@ -683,7 +641,7 @@ stmatrix Address Phase — Who Points Where
 
 The register layout for stmatrix is the "striped" layout — each thread owns non-contiguous elements across the tile. This is the exact layout that wgmma writes to, so you can feed wgmma output registers directly to stmatrix with no shuffling.
 
-![Three sample threads' four registers each, and how lanes 0-7 together cover rows 0 and 8 of the destination tile](images/ch07/04-stmatrix-register-scatter.svg)
+[![Three sample threads' four registers each, and how lanes 0-7 together cover rows 0 and 8 of the destination tile](images/ch07/04-stmatrix-register-scatter.svg)](images/ch07/04-stmatrix-register-scatter.svg)
 
 *Thread T holds columns [2T, 2T+1] in rows 0 and 8 — the same striped pattern wgmma already wrote its output in, so no shuffle sits between the two instructions.*
 
@@ -921,7 +879,7 @@ Floating Point Format Review — Sign, Exponent, Mantissa
 The practical division: E4M3 forward, E5M2 backward. The reason is that
 gradients span a far wider range than activations, and range is what E5M2 buys.
 
-![E4M3's sign/4-bit-exponent/3-bit-mantissa layout next to E5M2's sign/5-bit-exponent/2-bit-mantissa layout](images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg)
+[![E4M3's sign/4-bit-exponent/3-bit-mantissa layout next to E5M2's sign/5-bit-exponent/2-bit-mantissa layout](images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg)](images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg)
 
 *The same 8 bits, split two different ways: E4M3 trades range for precision (forward pass), E5M2 trades precision for range (backward pass).*
 
@@ -997,7 +955,7 @@ thirty-one are useful to you.
 
 The GPU memory controller never fetches less than 32 bytes (one "sector") at a time. If you request a single FP8 byte, the GPU fetches 32 bytes, delivers your 1 byte, and wastes the other 31. To fix this, FP8 values must always be accessed in packed groups. NVIDIA defines two packing types: `x2` (two FP8 in 16 bits) and `x4` (four FP8 in 32 bits).
 
-![Four FP8 values packed into one 32-bit register (x4) versus two FP8 values packed into one 16-bit register (x2)](images/ch07/06-fp8-packed-x4-x2.svg)
+[![Four FP8 values packed into one 32-bit register (x4) versus two FP8 values packed into one 16-bit register (x2)](images/ch07/06-fp8-packed-x4-x2.svg)](images/ch07/06-fp8-packed-x4-x2.svg)
 
 *x4 fills a whole register for storage/transport; x2 matches FP16 width for feeding WGMMA and for cvt output.*
 
@@ -1411,7 +1369,7 @@ Sparse WGMMA is a variant where matrix A is **structured sparse**: for every gro
 
 The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. This information is encoded in a "metadata" register (sp-meta) that accompanies the sparse A matrix.
 
-![A row of 8 values split into two quartets, compacted down to 4 stored values, with their sp-meta encoding and the 4-thread sp-sel group below](images/ch07/07-sparse-wgmma-2-4-metadata.svg)
+[![A row of 8 values split into two quartets, compacted down to 4 stored values, with their sp-meta encoding and the 4-thread sp-sel group below](images/ch07/07-sparse-wgmma-2-4-metadata.svg)](images/ch07/07-sparse-wgmma-2-4-metadata.svg)
 
 *The full chain previewed here and detailed in §16-17: which elements survive (top), how sp-meta packs their positions (middle), and which thread(s) sp-sel reads that metadata from (bottom).*
 
@@ -1631,7 +1589,7 @@ fused epilogue on top of exactly this structure.
 **Manual Worked Example Before the Code:**
 
 ```
-Scenario: m64n64k16, BF16→FP16 accumulator (to avoid FP32→FP16 conversion in epilogue).
+Scenario: m64n64k16, FP16→FP16 accumulator (to avoid FP32→FP16 conversion in epilogue).
   TWO output tiles computed in pipeline: tile A (first) and tile B (second).
   Goal: demonstrate commit/wait overlap and stmatrix epilogue.
 
@@ -1649,7 +1607,7 @@ Scenario: m64n64k16, BF16→FP16 accumulator (to avoid FP32→FP16 conversion in
 ═══════════════════════════════════════════════════════
   FILE:    ex01_wgmma_pipeline.cu
   COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex01_wgmma_pipeline.cu -o ex01
-           (Blackwell: replace sm_90a with sm_100a)
+           (Hopper only; Blackwell needs a different kernel)
   RUN:     ./ex01
   EXPECT:  Both tiles computed correctly, stmatrix epilogue verified.
 ═══════════════════════════════════════════════════════
@@ -1669,7 +1627,7 @@ Scenario: m64n64k16, BF16→FP16 accumulator (to avoid FP32→FP16 conversion in
 //     6. Verification of both tile results
 //
 // Uses FP16 accumulators (not FP32) to enable direct stmatrix without conversion.
-// REQUIRES: sm_90a (H100) or sm_100a (Blackwell)
+// REQUIRES: Hopper sm_90a (H100/H200); not a Blackwell kernel
 // ═══════════════════════════════════════════════════════════════════
 
 #include <cstdio>
@@ -1690,16 +1648,16 @@ static constexpr int K = 16;
 static constexpr int D_REGS_F16 = (M * N) / 128 / 2;  // 16 .b32 registers
 
 // ─────────────────────────────────────────────────────────────────
-// Build WGMMA descriptor (simplified K-major BF16, 128B swizzle)
+// Build WGMMA descriptor (simplified K-major FP16, 128B swizzle)
 // ─────────────────────────────────────────────────────────────────
 __device__ uint64_t make_desc(const void* smem_ptr,
-                               uint32_t sbo_bytes, int swizzle_mode = 1) {
+                               uint32_t sbo_bytes, int swizzle_mode = 0) {
     uint32_t addr = __cvta_generic_to_shared(smem_ptr);
     uint64_t d = 0;
     d |= (uint64_t)((addr >> 4) & 0x3FFF);
-    d |= (uint64_t)(1ULL & 0x3FFF) << 16;               // LBO=1 for K-major 128B
+    d |= (uint64_t)(8ULL & 0x3FFF) << 16;               // LBO=128B for no-swizzle core matrices
     d |= (uint64_t)((sbo_bytes/16) & 0x3FFF) << 32;     // SBO
-    d |= (uint64_t)(0ULL) << 46;                          // base offset = 0
+    d |= (uint64_t)(0ULL) << 49;                          // base offset = 0
     d |= (uint64_t)((uint64_t)swizzle_mode) << 62;       // swizzle mode bits
     return d;
 }
@@ -1709,18 +1667,18 @@ __device__ uint64_t make_desc(const void* smem_ptr,
 // Two tiles A and B are multiplied; results verified in SMEM.
 // ─────────────────────────────────────────────────────────────────
 __global__ void wgmma_pipeline_kernel(
-    const __nv_bfloat16* A_glob,
-    const __nv_bfloat16* B_glob,
+    const __half* A_glob,
+    const __half* B_glob,
     __half* out_A,
     __half* out_B,
     uint32_t* pass_count)
 {
     // ── Shared memory (two A tiles + two B tiles for two output tiles) ──
     // Tile A's A matrix and B matrix, then Tile B's A and B matrices.
-    __shared__ __align__(1024) __nv_bfloat16 smem_Aa[M][K];  // A input for tile A
-    __shared__ __align__(1024) __nv_bfloat16 smem_Ba[K][N];  // B input for tile A
-    __shared__ __align__(1024) __nv_bfloat16 smem_Ab[M][K];  // A input for tile B
-    __shared__ __align__(1024) __nv_bfloat16 smem_Bb[K][N];  // B input for tile B
+    __shared__ __align__(1024) __half smem_Aa[M][K];  // A input for tile A
+    __shared__ __align__(1024) __half smem_Ba[K][N];  // B input for tile A
+    __shared__ __align__(1024) __half smem_Ab[M][K];  // A input for tile B
+    __shared__ __align__(1024) __half smem_Bb[K][N];  // B input for tile B
     // Output staging buffer (reused for both tiles)
     __shared__ __align__(1024) __half smem_out[M][N];
 
@@ -1729,22 +1687,23 @@ __global__ void wgmma_pipeline_kernel(
     // ── Load input tiles from global memory (simple thread-driven) ───
     for (int i = tid; i < M*K; i += blockDim.x) {
         int r = i/K, c = i%K;
-        smem_Aa[r][c] = A_glob[r*K+c];
-        smem_Ab[r][c] = A_glob[r*K+c];  // same A for both tiles in this demo
+        reinterpret_cast<__half*>(smem_Aa)[(r/8)*128+(c/8)*64+(r%8)*8+c%8] = A_glob[r*K+c];
+        reinterpret_cast<__half*>(smem_Ab)[(r/8)*128+(c/8)*64+(r%8)*8+c%8] = A_glob[r*K+c];  // same A for both tiles in this demo
     }
     for (int i = tid; i < K*N; i += blockDim.x) {
         int r = i/N, c = i%N;
-        smem_Ba[r][c] = B_glob[r*N+c];
-        smem_Bb[r][c] = B_glob[r*N+c];  // same B for both tiles in this demo
+        reinterpret_cast<__half*>(smem_Ba)[(c/8)*128+(r/8)*64+(c%8)*8+r%8] = B_glob[r*N+c];
+        reinterpret_cast<__half*>(smem_Bb)[(c/8)*128+(r/8)*64+(c%8)*8+r%8] = B_glob[r*N+c];  // same B for both tiles in this demo
     }
+    asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
     __syncthreads();
 
     // ── Build descriptors ─────────────────────────────────────────
-    // SBO for K-major BF16: 8 rows × K cols × 2 bytes = 8×16×2=256 for K=16
+    // SBO for K-major FP16: 8 rows × K cols × 2 bytes = 8×16×2=256 for K=16
     uint64_t desc_Aa = make_desc(&smem_Aa[0][0], 8*K*2);
-    uint64_t desc_Ba = make_desc(&smem_Ba[0][0], 8*N*2);
+    uint64_t desc_Ba = make_desc(&smem_Ba[0][0], 8*K*2);
     uint64_t desc_Ab = make_desc(&smem_Ab[0][0], 8*K*2);
-    uint64_t desc_Bb = make_desc(&smem_Bb[0][0], 8*N*2);
+    uint64_t desc_Bb = make_desc(&smem_Bb[0][0], 8*K*2);
 
     // ── Declare FP16 accumulator registers ───────────────────────
     // D_REGS_F16=16 .b32 registers per thread, each holds 2 FP16 values.
@@ -1756,10 +1715,10 @@ __global__ void wgmma_pipeline_kernel(
     asm volatile("wgmma.fence.sync.aligned;\n" : : : "memory");
 
     // ── STEP 2: Issue wgmma for TILE A ───────────────────────────
-    // m64n64k16, f16 acc, bf16 inputs. scale_d=0 (overwrite).
+    // m64n64k16, f16 acc, f16 inputs. scale_d=0 (overwrite).
     // Note: f16 accumulator → 16 .b32 output registers ("+r" constraint)
     asm volatile(
-        "wgmma.mma_async.sync.aligned.m64n64k16.f16.bf16.bf16 "
+        "wgmma.mma_async.sync.aligned.m64n64k16.f16.f16.f16 "
         "{%0,%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15},"
         " %16, %17, 0, 1, 1, 0, 0;\n"
         : "+r"(dA[0]),  "+r"(dA[1]),  "+r"(dA[2]),  "+r"(dA[3]),
@@ -1781,7 +1740,7 @@ __global__ void wgmma_pipeline_kernel(
 
     // ── STEP 5: Issue wgmma for TILE B ───────────────────────────
     asm volatile(
-        "wgmma.mma_async.sync.aligned.m64n64k16.f16.bf16.bf16 "
+        "wgmma.mma_async.sync.aligned.m64n64k16.f16.f16.f16 "
         "{%0,%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15},"
         " %16, %17, 0, 1, 1, 0, 0;\n"
         : "+r"(dB[0]),  "+r"(dB[1]),  "+r"(dB[2]),  "+r"(dB[3]),
@@ -1803,37 +1762,16 @@ __global__ void wgmma_pipeline_kernel(
     // ── STEP 8: Fence + stmatrix for tile A ──────────────────────
     asm volatile("wgmma.fence.sync.aligned;\n" : : : "memory");
 
-    // stmatrix address calculation (simplified: write flat for verification)
-    // In production: compute the swizzled stmatrix addresses per lane.
-    // Here: use simple flat SMEM writes for pedagogical clarity.
-    int warp   = tid >> 5;
-    int lane   = tid & 31;
-    int w_in_wg = warp & 3;
-    int m_base = w_in_wg * 16;
-
-    // Compute stmatrix destination address (same formula as ldmatrix)
-    int row_in_16 = lane & 15;
-    int col_half  = lane >> 4;
-    int col_in_16 = col_half * 8;
-
-    uint32_t smem_base = __cvta_generic_to_shared(smem_out);
-    // Linear offset for this thread's stmatrix address:
-    int linear_off = (m_base + row_in_16) * N * (int)sizeof(__half)
-                   + col_in_16 * (int)sizeof(__half);
-    // Apply 128B swizzle:
-    int mask = ((linear_off >> 7) & 0x7) << 4;
-    uint32_t st_addr = (smem_base + linear_off) ^ mask;
-
-    // stmatrix: store 4 .b32 registers (each holds 2 FP16 = one 8×8 row-pair)
-    // x4 stores 4 × 8×8 = 16×16 FP16 tile per call.
-    // For N=64: need 64/16 = 4 stmatrix.x4 calls per warp's M=16 rows.
-    asm volatile(
-        "stmatrix.sync.aligned.m8n8.x4.shared.b16 [%0], {%1,%2,%3,%4};\n"
-        : : "r"(st_addr),
-            "r"(dA[0]), "r"(dA[1]), "r"(dA[2]), "r"(dA[3])
-    );
-    // (In a complete kernel, loop over all D_REGS_F16 / 4 = 4 slices)
-
+    int warp = tid / 32, lane = tid % 32;
+    // Each x4 call writes four 8×8 matrices: two row halves × two column halves.
+    for (int slice = 0; slice < 4; ++slice) {
+        int row = warp * 16 + lane % 16;
+        int col = slice * 16 + (lane / 16) * 8;
+        uint32_t address = (uint32_t)__cvta_generic_to_shared(&smem_out[row][col]);
+        asm volatile("stmatrix.sync.aligned.m8n8.x4.shared.b16 [%0], {%1,%2,%3,%4};"
+            :: "r"(address), "r"(dA[slice*4]), "r"(dA[slice*4+1]),
+               "r"(dA[slice*4+2]), "r"(dA[slice*4+3]) : "memory");
+    }
     __syncthreads();
     // Copy first few elements to output for verification:
     for (int i = tid; i < M * N; i += blockDim.x) {
@@ -1845,12 +1783,15 @@ __global__ void wgmma_pipeline_kernel(
     asm volatile("wgmma.wait_group.sync.aligned %0;\n" : : "n"(0) : "memory");
     asm volatile("wgmma.fence.sync.aligned;\n" : : : "memory");
 
-    // stmatrix for tile B (same address pattern):
-    asm volatile(
-        "stmatrix.sync.aligned.m8n8.x4.shared.b16 [%0], {%1,%2,%3,%4};\n"
-        : : "r"(st_addr),
-            "r"(dB[0]), "r"(dB[1]), "r"(dB[2]), "r"(dB[3])
-    );
+    // Each x4 call writes four 8×8 matrices: two row halves × two column halves.
+    for (int slice = 0; slice < 4; ++slice) {
+        int row = warp * 16 + lane % 16;
+        int col = slice * 16 + (lane / 16) * 8;
+        uint32_t address = (uint32_t)__cvta_generic_to_shared(&smem_out[row][col]);
+        asm volatile("stmatrix.sync.aligned.m8n8.x4.shared.b16 [%0], {%1,%2,%3,%4};"
+            :: "r"(address), "r"(dB[slice*4]), "r"(dB[slice*4+1]),
+               "r"(dB[slice*4+2]), "r"(dB[slice*4+3]) : "memory");
+    }
     __syncthreads();
     for (int i = tid; i < M * N; i += blockDim.x) {
         out_B[i] = smem_out[i/N][i%N];
@@ -1877,15 +1818,15 @@ int main() {
 
     cudaDeviceProp prop; CHECK_CUDA(cudaGetDeviceProperties(&prop, 0));
     printf("GPU: %s (SM %d.%d)\n", prop.name, prop.major, prop.minor);
-    if (prop.major < 9) { fprintf(stderr,"Needs SM 9.0+\n"); return 1; }
+    if (prop.major != 9) { fprintf(stderr,"Requires Hopper SM 9.0; Blackwell needs tcgen05\n"); return 1; }
 
     const int A_N = M*K, B_N = K*N, D_N = M*N;
-    __nv_bfloat16 *hA = new __nv_bfloat16[A_N];
-    __nv_bfloat16 *hB = new __nv_bfloat16[B_N];
-    for (int i = 0; i < A_N; i++) hA[i] = __float2bfloat16(0.01f);
-    for (int i = 0; i < B_N; i++) hB[i] = __float2bfloat16(0.01f);
+    __half *hA = new __half[A_N];
+    __half *hB = new __half[B_N];
+    for (int i = 0; i < A_N; i++) hA[i] = __float2half(0.01f);
+    for (int i = 0; i < B_N; i++) hB[i] = __float2half(0.01f);
 
-    __nv_bfloat16 *dA, *dB; __half *dOA, *dOB;
+    __half *dA, *dB; __half *dOA, *dOB;
     uint32_t *dpass, hpass = 0;
     CHECK_CUDA(cudaMalloc(&dA,   A_N*2)); CHECK_CUDA(cudaMalloc(&dB,   B_N*2));
     CHECK_CUDA(cudaMalloc(&dOA,  D_N*2)); CHECK_CUDA(cudaMalloc(&dOB,  D_N*2));
@@ -1906,7 +1847,20 @@ int main() {
     printf("Threads with non-zero sums in BOTH tiles: %u / 128\n", hpass);
     printf("Sample out_A[0] = %.6f\n", __half2float(hOA[0]));
 
-    bool ok = (hpass == 128);
+    __half *hOB = new __half[D_N];
+    CHECK_CUDA(cudaMemcpy(hOB, dOB, D_N*2, cudaMemcpyDeviceToHost));
+    float rounded = __half2float(__float2half(0.01f));
+    float expected = K * rounded * rounded;
+    int errors = 0;
+    for (int i = 0; i < D_N; ++i) {
+        if (!std::isfinite(__half2float(hOA[i])) ||
+            fabsf(__half2float(hOA[i]) - expected) > 0.00002f) ++errors;
+        if (!std::isfinite(__half2float(hOB[i])) ||
+            fabsf(__half2float(hOB[i]) - expected) > 0.00002f) ++errors;
+    }
+    printf("Output verification: %d errors across both 64×64 tiles\n", errors);
+    delete[] hOB;
+    bool ok = hpass == 128 && errors == 0;
     printf("\n╔══════════════════════════════════════════════════════════╗\n");
     printf("║  %-56s  ║\n", ok
            ? "✓ ALL PASS — commit/wait pipeline + stmatrix working!"
@@ -1920,26 +1874,44 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex01_wgmma_pipeline.cu -->
+**Captured output — ex01_wgmma_pipeline.cu**
 
+> **Executed:** 2026-11-17T21:38:15.857900+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu) as `ex01_wgmma_pipeline.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_wgmma_pipeline.cu -o ex01_wgmma_pipeline
+./ex01_wgmma_pipeline
 ```
+
+[Compiler log](validation/2026-11-17/07-wgmma-part-2/ex01_wgmma_pipeline/compile.log) · [Execution log](validation/2026-11-17/07-wgmma-part-2/ex01_wgmma_pipeline/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex01: wgmma commit/wait pipeline + stmatrix epilogue    ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 Shape: m64n64k16, FP16 accumulator, 2 tiles pipelined
 Expected: all acc values = K×0.01² = 0.001600
 
 Threads with non-zero sums in BOTH tiles: 128 / 128
-Sample out_A[0] = 0.001603
+Sample out_A[0] = 0.001600
+Output verification: 0 errors across both 64×64 tiles
 
 ╔══════════════════════════════════════════════════════════╗
 ║  ✓ ALL PASS — commit/wait pipeline + stmatrix working!  ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex01_wgmma_pipeline.cu -->
 
-`GPU:` varies with the card the binary runs on; everything else is deterministic. The same BF16-rounding gap from Chapter 6 shows up here: `__float2bfloat16(0.01)` rounds to `0.010009765625`, not `0.01` exactly, so the FP16 accumulator actually holds `16 × 0.010009765625² ≈ 0.0016031`, which prints as `0.001603` — one digit past the host's own unrounded `K×0.01²` line, which prints `0.001600`. Both tiles use identical input data, so if either disagreed with the other the `128 / 128` count would come in short; it doesn't, because the pipeline only changes *when* the two tiles' math gets issued and drained, never *what* either one computes.
+
+
+`GPU:` identifies the tested SKU. This example uses **FP16 inputs and FP16 accumulators**: the PTX WGMMA BF16 input variant requires FP32 accumulators. Inputs are rounded to FP16 before the reference is computed. Both complete 64×64 output tiles are checked, including all four `stmatrix.x4` slices per warp; checking only positive register sums would miss an incomplete epilogue. See the [CUDA 12.8 PTX WGMMA specification](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions-wgmma-mma).
 
 The closing banner repeats Chapter 6's byte-vs-codepoint `%-56s` quirk, with this chapter's own numbers: `✓ ALL PASS — commit/wait pipeline + stmatrix working!` is 53 codepoints but 57 UTF-8 bytes (`✓` and `—` each cost 3 bytes for 1 displayed column, wasting 2 bytes apiece). Since 57 already exceeds the 56-byte field width, `printf` pads with nothing, and the line prints at its raw length. Measured in the columns a terminal actually draws, that puts the whole bordered line — the fixed `"║  "` and `"  ║"` margins plus 53 content columns, 59 in total — exactly 1 column short of the 60-column border above it, the same shortfall Chapter 6 hit with a differently-worded message of the same coincidental 53-codepoint length.
 

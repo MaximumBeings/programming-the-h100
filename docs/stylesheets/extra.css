@@ -23,8 +23,8 @@
    ------------------------------------------------------------------ */
 
 .md-typeset pre > code {
-  font-size: 0.72rem;
-  line-height: 1.35;
+  font-size: 0.78rem;
+  line-height: 1.5;
   overflow-x: auto;
   -webkit-font-smoothing: antialiased;
 }
@@ -85,7 +85,7 @@
    ------------------------------------------------------------------ */
 
 .md-typeset table:not([class]) {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
 }
 
 .md-typeset table:not([class]) th {
@@ -112,4 +112,19 @@
 /* Blockquote "Verified on:" callouts at the top of each chapter. */
 .md-typeset blockquote {
   border-left-color: var(--md-accent-fg-color);
+}
+
+/* Keep technical figures crisp, with the same quiet framing in both themes. */
+.md-typeset img[src$=".svg"] {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.md-typeset {
+  line-height: 1.7;
 }

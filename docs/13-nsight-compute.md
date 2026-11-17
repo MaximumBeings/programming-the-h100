@@ -1,6 +1,11 @@
 # Profiling with Nsight Compute
 ## Chapter 13 Companion Guide — Measuring What the Rest of This Book Claims
 
+> **Validation — November 17, 2026.** Nsight Compute 2025.1.1 profiled the tested Chapter 6 WGMMA program; ordinary-user and successful elevated-permission logs are linked below.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 > **Tool versions move.** Nsight Compute ships with the CUDA Toolkit and its
 > section names, metric names and CLI flags shift between releases. Every command
 > here is written for the 2025.x line (CUDA 12.9 / 13.x). Where a name may have
@@ -35,6 +40,34 @@ line."
 ---
 
 ## ★ BEFORE YOU START — Setup
+
+**Captured profiling session — November 17, 2026.** Nsight Compute 2025.1.1.0 was installed from the instance's configured package repository with `sudo apt-get install -y nsight-compute`. CUDA Toolkit 12.8 was already installed. Plain `ncu` first failed with `ERR_NVGPUCTRPERM`; elevated profiling succeeded without changing driver-wide counter access. Only use `sudo` where you administer the instance.
+
+From the repository root, using the downloadable Chapter 6 source:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 docs/validation/2026-11-17/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu -o wgmma_example
+ncu --version
+ncu --set basic --target-processes all ./wgmma_example
+sudo ncu --set basic --target-processes all ./wgmma_example
+```
+
+Captured excerpts (single CTA, 128 threads; these are correctness-demo measurements, not optimized GEMM throughput):
+
+```text
+Nsight Compute version: 2025.1.1.0 (build 35528883)
+Ordinary user: ERR_NVGPUCTRPERM
+Elevated run: Profiling "wgmma_kernel" — 10 passes
+D register values correct: 4096 / 4096
+Max absolute error: 0.00000000
+Duration: 20.32 us
+Registers Per Thread: 58
+Theoretical Occupancy: 50%
+Achieved Occupancy: 6.25%
+# SMs: 114
+```
+
+[Ordinary-user log](validation/2026-11-17/nsight-basic.log) · [Full successful report](validation/2026-11-17/nsight-basic-admin.log) · [Tool version](validation/2026-11-17/nsight-version.log). The one-CTA grid does not fill the GPU. Replayed profiler timings and achieved occupancy must not be treated as end-to-end application benchmarks. See the [NVIDIA profiling guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/) for replay and measurement limitations.
 
 ### What You Need
 

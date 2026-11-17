@@ -1,0 +1,23 @@
+╔══════════════════════════════════════════════════════╗
+║  setmaxnreg Demo — Dynamic Register Resizing         ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 PCIe (SM 9.0)
+
+Register Plan:
+  WG0 (threads   0-127): setmaxnreg.dec → 32 regs (producer)
+  WG1 (threads 128-255): setmaxnreg.inc → 128 regs (consumer)
+
+WG0 (PRODUCER, 32 regs after resize):
+  ✓ All 128 values correct (registers NOT corrupted by setmaxnreg)
+  Sample: output[0]=1.0 (expect 1.0), output[1]=3.5 (expect 3.5)
+
+WG1 (CONSUMER, 128 regs after resize):
+  ✓ All 128 values correct (registers NOT corrupted by setmaxnreg)
+  Sample: output[0]=2.0 (expect 2.0), output[1]=6.5 (expect 6.5)
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED                                  ║
+║  setmaxnreg correctly resized registers without      ║
+║  corrupting existing register state.                 ║
+╚══════════════════════════════════════════════════════╝

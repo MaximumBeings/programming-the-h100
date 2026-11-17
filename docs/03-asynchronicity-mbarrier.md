@@ -1,7 +1,11 @@
 # Asynchronicity, Barriers & the mbarrier Pipeline
 ## Lesson 3 Companion Guide — Programming the H100
 
-> **Verified on:** CUDA 12.x + Hopper GPU (sm_90a).
+> **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
 > **Run with:** `./<out>` on any H100 or B200 instance.
 
@@ -194,7 +198,7 @@ In a synchronous system, doing and fetching are chained together sequentially. Y
 
 Think of cooking a meal synchronously: you put water on to boil, then stand there watching the pot until it boils (fetching complete), then add the pasta (doing), then stand watching again until the pasta is cooked (fetching again), then drain it (doing). You accomplished nothing else for the entire 15 minutes the water and pasta were cooking. You were **blocked**.
 
-![The synchronous world — blocked execution](images/ch03/01-sync-blocked-execution.svg)
+[![The synchronous world — blocked execution](images/ch03/01-sync-blocked-execution.svg)](images/ch03/01-sync-blocked-execution.svg)
 
 *Fetch A blocks the thread completely before Compute A can even start, and the same happens again for Fetch B — only one of {fetching, computing} ever happens at a time, and on the H100 a fetch (HBM3 → SMEM, ~200–500 ns) is 100–500× slower than the compute it's blocking (~1–5 ns per Tensor Core tile multiply).*
 
@@ -204,7 +208,7 @@ Asynchronicity solves the blocked-waiting problem by **decoupling the request fr
 
 The cooking analogy: put the water on, go chop vegetables while it heats, come back when you hear the boil. You accomplished two tasks in the time it took to do one. This is **latency hiding** — you didn't make the water boil faster, but you hid its latency behind useful work.
 
-![Latency hiding — the async solution](images/ch03/02-async-latency-hiding.svg)
+[![Latency hiding — the async solution](images/ch03/02-async-latency-hiding.svg)](images/ch03/02-async-latency-hiding.svg)
 
 *Fetch A and Fetch B are issued back to back and run concurrently in the background; Compute A and Compute B each start as soon as their own fetch lands. Total time collapses to roughly `max(all fetches)` instead of `sum(all fetches) + sum(all computes)` — a speedup of up to fetch_latency / compute_time, which on this hardware is 100–500×.*
 
@@ -318,7 +322,7 @@ A blocking operation pauses the calling thread until the operation finishes. Con
 
 The advantage is simplicity: after a blocking call returns, you know the operation is done. The disadvantage is wasted time — the thread idles while waiting.
 
-![Blocking vs. non-blocking operations — thread timelines](images/ch03/03-blocking-vs-nonblocking-timelines.svg)
+[![Blocking vs. non-blocking operations — thread timelines](images/ch03/03-blocking-vs-nonblocking-timelines.svg)](images/ch03/03-blocking-vs-nonblocking-timelines.svg)
 
 *Blocking: the thread issues the op and then sits idle until it completes before it can continue — the gap between issue and continue is pure wasted cycles. Non-blocking (§3.2): the thread issues the op, keeps doing other work, and only checks in with a poll once it actually needs the result.*
 
@@ -406,7 +410,7 @@ Speed Mismatch — H100 Numbers
 
 H100 has dedicated hardware units that run **completely independently** of each other:
 
-![H100 SM — three independent async units](images/ch03/04-sm-async-units.svg)
+[![H100 SM — three independent async units](images/ch03/04-sm-async-units.svg)](images/ch03/04-sm-async-units.svg)
 
 *The warp scheduler issues instructions in a few nanoseconds, Tensor Cores crunch on previously fetched tiles in a few nanoseconds, and the TMA Engine moves data from HBM3 to SMEM in the hundreds of nanoseconds it actually takes — all three run simultaneously, and mbarrier is the mechanism that tells each of them when the others' work is ready.*
 
@@ -481,7 +485,7 @@ The term "proxy" in CUDA's memory model refers to the **agent** performing a mem
 
 Different proxies have different views of memory. They access memory through different hardware paths, which means they can have inconsistent views of the same memory location at the same point in time. A write done by Proxy A may not be visible to Proxy B unless an explicit ordering instruction (a fence) is used to synchronize the two views.
 
-![The two proxies](images/ch03/05-two-proxies.svg)
+[![The two proxies](images/ch03/05-two-proxies.svg)](images/ch03/05-two-proxies.svg)
 
 *The Generic Proxy is the thread itself, issuing ordinary `ld`/`st` and routed through L1 → L2 → HBM3. The Async Proxy is dedicated hardware (the TMA engine, the tensor cores) running `cp.async.bulk` / `wgmma`, routed through L2 → HBM3 with L1 skipped entirely — and running completely independently of any thread. Because they don't share a coherency domain by default, a write from one is not guaranteed visible to the other without an explicit fence (§7).*
 
@@ -510,7 +514,7 @@ physical reason they are distinct: trace the two paths through the diagram below
 and notice that the generic proxy goes through L1 while the async proxy does
 not.
 
-![Hardware memory paths — why the proxies differ](images/ch03/06-proxy-hardware-paths.svg)
+[![Hardware memory paths — why the proxies differ](images/ch03/06-proxy-hardware-paths.svg)](images/ch03/06-proxy-hardware-paths.svg)
 
 *The Generic Proxy's path runs Thread → L1 → L2 → HBM3. The Async Proxy's path has the thread issue a command and return immediately, while the TMA Engine itself moves data HBM3 → SMEM completely independently — bypassing L1 entirely. When TMA writes to shared memory and the Generic Proxy later reads from shared memory through L1, those are genuinely different hardware paths that do not automatically stay in sync.*
 
@@ -551,7 +555,7 @@ A RAW hazard occurs when the Async Proxy reads from a location that the Generic 
 
 Intended sequence: (1) Generic Proxy writes value V to address X, (2) Async Proxy reads address X and should see V. Here is what can happen without a fence:
 
-![Read-after-write (RAW) hazard](images/ch03/07-raw-hazard-timeline.svg)
+[![Read-after-write (RAW) hazard](images/ch03/07-raw-hazard-timeline.svg)](images/ch03/07-raw-hazard-timeline.svg)
 
 *The Generic Proxy's `st.global [X], V` lands in L1 only — not yet propagated to L2/HBM. The Async Proxy's `cp.async.bulk [X]`, issued right after, reads X directly from L2/HBM and gets the OLD value: L1 has `[X] = V` but L2 still has `[X] = OLD`, and the TMA only ever sees L2. The fix is `fence.proxy.async` between the write and the TMA launch, draining the Generic Proxy's pending writes into L2/HBM first.*
 
@@ -583,7 +587,7 @@ A WAR hazard occurs when the Async Proxy writes to a location that the Generic P
 
 Intended sequence: (1) Generic Proxy reads value V from address X, possibly caching it, (2) Async Proxy writes new value V' to address X, (3) Generic Proxy should now see V' — but without synchronization, sees stale V instead. Here is what can happen:
 
-![Write-after-read (WAR) hazard](images/ch03/08-war-hazard-timeline.svg)
+[![Write-after-read (WAR) hazard](images/ch03/08-war-hazard-timeline.svg)](images/ch03/08-war-hazard-timeline.svg)
 
 *The Generic Proxy's `ld.global [X]` loads V into L1; a later `ld.global [X]` hits L1 and returns the same cached V, with no idea the Async Proxy has since updated X. In between, the Async Proxy's `cp.async.bulk [src]→[X]` writes V' to X via L2 without invalidating the Generic Proxy's L1 line — so the Generic Proxy keeps reading stale data (§13's two-barrier handshake is the fix).*
 
@@ -836,7 +840,7 @@ mbarrier vs __syncthreads — Key Differences
 
 The mbarrier object itself is a single 64-bit value in shared memory:
 
-![mbarrier object — 64 bits in shared memory](images/ch03/09-mbarrier-object-bitfield.svg)
+[![mbarrier object — 64 bits in shared memory](images/ch03/09-mbarrier-object-bitfield.svg)](images/ch03/09-mbarrier-object-bitfield.svg)
 
 *A 1-bit phase, a pending thread arrival count that decrements as threads arrive, and a pending transaction byte count that decrements as TMA data arrives. The barrier completes only once both counts reach zero, and on completion the phase bit flips (0→1 or 1→0) automatically.*
 
@@ -968,7 +972,7 @@ The mbarrier Pipeline — Complete Flow
                Repeat steps 2-6 for the next tile (barrier reused!).
 ```
 
-![The mbarrier pipeline — one tile, six steps](images/ch03/10-mbarrier-pipeline-timeline.svg)
+[![The mbarrier pipeline — one tile, six steps](images/ch03/10-mbarrier-pipeline-timeline.svg)](images/ch03/10-mbarrier-pipeline-timeline.svg)
 
 *Steps 1–3 set up the barrier and launch the TMA copy; the TMA then runs in the background while Step 4 computes on the PREVIOUS tile (K−1) — that overlap is the entire reason this pattern exists. Step 5 waits for the TMA to finish and the phase to flip, and only then does Step 6 compute on the tile that just arrived.*
 
@@ -1009,7 +1013,7 @@ mbarrier.arrive.expect_tx — Manual Worked Example
   ─── PTX Instruction ─────────────────────────────────────────────
 
   PTX:
-    mbarrier.arrive.expect_tx.release.shared::cta.b64 _, [mbar_addr], tx_count;
+    mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [mbar_addr], tx_count;
 
   The _ (underscore) placeholder:
     The instruction can optionally return a 64-bit "phase token"
@@ -1306,7 +1310,7 @@ mbarrier.try_wait.parity.acquire — Why This Is Important
   visible to this thread BEFORE any subsequent reads.
 
   PTX:
-    mbarrier.try_wait.parity.acquire.shared::cta.b64 done, [addr], parity;
+    mbarrier.try_wait.parity.acquire.cta.shared::cta.b64 done, [addr], parity;
 
   When does it matter:
   ─────────────────────────────────────────────────────────────────
@@ -1438,7 +1442,7 @@ WAR Hazard in Pipeline — Concrete Scenario
 Fix: TMA must wait until WGMMA signals it's done reading smem[0]. WGMMA signals completion using `mbarrier.arrive` (decrements a barrier), and TMA waits on that barrier before starting the overwrite.
 ```
 
-![WAR hazard inside a double-buffered pipeline](images/ch03/11-war-pipeline-conflict-timeline.svg)
+[![WAR hazard inside a double-buffered pipeline](images/ch03/11-war-pipeline-conflict-timeline.svg)](images/ch03/11-war-pipeline-conflict-timeline.svg)
 
 *WGMMA is still reading `smem[0]` when TMA starts overwriting it for the next tile — the overlap between the two bars is the conflict window. §13.2's two-barrier handshake is what closes that window.*
 
@@ -1451,7 +1455,7 @@ mbarrier.arrive — The Consumer's Signal to the Producer
 ══════════════════════════════════════════════════════════════════════
 
   PTX:
-    mbarrier.arrive.release.shared::cta.b64 _, [mbar_addr];
+    mbarrier.arrive.release.cta.shared::cta.b64 _, [mbar_addr];
     // Decrements pending thread arrival count by 1.
     // Does NOT block. Returns immediately.
     // .release ensures all prior reads are visible before the signal.
@@ -1482,7 +1486,7 @@ mbarrier.arrive — The Consumer's Signal to the Producer
 Barrier A (`data_bar`) answers "has the data arrived from TMA?" — the producer signals it via TMA hardware, and the consumer waits on it. Barrier B (`release_bar`) answers "are consumers done reading the buffer?" — consumer warps signal it via `mbarrier.arrive`, and the producer waits on it before its next overwrite.
 ```
 
-![Two-barrier WAR prevention — producer/consumer handshake](images/ch03/12-two-barrier-war-prevention.svg)
+[![Two-barrier WAR prevention — producer/consumer handshake](images/ch03/12-two-barrier-war-prevention.svg)](images/ch03/12-two-barrier-war-prevention.svg)
 
 *The consumer waits on `data_bar` before it can compute, and the producer waits on `release_bar` before it can overwrite the buffer for the next tile — each barrier gates the opposite side, which is exactly what closes the WAR hazard window from §13.1.*
 
@@ -2038,7 +2042,7 @@ __global__ void mbarrier_pipeline_kernel(
     // mbarrier object: MUST be 8-byte aligned (use __align__)
     // smem tile: the destination for our async copies
     __shared__ __align__(8) uint64_t mbar;
-    __shared__ float smem[TILE_SIZE];
+    __shared__ __align__(16) float smem[TILE_SIZE];
 
     int tid = threadIdx.x;
     int num_threads = blockDim.x;
@@ -2078,30 +2082,30 @@ __global__ void mbarrier_pipeline_kernel(
             //   2. Adds TILE_BYTES to expected transaction count: 0 → 1024
             // Also has .release semantics (ordering for prior stores).
             asm volatile(
-                "mbarrier.arrive.expect_tx.release.shared::cta.b64 _, [%0], %1;"
+                "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%0], %1;"
                 : : "r"(mbar_addr), "r"((uint32_t)TILE_BYTES)
             );
 
             // Now issue the actual async copy.
             // In production: replace with cp.async.bulk.tensor + TMA descriptor.
-            // Here: use cp.async (Ampere-style) which also supports mbarrier.
+            // Here: use Hopper raw bulk copies linked to transaction completion.
             const float* src = gmem_input + k * TILE_SIZE;
-            // cp.async loads from global to shared memory, 16 bytes at a time.
+            // The raw bulk load copies 16-byte aligned pieces into shared memory.
             // We link it to the mbarrier so hardware decrements tx count.
             // (Using a loop of cp.async to simulate bulk behavior.)
             // NOTE: In sm_90a, cp.async.bulk.tensor is the preferred way.
-            // This loop uses cp.async for pedagogical clarity:
+            // This loop uses cp.async.bulk for pedagogical clarity:
             for (int i = 0; i < TILE_BYTES; i += 16) {
                 uint32_t smem_off = __cvta_generic_to_shared(smem) + i;
                 uint64_t gmem_addr = reinterpret_cast<uint64_t>(
                     reinterpret_cast<const char*>(src) + i);
                 asm volatile(
-                    "cp.async.cg.shared.global.mbarrier::complete_tx::bytes"
+                    "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes"
                     " [%0], [%1], 16, [%2];"
                     : : "r"(smem_off), "l"(gmem_addr), "r"(mbar_addr)
                 );
             }
-            asm volatile("cp.async.commit_group;");
+            // Bulk loads complete through mbarrier, without a commit_group.
         }
 
         // STEP 4: All threads do independent work while copy runs.
@@ -2123,7 +2127,7 @@ __global__ void mbarrier_pipeline_kernel(
                     "  .reg .pred p;\n\t"
                     // try_wait.parity.acquire: non-blocking check WITH acquire fence.
                     // Returns p=true when phase has flipped (copy complete).
-                    "  mbarrier.try_wait.parity.acquire.shared::cta.b64"
+                    "  mbarrier.try_wait.parity.acquire.cta.shared::cta.b64"
                     "    p, [%1], %2;\n\t"
                     "  selp.u32 %0, 1, 0, p;\n\t"
                     "}\n\t"
@@ -2215,14 +2219,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex01_mbarrier_basic.cu -->
+**Captured output — ex01_mbarrier_basic.cu**
 
+> **Executed:** 2026-11-17T21:28:58.180168+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu) as `ex01_mbarrier_basic.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_mbarrier_basic.cu -o ex01_mbarrier_basic
+./ex01_mbarrier_basic
 ```
+
+[Compiler log](validation/2026-11-17/03-asynchronicity-mbarrier/ex01_mbarrier_basic/compile.log) · [Execution log](validation/2026-11-17/03-asynchronicity-mbarrier/ex01_mbarrier_basic/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex01: mbarrier Pipeline — Init/Arrive/Wait/Reuse        ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 Config: K=4 tiles, 256 elements/tile, 64 threads/block
 
 Element checks: 1024 / 1024 passed
@@ -2231,6 +2249,9 @@ Element checks: 1024 / 1024 passed
 ║  ✓ ALL PASS — mbarrier pipeline working correctly!     ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex01_mbarrier_basic.cu -->
+
+
 
 `GPU:` and the SM pair come from `cudaGetDeviceProperties` and vary with the hardware the binary runs on — any Hopper or newer card prints `SM 9.0` or higher; the rest of the output is deterministic. The kernel runs `K=4` iterations of the init → `arrive.expect_tx` → poll-`try_wait.parity` → verify → flip-phase pipeline over one `BLOCK_SIZE=64` block, so every one of the `K × TILE_SIZE = 4 × 256 = 1024` elements loaded into `smem` is checked against `(float)(k * TILE_SIZE + i)`, and all 1024 checks pass since the host seeds `h_input[i] = (float)i` to match exactly. One cosmetic note: the closing box's right edge lands two columns short of the border above it. That's not a typo in this guide — it's the real behavior of `printf("║  %-56s  ║\n", ...)` on the actual program: the field width `56` is a *byte* count, and the string being padded contains two multi-byte UTF-8 glyphs (`✓` and the em dash `—`, 3 bytes each instead of 1), so the padding comes up short of the visual width the border uses. The `✗ FAILURES DETECTED` variant (only one multi-byte glyph) happens to land flush by comparison.
 
@@ -2311,7 +2332,7 @@ __global__ void war_prevention_kernel(
     //               release_bar (compute→copy handoff, WAR prevention)
     __shared__ __align__(8) uint64_t data_bar;
     __shared__ __align__(8) uint64_t release_bar;
-    __shared__ float smem[TILE];    // single buffer (simplified)
+    __shared__ __align__(16) float smem[TILE];    // single buffer (simplified)
 
     int tid = threadIdx.x;
     int nthreads = blockDim.x;
@@ -2340,7 +2361,7 @@ __global__ void war_prevention_kernel(
             // Prime release_bar: all threads arrive so it fires immediately
             // (no previous computation, so the buffer is "free" to write)
             asm volatile(
-                "mbarrier.arrive.release.shared::cta.b64 _, [%0];"
+                "mbarrier.arrive.release.cta.shared::cta.b64 _, [%0];"
                 : : "r"(release_addr)
             );
         }
@@ -2353,7 +2374,7 @@ __global__ void war_prevention_kernel(
                 asm volatile(
                     "{\n\t"
                     "  .reg .pred p;\n\t"
-                    "  mbarrier.try_wait.parity.acquire.shared::cta.b64"
+                    "  mbarrier.try_wait.parity.acquire.cta.shared::cta.b64"
                     "    p, [%1], %2;\n\t"
                     "  selp.u32 %0, 1, 0, p;\n\t"
                     "}\n\t"
@@ -2364,7 +2385,7 @@ __global__ void war_prevention_kernel(
 
             // Now safe to load next tile into SMEM
             asm volatile(
-                "mbarrier.arrive.expect_tx.release.shared::cta.b64 _, [%0], %1;"
+                "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%0], %1;"
                 : : "r"(data_addr), "r"((uint32_t)TBYTES)
             );
 
@@ -2374,12 +2395,12 @@ __global__ void war_prevention_kernel(
                 uint64_t g = reinterpret_cast<uint64_t>(
                     reinterpret_cast<const char*>(tile_src) + i);
                 asm volatile(
-                    "cp.async.cg.shared.global.mbarrier::complete_tx::bytes"
+                    "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes"
                     " [%0], [%1], 16, [%2];"
                     : : "r"(s), "l"(g), "r"(data_addr)
                 );
             }
-            asm volatile("cp.async.commit_group;");
+            // Bulk loads complete through mbarrier, without a commit_group.
         }
 
         // ── CONSUMERS: wait for data, compute, then signal release ─────
@@ -2390,7 +2411,7 @@ __global__ void war_prevention_kernel(
                 asm volatile(
                     "{\n\t"
                     "  .reg .pred p;\n\t"
-                    "  mbarrier.try_wait.parity.acquire.shared::cta.b64"
+                    "  mbarrier.try_wait.parity.acquire.cta.shared::cta.b64"
                     "    p, [%1], %2;\n\t"
                     "  selp.u32 %0, 1, 0, p;\n\t"
                     "}\n\t"
@@ -2409,7 +2430,7 @@ __global__ void war_prevention_kernel(
         // All threads signal release_bar: "done reading this tile"
         // .release ensures the writes to dst are visible before the signal.
         asm volatile(
-            "mbarrier.arrive.release.shared::cta.b64 _, [%0];"
+            "mbarrier.arrive.release.cta.shared::cta.b64 _, [%0];"
             : : "r"(release_addr)
         );
 
@@ -2472,14 +2493,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex02_war_prevention.cu -->
+**Captured output — ex02_war_prevention.cu**
 
+> **Executed:** 2026-11-17T21:29:01.005659+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu) as `ex02_war_prevention.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_war_prevention.cu -o ex02_war_prevention
+./ex02_war_prevention
 ```
+
+[Compiler log](validation/2026-11-17/03-asynchronicity-mbarrier/ex02_war_prevention/compile.log) · [Execution log](validation/2026-11-17/03-asynchronicity-mbarrier/ex02_war_prevention/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex02: WAR Prevention — Two-Barrier Pipeline             ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 Config: 8 tiles × 128 elements = 1024 total
 Element errors: 0 / 1024
 Sample: in=7 → out=14 (expected 14)
@@ -2488,6 +2523,9 @@ Sample: in=7 → out=14 (expected 14)
 ║  ✓ ALL PASS — WAR hazard correctly prevented!          ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex02_war_prevention.cu -->
+
+
 
 `GPU:` again varies with the card the binary runs on; everything else is deterministic. The host seeds `h_in[i] = (float)i` and `h_exp[i] = i * 2.0f`, and the kernel's compute step writes `dst[k*TILE+i] = smem[i] * 2.0f` after `data_bar` confirms the tile has arrived — so all `K_TILES × TILE = 8 × 128 = 1024` elements match and `errors` stays `0`. The `k == 0` priming `arrive.release` on `release_bar` is what lets the very first tile's producer proceed immediately, since otherwise it would spin forever waiting on consumer signals that haven't happened yet; from `k == 1` onward the producer genuinely blocks on `release_bar` until the consumers finish reading the buffer it's about to overwrite — the WAR hazard the two-barrier design exists to prevent. The sample index chosen for the `in=/out=` line is `i = 7`: `in=7 → out=14`. As in the previous example, the closing box's right edge runs two columns short of the border above it, for the same reason: the PASS string carries the same two 3-byte UTF-8 glyphs (`✓`, `—`) against the byte-counted `%-56s` field, so the padding comes up two bytes short of the visual width the border uses — regardless of how much slack is left in the 56-byte field itself.
 
@@ -2509,7 +2547,7 @@ Instruction                                          Purpose
 ──────────────────────────────────────────────────────────────────────────
 mbarrier.init.shared::cta.b64 [addr], count         Create barrier, set thread count
 mbarrier.arrive.expect_tx.release...b64 _, [a], tx  Signal arrival + set tx bytes
-mbarrier.arrive.release.shared::cta.b64 _, [addr]   Signal arrival (no tx bytes)
+mbarrier.arrive.release.cta.shared::cta.b64 _, [addr]   Signal arrival (no tx bytes)
 mbarrier.try_wait.parity.acquire...b64 p,[a], par   Non-blocking poll (may suspend)
 mbarrier.test_wait.parity.shared::cta.b64 p,[a],par Non-blocking poll (never suspends)
 mbarrier.inval.shared::cta.b64 [addr]               Invalidate/destroy barrier

@@ -1,6 +1,11 @@
 # Multi-GPU Systems, NCCL, and Distributed Training
 ## Lesson 5 Companion Guide — Hardware Topology to Collective Primitives
 
+> **Validation — November 17, 2026.** All 3 complete CUDA programs compiled. Multi-GPU workloads were not run: the tests require 2 or 8 GPUs and this host has 1.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 ---
 
 ## ★ BEFORE YOU START — Prerequisites & Setup
@@ -266,7 +271,7 @@ NVSwitch Topology — 8 GPUs via 4 NVSwitch Chips
     18 / 4 ≈ 4-5 links per switch per GPU  (some asymmetric)
 ```
 
-![NVSwitch fabric: all 8 GPUs equidistant via 4 NVSwitches](images/ch11/02-nvswitch-fabric.svg)
+[![NVSwitch fabric: all 8 GPUs equidistant via 4 NVSwitches](images/ch11/02-nvswitch-fabric.svg)](images/ch11/02-nvswitch-fabric.svg)
 
 ---
 
@@ -337,7 +342,7 @@ DGX H100 Single Node — Complete Hardware Layout
     This is how inter-node AllReduce achieves near-theoretical speed.
 ```
 
-![DGX H100 node bandwidth hierarchy, from on-package HBM3 down to rack-to-rack InfiniBand](images/ch11/01-bandwidth-hierarchy.svg)
+[![DGX H100 node bandwidth hierarchy, from on-package HBM3 down to rack-to-rack InfiniBand](images/ch11/01-bandwidth-hierarchy.svg)](images/ch11/01-bandwidth-hierarchy.svg)
 
 ---
 
@@ -542,7 +547,7 @@ Rail Architecture — 8 Isolated Communication Planes
     GPU sees: enqueue gradient, receive result. No N-way coordination.
 ```
 
-![Scalable Unit rail architecture: 8 isolated rails per node feeding leaf switches that perform SHARP in-network reduction](images/ch11/03-rail-sharp-architecture.svg)
+[![Scalable Unit rail architecture: 8 isolated rails per node feeding leaf switches that perform SHARP in-network reduction](images/ch11/03-rail-sharp-architecture.svg)](images/ch11/03-rail-sharp-architecture.svg)
 
 ---
 
@@ -985,15 +990,35 @@ int main() {
 }
 ```
 
-**Sample Output (this environment):**
+<!-- validation:start:ex11_nvlink_bandwidth.cu -->
+**Captured output — ex11_nvlink_bandwidth.cu**
 
+> **Executed:** 2026-11-17T21:29:53.498073+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu) as `ex11_nvlink_bandwidth.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex11_nvlink_bandwidth.cu -o ex11_nvlink_bandwidth
+./ex11_nvlink_bandwidth
 ```
+
+[Compiler log](validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log) · [Execution log](validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log)
+
+```text
 ═══════════════════════════════════════════════════════
   ex11_nvlink_bandwidth — GPU-to-GPU Transfer Benchmark
 ═══════════════════════════════════════════════════════
 
-CUDA ERROR at ex11_nvlink_bandwidth.cu:73 — no CUDA-capable device is detected
+GPUs detected: 1
+  GPU 0: NVIDIA H100 PCIe  (sm_90, 81079 MB HBM, 114 SMs)
+
+Need at least 2 GPUs for P2P benchmark. Exiting.
 ```
+<!-- validation:end:ex11_nvlink_bandwidth.cu -->
+
+
 
 (No physical GPU was available to capture a real bandwidth transcript — this sandbox has no `nvidia-smi`/`/dev/nvidia*` device at all, so `cudaGetDeviceCount()` itself fails. Unlike the two examples later in this chapter, this failure is handled correctly here: the call is wrapped in `CHECK_CUDA(...)`, so the error is caught and the program exits cleanly with a diagnostic message rather than reading an uninitialized `num_gpus`. This is the genuine, compiled-and-run output of this exact file with real `nvcc` in a zero-GPU environment — not estimated. The bandwidth figures above in "Expected results on H100 DGX" remain labeled as expected because they are physical measurements — GB/s achieved over real NVLink hardware — which, unlike Chapter 10's arithmetic kernels, cannot be derived by CPU-side reproduction of the kernel's logic; there is no substitute for running on the real fabric.)
 
@@ -1385,7 +1410,7 @@ The Six Collective Primitives — Data Flow Diagrams
   prefer NVSHMEM or DeepEP for device-initiated async transfers.
 ```
 
-![The six NCCL collectives' data-flow patterns: Broadcast, Reduce, AllReduce, AllGather, ReduceScatter, All-to-All](images/ch11/04-nccl-big-six.svg)
+[![The six NCCL collectives' data-flow patterns: Broadcast, Reduce, AllReduce, AllGather, ReduceScatter, All-to-All](images/ch11/04-nccl-big-six.svg)](images/ch11/04-nccl-big-six.svg)
 
 ### 13.2 NCCL API Reference — All Six Primitives
 
@@ -1760,15 +1785,32 @@ int main() {
 }
 ```
 
-**Sample Output (this environment):**
+<!-- validation:start:ex12_nccl_allreduce.cu -->
+**Captured output — ex12_nccl_allreduce.cu**
 
+> **Executed:** 2026-11-17T21:29:55.906085+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `1`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu) as `ex12_nccl_allreduce.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex12_nccl_allreduce.cu -o ex12_nccl_allreduce -lnccl
+./ex12_nccl_allreduce
 ```
+
+[Compiler log](validation/2026-11-17/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log) · [Execution log](validation/2026-11-17/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log)
+
+```text
 ═══════════════════════════════════════════════════════
   ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo
 ═══════════════════════════════════════════════════════
 
-Need >= 2 GPUs for NCCL test. Found 0. Exiting.
+Need >= 2 GPUs for NCCL test. Found 1. Exiting.
 ```
+<!-- validation:end:ex12_nccl_allreduce.cu -->
+
+
 
 (Compiled and run with real `nvcc` against a real, freshly-installed `libnccl2`/`libnccl-dev` in this sandbox — there is no physical GPU here, so the NCCL AllReduce itself never executes, and the real per-rank sum/timing numbers an actual run would print cannot be captured this way: unlike Chapter 10's single-kernel arithmetic, a NCCL collective across real devices is not something CPU-side reproduction of the kernel's logic can stand in for. What this run does confirm is the fix below: `cudaGetDeviceCount(&n_gpus)` is called without checking its return code, and in this environment the call genuinely *fails* outright — it does not simply set `n_gpus = 0` and return success. With `n_gpus` left uninitialized, 5 repeated runs produced `Found 0` four times and a silent indefinite hang once, when the uninitialized stack value happened to read back as something ≥ 2 and the program proceeded into a real `pthread_barrier_wait` that nothing could ever satisfy. Initializing `int n_gpus = 0;` — a one-line fix — made all 10 follow-up runs consistently and correctly print `Found 0` with no hangs. The source below reflects that fix.)
 
@@ -2054,7 +2096,7 @@ Pipeline Parallelism — Layer Splitting and Micro-Batches
   Rule: use M >> N to minimize pipeline bubble.
 ```
 
-![GPipe pipeline schedule timeline for N=4 stages, comparing M=4 and M=8 microbatches, showing the bubble shrink predicted by the corrected formula](images/ch11/06-pipeline-bubble-timeline.svg)
+[![GPipe pipeline schedule timeline for N=4 stages, comparing M=4 and M=8 microbatches, showing the bubble shrink predicted by the corrected formula](images/ch11/06-pipeline-bubble-timeline.svg)](images/ch11/06-pipeline-bubble-timeline.svg)
 
 ```
   ─── 1F1B Schedule (One-Forward One-Backward) ────────────────────
@@ -2192,7 +2234,7 @@ Mixture of Experts — Key Concepts
 
 ### 18.1 Hybrid Parallelism Selection
 
-![Four parallelism strategies compared: what each splits and what it synchronizes](images/ch11/05-parallelism-comparison.svg)
+[![Four parallelism strategies compared: what each splits and what it synchronizes](images/ch11/05-parallelism-comparison.svg)](images/ch11/05-parallelism-comparison.svg)
 
 ```
 Choosing Your Parallelism Strategy
@@ -3214,17 +3256,34 @@ int main() {
 }
 ```
 
-**Sample Output (this environment):**
+<!-- validation:start:ex13_hybrid_parallel_training.cu -->
+**Captured output — ex13_hybrid_parallel_training.cu**
 
+> **Executed:** 2026-11-17T21:29:59.278741+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `1`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu) as `ex13_hybrid_parallel_training.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex13_hybrid_parallel_training.cu -o ex13_hybrid_parallel_training -lnccl -lcublas -Xcompiler -pthread
+./ex13_hybrid_parallel_training
 ```
+
+[Compiler log](validation/2026-11-17/11-multi-gpu-nccl/ex13_hybrid_parallel_training/compile.log) · [Execution log](validation/2026-11-17/11-multi-gpu-nccl/ex13_hybrid_parallel_training/run.log)
+
+```text
 ═══════════════════════════════════════════════════════════════════
   ex13_hybrid_parallel_training
   TP=2 × PP=2 × DP=2 = 8 GPUs
   Hidden=64  Batch=16  Steps=8  LR=0.010
 ═══════════════════════════════════════════════════════════════════
 
-ERROR: Need 8 GPUs, found 0. Exiting.
+ERROR: Need 8 GPUs, found 1. Exiting.
 ```
+<!-- validation:end:ex13_hybrid_parallel_training.cu -->
+
+
 
 (This is the genuine, compiled-and-run output of this file with real `nvcc`/NCCL in a zero-GPU sandbox, after fixing the same uninitialized-`n_gpus` bug described under ex12 above. A real 8-GPU run's per-step loss values, DP-divergence numbers, and TP-reconstruction diff cannot be captured this way -- an 8-way NCCL-synchronized training loop is not arithmetic a single CPU thread can stand in for, unlike Chapter 10's single-kernel examples.
 

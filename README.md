@@ -22,8 +22,11 @@ hooks/fix_anchors.py             build-time link repair (see below)
 mkdocs.yml                       site config and nav
 ```
 
-The chapter files are the original markdown, copied verbatim — nothing in them
-was edited.
+The chapters include an independent H100 PCIe validation pass executed on November 17, 2026. Dated compiler commands, tested sources, execution logs, system information, and coverage limits are published beside the examples. See `docs/validation/2026-11-17/system-information.txt`.
+
+All 27 complete CUDA programs compile with CUDA 12.8.93; 24 single-GPU workloads pass. The three Chapter 11 multi-GPU workloads still require 2 or 8 GPUs. Chapter 12’s teaching skeleton is distinguished from its executable numerical reference. Chapter 13 includes actual Nsight Compute output. Smaller fragments and illustrations are inventoried rather than claimed as compiled translation units.
+
+`python3 tools/validate_examples.py` extracts complete programs and saves dated evidence; optional arguments select chapter/example names. `python3 tools/validate_attention.py` checks the online-softmax recurrence on CUDA. `tools/publish_validation.py` checks source hashes before publishing captured results. `tools/render_diagrams.py` renders all SVGs for visual inspection (requires CairoSVG and Pillow).
 
 ## Local preview
 

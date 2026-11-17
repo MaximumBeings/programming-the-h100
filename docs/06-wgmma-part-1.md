@@ -1,9 +1,13 @@
 # WGMMA — Warp Group Matrix Multiply-Accumulate
 ## Lesson 6 Companion Guide — Programming the H100
 
-> **Verified on:** CUDA 12.x + Hopper GPU (sm_90a).
+> **Validation — November 17, 2026.** 1 complete CUDA program compiled and executed successfully.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
-> **Run with:** `./<out>` on any H100 or B200 instance.
+> **Run with:** `./<out>` on a Hopper H100/H200 instance.
 
 **What this covers:** Everything from Lesson 6 — the four key innovations in Hopper's tensor core model, the paradigm shift from warp to warp group as the unit of execution, how wgmma.mma_async works and why it is non-blocking, the WGMMA pipeline (fence → load → compute → collect), the full instruction syntax and all qualifier meanings (.sync, .aligned, scale_d, imm-scale, imm-trans), operand location rules (A in registers vs SMEM, B always in SMEM, D always in registers), ldmatrix for loading A tiles (address phase, register phase, swizzle addressing, x1/x2/x4 vectorization), the 64-bit WGMMA descriptor (base address, LBO, SBO, matrix base offset, swizzle mode bits), all supported tile shapes for BF16/FP16/TF32/FP8/INT8, register layout and output accumulator structure, and stmatrix for writing results back. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
@@ -31,48 +35,33 @@ to.
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
 Unlike the earlier chapters, there is no fallback hardware here. `wgmma` exists
-only on Hopper and later — an A100 will not compile a single example in this
+on Hopper (`sm_90a`) — an A100 will not compile a single example in this
 chapter. If you already have an H100 with a working `nvcc`, skip to the Table of
 Contents.
 
 ### What Hardware Can You Use?
 
-The short version: `sm_90a` or `sm_100a`, nothing older. Note the trailing `a`
-— it is not optional. Compiling for plain `sm_90` silently drops the wgmma
-instructions.
+The WGMMA examples target **Hopper `sm_90a`**. Compile with the architecture-specific `a` target. Plain `sm_90` does not enable WGMMA; assembly fails rather than silently removing the instruction.
 
 ```
-Hardware Compatibility Matrix
-══════════════════════════════════════════════════════════════════════
-
-  Architecture   Chip     SM Target   Example GPUs           wgmma support?
-  ──────────────────────────────────────────────────────────────────────────
-  Ampere         GA100    sm_80       A100 (AWS p4d, Lambda)  NO (mma.sync only)
-  Hopper         GH100    sm_90a      H100 (AWS p5, Lambda)   YES — full WGMMA ★
-  Blackwell      GB100    sm_100a     B100/B200               YES + tcgen05 extensions
-
-  KEY:
-    wgmma.mma_async → sm_90a or sm_100a ONLY
-    mma.sync (Ampere style, single-warp) → sm_80 and later
-    All conceptual sections (§1-4) apply to all architectures.
-    All code sections (§5+) require sm_90a or sm_100a.
-
-  AMPERE vs HOPPER DIFFERENCE:
-    Ampere mma.sync: one warp (32 threads), synchronous, data must be in registers.
-    Hopper wgmma.mma_async: four warps (128 threads), asynchronous, A/B can be
-    read directly from SMEM without first loading into registers.
+Architecture   Example GPUs   WGMMA examples in this chapter
+Ampere         A100           Unsupported; use a separate mma.sync implementation
+Hopper         H100/H200      sm_90a; H100 PCIe tested on November 17, 2026
+Blackwell      B100/B200      Unsupported; requires a tcgen05 implementation
 ```
+
+`stmatrix.b16` and other individual instructions have their own target rules. Their availability on a later GPU does not make a whole WGMMA kernel portable.
 
 ### Cloud GPU Rental — Lambda Labs
 
-Usually the cheapest hourly H100.
+Check current provider availability and pricing.
 
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
 
   1. https://lambdalabs.com/ → sign up → Launch Instance
-  2. Choose "1x H100 PCIe" (cheapest for learning)
+  2. Choose "1x H100 PCIe" (sufficient for the single-GPU examples)
   3. SSH: ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
   4. Verify: nvcc --version && nvidia-smi
   5. Compile: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out && ./out
@@ -95,32 +84,8 @@ AWS p5 Setup (H100)
 
 ### Hopper vs Blackwell — What Changes
 
-Worth reading once if you are on a B100 or B200. Blackwell keeps `wgmma`
-working but adds a successor instruction family (`tcgen05`) with a different
-layout, so code written here runs — it simply is not the fastest thing available
-on that chip.
+Blackwell does **not** execute Hopper WGMMA kernels unchanged. It uses the `tcgen05` Tensor Core programming model, including tensor memory, with different instructions and synchronization. Changing `-arch=sm_90a` to `-arch=sm_100a` is insufficient. NVIDIA's [Blackwell CUTLASS example](https://github.com/NVIDIA/cutlass/blob/main/examples/70_blackwell_gemm/70_blackwell_fp16_gemm.cu) explicitly documents this incompatibility. Architecture-specific Hopper PTX is also not forward compatible with Blackwell; see the [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html).
 
-```
-Hopper (sm_90a) vs Blackwell (sm_100a) — WGMMA Differences
-══════════════════════════════════════════════════════════════════════
-
-  WHAT STAYS IDENTICAL on Blackwell:
-    ├── wgmma.mma_async instruction syntax and all qualifiers
-    ├── All tile shapes (m64nXkY) for BF16, FP16, TF32, FP8, INT8
-    ├── The 64-bit WGMMA descriptor format (LBO, SBO, swizzle bits)
-    ├── ldmatrix and stmatrix instructions and their address calculation
-    ├── wgmma.fence.sync.aligned semantics
-    └── All code in this guide compiles and runs unchanged on sm_100a
-
-  WHAT IS NEW IN BLACKWELL:
-    ├── tcgen05.mma (5th-gen tensor cores, different instruction format)
-    ├── ldmatrix gains new .b8 and .b4 variants for sub-byte types
-    ├── FP4 (MX format) support in new tcgen05 instructions
-    └── tmem (tensor memory) as a new accumulator location
-
-  PORTING this guide's code: change -arch=sm_90a to -arch=sm_100a. Done.
-  The Blackwell tcgen05.mma is a separate topic beyond this guide's scope.
-```
 
 ---
 
@@ -162,7 +127,7 @@ consequence of one of them, so it is worth reading before the details start.
 
 Ampere's tensor cores were good. Hopper's are in a different class — not just because of raw FLOP counts, but because of fundamental architectural changes that allow the compute units to stay busy nearly 100% of the time. There are four specific innovations, and each one removes a bottleneck that existed in Ampere.
 
-![The four Hopper MMA innovations, Ampere vs Hopper per innovation](images/ch06/01-four-innovations-ampere-vs-hopper.svg)
+[![The four Hopper MMA innovations, Ampere vs Hopper per innovation](images/ch06/01-four-innovations-ampere-vs-hopper.svg)](images/ch06/01-four-innovations-ampere-vs-hopper.svg)
 
 *The four Hopper MMA innovations — what each one fixes relative to Ampere's mma.sync.*
 
@@ -191,7 +156,7 @@ A **warp group** is a set of 4 consecutive warps within a thread block that are 
 
 This is a significant paradigm shift. For a decade, the warp (32 threads) was the unit of SIMT execution on NVIDIA GPUs. Every instruction — loads, math, branches — was issued per-warp. Hopper adds warp group as a higher-level concept specifically for tensor core operations.
 
-![Warp group structure: four warps fusing into one wgmma issuer](images/ch06/02-warp-group-structure.svg)
+[![Warp group structure: four warps fusing into one wgmma issuer](images/ch06/02-warp-group-structure.svg)](images/ch06/02-warp-group-structure.svg)
 
 *A warp group is 4 consecutive warps (128 threads) fused by the hardware into a single wgmma issuer; each warp group in a block operates independently on its own tile.*
 
@@ -213,51 +178,9 @@ Warp Group — Structure and Execution
 
 ### 2.2 How the Warp Scheduler Fuses Warps
 
-What the hardware is actually doing underneath the abstraction — and why the
-four warps must be consecutive and must arrive together.
+A warpgroup is the logical collective of four consecutive warps required by WGMMA. All participating threads must execute the same aligned instruction, with consistent descriptors. The PTX contract does not describe a physical "fusion" of four warp schedulers or guarantee that they arrive in one cycle. Divergent participation is undefined behavior, not a supported way to wait for lagging warps.
 
-```
-Warp Fusion — What Happens at the Hardware Level
-══════════════════════════════════════════════════════════════════════
-
-  When a wgmma.mma_async instruction is issued:
-
-  Step 1: All 4 warps in the warp group reach the wgmma instruction.
-          The warp scheduler detects convergence at the same Program Counter.
-
-  Step 2: Scheduler checks: "Are all 4 warps of this warp group at wgmma?"
-          YES → fuse them into a single dispatch command.
-          NO  → wait for the lagging warps (they may be on slightly different paths).
-
-  Step 3: Scheduler issues ONE combined command to the Tensor Core unit.
-          The command encodes: which tile of A, which tile of B, which accumulators.
-
-  Step 4: Tensor Core unit accepts the command into its instruction queue.
-          The warp scheduler is IMMEDIATELY FREE. Threads move to next instruction.
-          The tensor core processes the command asynchronously.
-
-  Step 5: Tensor cores perform the matrix multiply in the background.
-          Results are written back to the threads' register files when done.
-          No thread is blocked during this computation.
-
-  ─── Why 4 Warps for WGMMA? ──────────────────────────────────────
-
-  The M dimension of wgmma is FIXED at 64. Here is why:
-
-  Each thread in a warp group holds 4 output registers for its portion of D.
-  Total registers in warp group: 128 threads × 4 registers = 512 registers.
-
-  For the smallest tile m64n8:
-    64 × 8 = 512 output elements.
-    512 elements ÷ 128 threads = 4 elements per thread = 4 registers.
-    PERFECT FIT — exactly saturates the 4-register-per-thread design.
-
-  If M were configurable (e.g., m32), you'd need a crossbar switch
-  to dynamically reroute data from registers to the tensor core input lanes.
-  That crossbar is expensive in chip area and latency.
-  By fixing M=64, the mapping from registers to tensor core inputs is
-  hardwired — zero decision logic at runtime.
-```
+`M=64` is an ISA shape constraint. For the smallest FP32 accumulator shape, `m64n8`, there are 512 outputs distributed over 128 threads, or four FP32 registers per thread. Larger N uses more registers; four registers is not a universal hardware limit. This arithmetic explains the layout, not NVIDIA's undisclosed circuit-design decisions.
 
 ---
 
@@ -308,7 +231,7 @@ The WGMMA Pipeline — Four Stages
         or directly use them for further computation (e.g., softmax in attention).
 ```
 
-![Double-buffered K-loop timeline: TMA load overlapped with wgmma math](images/ch06/03-wgmma-pipeline-timeline.svg)
+[![Double-buffered K-loop timeline: TMA load overlapped with wgmma math](images/ch06/03-wgmma-pipeline-timeline.svg)](images/ch06/03-wgmma-pipeline-timeline.svg)
 
 *wgmma on tile K overlaps the TMA load of tile K+1 — possible only because wgmma.mma_async is non-blocking (async).*
 
@@ -331,68 +254,18 @@ copies. Chapter 7 takes them much further.
 
 ### 4.1 What wgmma.fence Does — and What It Does NOT Do
 
-`wgmma.fence.sync.aligned` is frequently misunderstood. It is specifically a **register-ordering barrier** for wgmma. It ensures that prior warp group register accesses are visible in the right order before a later `wgmma.mma_async` reads or writes those same registers.
+`wgmma.fence.sync.aligned` orders ordinary register accesses before subsequent WGMMA accesses to the same accumulator or register-A fragments. Issue it before the first WGMMA and after ordinary code modifies a register that a later WGMMA will access. Same-shape WGMMA operations accumulating into the same registers already have an ordering guarantee; they do not need a fence between every multiply.
 
-It does NOT order shared memory writes. If you need to ensure that SMEM writes are visible before wgmma reads them, you need `fence.proxy.async` (Lesson 3).
+A fence does **not** wait for a pending matrix multiply to finish. Commit the relevant group and wait before ordinary code reads or modifies its registers. Generic shared-memory writes need `fence.proxy.async.shared::cta` before the async proxy consumes them, together with synchronization of the threads that wrote the data. TMA completion uses the appropriate mbarrier protocol. See the [PTX WGMMA register-ordering rules](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions-wgmma-fence).
 
-```
-wgmma.fence — What It Orders and What It Doesn't
-══════════════════════════════════════════════════════════════════════
-
-  PTX:  wgmma.fence.sync.aligned;
-
-  ORDERS (what it IS for):
-  ─────────────────────────────────────────────────────────────────
-  ├── Prior register WRITES by the warp group (e.g., previous wgmma result)
-  │   → visible to the NEXT wgmma.mma_async as accumulator inputs
-  ├── Prior register READS by threads (e.g., ldmatrix results in registers)
-  │   → visible to the NEXT wgmma.mma_async as A-fragment inputs
-  └── Ensures the hardware doesn't speculatively start reading registers
-      before the prior instruction that writes them has finished.
-
-  DOES NOT ORDER (what it is NOT for):
-  ─────────────────────────────────────────────────────────────────
-  ├── SMEM writes → wgmma SMEM reads: use fence.proxy.async for this
-  ├── TMA writes → wgmma SMEM reads: the mbarrier.try_wait.acquire handles this
-  └── Global memory operations: not related to wgmma register ordering
-
-  ─── When You MUST Call wgmma.fence ─────────────────────────────
-
-  Case 1: Before the FIRST wgmma.mma_async in a warp group.
-    Always add wgmma.fence before the first wgmma call.
-    Reason: Establishes the initial register visibility boundary.
-
-  Case 2: After a prior wgmma.mma_async, before a new one that reuses registers.
-    If wgmma A writes to accumulator registers d[],
-    and the next wgmma B adds to the same d[] (scale_d=1),
-    you must fence between them to ensure A's result is committed.
-
-  Case 3: After ldmatrix loads A fragments into registers.
-    If A tiles are in registers (not SMEM), fence ensures they are
-    visible to the subsequent wgmma that reads them as operand A.
-
-  ─── Manual Worked Example ───────────────────────────────────────
-
-  // K-loop body (simplified):
-  for (int k = 0; k < K_TILES; k++) {
-      // Wait for tile data in SMEM (mbarrier, covers SMEM ordering)
-      wait_for_smem(mbar, phase);
-
-      // Load A into registers (optional, if reusing A)
-      ldmatrix_load(a_regs, smem_A, ...);
-
-      // FENCE: make a_regs visible to wgmma AND
-      //        make prior wgmma's accumulator writes visible
-      wgmma.fence.sync.aligned;          // ← REQUIRED HERE
-
-      // Issue async math: reads a_regs (or smem_A), smem_B
-      wgmma.mma_async.sync.aligned.m64n128k16.f32.bf16.bf16
-          {d[0],...,d[63]}, a_desc_or_regs, b_desc, 1, ...;
-
-      // FENCE again before reading accumulated d[] in epilogue
-      wgmma.fence.sync.aligned;          // ← REQUIRED after last wgmma too
-  }
-  // Now safe to read d[] registers
+```text
+Ordinary code initializes accumulator registers
+wgmma.fence.sync.aligned;
+wgmma.mma_async ...;       // first multiply
+wgmma.mma_async ...;       // same-shape accumulation may follow directly
+wgmma.commit_group.sync.aligned;
+wgmma.wait_group.sync.aligned 0;
+Ordinary code may now read the completed accumulator registers
 ```
 
 ### 4.2 wgmma.commit_group and wgmma.wait_group
@@ -500,45 +373,7 @@ flag that decides whether this instruction accumulates onto `D` or overwrites it
 
 ### 6.1 .sync and .aligned — What They Enforce
 
-```
-.sync and .aligned — The Convergence Qualifiers
-══════════════════════════════════════════════════════════════════════
-
-  Full instruction: wgmma.mma_async.sync.aligned.shape.dtype...
-
-  .sync:
-  ─────────────────────────────────────────────────────────────────
-  This is an SM-wide barrier WITHIN the warp group.
-  It mandates that ALL 128 threads (4 warps) of the warp group must
-  have reached this instruction before any of them can proceed.
-
-  Why needed:
-    The hardware needs to fuse 4 warps into one dispatch command.
-    If one warp is still on a different instruction (diverged), the
-    hardware cannot safely collect all 4 warps' register states.
-    .sync ensures all 4 warps converge at this point in time.
-
-  What happens if not all warps reach it:
-    The hardware WAITS for the lagging warps.
-    In practice: if your control flow diverges between warps in the
-    same warp group before wgmma, you have a latent deadlock risk.
-    Keep all 4 warps in a warp group executing the same code path.
-
-  .aligned:
-  ─────────────────────────────────────────────────────────────────
-  This asserts (not enforces) that all threads are executing in
-  lockstep at the same Program Counter.
-  It is a CONTRACT you declare to the hardware:
-    "I guarantee that all 4 warps in this warp group are at the
-     same instruction address with no thread divergence."
-  The hardware TRUSTS this assertion and optimizes accordingly.
-  If the assertion is false → undefined behavior (wrong results).
-
-  Practical implication:
-    Within a warp group, never use if/else or loops that cause
-    different warps to be on different code paths when approaching
-    a wgmma instruction. Keep warp group threads in lockstep.
-```
+For WGMMA instructions, `.sync` waits for the executing warp's threads to execute the same instruction. `.aligned` additionally requires consistent participation across the whole warpgroup. All four warps must execute the same aligned instruction; a conditional must be uniform over that warpgroup. Violating the participation contract is undefined behavior. These qualifiers do not wait for the asynchronous matrix arithmetic to complete: completion is tracked through commit/wait groups.
 
 ### 6.2 Shape, Dtype, and the Dimension Rules
 
@@ -572,7 +407,7 @@ Shape and Dtype — Tile Dimensions and Data Types
   Valid N values for BF16/FP16: 8, 16, 24, 32, ..., 256 (32 options)
   Valid N values for TF32:       8, 16, 24, 32, ..., 256 (32 options)
   Valid N values for FP8:        8, 16, 24, 32, ..., 256 (32 options)
-  Valid N values for INT8:       8, 16, ..., 224 (28 options)
+  Valid N values for INT8:       8,16,24,32,48,64,...,256 (18 options)
 
   Choosing N in practice:
   ├── N=128 is the most common in GEMM kernels (good balance of tile size vs occupancy)
@@ -922,7 +757,7 @@ do with each other.
 
 `ldmatrix` works in two distinct phases that are important to understand for writing the correct address calculation.
 
-![ldmatrix.x4 two-phase execution: address phase vs register phase for a 16×16 BF16 tile](images/ch06/04-ldmatrix-two-phase.svg)
+[![ldmatrix.x4 two-phase execution: address phase vs register phase for a 16×16 BF16 tile](images/ch06/04-ldmatrix-two-phase.svg)](images/ch06/04-ldmatrix-two-phase.svg)
 
 *Context: loading a 16×16 BF16 tile (4 × 8×8 sub-matrices) with .x4. Phase 1 (address phase): the warp splits into left/right vertical strips (lanes 0-15 → cols 0-7, lanes 16-31 → cols 8-15), and within each strip, groups of 8 lanes each point to one row of an 8×8 quadrant. Phase 2 (register phase): after the hardware reads from SMEM, it redistributes the data row-striped across groups of 4 threads — the same pattern for every one of M0..M3. The critical insight: the thread that PROVIDED an address in Phase 1 is not necessarily the thread that RECEIVES the data in Phase 2. Thread 0 may point to row 0's memory, but threads 0-3 all get parts of row 0, and thread 8 (which pointed to row 2's memory) also gets part of row 0 — the hardware reshuffles internally, transparently, as long as you use the correct address calculation formula.*
 
@@ -980,7 +815,7 @@ Swizzle Address Formula — How the XOR Works
   With swizzle:    bank = (base + 384 XOR 48)/4 % 32 = different bank!
 ```
 
-![128B swizzle: XORing row bits into bank bits, rows 0-3](images/ch06/05-swizzle-xor-address.svg)
+[![128B swizzle: XORing row bits into bank bits, rows 0-3](images/ch06/05-swizzle-xor-address.svg)](images/ch06/05-swizzle-xor-address.svg)
 
 *Every row gets a different mask → a different bank shift for the same column. No two rows collide in the same bank — the XOR is what makes the access conflict-free.*
 
@@ -1039,9 +874,9 @@ The WGMMA descriptor is a **64-bit integer** (stored in a register) that encodes
 
 Both A (when reading from SMEM) and B operands require descriptors. The descriptor encodes: base address, leading byte offset (LBO), stride byte offset (SBO), matrix base offset, and swizzle mode.
 
-![The 64-bit WGMMA descriptor, field by field](images/ch06/06-wgmma-descriptor-bits.svg)
+[![The 64-bit WGMMA descriptor, field by field](images/ch06/06-wgmma-descriptor-bits.svg)](images/ch06/06-wgmma-descriptor-bits.svg)
 
-*Base, LBO, and SBO each occupy 14 bits (0-13, 16-29, 32-45) and store stride_bytes / 16; bits 14-15 and 30-31 are unused padding that keeps each field 16-bit-aligned within the word. Matrix base offset is 3 bits (46-48), reserved is 13 bits (49-61), and swizzle mode is 2 bits (62-63).*
+*Base, LBO, and SBO each occupy 14 bits (0-13, 16-29, 32-45) and store stride_bytes / 16; bits 14-15 and 30-31 are unused padding that keeps each field 16-bit-aligned within the word. Matrix base offset is 3 bits (49-51), reserved is 13 bits (46-48 and 52-61), and swizzle mode is 2 bits (62-63).*
 
 ```
 WGMMA Descriptor — 64-Bit Layout
@@ -1063,11 +898,11 @@ WGMMA Descriptor — 64-Bit Layout
                Stride in the other dimension.
                Same encoding: value = actual_stride_bytes / 16.
 
-  Bits 46-48:  Matrix base offset (3 bits)
+  Bits 49-51:  Matrix base offset (3 bits)
                Which 128B block within the swizzle pattern your matrix starts at.
                0 if your matrix is at a swizzle-pattern boundary; nonzero otherwise.
 
-  Bits 49-61:  Reserved (set to 0).
+  Bits 46-48 and 52-61: Reserved (set to 0).
 
   Bits 62-63:  Swizzle mode (2 bits):
                00 = no swizzle
@@ -1126,7 +961,7 @@ Descriptor Construction — Step by Step
     desc |= (uint64_t)(base_field)   << 0;   // bits 13:0
     desc |= (uint64_t)(LBO_field)    << 16;  // bits 29:16
     desc |= (uint64_t)(SBO_field)    << 32;  // bits 45:32
-    desc |= (uint64_t)(base_offset)  << 46;  // bits 48:46
+    desc |= (uint64_t)(base_offset)  << 49;  // bits 51:49
     desc |= (uint64_t)(swizzle_mode) << 62;  // bits 63:62
 
   ─── Practical: Use a Descriptor Builder Function ─────────────────
@@ -1142,7 +977,7 @@ Descriptor Construction — Step by Step
       d |= (uint64_t)((addr >> 4) & 0x3FFF);          // base addr
       d |= (uint64_t)((lbo_bytes/16) & 0x3FFF) << 16; // LBO
       d |= (uint64_t)((sbo_bytes/16) & 0x3FFF) << 32; // SBO
-      d |= (uint64_t)(base_off & 0x7)          << 46; // matrix base offset
+      d |= (uint64_t)(base_off & 0x7)          << 49; // matrix base offset
       d |= (uint64_t)(swizzle & 0x3)           << 62; // swizzle mode
       return d;
   }
@@ -1222,7 +1057,7 @@ SBO (Stride Byte Offset) — Navigating the Non-Leading Dimension
   SBO_field = 16 / 16 = 1.
 ```
 
-![LBO and SBO as jumps across a checkerboard of 8×8 sub-blocks](images/ch06/07-lbo-sbo-checkerboard.svg)
+[![LBO and SBO as jumps across a checkerboard of 8×8 sub-blocks](images/ch06/07-lbo-sbo-checkerboard.svg)](images/ch06/07-lbo-sbo-checkerboard.svg)
 
 *Think of the matrix tile as a checkerboard of 8×8 BF16 sub-blocks. LBO tells the hardware "to go to the next column of sub-blocks, skip X bytes"; SBO tells it "to go to the next row of sub-blocks, skip Y bytes." Together they let wgmma traverse any 2D tile layout in SMEM.*
 
@@ -1235,7 +1070,7 @@ wrote this tile — Chapter 4, §10 — and nothing checks that they do.
 Matrix Base Offset and Swizzle Mode
 ══════════════════════════════════════════════════════════════════════
 
-  Matrix Base Offset (bits 46-48):
+  Matrix Base Offset (bits 49-51):
   ─────────────────────────────────────────────────────────────────
   The swizzle permutation repeats every 128B (for 128B swizzle).
   If your matrix starts exactly at a 128B boundary, base_offset = 0.
@@ -1398,17 +1233,16 @@ INT8 / UINT8 Tile Shapes — m64nXk32 Integer
 
   .satfinite (optional): saturate output to s32 range instead of wrapping.
 
-  Valid N values: 8 to 224 in multiples of 8 — still 8-wide steps like the
-  float types, just a lower ceiling (28 options instead of 32):
-  N ∈ {8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128,
-       136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224}
-  Note: N max = 224 for INT8 (not 256 like float types).
+  Valid N values (18 shapes):
+  N ∈ {8,16,24,32,48,64,80,96,112,128,144,160,176,192,208,224,240,256}
+  Above N=32, the dense integer family uses 16-wide steps, not every
+  multiple of 8. Select an explicitly listed PTX shape.
 
   scale_a, scale_b: NOT available for INT8 variants.
 
   Use case: quantized inference (INT8 weights, INT8 activations).
-  INT8 provides up to 4× the throughput of BF16 on tensor cores.
-  The s32 accumulator prevents overflow during the dot product.
+  Dense INT8 nominal throughput is 2× dense BF16 (counting integer operations).
+  The s32 accumulator can still overflow; bound the reduction or use .satfinite.
   Post-multiplication: typically dequantize s32 back to FP32/FP16.
 ```
 
@@ -1437,18 +1271,18 @@ stmatrix — The Inverse of ldmatrix
 ══════════════════════════════════════════════════════════════════════
 
   stmatrix.sync.aligned.m8n8.x{1,2,4}.shared.b16 [smem_addr], {d0,...};
-  stmatrix.sync.aligned.m8n8.x{1,2,4}.shared.b8  [smem_addr], {d0,...};
+  // Hopper uses .m8n8.b16. The .m16n8.b8 form is a later-architecture feature.
 
   What it does:
   ├── Each thread provides a SMEM address (the destination for its registers)
   ├── The hardware GATHERS all threads' fragments and writes them to SMEM
   │   in a dense, linearized layout (inverse of ldmatrix's gather-scatter)
   ├── Result in SMEM: a contiguous tile that can be stored to global memory
-  └── Handles swizzling in reverse — applies the XOR mapping to write addresses
+  └── Uses programmer-provided shared-memory addresses; compute any swizzle explicitly
 
   The catch this chapter's intro already flagged: there is no .b32 form.
   ─────────────────────────────────────────────────────────────────
-  stmatrix only writes .b16 (BF16/FP16) or .b8 (FP8/INT8) elements. Your
+  On Hopper, stmatrix writes .b16 (BF16/FP16) elements. Your
   wgmma accumulator, though, is FP32 — §8 fixed dtypeD at .f32 for the
   common BF16/TF32 cases. There is no instruction variant that takes
   32-bit register values straight to SMEM.
@@ -1476,8 +1310,7 @@ stmatrix — The Inverse of ldmatrix
   What you save by accumulating in FP16 to start with (§6.2, dtypeD=.f16)
   isn't call count here — it's the downcast step itself, plus half the
   register pressure during the K-loop. Chapter 7 §6–§8 covers the full
-  epilogue, including the swizzled write-address math stmatrix performs
-  in reverse.
+  epilogue, including the swizzled write-address math the kernel must compute.
 ```
 
 ---
@@ -1511,7 +1344,7 @@ Descriptor for B (K-major, 128B swizzle):
   base_offset = 0 (tile starts at swizzle pattern boundary)
   swizzle = 01 (128B)
 
-  desc = (64) | (1 << 16) | (16 << 32) | (0 << 46) | (1LL << 62)
+  desc = (64) | (1 << 16) | (16 << 32) | (0 << 49) | (1LL << 62)
        = 0x4001000000010040
 
 Verify: A[2][3] × B[3][5] should contribute to D[2][5].
@@ -1522,7 +1355,7 @@ After accumulation across K=16: D contains the correct dot products.
 ═══════════════════════════════════════════════════════
   FILE:    ex01_wgmma_basic.cu
   COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex01_wgmma_basic.cu -o ex01
-           (Blackwell: replace sm_90a with sm_100a)
+           (Hopper only; Blackwell needs a different kernel)
   RUN:     ./ex01
   EXPECT:  m64n64k16 BF16 result matches CPU reference computation.
 ═══════════════════════════════════════════════════════
@@ -1546,7 +1379,7 @@ After accumulation across K=16: D contains the correct dot products.
 //   TMA (cp.async.bulk) to load SMEM, double-buffering with mbarrier,
 //   and ldmatrix for A tile loading when A is reused.
 //
-// REQUIRES: sm_90a (H100) or sm_100a (Blackwell)
+// REQUIRES: Hopper sm_90a (H100/H200); not a Blackwell kernel
 // ═══════════════════════════════════════════════════════════════════
 
 #include <cstdio>
@@ -1571,7 +1404,7 @@ static constexpr int D_REGS = (M * N) / 128;   // = 32
 // ─────────────────────────────────────────────────────────────────
 // Build the 64-bit WGMMA descriptor from SMEM pointer and layout info.
 //
-// This is a simplified version for K-major BF16 layout with 128B swizzle.
+// K-major BF16, no swizzle: 8×8 core matrices, LBO=128B, SBO=256B.
 // Production code (CUTLASS) uses a more general builder.
 // ─────────────────────────────────────────────────────────────────
 __device__ uint64_t build_wgmma_desc(const __nv_bfloat16* smem_ptr,
@@ -1582,22 +1415,22 @@ __device__ uint64_t build_wgmma_desc(const __nv_bfloat16* smem_ptr,
     // Field 1: Base address (bits 13:0) = smem_addr >> 4
     uint64_t base_field = (smem_addr >> 4) & 0x3FFF;
 
-    // Field 2: LBO (bits 29:16) = 1 for K-major 128B swizzle (16 bytes / 16)
-    uint64_t lbo_field  = 1ULL & 0x3FFF;
+    // Field 2: LBO (bits 29:16) = 128 bytes / 16
+    uint64_t lbo_field  = 8ULL; // 128 bytes / 16
 
     // Field 3: SBO (bits 45:32) = sbo_bytes / 16
     uint64_t sbo_field  = ((uint64_t)(sbo_bytes / 16)) & 0x3FFF;
 
-    // Field 4: Matrix base offset (bits 48:46) = 0 (tile at swizzle boundary)
+    // Field 4: Matrix base offset (bits 51:49), unused without swizzle
     uint64_t base_off   = 0ULL;
 
-    // Field 5: Swizzle mode (bits 63:62) = 1 for 128B swizzle
-    uint64_t swizzle    = 1ULL;
+    // Field 5: Swizzle mode (bits 63:62) = 0 for no swizzle
+    uint64_t swizzle    = 0ULL; // match unswizzled core-matrix storage
 
     return base_field
          | (lbo_field << 16)
          | (sbo_field << 32)
-         | (base_off  << 46)
+         | (base_off  << 49)
          | (swizzle   << 62);
 }
 
@@ -1626,24 +1459,19 @@ __global__ void wgmma_kernel(
     // Here: simple thread-driven load for pedagogical clarity.
     for (int i = tid; i < M * K; i += blockDim.x) {
         int r = i / K, c = i % K;
-        smem_A[r][c] = A_global[r * K + c];
+        reinterpret_cast<__nv_bfloat16*>(smem_A)[(r/8)*128 + (c/8)*64 + (r%8)*8 + c%8] = A_global[r * K + c];
     }
     for (int i = tid; i < K * N; i += blockDim.x) {
         int r = i / N, c = i % N;
-        smem_B[r][c] = B_global[r * N + c];
+        reinterpret_cast<__nv_bfloat16*>(smem_B)[(c/8)*128 + (r/8)*64 + (c%8)*8 + r%8] = B_global[r * N + c];
     }
-    __syncthreads();   // ensure all SMEM writes are done before wgmma
+    asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
+    __syncthreads(); // publish generic shared stores to the async proxy
 
-    // ── Build WGMMA descriptors ────────────────────────────────────
-    // For A (K-major, rows of K=16 BF16 are contiguous):
-    //   SBO = stride between consecutive 8-row blocks = 8 × K × sizeof(BF16)
-    //       = 8 × 16 × 2 = 256 bytes
+    // Both operands are staged as K-major 8×8 core matrices without swizzle.
+    // The second K vector starts 128B later; the next MN core starts 256B later.
     uint64_t desc_a = build_wgmma_desc(&smem_A[0][0], 256);
-
-    // For B (K-major, columns of K=16 are contiguous across N=64):
-    //   SBO = stride between consecutive 8-row blocks of K
-    //       = 8 × N × sizeof(BF16) = 8 × 64 × 2 = 1024 bytes
-    uint64_t desc_b = build_wgmma_desc(&smem_B[0][0], 1024);
+    uint64_t desc_b = build_wgmma_desc(&smem_B[0][0], 256);
 
     // ── Declare accumulator registers ─────────────────────────────
     // 32 FP32 registers per thread for m64n64k16.
@@ -1693,8 +1521,8 @@ __global__ void wgmma_kernel(
     asm volatile("wgmma.commit_group.sync.aligned;\n" : : : "memory");
     asm volatile("wgmma.wait_group.sync.aligned %0;\n" : : "n"(0) : "memory");
 
-    // ── STEP 4: Fence after wgmma (before reading d registers) ────
-    // Required to make the wgmma output registers visible to subsequent reads.
+    // ── STEP 4: All groups are complete after wait_group<0>. ───────
+    // This extra fence is conservative; wait_group made the outputs available.
     asm volatile("wgmma.fence.sync.aligned;\n" : : : "memory");
 
     // ── STEP 5: Write results to global memory ─────────────────────
@@ -1712,11 +1540,9 @@ __global__ void wgmma_kernel(
     }
     (void)warp; (void)lane;
 
-    // Verify: all d[] values should be non-zero if A and B are non-zero.
-    // A simple sanity check: sum of all accumulators should be positive.
-    float local_sum = 0.0f;
-    for (int i = 0; i < D_REGS; i++) local_sum += d[i];
-    if (local_sum > 0.0f) atomicAdd(pass_count, 1u);
+    bool finite = true;
+    for (int i = 0; i < D_REGS; i++) finite = finite && isfinite(d[i]);
+    if (finite) atomicAdd(pass_count, 1u);
 }
 
 int main() {
@@ -1726,15 +1552,15 @@ int main() {
 
     cudaDeviceProp prop; CHECK_CUDA(cudaGetDeviceProperties(&prop, 0));
     printf("GPU: %s (SM %d.%d)\n", prop.name, prop.major, prop.minor);
-    if (prop.major < 9) { fprintf(stderr, "Needs SM 9.0+\n"); return 1; }
+    if (prop.major != 9) { fprintf(stderr, "Requires Hopper SM 9.0; Blackwell needs tcgen05\n"); return 1; }
 
-    // Initialize A[M][K] and B[K][N] with small positive BF16 values
+    // Use nonuniform, exactly representable BF16 values to expose layout errors.
     const int A_ELEMS = M * K, B_ELEMS = K * N, D_ELEMS = 128 * D_REGS;
     __nv_bfloat16 *h_A = new __nv_bfloat16[A_ELEMS];
     __nv_bfloat16 *h_B = new __nv_bfloat16[B_ELEMS];
-    for (int i = 0; i < A_ELEMS; i++) h_A[i] = __float2bfloat16(0.01f);
-    for (int i = 0; i < B_ELEMS; i++) h_B[i] = __float2bfloat16(0.01f);
-    // With A=0.01 and B=0.01, each D[m][n] = K × 0.01 × 0.01 = 16 × 0.0001 = 0.0016
+    for (int i = 0; i < A_ELEMS; i++) h_A[i] = __float2bfloat16((i % 17 - 8) / 16.0f);
+    for (int i = 0; i < B_ELEMS; i++) h_B[i] = __float2bfloat16((i % 13 - 6) / 16.0f);
+    // CPU verification uses the rounded BF16 inputs, not unrounded float literals.
 
     __nv_bfloat16 *d_A, *d_B;
     float *d_D; uint32_t *d_pass, h_pass = 0;
@@ -1747,8 +1573,7 @@ int main() {
     CHECK_CUDA(cudaMemset(d_pass, 0, 4));
 
     printf("Shape: m64n64k16, D_REGS=%d per thread, 128 threads total\n", D_REGS);
-    printf("A=0.01 × B=0.01: each output element should be K×0.01²=%.6f\n\n",
-           K * 0.01f * 0.01f);
+    printf("Patterned BF16 inputs; every accumulator checked against CPU GEMM.\n\n");
 
     // 1 block, 128 threads (exactly 1 warp group of 4 warps)
     wgmma_kernel<<<1, 128>>>(d_A, d_B, d_D, d_pass);
@@ -1759,15 +1584,27 @@ int main() {
     float *h_D = new float[D_ELEMS];
     CHECK_CUDA(cudaMemcpy(h_D, d_D, D_ELEMS*4, cudaMemcpyDeviceToHost));
 
-    // Verify: all threads should have positive accumulator sums
-    float expected_elem = K * 0.01f * 0.01f;  // = 0.0016
     int elem_ok = 0;
-    for (int i = 0; i < D_ELEMS; i++)
-        if (fabsf(h_D[i] - expected_elem) < 0.0005f) elem_ok++;
-
-    printf("Threads with positive accumulator sum: %u / 128\n", h_pass);
+    float max_error = 0.0f, first_expected = 0.0f;
+    for (int tid = 0; tid < 128; ++tid) {
+        int warp = tid / 32, lane = tid % 32;
+        for (int reg = 0; reg < D_REGS; ++reg) {
+            int row = warp * 16 + lane / 4 + ((reg % 4) / 2) * 8;
+            int col = (reg / 4) * 8 + (lane % 4) * 2 + reg % 2;
+            float expected = 0.0f;
+            for (int k = 0; k < K; ++k)
+                expected += __bfloat162float(h_A[row*K+k]) * __bfloat162float(h_B[k*N+col]);
+            float got = h_D[tid*D_REGS+reg];
+            float error = fabsf(got - expected);
+            max_error = fmaxf(max_error, error);
+            if (std::isfinite(got) && error < 1e-5f) ++elem_ok;
+            if (tid == 0 && reg == 0) first_expected = expected;
+        }
+    }
+    printf("Threads with finite accumulators: %u / 128\n", h_pass);
     printf("D register values correct: %d / %d\n", elem_ok, D_ELEMS);
-    printf("Sample d[0] = %.6f (expected %.6f)\n", h_D[0], expected_elem);
+    printf("Max absolute error: %.8f\n", max_error);
+    printf("Sample d[0] = %.6f (expected %.6f)\n", h_D[0], first_expected);
 
     bool ok = (h_pass == 128 && elem_ok == D_ELEMS);
     printf("\n╔══════════════════════════════════════════════════════════╗\n");
@@ -1783,27 +1620,45 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex01_wgmma_basic.cu -->
+**Captured output — ex01_wgmma_basic.cu**
 
+> **Executed:** 2026-11-17T21:38:12.120542+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu) as `ex01_wgmma_basic.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_wgmma_basic.cu -o ex01_wgmma_basic
+./ex01_wgmma_basic
 ```
+
+[Compiler log](validation/2026-11-17/06-wgmma-part-1/ex01_wgmma_basic/compile.log) · [Execution log](validation/2026-11-17/06-wgmma-part-1/ex01_wgmma_basic/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex01: wgmma.mma_async — m64n64k16 BF16→FP32            ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 Shape: m64n64k16, D_REGS=32 per thread, 128 threads total
-A=0.01 × B=0.01: each output element should be K×0.01²=0.001600
+Patterned BF16 inputs; every accumulator checked against CPU GEMM.
 
-Threads with positive accumulator sum: 128 / 128
+Threads with finite accumulators: 128 / 128
 D register values correct: 4096 / 4096
-Sample d[0] = 0.001603 (expected 0.001600)
+Max absolute error: 0.00000000
+Sample d[0] = -0.246094 (expected -0.246094)
 
 ╔══════════════════════════════════════════════════════════╗
 ║  ✓ ALL PASS — wgmma computes correct BF16→FP32 result!  ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex01_wgmma_basic.cu -->
 
-`GPU:` varies with the card the binary runs on; everything else is deterministic. `__float2bfloat16(0.01)` rounds to the nearest representable BF16 value, `0.010009765625`, not `0.01` exactly, so each accumulated element is `K × 0.010009765625² = 16 × 0.000100195...= 0.0016031...`, which prints as `0.001603` — one digit off the host's own `expected_elem` (`16 × 0.01² = 0.0016`, printed `0.001600`). The check's `±0.0005` tolerance absorbs that BF16 rounding gap, so all `128` per-thread sums and all `4096` D-register values still count as correct. The final banner is a new variant of the `%-56s` byte-vs-codepoint quirk from earlier chapters: at 59 UTF-8 bytes (53 codepoints, thanks to the 3-byte `✓` and em dash), the string is already longer than the 56-byte field width before any padding is considered, so `printf` appends none at all — the line lands exactly 1 column short of the border above it, rather than flush or several columns short as in the padded cases.
+
+
+The recorded test uses signed, nonuniform values that are exactly representable in BF16. The host reconstructs every WGMMA register's `(row, column)` position and compares it with a CPU GEMM computed from those BF16 inputs, with a `1e-5` absolute tolerance and an explicit finite-value check. All 4,096 values match with zero measured error in this run. Constant inputs alone would not detect a permuted input layout or accumulator mapping.
 
 ---
 
@@ -1824,7 +1679,7 @@ Full syntax:
       scale_d, imm-scale-a, imm-scale-b, imm-trans-a, imm-trans-b;
 
 Qualifiers:
-  .sync:       All 4 warps in warp group must converge before proceeding
+  .sync:       Synchronize instruction participation within each warp
   .aligned:    Assert no thread divergence within warp group (programmer guarantee)
   scale_d:     0=overwrite D, 1=accumulate (D = A×B + D)
   imm-scale-a: 1 or -1 (sign flip on A elements)
@@ -1883,13 +1738,13 @@ Section 14 condensed to one card.
 ```
 Precision    Shape          K    D type   Notes
 ──────────────────────────────────────────────────────────────────────────
-BF16/FP16    m64nXk16      16   f32/f16  Most common; dominant for H100 training
+BF16/FP16    m64nXk16      16   BF16:f32; FP16:f32/f16  Most common; dominant for H100 training
 TF32         m64nXk8        8   f32       FP32 range + tensor core speed
 FP8 E4M3/E5M2 m64nXk32    32   f32/f16  2× throughput vs BF16; forward/backward pass
-INT8/UINT8   m64nXk32      32   s32       Quantized inference; N max=224
+INT8/UINT8   m64nXk32      32   s32       Quantized inference; N max=256
 
 N range for all float types: 8 to 256 in multiples of 8 (32 valid values)
-N range for INT8: 8 to 224 in multiples of 8 (28 valid values)
+INT8 N: {8,16,24,32,48,64,...,256}; 18 explicitly supported shapes
 ```
 
 ### WGMMA Descriptor Bit Layout
@@ -1903,8 +1758,8 @@ Bits     Field                  Encoding
 0-13     Base address           smem_addr >> 4   (16B granularity)
 16-29    LBO (leading stride)   stride_bytes / 16
 32-45    SBO (other stride)     stride_bytes / 16
-46-48    Matrix base offset     (smem_addr % swizzle_period) / 128
-49-61    Reserved               0
+49-51    Matrix base offset     (smem_addr % swizzle_period) / 128
+46-48,52-61 Reserved             0
 62-63    Swizzle mode           00=none, 01=128B★, 10=64B, 11=32B
 ```
 
@@ -1917,7 +1772,7 @@ compiles cleanly and returns wrong numbers.
 Mistake                                   Symptom              Fix
 ──────────────────────────────────────────────────────────────────────────────
 Missing wgmma.fence before first wgmma    Wrong results        Add fence before first call
-Missing wgmma.fence after last wgmma      Stale d[] reads      Add fence before epilogue
+Missing wait_group before epilogue       Undefined d[] reads  Commit and wait for the relevant group
 Mismatched swizzle in desc vs TMA         Scrambled data       Match descriptor bits to TMA swizzle
 scale_d=0 when meaning to accumulate      K-loop sum is wrong  Use scale_d=1 after first tile
 Wrong D_REGS count in inline asm          Compile error        D_REGS = (M×N)/128

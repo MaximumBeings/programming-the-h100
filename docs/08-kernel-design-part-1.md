@@ -1,6 +1,11 @@
 # Kernel Design, Warp Specialization & Pipelining
 ## Lesson 3 Companion Guide — High-Performance CUDA Kernels on the H100
 
+> **Validation — November 17, 2026.** 4 complete CUDA programs compiled and executed successfully.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 ---
 
 ## ★ BEFORE YOU START — Prerequisites & Setup
@@ -103,7 +108,7 @@ The key quantity is **Arithmetic Intensity (AI)**: how many floating-point opera
 you perform per byte of data you move between the memory hierarchy and the compute
 units.
 
-![H100 SXM5 roofline: FP16 Tensor Core and FP32 CUDA Core roofs on a log-log plot, with ridge points at AI≈20 and AI≈295 FLOP/Byte and example kernels placed by their arithmetic intensity](images/ch08/01-roofline-chart.svg)
+[![H100 SXM5 roofline: FP16 Tensor Core and FP32 CUDA Core roofs on a log-log plot, with ridge points at AI≈20 and AI≈295 FLOP/Byte and example kernels placed by their arithmetic intensity](images/ch08/01-roofline-chart.svg)](images/ch08/01-roofline-chart.svg)
 
 *The two H100 roofs — FP32 CUDA Core (ridge ≈20 FLOP/Byte) and FP16 Tensor Core (ridge ≈295 FLOP/Byte) — with softmax and two GEMM sizes plotted by their own AI.*
 
@@ -520,16 +525,30 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex01_roofline.cu -->
+**Captured output — ex01_roofline.cu**
 
+> **Executed:** 2026-11-17T21:29:22.446323+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu) as `ex01_roofline.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_roofline.cu -o ex01_roofline
+./ex01_roofline
 ```
+
+[Compiler log](validation/2026-11-17/08-kernel-design-part-1/ex01_roofline/compile.log) · [Execution log](validation/2026-11-17/08-kernel-design-part-1/ex01_roofline/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  Roofline Model Demo — Memory vs Compute Bound        ║
 ╚══════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
-     Peak memory bandwidth (theoretical): 3350.0 GB/s
-     SM count: 132
+GPU: NVIDIA H100 PCIe (SM 9.0)
+     Peak memory bandwidth (theoretical): 2039.0 GB/s
+     SM count: 114
 
 ════════════════════════════════════════════════════════
 KERNEL A: elementwise_scale (expected: MEMORY-BOUND)
@@ -538,9 +557,9 @@ KERNEL A: elementwise_scale (expected: MEMORY-BOUND)
   (Ridge point for FP32 CUDA cores ≈ 20 FLOP/Byte)
   → AI=0.125 << 20 → MEMORY-BOUND ✓
 
-  Time: 0.180 ms
-  Bandwidth achieved: 2980.0 GB/s
-  GFLOPS achieved:    372.6
+  Time: 0.324 ms
+  Bandwidth achieved: 1658.5 GB/s
+  GFLOPS achieved:    207.3
   → Kernel is BANDWIDTH limited (not compute limited)
 
 ════════════════════════════════════════════════════════
@@ -549,9 +568,9 @@ KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
   M=N=K=512    FLOPs: 268.4 M    Bytes: 3.1 MB    AI: 85.3 FLOP/Byte
   → AI=85.3 >> 20 → COMPUTE-BOUND ✓
 
-  Time: 0.011 ms
-  GFLOPS achieved: 24500.0
-  Effective BW:    287.1 GB/s (not the bottleneck)
+  Time: 0.054 ms
+  GFLOPS achieved: 4959.1
+  Effective BW:    58.1 GB/s (not the bottleneck)
   → Kernel is COMPUTE limited (bandwidth not saturated)
 
 ╔══════════════════════════════════════════════════════╗
@@ -561,6 +580,9 @@ KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
 ║  • Wrong optimization → wrong results → wasted time   ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex01_roofline.cu -->
+
+
 
 Kernel A's achieved GFLOPS (372.6) is exactly `ai_theoretical × bw_achieved` (0.125 × 2980.0) — that identity is the roofline model itself: in the memory-bound regime, performance is bandwidth times arithmetic intensity, nothing else. Kernel B's 85.3 FLOP/Byte (computed precisely from the exact tile sizes) lands a bit below the "≈89" quoted in the comment above the kernel, which rounds FLOPs to 268M and bytes to 3MB before dividing — the precise 268.4M/3.145728MB ratio the program actually computes is 85.3, a reminder that back-of-envelope rounding and a program's exact arithmetic can disagree by a few percent even when both are "right."
 
@@ -572,7 +594,7 @@ Kernel A's achieved GFLOPS (372.6) is exactly `ai_theoretical × bw_achieved` (0
 
 When your kernel's AI exceeds the ridge point, arithmetic throughput becomes the bottleneck. But recognizing a compute-bound kernel in practice — before you profile — requires understanding what the hardware tells you.
 
-![Producer warps idle on repeated WAIT segments while consumer warps run a continuous, uninterrupted block of MMA instructions](images/ch08/02-producer-consumer-imbalance.svg)
+[![Producer warps idle on repeated WAIT segments while consumer warps run a continuous, uninterrupted block of MMA instructions](images/ch08/02-producer-consumer-imbalance.svg)](images/ch08/02-producer-consumer-imbalance.svg)
 
 *Signature 2 in the timeline: producers stall on barriers while consumers stay 100% busy — the most diagnostic sign that math, not memory, is the bottleneck.*
 
@@ -665,7 +687,7 @@ Compute-Bound Optimization Hierarchy
 
 Memory-bound is not a single condition. The bottleneck can be at three different points in the memory hierarchy, each with different fixes.
 
-![Decision flowchart: HBM bandwidth over 80% of peak means bandwidth-bound, otherwise FLOP rate over 20% means partially compute-bound, otherwise SM utilization over 50% means latency-bound, otherwise locality-bound](images/ch08/03-diagnosis-flowchart.svg)
+[![Decision flowchart: HBM bandwidth over 80% of peak means bandwidth-bound, otherwise FLOP rate over 20% means partially compute-bound, otherwise SM utilization over 50% means latency-bound, otherwise locality-bound](images/ch08/03-diagnosis-flowchart.svg)](images/ch08/03-diagnosis-flowchart.svg)
 
 *The diagnosis flowchart from the categories below, walked top to bottom against three profiler metrics until one "yes" lands on a verdict.*
 
@@ -767,7 +789,7 @@ On any GPU, an SM hosts many active warps, but only a few can issue instructions
 
 Warp Specialization breaks this competition by giving different warps **permanently different jobs** for the entire kernel execution. Some warps become dedicated "producers" that only move data. Other warps become dedicated "consumers" that only perform arithmetic.
 
-![Four mixed warps each interleaving LOAD, wait, and MMA with staggered idle gaps, versus one dedicated producer warpgroup issuing only TMA and two dedicated consumer warpgroups issuing only MMA back to back](images/ch08/04-warp-specialization-before-after.svg)
+[![Four mixed warps each interleaving LOAD, wait, and MMA with staggered idle gaps, versus one dedicated producer warpgroup issuing only TMA and two dedicated consumer warpgroups issuing only MMA back to back](images/ch08/04-warp-specialization-before-after.svg)](images/ch08/04-warp-specialization-before-after.svg)
 
 *Without specialization every warp idles during its own loads; with specialization the producer's TMA loads and the consumers' WGMMA run back to back, warpgroup by warpgroup, on the same SM.*
 
@@ -1159,9 +1181,23 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex02_warp_spec.cu -->
+**Captured output — ex02_warp_spec.cu**
 
+> **Executed:** 2026-11-17T21:29:25.108798+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/08-kernel-design-part-1/ex02_warp_spec/ex02_warp_spec.cu) as `ex02_warp_spec.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_warp_spec.cu -o ex02_warp_spec
+./ex02_warp_spec
 ```
+
+[Compiler log](validation/2026-11-17/08-kernel-design-part-1/ex02_warp_spec/compile.log) · [Execution log](validation/2026-11-17/08-kernel-design-part-1/ex02_warp_spec/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  Warp Specialization Demo                             ║
 ║  256 threads = WG0 (producer) + WG1 (consumer)       ║
@@ -1180,7 +1216,7 @@ Consumer Output Verification:
   Expected formula: output[i] = 2 × (3×i + 7) = 6i + 14
   Checking all 128 outputs...
 
-  Index    Expected     Got          OK?     
+  Index    Expected     Got          OK?
   ────────────────────────────────────────
   0        14.0         14.0         ✓
   1        20.0         20.0         ✓
@@ -1207,6 +1243,9 @@ Role assignment: CORRECT
 ║  • In production: replace sync with mbarrier (§9)    ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex02_warp_spec.cu -->
+
+
 
 Every value lands exactly on `6i+14` because this kernel does pure FP32 arithmetic on values that are exact in binary floating point (small integers and products of small integers) — unlike the BF16 accumulation examples in Chapters 6-7, there is no rounding to trace here, so the "Got" and "Expected" columns match bit-for-bit, including at the boundary case `i=127` (776.0), which matches the manual worked example above.
 
@@ -1381,7 +1420,7 @@ constexpr int CONSUMER_REGS  = 128;  // moderate consumer register budget
 //   4. We verify that the final result is correct
 //
 // If setmaxnreg corrupted registers, the second computation would be wrong.
-__global__ void test_setmaxnreg(float* output_wg0, float* output_wg1) {
+__global__ void __maxnreg__(80) test_setmaxnreg(float* output_wg0, float* output_wg1) {
     int warpgroup_id = threadIdx.x / WARPGROUP_SIZE;
     int local_idx    = threadIdx.x % WARPGROUP_SIZE;
 
@@ -1525,14 +1564,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex03_setmaxnreg.cu -->
+**Captured output — ex03_setmaxnreg.cu**
 
+> **Executed:** 2026-11-17T21:34:53.940559+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/08-kernel-design-part-1/ex03_setmaxnreg/ex03_setmaxnreg.cu) as `ex03_setmaxnreg.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex03_setmaxnreg.cu -o ex03_setmaxnreg
+./ex03_setmaxnreg
 ```
+
+[Compiler log](validation/2026-11-17/08-kernel-design-part-1/ex03_setmaxnreg/compile.log) · [Execution log](validation/2026-11-17/08-kernel-design-part-1/ex03_setmaxnreg/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  setmaxnreg Demo — Dynamic Register Resizing         ║
 ╚══════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 
 Register Plan:
   WG0 (threads   0-127): setmaxnreg.dec → 32 regs (producer)
@@ -1552,8 +1605,13 @@ WG1 (CONSUMER, 128 regs after resize):
 ║  corrupting existing register state.                 ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex03_setmaxnreg.cu -->
 
-Both warpgroups' values are exact to the printed decimal — `2.5×idx+1` and `4.5×idx+2` only ever produce sums of small integers and `.0`/`.5` fractions, all of which are exactly representable in FP32, so there is no rounding noise to account for here (unlike the BF16 fill-value traces elsewhere in this book). The real content of this output isn't the numbers; it's that they survive `setmaxnreg` at all — the register count changes mid-kernel, but `accumulator` and `factor` live on through the resize exactly as they were.
+
+
+[Captured SASS](validation/2026-11-17/setmaxnreg-sass.log) contains both `USETMAXREG.TRY_ALLOC.CTAPOOL` and `USETMAXREG.DEALLOC.CTAPOOL`.
+
+Both warpgroups' arithmetic results are exact for these inputs. The kernel explicitly specifies an 80-register entry budget with `__maxnreg__(80)`: one 128-thread warpgroup releases to 32 and the other increases to 128, preserving the combined budget. Without a known entry register count, `ptxas` can ignore `setmaxnreg` (diagnostic C7508), so successful arithmetic alone would not prove register redistribution occurred. Check the compiler log and the SASS for `USETMAXREG.TRY_ALLOC` and `USETMAXREG.DEALLOC` as well as the runtime output.
 
 ---
 
@@ -1636,7 +1694,7 @@ The H100's HBM3 has ~500 cycle latency for individual memory accesses. WGMMA exe
 
 Pipelining eliminates this idle time by overlapping the DATA MOVEMENT for tile N+1 with the COMPUTATION of tile N. The consumer is always computing while the producer is always loading.
 
-![Three stacked timelines: serial load-then-compute at ~9% utilization, 2-stage pipelining overlapping loads and math at >95% utilization, and a 4-stage pipeline where every step runs one Load and one MMA simultaneously](images/ch08/05-pipelining-stages-0-2-4.svg)
+[![Three stacked timelines: serial load-then-compute at ~9% utilization, 2-stage pipelining overlapping loads and math at >95% utilization, and a 4-stage pipeline where every step runs one Load and one MMA simultaneously](images/ch08/05-pipelining-stages-0-2-4.svg)](images/ch08/05-pipelining-stages-0-2-4.svg)
 
 *Going from zero to two to four pipeline stages: each added stage overlaps one more load with compute, until every step is doing both at once.*
 
@@ -1696,7 +1754,7 @@ Pipelining — What It Means Concretely
 
 Each "stage" in the pipeline corresponds to a physical allocation of shared memory. With N stages, you allocate N copies of the A-tile and B-tile in shared memory. This allows N tiles to be "in flight" simultaneously: some being loaded by TMA, others being consumed by WGMMA — for 32KB+32KB A/B tiles on H100's 228KB SMEM budget, N tops out at 3 (CORRECTED below: a 4th stage at this tile size would need 256KB and blow the budget).
 
-![228KB of shared memory divided into three stages, each holding a 32KB A tile, a 32KB B tile, and an mbarrier pair, with 36KB left over as an epilogue buffer](images/ch08/06-pipeline-smem-layout.svg)
+[![228KB of shared memory divided into three stages, each holding a 32KB A tile, a 32KB B tile, and an mbarrier pair, with 36KB left over as an epilogue buffer](images/ch08/06-pipeline-smem-layout.svg)](images/ch08/06-pipeline-smem-layout.svg)
 
 *Three stages at 32+32 KB each commit 192 KB of the 228 KB budget — the most this tile size allows, with 36 KB left for the epilogue.*
 
@@ -1751,7 +1809,7 @@ Pipeline Stages — Physical SMEM Layout
 
 With N pipeline stages in shared memory, the producer and consumer work through the stages in a circular (ring) fashion. The producer writes to stage `i % N`, the consumer reads from stage `(i - depth) % N`, where `depth` is how many stages ahead the producer stays.
 
-![Four pipeline stages arranged in a ring, snapshotted at iteration 5: stage 0 and 2 full, stage 1 being loaded by the producer, stage 3 being consumed, write pointer at stage 1 and read pointer at stage 3](images/ch08/07-circular-buffer-ring.svg)
+[![Four pipeline stages arranged in a ring, snapshotted at iteration 5: stage 0 and 2 full, stage 1 being loaded by the producer, stage 3 being consumed, write pointer at stage 1 and read pointer at stage 3](images/ch08/07-circular-buffer-ring.svg)](images/ch08/07-circular-buffer-ring.svg)
 
 *At iteration 5 the producer (write pointer) is two stages ahead of the consumer (read pointer) — the `depth=2` the kernel maintains all the way through steady state.*
 
@@ -2090,9 +2148,23 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex04_circular_buffer.cu -->
+**Captured output — ex04_circular_buffer.cu**
 
+> **Executed:** 2026-11-17T21:29:30.202728+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/08-kernel-design-part-1/ex04_circular_buffer/ex04_circular_buffer.cu) as `ex04_circular_buffer.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex04_circular_buffer.cu -o ex04_circular_buffer
+./ex04_circular_buffer
 ```
+
+[Compiler log](validation/2026-11-17/08-kernel-design-part-1/ex04_circular_buffer/compile.log) · [Execution log](validation/2026-11-17/08-kernel-design-part-1/ex04_circular_buffer/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════╗
 ║  Circular Pipeline Buffer Simulation                  ║
 ║  N_STAGES=4, DEPTH=2, K_TILES=8                    ║
@@ -2142,6 +2214,9 @@ Output Verification (element 0 and element 10):
 ║  ✓ ALL TESTS PASSED — circular buffer correct        ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex04_circular_buffer.cu -->
+
+
 
 Every physical stage gets read exactly once between the writes that would otherwise clobber it: `depth=2` guarantees a tile is consumed two iterations after it's produced, and the next write to that same physical slot doesn't land until two iterations after *that* (`N_STAGES − depth = 2` more steps), so the 8 writes at k=0..7 and the 8 reads (6 in steady state, 2 in drain) pair up one-to-one in order, giving the simple closed-form sum `280 + 0.08×j` — no stage is ever read stale or dropped.
 

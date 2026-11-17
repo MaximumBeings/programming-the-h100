@@ -1,0 +1,8 @@
+═══════════════════════════════════════════════════════
+  ex11_nvlink_bandwidth — GPU-to-GPU Transfer Benchmark
+═══════════════════════════════════════════════════════
+
+GPUs detected: 1
+  GPU 0: NVIDIA H100 PCIe  (sm_90, 81079 MB HBM, 114 SMs)
+
+Need at least 2 GPUs for P2P benchmark. Exiting.

@@ -1,5 +1,10 @@
 ---
 
+> **Validation — November 17, 2026.** 4 complete CUDA programs compiled and executed successfully.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 ## 9 — mbarrier — The Two-Barrier Handshake
 
 ### 9.1 Why __syncthreads() Is Not Enough
@@ -8,7 +13,7 @@
 
 `mbarrier` (memory barrier) is a fine-grained, asynchronous synchronization primitive that fixes this. It allows specific threads (or TMA hardware) to signal a barrier, and specific threads to wait on it, without involving anyone else.
 
-![Three-lane timeline showing a producer waiting on EMPTY and issuing a TMA load, TMA hardware moving bytes from HBM to shared memory and signaling FULL, and a consumer waiting on FULL, running WGMMA, confirming completion, and signaling EMPTY so the producer can reload the same stage](images/ch09/01-two-barrier-handshake.svg)
+[![Three-lane timeline showing a producer waiting on EMPTY and issuing a TMA load, TMA hardware moving bytes from HBM to shared memory and signaling FULL, and a consumer waiting on FULL, running WGMMA, confirming completion, and signaling EMPTY so the producer can reload the same stage](images/ch09/01-two-barrier-handshake.svg)](images/ch09/01-two-barrier-handshake.svg)
 
 *One stage's full lifecycle, numbered exactly as the text below: the FULL barrier flows producer→TMA→consumer, the EMPTY barrier flows consumer back to producer — two separate signals instead of one block-wide rendezvous.*
 
@@ -224,7 +229,7 @@ constexpr int N_ROUNDS = 3;   // number of producer-consumer handshakes
 __device__ void mbar_init(uint64_t* bar, int count) {
     asm volatile(
         "mbarrier.init.shared::cta.b64 [%0], %1;"
-        :: "r"(__cvta_generic_to_shared(bar)), "n"(count) // "n" = compile-time count
+        :: "r"((uint32_t)__cvta_generic_to_shared(bar)), "r"(count) // runtime arrival count
     );
 }
 
@@ -233,7 +238,7 @@ __device__ void mbar_init(uint64_t* bar, int count) {
 __device__ void mbar_arrive(uint64_t* bar) {
     asm volatile(
         "mbarrier.arrive.shared::cta.b64 _, [%0];"
-        :: "r"(__cvta_generic_to_shared(bar))
+        :: "r"((uint32_t)__cvta_generic_to_shared(bar))
     );
 }
 
@@ -428,9 +433,30 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex05_mbarrier.cu -->
+**Captured output — ex05_mbarrier.cu**
 
+> **Executed:** 2026-11-17T21:30:36.171223+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu) as `ex05_mbarrier.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex05_mbarrier.cu -o ex05_mbarrier
+./ex05_mbarrier
 ```
+
+[Compiler log](validation/2026-11-17/09-kernel-design-part-2/ex05_mbarrier/compile.log) · [Execution log](validation/2026-11-17/09-kernel-design-part-2/ex05_mbarrier/run.log)
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  mbarrier Two-Barrier Handshake Demo                  ║
+║  3 rounds of producer→consumer using full/empty bars  ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 PCIe (SM 9.0)
+
 Producer values: [42.00, 99.50, 7.25]
 Expected consumer outputs: [84.00, 199.00, 14.50]
 
@@ -452,6 +478,9 @@ Handshake Results:
 ║  5. phase bits prevent stale barrier reads           ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex05_mbarrier.cu -->
+
+
 
 ---
 
@@ -463,7 +492,7 @@ In a circular buffer with N stages, the same barrier is reused once every N roun
 
 This is the ABA problem: **A** (round 0) looks like **A** (round N) because the barrier counter has wrapped.
 
-![Nine-step iteration trace over a 4-stage circular buffer, with stage 0's three reuses at iterations 0, 4, and 8 highlighted, each tagged with the phase bit (0, 1, 0) that lets a waiter tell the three passes apart](images/ch09/02-aba-phase-bits.svg)
+[![Nine-step iteration trace over a 4-stage circular buffer, with stage 0's three reuses at iterations 0, 4, and 8 highlighted, each tagged with the phase bit (0, 1, 0) that lets a waiter tell the three passes apart](images/ch09/02-aba-phase-bits.svg)](images/ch09/02-aba-phase-bits.svg)
 
 *Stage 0 physically fires three times in this trace; only the alternating phase bit (0→1→0) tells `try_wait.parity` which generation it's looking at.*
 
@@ -643,7 +672,7 @@ The consumer has a more complex state machine than the producer, because WGMMA i
 
 This creates the **read-release lag**: the consumer can start reading stage N (issue WGMMA on it) before it's finished with stage N-1's WGMMA. Only after confirming stage N-1's WGMMA is done can the consumer release stage N-1 back to the producer.
 
-![Five-iteration grid over 4 stages showing the READ pointer advancing to a new stage each iteration while the RELEASE pointer confirms and frees the stage one step behind it](images/ch09/03-read-release-lag.svg)
+[![Five-iteration grid over 4 stages showing the READ pointer advancing to a new stage each iteration while the RELEASE pointer confirms and frees the stage one step behind it](images/ch09/03-read-release-lag.svg)](images/ch09/03-read-release-lag.svg)
 
 *The RELEASE pointer (red) always trails the READ pointer (blue) by exactly one stage — the WGMMA pipeline depth — so a stage is never freed while its WGMMA is still in flight.*
 
@@ -742,7 +771,7 @@ In the Cooperative pipeline, three warpgroups share the work on ONE output tile:
 
 Both consumer warpgroups read THE SAME A and B tiles from shared memory (they consume the same loaded data). The "cooperation" is not about merging accumulators — each WG accumulates independently in its own registers. The cooperation is about sharing the loaded tile.
 
-![One 128x128 output tile split by row between two consumer warpgroups each accumulating independently in half the registers, both fed by one producer's TMA loads, with a timeline below showing both consumers running their epilogues at the same time while tensor cores sit idle](images/ch09/04-cooperative-gap.svg)
+[![One 128x128 output tile split by row between two consumer warpgroups each accumulating independently in half the registers, both fed by one producer's TMA loads, with a timeline below showing both consumers running their epilogues at the same time while tensor cores sit idle](images/ch09/04-cooperative-gap.svg)](images/ch09/04-cooperative-gap.svg)
 
 *WG1 and WG2 split the registers by halving the rows, but because they run in lockstep, both hit their epilogue at the same moment — the "Cooperative Gap" that Ping-Pong (§14) closes.*
 
@@ -806,7 +835,7 @@ Cooperative Pipeline — Tile Division and Execution
 
 The Ping-Pong pipeline eliminates idle tensor core time by having Consumer 0 run its epilogue at EXACTLY the same time Consumer 1 runs its WGMMA on the NEXT tile.
 
-![Two timelines stacked: the Cooperative pipeline where both consumers run MMA and epilogue in lockstep leaving tensor cores idle during every epilogue, versus Ping-Pong where Consumer 1's MMA on the odd tile overlaps Consumer 0's epilogue on the even tile so tensor cores never idle](images/ch09/05-ping-pong-overlap.svg)
+[![Two timelines stacked: the Cooperative pipeline where both consumers run MMA and epilogue in lockstep leaving tensor cores idle during every epilogue, versus Ping-Pong where Consumer 1's MMA on the odd tile overlaps Consumer 0's epilogue on the even tile so tensor cores never idle](images/ch09/05-ping-pong-overlap.svg)](images/ch09/05-ping-pong-overlap.svg)
 
 *Staggering C1 by half a tile makes its MMA fill exactly the slot where C0's epilogue would otherwise leave the tensor cores idle — the fix only works if epilogue time and MMA time per tile are close to equal.*
 
@@ -1125,11 +1154,30 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex06_pingpong.cu -->
+**Captured output — ex06_pingpong.cu**
 
+> **Executed:** 2026-11-17T21:30:38.836350+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu) as `ex06_pingpong.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex06_pingpong.cu -o ex06_pingpong
+./ex06_pingpong
 ```
+
+[Compiler log](validation/2026-11-17/09-kernel-design-part-2/ex06_pingpong/compile.log) · [Execution log](validation/2026-11-17/09-kernel-design-part-2/ex06_pingpong/run.log)
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Ping-Pong Pipeline Simulation                        ║
+║  6 tiles, C0=even, C1=odd, K_TILES=4 per tile      ║
+╚══════════════════════════════════════════════════════╝
+
 Tile Assignment and Output Verification:
-  MMA formula: accumulate k*100+tile_id for k=0..3
+  MMA formula: accumulate k*100+tile_id for k=0..4-1
   sum per tile = sum(k=0..3 of k*100) + tile_id × 4
   = 600 + tile_id × 4
   After epilogue (×2):
@@ -1156,6 +1204,9 @@ Ping-Pong Behavior Check:
 ║  Tensor cores: NEVER idle (perfect overlap)          ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex06_pingpong.cu -->
+
+
 
 ---
 
@@ -1652,9 +1703,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex07_epilogue.cu -->
+**Captured output — ex07_epilogue.cu**
 
+> **Executed:** 2026-11-17T21:30:41.698993+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/09-kernel-design-part-2/ex07_epilogue/ex07_epilogue.cu) as `ex07_epilogue.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex07_epilogue.cu -o ex07_epilogue
+./ex07_epilogue
 ```
+
+[Compiler log](validation/2026-11-17/09-kernel-design-part-2/ex07_epilogue/compile.log) · [Execution log](validation/2026-11-17/09-kernel-design-part-2/ex07_epilogue/run.log)
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Epilogue Fusion Demo                                 ║
+║  D = ReLU( α×acc + β×C + bias[row] )                 ║
+╚══════════════════════════════════════════════════════╝
+
 Input tile: 64×64, alpha=1.0, beta=0.5
 Bias: bias[m] = m * 0.1
 Expected ReLU clamped to 0: 1965/4096 elements
@@ -1676,6 +1746,9 @@ FP8 amax reduction result: 44.6000
 ║  ✓ ALL 4096 ELEMENTS CORRECT — epilogue fusion works!   ║
 ╚══════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex07_epilogue.cu -->
+
+
 
 [CORRECTED-NOTE: the three printed samples (D[0][0], D[2][5], D[3][2]) all land in the
 clamped region with this fill — pre-ReLU values there are -42.0, -37.05, and -37.6
@@ -1692,7 +1765,7 @@ earlier worked example for one.]
 
 Non-persistent kernels launch one thread block per output tile. This has three problems: kernel launch overhead, wave quantization (last partial wave wastes SM capacity), and poor cache locality (tiles assigned in a bad order). Persistent scheduling fixes all three.
 
-![Two SM-grid snapshots for 133 tiles on 132 SMs: wave 1 with every SM busy, and wave 2 with only 1 SM working while 131 sit idle, labeled with the 0.8% last-wave efficiency](images/ch09/06-wave-quantization.svg)
+[![Two SM-grid snapshots for 133 tiles on 132 SMs: wave 1 with every SM busy, and wave 2 with only 1 SM working while 131 sit idle, labeled with the 0.8% last-wave efficiency](images/ch09/06-wave-quantization.svg)](images/ch09/06-wave-quantization.svg)
 
 *One tile too many for the SM count turns the second wave into 131 idle SMs babysitting a single busy one — persistent scheduling removes the wave boundary entirely.*
 
@@ -1851,7 +1924,7 @@ Stream-K — Core Idea and Implementation
 
 Two kernels with identical arithmetic but different tile traversal orders can differ by 2-3× in performance because of L2 cache behavior. The tile that was evicted before it was needed forces an expensive HBM reload.
 
-![Three 4x4 tile-visit-order grids with numbered arrows: row-major keeping A warm but evicting B every row, column-major keeping B warm but evicting A every column, and swizzle=2 sweeping two M-tiles per column so both A and B stay live in L2](images/ch09/07-rasterization-swizzle.svg)
+[![Three 4x4 tile-visit-order grids with numbered arrows: row-major keeping A warm but evicting B every row, column-major keeping B warm but evicting A every column, and swizzle=2 sweeping two M-tiles per column so both A and B stay live in L2](images/ch09/07-rasterization-swizzle.svg)](images/ch09/07-rasterization-swizzle.svg)
 
 *Row-major and column-major each keep only one matrix's tiles warm in L2; sweeping a thick 2-tile strip before advancing columns keeps both warm at once.*
 
@@ -2062,6 +2135,7 @@ one that demonstrates clamping.
 // ═══════════════════════════════════════════════════════════════════
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstdint>
 #include <cmath>
 #include <string>
@@ -2086,13 +2160,14 @@ constexpr int WGSIZE    = 128;   // threads per warpgroup
 // ── Swizzled tile rasterization ────────────────────────────────────
 // Maps linear tile_idx → (tile_m, tile_n) using swizzle for L2 locality.
 // swizzle=2: process 2 M-tiles before advancing N.
-__device__ void get_tile_coords(int tile_idx, int tiles_n, int swizzle,
+__device__ void get_tile_coords(int tile_idx, int tiles_n, int tiles_m, int swizzle,
                                  int& tile_m, int& tile_n) {
     int block_size = swizzle * tiles_n;    // tiles per swizzle block
     int block_id   = tile_idx / block_size;
     int pos        = tile_idx % block_size;
-    int local_m    = pos / tiles_n;        // 0..swizzle-1
-    int local_n    = pos % tiles_n;        // 0..tiles_n-1
+    int group_m    = min(swizzle, tiles_m - block_id * swizzle);
+    int local_m    = pos % group_m;
+    int local_n    = pos / group_m;
     tile_m = block_id * swizzle + local_m;
     tile_n = local_n;
 }
@@ -2120,12 +2195,6 @@ __global__ void persistent_warp_spec_gemm(
     // N_STAGES × (A tile + B tile) for the circular buffer
     __shared__ float smem_A[N_STAGES][TILE_M][TILE_K];
     __shared__ float smem_B[N_STAGES][TILE_K][TILE_N];
-    // stage_ready[s]: set by producer after loading stage s
-    __shared__ int   stage_ready[N_STAGES];
-
-    // Initialize stage flags
-    if (threadIdx.x < N_STAGES) stage_ready[threadIdx.x] = 0;
-    __syncthreads();
 
     // ── Compute tile geometry ─────────────────────────────────────
     int tiles_m = (M + TILE_M - 1) / TILE_M;
@@ -2139,7 +2208,7 @@ __global__ void persistent_warp_spec_gemm(
 
         // ── Map tile index to (tile_m, tile_n) with swizzling ─────
         int tile_m, tile_n;
-        get_tile_coords(tile_idx, tiles_n, swizzle, tile_m, tile_n);
+        get_tile_coords(tile_idx, tiles_n, tiles_m, swizzle, tile_m, tile_n);
 
         // Bounds check (for tiles at matrix edges)
         if (tile_m >= tiles_m || tile_n >= tiles_n) continue;
@@ -2148,120 +2217,45 @@ __global__ void persistent_warp_spec_gemm(
         int base_m = tile_m * TILE_M;  // first row of this A block
         int base_n = tile_n * TILE_N;  // first col of this B block
 
-        // ── Consumer: allocate accumulator in registers ────────────
-        // Only WG1 (consumer) uses this. Each thread accumulates 1 element.
-        float acc = 0.0f;  // accumulator for element (local_m, local_n)
-        // Thread (wg_id=1, local_tid) handles output element:
-        // row = base_m + local_tid / TILE_N  (within the tile)
-        // col = base_n + local_tid % TILE_N
-        int elem_row = base_m + local_tid / TILE_N;
-        int elem_col = base_n + local_tid % TILE_N;
-
-        // ── K TILE LOOP ────────────────────────────────────────────
-        int k_tiles = K / TILE_K;
-        for (int kt = 0; kt < k_tiles; kt++) {
-            int stage = kt % N_STAGES;   // circular buffer slot
-            int k_base = kt * TILE_K;    // starting k-index for this step
-
-            // ────────────────────────────────────────────────────────
-            // PRODUCER path: load A[tile_m][kt] and B[kt][tile_n] into SMEM
-            // ────────────────────────────────────────────────────────
+        // Each of the 128 consumers owns 32 outputs, covering all 64×64 entries.
+        constexpr int OUTPUTS = TILE_M * TILE_N / WGSIZE;
+        float acc[OUTPUTS] = {};
+        int k_tiles = (K + TILE_K - 1) / TILE_K;
+        for (int kt = 0; kt < k_tiles; ++kt) {
+            int stage = kt % N_STAGES;
+            int k_base = kt * TILE_K;
             if (wg_id == 0) {
-                // Wait until consumer is done with this stage (from previous pass)
-                // In production: wait on empty_barrier
-                if (kt >= N_STAGES) {
-                    // Spin wait (simplified; production uses mbarrier)
-                    while (atomicAdd(&stage_ready[stage], 0) != 0) { /* wait */ }
+                for (int elem = local_tid; elem < TILE_M * TILE_K; elem += WGSIZE) {
+                    int m = elem / TILE_K, k = elem % TILE_K;
+                    smem_A[stage][m][k] = base_m + m < M && k_base + k < K
+                        ? A[(base_m + m) * K + k_base + k] : 0.0f;
                 }
-
-                // Load A tile: A[base_m..base_m+TILE_M-1][k_base..k_base+TILE_K-1]
-                // Each producer thread loads multiple elements
-                int a_per_thread = (TILE_M * TILE_K + WGSIZE - 1) / WGSIZE;
-                for (int i = 0; i < a_per_thread; i++) {
-                    int elem = local_tid * a_per_thread + i;
-                    if (elem < TILE_M * TILE_K) {
-                        int m = elem / TILE_K;
-                        int k = elem % TILE_K;
-                        int global_m = base_m + m;
-                        int global_k = k_base + k;
-                        float val = (global_m < M && global_k < K)
-                                    ? A[global_m * K + global_k] : 0.0f;
-                        smem_A[stage][m][k] = val;
-                    }
+                for (int elem = local_tid; elem < TILE_K * TILE_N; elem += WGSIZE) {
+                    int k = elem / TILE_N, n = elem % TILE_N;
+                    smem_B[stage][k][n] = k_base + k < K && base_n + n < N
+                        ? B[(k_base + k) * N + base_n + n] : 0.0f;
                 }
-
-                // Load B tile: B[k_base..k_base+TILE_K-1][base_n..base_n+TILE_N-1]
-                int b_per_thread = (TILE_K * TILE_N + WGSIZE - 1) / WGSIZE;
-                for (int i = 0; i < b_per_thread; i++) {
-                    int elem = local_tid * b_per_thread + i;
-                    if (elem < TILE_K * TILE_N) {
-                        int k = elem / TILE_N;
-                        int n = elem % TILE_N;
-                        int global_k = k_base + k;
-                        int global_n = base_n + n;
-                        float val = (global_k < K && global_n < N)
-                                    ? B[global_k * N + global_n] : 0.0f;
-                        smem_B[stage][k][n] = val;
-                    }
-                }
-
-                // Signal that stage is full
-                // In production: TMA signals via mbarrier.arrive (hardware)
-                __threadfence_block();
-                atomicExch(&stage_ready[stage], 1);
-
-            } else {
-                // ──────────────────────────────────────────────────
-                // CONSUMER path: wait for stage then accumulate
-                // ──────────────────────────────────────────────────
-                // Wait for producer to fill this stage
-                // In production: mbar_wait(&full_bar[stage], phase)
-                while (atomicAdd(&stage_ready[stage], 0) == 0) { /* wait */ }
-
-                // Barrier: all consumer threads see the updated stage data
-                __syncwarp();
-
-                // Accumulate: multiply A × B for this K-tile step
-                // Each thread computes ONE output element's contribution
-                int local_row = (local_tid / TILE_N);  // which row within tile
-                int local_col = (local_tid % TILE_N);  // which col within tile
-
-                // Dot product over TILE_K elements
-                for (int k = 0; k < TILE_K; k++) {
-                    float a_val = smem_A[stage][local_row][k];
-                    float b_val = smem_B[stage][k][local_col];
-                    // PTX fma for the inner product
-                    asm("fma.rn.f32 %0, %1, %2, %0;"
-                        : "+f"(acc)
-                        : "f"(a_val), "f"(b_val));
-                }
-
-                // Signal that we're done with this stage (release to producer)
-                // In production: mbar_arrive(&empty_bar[stage])
-                __threadfence_block();
-                atomicExch(&stage_ready[stage], 0);
             }
-
-            // Both warpgroups synchronize here (simplified pipeline)
-            // In production: each WG uses its own barriers independently.
+            // This teaching version serializes load and compute. A CTA barrier
+            // publishes ALL producer writes; one thread setting a flag cannot.
+            __syncthreads();
+            if (wg_id == 1) {
+                for (int j = 0; j < OUTPUTS; ++j) {
+                    int elem = local_tid + j * WGSIZE;
+                    int m = elem / TILE_N, n = elem % TILE_N;
+                    for (int k = 0; k < TILE_K; ++k)
+                        acc[j] = fmaf(smem_A[stage][m][k], smem_B[stage][k][n], acc[j]);
+                }
+            }
+            // Every consumer finishes before a producer reuses the buffer.
             __syncthreads();
         }
-
-        // ── EPILOGUE: Consumer writes ReLU-activated result to C ──
         if (wg_id == 1) {
-            // ReLU activation (register-level, zero memory cost)
-            float result;
-            asm("max.f32 %0, %1, 0f00000000;"  // max(acc, +0.0f)
-                : "=f"(result)
-                : "f"(acc));
-
-            // Write to global memory (in production: R→S→TMA)
-            if (elem_row < M && elem_col < N) {
-                uint64_t out_addr = reinterpret_cast<uint64_t>(C) +
-                                    (uint64_t)elem_row * N * sizeof(float) +
-                                    (uint64_t)elem_col * sizeof(float);
-                asm volatile("st.global.f32 [%0], %1;"
-                             :: "l"(out_addr), "f"(result) : "memory");
+            for (int j = 0; j < OUTPUTS; ++j) {
+                int elem = local_tid + j * WGSIZE;
+                int row = base_m + elem / TILE_N, col = base_n + elem % TILE_N;
+                if (row < M && col < N)
+                    C[row * N + col] = fmaxf(acc[j], 0.0f);
             }
         }
 
@@ -2285,7 +2279,7 @@ void reference_gemm_relu(
 }
 
 // ─── Main ──────────────────────────────────────────────────────────
-int main() {
+int main(int argc, char** argv) {
     printf("╔══════════════════════════════════════════════════════════╗\n");
     printf("║  ex08: Comprehensive — Persistent Warp-Spec GEMM+ReLU   ║\n");
     printf("╚══════════════════════════════════════════════════════════╝\n\n");
@@ -2296,10 +2290,15 @@ int main() {
     printf("GPU: %s (SM %d.%d)\n", prop.name, prop.major, prop.minor);
 
     // ── Problem setup ─────────────────────────────────────────────
-    const int M = 256, N = 256, K = 256;  // CORRECTED: was 128,128,64 (AI=16,
-                                           // memory-bound — see §19 note)
-    const int tiles_m = M / TILE_M;
-    const int tiles_n = N / TILE_N;
+    const int M = argc > 1 ? std::atoi(argv[1]) : 256;
+    const int N = argc > 2 ? std::atoi(argv[2]) : 256;
+    const int K = argc > 3 ? std::atoi(argv[3]) : 256;
+    if (M <= 0 || N <= 0 || K <= 0 || M > 4096 || N > 4096 || K > 4096) {
+        fprintf(stderr, "Dimensions must be in [1, 4096]\n");
+        return 2;
+    }
+    const int tiles_m = (M + TILE_M - 1) / TILE_M;
+    const int tiles_n = (N + TILE_N - 1) / TILE_N;
     const int total_tiles = tiles_m * tiles_n;
 
     // Arithmetic intensity check
@@ -2377,7 +2376,7 @@ int main() {
 
     // ── Report on key design decisions ───────────────────────────
     printf("\nDesign Summary:\n");
-    printf("  Kernel type:     Compute-bound (AI=%.0f FLOP/Byte)\n", ai);
+    printf("  Kernel model:    Arithmetic intensity (AI=%.0f FLOP/Byte)\n", ai);
     printf("  Warp spec:       WG0=producer (loads), WG1=consumer (computes)\n");
     printf("  Pipeline stages: %d (circular buffer in shared memory)\n", N_STAGES);
     printf("  Scheduling:      Persistent (1 CTA, processes %d tiles)\n", total_tiles);
@@ -2413,14 +2412,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex08_comprehensive.cu -->
+**Captured output — ex08_comprehensive.cu**
 
+> **Executed:** 2026-11-17T21:40:17.045545+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu) as `ex08_comprehensive.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex08_comprehensive.cu -o ex08_comprehensive
+./ex08_comprehensive
 ```
+
+[Compiler log](validation/2026-11-17/09-kernel-design-part-2/ex08_comprehensive/compile.log) · [Execution log](validation/2026-11-17/09-kernel-design-part-2/ex08_comprehensive/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex08: Comprehensive — Persistent Warp-Spec GEMM+ReLU   ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 
 Problem: M=256, N=256, K=256
 Tile:    64×64 (K-step=16, stages=3)
@@ -2430,8 +2443,8 @@ AI:      42.7 FLOP/Byte (COMPUTE-BOUND ✓)
 Launch: 1 CTA × 256 threads (WG0=producer, WG1=consumer)
 Persistent loop: processes all 16 tiles sequentially.
 
-Runtime: (varies by GPU)
-GFLOPS: (varies by GPU)
+Runtime: 1.142 ms
+GFLOPS: 29.39
 
 Verification:
   Total elements: 65536
@@ -2441,7 +2454,7 @@ Verification:
   Sample: C[5][7]=0.0273 ref=0.0273
 
 Design Summary:
-  Kernel type:     Compute-bound (AI=43 FLOP/Byte)
+  Kernel model:    Arithmetic intensity (AI=43 FLOP/Byte)
   Warp spec:       WG0=producer (loads), WG1=consumer (computes)
   Pipeline stages: 3 (circular buffer in shared memory)
   Scheduling:      Persistent (1 CTA, processes 16 tiles)
@@ -2464,6 +2477,19 @@ Design Summary:
 ║  ✓ Fused epilogue (ReLU in registers)                  ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex08_comprehensive.cu -->
+
+Additional boundary tests executed on November 17, 2026 (same binary and system):
+
+```bash
+./ex08_comprehensive 225 197 257
+./ex08_comprehensive 17 33 19
+```
+
+Both report `Errors: 0`. These cover partial output tiles, an incomplete final K tile, and an incomplete final rasterization group. [Ragged-shape log](validation/2026-11-17/gemm-ragged.log) · [Small-shape log](validation/2026-11-17/gemm-small.log). The teaching implementation uses block-wide barriers to serialize load/compute; it does not claim production asynchronous overlap.
+
+
+
 
 [Runtime/GFLOPS are hardware- and clock-dependent and will vary; every other line
 above is deterministic given the fill in main() and is reproduced exactly.]

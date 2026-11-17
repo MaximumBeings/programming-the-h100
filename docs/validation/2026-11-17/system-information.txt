@@ -1,0 +1,13 @@
+Execution date: November 17, 2026 (America/New_York); detailed timestamps are UTC.
+GPU: 1 x NVIDIA H100 PCIe (80 GB class), compute capability 9.0, 114 SMs.
+NVIDIA-SMI physical memory report: 81,559 MiB. CUDA-visible memory is lower due to driver reservations.
+OS: Ubuntu 24.04.5 LTS, x86_64; kernel 6.8.0-1064-nvidia.
+Driver: 580.105.08.
+CUDA Toolkit / nvcc: 12.8, V12.8.93. The NVIDIA-SMI CUDA 13.0 label is the driver's maximum supported CUDA version, not the installed compiler version.
+Host compiler: GCC 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04.1).
+CUDA compilation target: sm_90a; C++17; -O2.
+Python: 3.12.3. PyTorch: 2.7.0; PyTorch CUDA runtime: 12.8.
+Nsight Compute: 2025.1.1.0 (build 35528883).
+Coverage: all 27 complete CUDA programs compile; 24 single-GPU workloads pass. Three multi-GPU workloads cannot run on this host and only their insufficient-GPU paths were exercised.
+Chapter 12: 12 CUDA online-softmax reference cases pass against PyTorch math SDPA. This is not an FA3 kernel benchmark.
+Chapter 13: ordinary-user profiling reports ERR_NVGPUCTRPERM; profiling under sudo succeeds. No driver-wide permissions were changed.

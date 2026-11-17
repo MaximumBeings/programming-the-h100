@@ -1,8 +1,5 @@
-<?xml version="1.0" encoding="utf-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
-  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="756pt" height="331.2pt" viewBox="0 0 756 331.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
- <metadata>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:c2pa="http://c2pa.org/manifest" width="1100" height="470" viewBox="0 0 1100 470" role="img"><title>WGMMA 64-bit descriptor with correct base-offset field</title><desc>Address bits 0–13, leading offset 16–29, stride offset 32–45, base offset 49–51, swizzle 62–63. Remaining bits are reserved.</desc>
+<metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
@@ -16,142 +13,37 @@
    </cc:Work>
   </rdf:RDF>
  </metadata>
- <defs>
-  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
- </defs>
- <g id="figure_1">
-  <g id="patch_1">
-   <path d="M 0 331.2 
-L 756 331.2 
-L 756 0 
-L 0 0 
-z
-" style="fill: #ffffff"/>
-  </g>
-  <g id="axes_1">
-   <g id="patch_2">
-    <path d="M 31.782857 182.047304 
-L 183.252857 182.047304 
-L 183.252857 83.250783 
-L 31.782857 83.250783 
-z
-" clip-path="url(#p99565c1d15)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_3">
-    <path d="M 183.252857 182.047304 
-L 204.891429 182.047304 
-L 204.891429 83.250783 
-L 183.252857 83.250783 
-z
-" clip-path="url(#p99565c1d15)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_4">
-    <path d="M 204.891429 182.047304 
-L 356.361429 182.047304 
-L 356.361429 83.250783 
-L 204.891429 83.250783 
-z
-" clip-path="url(#p99565c1d15)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_5">
-    <path d="M 356.361429 182.047304 
-L 378 182.047304 
-L 378 83.250783 
-L 356.361429 83.250783 
-z
-" clip-path="url(#p99565c1d15)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_6">
-    <path d="M 378 182.047304 
-L 529.47 182.047304 
-L 529.47 83.250783 
-L 378 83.250783 
-z
-" clip-path="url(#p99565c1d15)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_7">
-    <path d="M 529.47 182.047304 
-L 561.927857 182.047304 
-L 561.927857 83.250783 
-L 529.47 83.250783 
-z
-" clip-path="url(#p99565c1d15)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_8">
-    <path d="M 561.927857 182.047304 
-L 702.578571 182.047304 
-L 702.578571 83.250783 
-L 561.927857 83.250783 
-z
-" clip-path="url(#p99565c1d15)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
-   </g>
-   <g id="patch_9">
-    <path d="M 702.578571 182.047304 
-L 724.217143 182.047304 
-L 724.217143 83.250783 
-L 702.578571 83.250783 
-z
-" clip-path="url(#p99565c1d15)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
-   </g>
-   <g id="line2d_1">
-    <path d="M 31.782857 76.664348 
-L 724.217143 76.664348 
-" clip-path="url(#p99565c1d15)" style="fill: none; stroke: #555555; stroke-width: 0.8; stroke-linecap: square"/>
-   </g>
-   <g id="text_1">
-    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="378" y="37.359885" transform="rotate(-0 378 37.359885)">The 64-Bit WGMMA Descriptor</text>
-   </g>
-   <g id="text_2">
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(88.34092 125.501481)">Base addr</text>
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(90.748576 134.623559)">bits 0-13</text>
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(76.395263 143.745637)">smem_addr&gt;&gt;4</text>
-   </g>
-   <g id="text_3">
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(190.922143 130.504952)">—</text>
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(184.918932 138.066182)">14-15</text>
-   </g>
-   <g id="text_4">
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(272.977147 125.501184)">LBO</text>
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(261.439397 134.623262)">bits 16-29</text>
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(263.673085 143.74534)">stride/16</text>
-   </g>
-   <g id="text_5">
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(364.030714 130.504952)">—</text>
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(358.027503 138.066182)">30-31</text>
-   </g>
-   <g id="text_6">
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(445.790625 125.501184)">SBO</text>
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(434.547969 134.623262)">bits 32-45</text>
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(436.781656 143.74534)">stride/16</text>
-   </g>
-   <g id="text_7">
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(535.78135 126.724336)">Matrix</text>
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(533.091054 134.286059)">base off</text>
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(536.545718 141.84729)">46-48</text>
-   </g>
-   <g id="text_8">
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(614.565402 130.06252)">Reserved</text>
-    <text style="font-size: 7.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(613.066183 139.184598)">bits 49-61</text>
-   </g>
-   <g id="text_9">
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(706.293623 130.505198)">Swiz</text>
-    <text style="font-size: 6.3px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(704.244646 138.066428)">62-63</text>
-   </g>
-   <g id="text_10">
-    <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.782857" y="66.784696" transform="rotate(-0 31.782857 66.784696)">bit 0</text>
-   </g>
-   <g id="text_11">
-    <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: end; fill: #555555" x="724.217143" y="66.784696" transform="rotate(-0 724.217143 66.784696)">bit 63</text>
-   </g>
-   <g id="text_12">
-    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(191.944375 245.304507)">Base, LBO, SBO all store stride_bytes / 16 — the hardware re-multiplies by 16 on read.</text>
-    <text style="font-size: 8.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(162.266984 257.791304)">Swizzle (bits 62-63): 00=none, 01=128B★, 10=64B, 11=32B — must match the TMA's own swizzle.</text>
-   </g>
-  </g>
- </g>
- <defs>
-  <clipPath id="p99565c1d15">
-   <rect x="10.8" y="10.8" width="734.4" height="302.976"/>
-  </clipPath>
- </defs>
-</svg>
+<rect width="1100" height="470" fill="#f8fafc"/><g font-family="Arial, Liberation Sans, sans-serif" fill="#172033"><text x="40" y="48" font-size="30" font-weight="700">WGMMA · The 64-bit shared-memory descriptor</text><text x="40" y="84" font-size="18" fill="#475569">Bit positions increase left to right. Reserved fields must remain zero.</text>
+<rect x="40.0" y="145" width="223.125" height="90" fill="#ccfbf1" stroke="#94a3b8"/>
+<text x="151.5625" y="130" text-anchor="middle" font-size="14">0–13</text>
+<text x="151.5625" y="197" text-anchor="middle" font-size="18" font-weight="700">Address</text>
+<rect x="263.125" y="145" width="31.875" height="90" fill="#e2e8f0" stroke="#94a3b8"/>
+<text x="279.0625" y="130" text-anchor="middle" font-size="14">14–15</text>
+<text x="279.0625" y="197" text-anchor="middle" font-size="13" font-weight="700">R</text>
+<rect x="295.0" y="145" width="223.125" height="90" fill="#dbeafe" stroke="#94a3b8"/>
+<text x="406.5625" y="130" text-anchor="middle" font-size="14">16–29</text>
+<text x="406.5625" y="197" text-anchor="middle" font-size="18" font-weight="700">LBO</text>
+<rect x="518.125" y="145" width="31.875" height="90" fill="#e2e8f0" stroke="#94a3b8"/>
+<text x="534.0625" y="130" text-anchor="middle" font-size="14">30–31</text>
+<text x="534.0625" y="197" text-anchor="middle" font-size="13" font-weight="700">R</text>
+<rect x="550.0" y="145" width="223.125" height="90" fill="#fef3c7" stroke="#94a3b8"/>
+<text x="661.5625" y="130" text-anchor="middle" font-size="14">32–45</text>
+<text x="661.5625" y="197" text-anchor="middle" font-size="18" font-weight="700">SBO</text>
+<rect x="773.125" y="145" width="47.8125" height="90" fill="#e2e8f0" stroke="#94a3b8"/>
+<text x="797.03125" y="130" text-anchor="middle" font-size="14">46–48</text>
+<text x="797.03125" y="197" text-anchor="middle" font-size="13" font-weight="700">R</text>
+<rect x="820.9375" y="145" width="47.8125" height="90" fill="#ffedd5" stroke="#94a3b8"/>
+<text x="844.84375" y="130" text-anchor="middle" font-size="14">49–51</text>
+<text x="844.84375" y="197" text-anchor="middle" font-size="13" font-weight="700">BO</text>
+<rect x="868.75" y="145" width="159.375" height="90" fill="#e2e8f0" stroke="#94a3b8"/>
+<text x="948.4375" y="130" text-anchor="middle" font-size="14">52–61</text>
+<text x="948.4375" y="197" text-anchor="middle" font-size="18" font-weight="700">Reserved</text>
+<rect x="1028.125" y="145" width="31.875" height="90" fill="#ede9fe" stroke="#94a3b8"/>
+<text x="1044.0625" y="130" text-anchor="middle" font-size="14">62–63</text>
+<text x="1044.0625" y="197" text-anchor="middle" font-size="13" font-weight="700">SW</text>
+<text x="40" y="280" font-size="17" fill="#334155">Address / LBO / SBO: encode bytes as (value &amp; 0x3ffff) &gt;&gt; 4; all are 16-byte aligned.</text>
+<text x="40" y="315" font-size="17" fill="#334155">BO: matrix base offset, bits 49–51. Used with swizzled layouts; zero for the aligned boundary.</text>
+<text x="40" y="350" font-size="17" fill="#334155">SW: 0 = no swizzle · 1 = 128B · 2 = 64B · 3 = 32B.</text>
+<text x="40" y="385" font-size="17" fill="#334155">R / Reserved: bits 14–15, 30–31, 46–48 and 52–61.</text>
+<text x="40" y="420" font-size="17" fill="#334155">Source: NVIDIA CUDA 12.8 PTX ISA §9.7.15.5.1.2.2, Matrix Descriptor Format.</text>
+</g></svg>

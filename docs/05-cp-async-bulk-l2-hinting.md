@@ -1,7 +1,11 @@
 # cp.async.bulk, TMA Transfers & L2 Cache Hinting
 ## Lesson 5 Companion Guide — Programming the H100
 
-> **Verified on:** CUDA 12.x + Hopper GPU (sm_90a).
+> **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
 > **Run with:** `./<out>` on any H100 or B200 instance.
 
@@ -59,14 +63,14 @@ Hardware Compatibility Matrix
 
 ### Cloud GPU Rental — Lambda Labs
 
-Usually the cheapest hourly H100.
+Check current provider availability and pricing.
 
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
 
   1. https://lambdalabs.com/ → sign up → Launch Instance
-  2. Choose "1x H100 PCIe" (cheapest for learning)
+  2. Choose "1x H100 PCIe" (sufficient for the single-GPU examples)
   3. SSH: ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
   4. Verify: nvcc --version && nvidia-smi
   5. Compile: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out && ./out
@@ -198,7 +202,7 @@ TMA Engine — What It Does Internally
   ALL of steps 1-6 happen in dedicated hardware with ZERO SM involvement.
 ```
 
-![TMA engine timeline — after cp.async.bulk.tensor is issued](images/ch05/01-tma-engine-timeline.svg)
+[![TMA engine timeline — after cp.async.bulk.tensor is issued](images/ch05/01-tma-engine-timeline.svg)](images/ch05/01-tma-engine-timeline.svg)
 
 *The issuing thread runs one instruction and is immediately free — for compute, for tensor cores, for anything else. The TMA engine then works through its four internal steps (read descriptor, calculate addresses, fetch from HBM, write to SMEM) entirely in the background. As bytes land, the mbarrier's transaction count decrements; when it reaches zero, the phase flips and waiting consumers unblock. None of this touches an SM instruction slot after the initial issue.*
 
@@ -270,8 +274,8 @@ Hopper cp.async.bulk — One Instruction, Zero Thread Involvement
   // Only ONE thread issues ONE instruction
   if (threadIdx.x == 0) {
       asm volatile(
-          "cp.async.bulk.tensor.2d.shared::cluster.global"
-          " [%0], [%1], {%2, %3}, [%4];"
+          "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes"
+          " [%0], [%1, {%2, %3}], [%4];"
           : : "r"(smem_dest), "l"(&tma_desc),
               "r"(col_start), "r"(row_start),
               "r"(mbar_addr)
@@ -288,7 +292,7 @@ Hopper cp.async.bulk — One Instruction, Zero Thread Involvement
   Uses: TMA engine — NOT the LSU. NOT warp schedulers (beyond 1 issue).
 ```
 
-![Ampere cp.async vs Hopper cp.async.bulk — hardware occupancy for a 4 KB tile](images/ch05/02-ampere-vs-hopper-occupancy.svg)
+[![Ampere cp.async vs Hopper cp.async.bulk — hardware occupancy for a 4 KB tile](images/ch05/02-ampere-vs-hopper-occupancy.svg)](images/ch05/02-ampere-vs-hopper-occupancy.svg)
 
 *Ampere's path keeps the warp schedulers occupied issuing 256 `cp.async` calls and the LSU busy handling every 16-byte chunk, leaving the tensor cores idle because the threads are consumed by copy management. Hopper's path issues one instruction, leaves the warp schedulers free immediately, hands the transfer to the TMA engine running independently, and leaves the tensor cores fully available for math.*
 
@@ -378,7 +382,7 @@ cp.async.bulk — Two Major Forms
 
 ```
 
-![cp.async.bulk.tensor vs cp.async.bulk — the key visual difference](images/ch05/03-tensor-vs-raw-layout.svg)
+[![cp.async.bulk.tensor vs cp.async.bulk — the key visual difference](images/ch05/03-tensor-vs-raw-layout.svg)](images/ch05/03-tensor-vs-raw-layout.svg)
 
 *With `.tensor`, TMA is handed a descriptor and derives shape; without it, TMA is handed only a size and an address and performs a blind copy.*
 
@@ -591,7 +595,7 @@ The `.tile` mode (the default for most uses) tells TMA to fetch a dense rectangu
             boxDim      → know when to stop
 ```
 
-![.tile mode — dense rectangular fetch from a global matrix](images/ch05/04-tile-mode-rectangular-fetch.svg)
+[![.tile mode — dense rectangular fetch from a global matrix](images/ch05/04-tile-mode-rectangular-fetch.svg)](images/ch05/04-tile-mode-rectangular-fetch.svg)
 
 *The coordinate `(col=64, row=32)` locates the tile's top-left corner; the descriptor's `boxDim={32,16}` tells TMA how far to extend it — 32 columns by 16 rows, 512 elements. TMA computes `element[r][c] = base + (row+r)·stride + (col+c)·sizeof(T)` for every `r ∈ [0,15]`, `c ∈ [0,31]` as a nested loop run entirely in hardware; thread involvement is zero.*
 
@@ -606,7 +610,7 @@ im2col Mode — Hardware Convolution Acceleration
 ══════════════════════════════════════════════════════════════════════
 ```
 
-![im2col — traditional flow vs TMA hardware convolution](images/ch05/05-im2col-flow-comparison.svg)
+[![im2col — traditional flow vs TMA hardware convolution](images/ch05/05-im2col-flow-comparison.svg)](images/ch05/05-im2col-flow-comparison.svg)
 
 *Traditionally, a separate im2col kernel reads pixels, computes overlapping-window offsets, and writes a wasteful intermediate "columns" matrix to global memory before the GEMM can run. TMA's im2col mode collapses this to one instruction: it reads pixels using convolution-window logic and unrolls them directly into SMEM as a column layout, so the intermediate HBM buffer and the separate kernel launch never happen.*
 
@@ -845,7 +849,7 @@ createpolicy — Building the Cache Descriptor
   asm volatile(
       "cp.async.bulk.tensor.2d.shared::cta.global"
       ".mbarrier::complete_tx::bytes.L2::cache_hint"
-      " [%0], [%1], {%2, %3}, [%4], %5;"
+      " [%0], [%1, {%2, %3}], [%4], %5;"
       : : "r"(smem_dest), "l"(&tma_desc),
           "r"(col), "r"(row),
           "r"(mbar_addr), "l"(policy)
@@ -998,7 +1002,7 @@ Unstructured Copy Variants — All State Space Combinations
 
       // Init mbarrier (1 thread arrival + 8192 tx bytes expected)
       asm("mbarrier.init.shared::cta.b64 [%0], 1;" : : "r"(mbar_addr));
-      asm("mbarrier.arrive.expect_tx.release.shared::cta.b64 _, [%0], %1;"
+      asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%0], %1;"
           : : "r"(mbar_addr), "r"(8192u));
 
       // Issue raw bulk copy (no cuTensorMap!)
@@ -1015,7 +1019,7 @@ Unstructured Copy Variants — All State Space Combinations
   { uint32_t done=0; int phase=0;
     uint32_t mbar_addr = __cvta_generic_to_shared(&mbar);
     while(!done) asm volatile(
-        "{ .reg .pred p; mbarrier.try_wait.parity.acquire.shared::cta.b64"
+        "{ .reg .pred p; mbarrier.try_wait.parity.acquire.cta.shared::cta.b64"
         " p,[%1],%2; selp.u32 %0,1,0,p; }"
         : "=r"(done) : "r"(mbar_addr), "r"(phase)); }
   // smem_buf now contains the data
@@ -1066,7 +1070,7 @@ Structured Copy: Global → Shared::CTA (Standard Load)
   asm volatile(
       "cp.async.bulk.tensor.2d.shared::cta.global"
       ".mbarrier::complete_tx::bytes"
-      " [%0], [%1], {%2, %3}, [%4];"
+      " [%0], [%1, {%2, %3}], [%4];"
       :
       : "r"(smem_dest),    // dst (32-bit SMEM addr)
         "l"(&tma_desc),    // tensorMap (64-bit pointer)
@@ -1175,7 +1179,7 @@ TMA Multicast — Bandwidth Analysis
   Total HBM reads: 1 × 4 KB = 4 KB. 4× bandwidth savings!
 ```
 
-![TMA multicast — one HBM fetch, delivered to every block's SMEM](images/ch05/06-tma-multicast-fanout.svg)
+[![TMA multicast — one HBM fetch, delivered to every block's SMEM](images/ch05/06-tma-multicast-fanout.svg)](images/ch05/06-tma-multicast-fanout.svg)
 
 *One HBM read lands in L2, whose controller recognizes the multicast request and broadcasts the tile to every block named in the ctaMask simultaneously — here all four of SM0-SM3's SMEM.*
 
@@ -1219,9 +1223,9 @@ ctaMask — How to Construct It
   if (cluster.block_rank() == 0) {
       // Only rank 0 issues the instruction for all blocks
       asm volatile(
-          "cp.async.bulk.tensor.2d.shared::cluster.global"
+          "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes"
           ".mbarrier::complete_tx::bytes.multicast::cluster"
-          " [%0], [%1], {%2, %3}, [%4], %5;"
+          " [%0], [%1, {%2, %3}], [%4], %5;"
           :
           : "r"(smem_dest), "l"(&tma_desc),
             "r"(col), "r"(row),
@@ -1232,7 +1236,7 @@ ctaMask — How to Construct It
   }
   // ALL blocks spin on THEIR OWN local mbarrier:
   { uint32_t done=0; while(!done) asm volatile(
-      "{ .reg .pred p; mbarrier.try_wait.parity.acquire.shared::cta.b64"
+      "{ .reg .pred p; mbarrier.try_wait.parity.acquire.cta.shared::cta.b64"
       " p,[%1],%2; selp.u32 %0,1,0,p; }"
       : "=r"(done) : "r"(mbar_addr), "r"(phase)); }
   // After this: ALL blocks have the tile in their own SMEM ✓
@@ -1263,7 +1267,7 @@ Multicast mbarrier Rules — What Can Go Wrong and How to Avoid It
   // Otherwise their tx-count is never set → their barrier never fires.
   if (tid == 0) {
       uint32_t mbar_addr = __cvta_generic_to_shared(&mbar);
-      asm("mbarrier.arrive.expect_tx.release.shared::cta.b64 _, [%0], %1;"
+      asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%0], %1;"
           : : "r"(mbar_addr), "r"((uint32_t)TILE_BYTES));
   }
   // Even blocks that don't issue the cp.async.bulk instruction must
@@ -1276,9 +1280,9 @@ Multicast mbarrier Rules — What Can Go Wrong and How to Avoid It
   // Only rank-0 issues the instruction:
   if (rank == 0 && tid == 0) {
       asm volatile(
-          "cp.async.bulk.tensor.2d.shared::cluster.global"
+          "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes"
           ".mbarrier::complete_tx::bytes.multicast::cluster"
-          " [%0], [%1], {%2, %3}, [%4], %5;"
+          " [%0], [%1, {%2, %3}], [%4], %5;"
           : : "r"(smem_dest), "l"(&tma_desc), "r"(col), "r"(row),
               "r"(mbar_addr_of_rank0),  // THIS block's mbar
               "h"(ctaMask)
@@ -1354,7 +1358,7 @@ Dynamic Shared Memory Layout for TMA — The Right Way
   // Pass to kernel launch: my_kernel<<<grid, block, 128+TILE_BYTES>>>(...)
 ```
 
-![Dynamic shared memory layout for TMA — wrong vs correct alignment](images/ch05/07-dynamic-smem-alignment.svg)
+[![Dynamic shared memory layout for TMA — wrong vs correct alignment](images/ch05/07-dynamic-smem-alignment.svg)](images/ch05/07-dynamic-smem-alignment.svg)
 
 *Placing data right after the 8-byte mbarrier leaves it at byte offset 8 — not a multiple of 128, which silently corrupts TMA's swizzled writes. Rounding the offset up to the next 128-byte boundary (padding bytes 8-127) gives TMA the alignment its SWIZZLE_128B destination requires.*
 
@@ -1401,7 +1405,7 @@ cp.async.bulk.prefetch — How It Works
 
 ```
 
-![cp.async.bulk.prefetch — warming L2 ahead of the real load](images/ch05/08-prefetch-timeline.svg)
+[![cp.async.bulk.prefetch — warming L2 ahead of the real load](images/ch05/08-prefetch-timeline.svg)](images/ch05/08-prefetch-timeline.svg)
 
 *Without prefetch, the real `cp.async.bulk` is the first thing to touch HBM, so once compute on tile K finishes the threads sit idle for the full ~200 μs HBM round trip. With prefetch issued early, that HBM transfer overlaps with compute on tile K; by the time the real `cp.async.bulk` is issued, L2 is already warm and the transfer is a fast L2 hit instead.*
 
@@ -1423,7 +1427,7 @@ cp.async.bulk.prefetch — How It Works
     // Later: actual load (L2 likely warm by now)
     asm volatile(
         "cp.async.bulk.tensor.2d.shared::cta.global"
-        ".mbarrier::complete_tx::bytes [%0], [%1], {%2, %3}, [%4];"
+        ".mbarrier::complete_tx::bytes [%0], [%1, {%2, %3}], [%4];"
         : : "r"(smem), "l"(&tma_desc), "r"(col_K1), "r"(row_K1), "r"(mbar));
 
   ─── Important Limitations ───────────────────────────────────────
@@ -1696,7 +1700,7 @@ __global__ void bulk_raw_kernel(
         if (tid == 0) {
             // Set expected transaction count = TILE_BYTES
             asm volatile(
-                "mbarrier.arrive.expect_tx.release.shared::cta.b64 _, [%0], %1;"
+                "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%0], %1;"
                 : : "r"(mbar_addr), "r"((uint32_t)TILE_BYTES)
             );
 
@@ -1725,7 +1729,7 @@ __global__ void bulk_raw_kernel(
                 asm volatile(
                     "{\n\t"
                     "  .reg .pred p;\n\t"
-                    "  mbarrier.try_wait.parity.acquire.shared::cta.b64"
+                    "  mbarrier.try_wait.parity.acquire.cta.shared::cta.b64"
                     "    p, [%1], %2;\n\t"
                     "  selp.u32 %0, 1, 0, p;\n\t"
                     "}\n\t"
@@ -1788,14 +1792,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex01_bulk_raw.cu -->
+**Captured output — ex01_bulk_raw.cu**
 
+> **Executed:** 2026-11-17T21:29:09.745589+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu) as `ex01_bulk_raw.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_bulk_raw.cu -o ex01_bulk_raw
+./ex01_bulk_raw
 ```
+
+[Compiler log](validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/compile.log) · [Execution log](validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex01: Raw cp.async.bulk + mbarrier + L2 evict_last      ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 Config: 6 tiles × 1024 FP32 = 4096 bytes per tile
 
 Checks: 6144 / 6144 passed
@@ -1804,6 +1822,9 @@ Checks: 6144 / 6144 passed
 ║  ✓ ALL PASS                                              ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex01_bulk_raw.cu -->
+
+
 
 `GPU:` varies with the card the binary runs on; everything else is deterministic. The host seeds `h_src[i] = (float)i`, so for each of the `K_TILES=6` tiles the verify loop checks `tile[i]` against `(float)(k * TILE_ELEMS + i)` — all `6 × 1024 = 6144` elements match. One cosmetic note: unlike the two-glyph PASS banners in earlier chapters, this one carries only a single 3-byte UTF-8 glyph (`✓`, no trailing em dash), so `%-56s`'s byte-counted padding comes up exactly even with the border instead of landing short.
 
@@ -1952,14 +1973,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex02_reduce_async.cu -->
+**Captured output — ex02_reduce_async.cu**
 
+> **Executed:** 2026-11-17T21:29:12.439860+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu) as `ex02_reduce_async.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_reduce_async.cu -o ex02_reduce_async
+./ex02_reduce_async
 ```
+
+[Compiler log](validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex02_reduce_async/compile.log) · [Execution log](validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex02_reduce_async/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex02: cp.reduce.async — Atomic Tile Reduction           ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 Config: 4 blocks each adding their value (1,2,3,4) to 256 elements
 Expected result: every element = 1+2+3+4 = 10.0
 
@@ -1970,6 +2005,9 @@ Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
 ║  ✓ ALL PASS — cp.reduce.async works correctly!         ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex02_reduce_async.cu -->
+
+
 
 `GPU:` again varies with the card the binary runs on. Block `bid` fills its SMEM tile with `(float)(bid+1)`, so blocks 0-3 contribute 1.0, 2.0, 3.0, 4.0; each block's `cp.reduce.async.bulk...add.f32` atomically adds its tile into `global_acc`, so every one of the `256` elements ends up at `1+2+3+4 = 10.0` and `errors` stays `0`. This banner carries two 3-byte UTF-8 glyphs (`✓` and the em dash in `— cp.reduce.async`), so `%-56s`'s byte-counted padding lands 2 columns short of the border above it — the same quirk documented for the two-glyph banners in Chapters 3 and 4.
 

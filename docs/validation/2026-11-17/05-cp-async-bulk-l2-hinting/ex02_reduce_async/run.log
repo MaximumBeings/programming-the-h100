@@ -1,0 +1,14 @@
+╔══════════════════════════════════════════════════════════╗
+║  ex02: cp.reduce.async — Atomic Tile Reduction           ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 PCIe (SM 9.0)
+Config: 4 blocks each adding their value (1,2,3,4) to 256 elements
+Expected result: every element = 1+2+3+4 = 10.0
+
+Errors: 0 / 256 elements
+Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — cp.reduce.async works correctly!         ║
+╚══════════════════════════════════════════════════════════╝

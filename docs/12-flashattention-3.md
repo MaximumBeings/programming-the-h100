@@ -1,6 +1,11 @@
 # FlashAttention-3 on the H100
 ## Chapter 12 Companion Guide — Every Primitive in This Book, Working at Once
 
+> **Validation — November 17, 2026.** 12 online-softmax numerical reference cases passed on CUDA; the FA3 scheduling listings remain explicitly labeled skeletons.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 > **Reference implementation — not executed during authoring.** Unlike Chapters
 > 1–11, the code in this chapter has not been compiled and run on Hopper
 > hardware. It is written to be correct and to be read, and the structure follows
@@ -218,7 +223,7 @@ Naive Attention — Where the Bytes Go
   Scaling: S grows as N². At N = 32k it is 2.1 GB per head.
 ```
 
-![Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction](images/ch12/01-materialization-traffic.svg)
+[![Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction](images/ch12/01-materialization-traffic.svg)](images/ch12/01-materialization-traffic.svg)
 
 The whole of FlashAttention rests on one observation: **`S` and `P` never need to
 exist in HBM.** They are intermediates. If you can compute the output tile by
@@ -433,7 +438,7 @@ Worked Example — One Row, Two Blocks
   ══════════════════════════════════════════════════════════════════
 ```
 
-![Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE](images/ch12/02-online-softmax-timeline.svg)
+[![Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE](images/ch12/02-online-softmax-timeline.svg)](images/ch12/02-online-softmax-timeline.svg)
 
 **The one thing to notice for later:** step 5 rescales `O`, which is the
 accumulator living in tensor core registers. That means every time the row max
@@ -561,7 +566,7 @@ they are being applied to.
 ### 4.1 The Three Techniques and What Each Buys
 
 ```
-FA3 — Cumulative Throughput (BF16 forward, H100 SXM5)
+FA3 — Cumulative Throughput (FP16 forward, H100 SXM5)
 ══════════════════════════════════════════════════════════════════════
 
   Baseline: FlashAttention-2 on H100          ~350 TFLOP/s   (35%)
@@ -593,7 +598,7 @@ FA3 — Cumulative Throughput (BF16 forward, H100 SXM5)
   ══════════════════════════════════════════════════════════════════
 ```
 
-![Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path](images/ch12/07-throughput-ladder.svg)
+[![Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path](images/ch12/07-throughput-ladder.svg)](images/ch12/07-throughput-ladder.svg)
 
 ### 4.2 Tile Shapes and the Two GEMMs
 
@@ -701,7 +706,7 @@ FA3 Block Layout — Who Does What
     spilling.
 ```
 
-![FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers](images/ch12/03-warpgroup-roles.svg)
+[![FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers](images/ch12/03-warpgroup-roles.svg)](images/ch12/03-warpgroup-roles.svg)
 
 ### 5.2 The Producer Loop
 
@@ -879,7 +884,7 @@ Ping-Pong — Staggering Two Consumers
   ══════════════════════════════════════════════════════════════════
 ```
 
-![Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave](images/ch12/04-pingpong-timeline.svg)
+[![Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave](images/ch12/04-pingpong-timeline.svg)](images/ch12/04-pingpong-timeline.svg)
 
 ### 6.2 Forcing the Stagger with Named Barriers
 
@@ -977,39 +982,39 @@ Ping-Pong — Cycle Accounting for One Iteration
     exp():          128 × 128              = 16,384 ops
 
   Per-SM rates (Chapter 1 §19 — derived bottom-up from the full-GPU
-  spec, 989.4 TFLOP/s ÷ 132 SMs ÷ 1.98 GHz, not an assumed issue rate):
-    tensor BF16:   ~3,786 FLOP/cycle/SM
+  spec, 989.4 TFLOP/s ÷ 132 SMs ÷ 1.83 GHz Tensor Core clock, not an assumed issue rate):
+    tensor BF16:   4,096 FLOP/cycle/SM
     SFU:             16 ops/cycle/SM
 
   (Correction: an earlier draft of this table used 1024 FLOP/cycle/SM,
   which contradicts the very figure this chapter cites it from — Chapter
-  1 §19's own number is ~3,786. Using 1024 would imply a full-chip peak
-  of only ~267 TFLOP/s, nowhere near the H100's real 989.4 TFLOP/s. The
+  1 §19's own number is 4,096. Using 1024 would imply a full-chip peak
+  of only ~247 TFLOP/s at the 1.83 GHz Tensor Core clock, nowhere near the H100's real 989.4 TFLOP/s. The
   cycle counts below are recomputed with the correct rate.)
 
   Cycle costs:
-    GEMM0:   4.19e6 / 3786   ≈  1,108 cycles
-    GEMM1:   4.19e6 / 3786   ≈  1,108 cycles
+    GEMM0:   4.19e6 / 4096   ≈  1,024 cycles
+    GEMM1:   4.19e6 / 4096   ≈  1,024 cycles
     exp:    16,384 / 16     =  1,024 cycles
     (plus ~512 cycles of row reductions, rescaling, bookkeeping)
 
   ─── SERIAL (one warpgroup, §5.3) ────────────────────────────────
-    1108  +  1536  +  1108  ≈  3,752 cycles per iteration
-    Tensor cores busy: 2,216 / 3,752 ≈ 59%
-    ... and with TWO warpgroups both stalling at the same time (no
-    ping-pong), the SM-level figure lands lower still — consistent
-    with FA2-on-H100's measured ~35% of peak (§3.2).
+    1024  +  1536  +  1024  =  3,584 cycles per iteration
+    Tensor cores busy: 2,048 / 3,584 ≈ 57%
+    This toy schedule does not predict whole-kernel utilization or the
+    measured FA2 baseline: it omits instruction issue, loads, tails and
+    dependencies between stages.
 
   ─── PING-PONG (two warpgroups, offset) ──────────────────────────
     One warpgroup's full per-iteration GEMM work (QK + PV) is
-    1,108 + 1,108 = 2,216 cycles — MORE than the other warpgroup's
+    1,024 + 1,024 = 2,048 cycles — MORE than the other warpgroup's
     1,536-cycle softmax, so in this idealized model the softmax
-    fits entirely underneath it with ~680 cycles of slack:
-      WG1 softmax (1,536 cycles) runs UNDER WG2's QK+PV (2,216 cycles).
+    fits entirely underneath it with 512 cycles of slack:
+      WG1 softmax (1,536 cycles) runs UNDER WG2's QK+PV (2,048 cycles).
       WG2 softmax runs under WG1's QK+PV.
 
     Steady-state cost per iteration per warpgroup:
-      max(2,216 tensor cycles, 1,536 softmax) ≈ 2,216 — i.e., in this
+      max(2,048 tensor cycles, 1,536 softmax) = 2,048 — i.e., in this
       idealized accounting the tensor cores are never the ones waiting.
 
     Measured whole-kernel: 570 → 620 TFLOP/s  (63% of peak)
@@ -1079,7 +1084,7 @@ iteration j+1".
   ══════════════════════════════════════════════════════════════════
 ```
 
-![2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath](images/ch12/05-twostage-pipeline-timeline.svg)
+[![2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath](images/ch12/05-twostage-pipeline-timeline.svg)](images/ch12/05-twostage-pipeline-timeline.svg)
 
 ```cuda
 // ─────────────────────────────────────────────────────────────────
@@ -1231,7 +1236,7 @@ Causal Masking — The Block Taxonomy
   ══════════════════════════════════════════════════════════════════
 ```
 
-![Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it](images/ch12/06-causal-masking-grid.svg)
+[![Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it](images/ch12/06-causal-masking-grid.svg)](images/ch12/06-causal-masking-grid.svg)
 
 ### 8.2 Balancing the Triangle
 
@@ -1522,6 +1527,39 @@ Incoherent Processing
 
 ## 10 — Putting It All Together
 
+**Executable numerical reference.** The skeleton below omits the CuTe layouts, TMA wrappers, register fragments, launch code, and error handling required for a production kernel. It is not a compilable FA3 implementation. The repository's `tools/validate_attention.py` checks the online-softmax recurrence on CUDA against PyTorch's math SDPA backend using nonuniform inputs, causal and noncausal masks, two head dimensions, and sequence lengths that leave partial tiles. This checks the algorithm; it does not validate this skeleton's synchronization or reproduce the paper's FA3 throughput. Run `python3 tools/validate_attention.py` from the repository root. The run below used Python 3.12.3, PyTorch 2.7.0 and CUDA runtime 12.8.
+
+Save [validate_attention.py](validation/2026-11-17/validate_attention.py), then run:
+
+```bash
+python3 validate_attention.py
+```
+
+Captured execution output (November 17, 2026 UTC):
+
+```text
+Execution UTC: 2026-11-17T21:32:13.471298+00:00
+GPU: NVIDIA H100 PCIe
+PyTorch: 2.7.0 CUDA runtime: 12.8
+Reference algorithm only: no FA3 kernel or throughput claim.
+N=17 d=32 causal=False: PASS max_abs_error=0.000000417
+N=17 d=32 causal=True: PASS max_abs_error=0.000000417
+N=17 d=64 causal=False: PASS max_abs_error=0.000000358
+N=17 d=64 causal=True: PASS max_abs_error=0.000000298
+N=33 d=32 causal=False: PASS max_abs_error=0.000000417
+N=33 d=32 causal=True: PASS max_abs_error=0.000000548
+N=33 d=64 causal=False: PASS max_abs_error=0.000000358
+N=33 d=64 causal=True: PASS max_abs_error=0.000000358
+N=65 d=32 causal=False: PASS max_abs_error=0.000000298
+N=65 d=32 causal=True: PASS max_abs_error=0.000000298
+N=65 d=64 causal=False: PASS max_abs_error=0.000000387
+N=65 d=64 causal=True: PASS max_abs_error=0.000000358
+PASS: 12 cases, including causal masks and partial final tiles.
+```
+
+[Full execution log](validation/2026-11-17/attention-reference.log).
+
+
 The complete forward kernel, in skeleton. Every piece below has appeared
 somewhere in Chapters 3–9; what is new is only the arrangement.
 
@@ -1547,9 +1585,9 @@ void flash_fwd_kernel(
     extern __shared__ char smem_raw[];
     auto& smem = *reinterpret_cast<SharedStorage*>(smem_raw);
     //  SharedStorage layout — Chapter 5 §12 for the alignment rules:
-    //    alignas(128) Element q[kBlockM][kHeadDim];
-    //    alignas(128) Element k[kNumStages][kBlockN][kHeadDim];
-    //    alignas(128) Element v[kNumStages][kBlockN][kHeadDim];
+    //    alignas(1024) Element q[kBlockM][kHeadDim];
+    //    alignas(1024) Element k[kNumStages][kBlockN][kHeadDim];
+    //    alignas(1024) Element v[kNumStages][kBlockN][kHeadDim];
     //    alignas(8)   uint64_t data_ready[kNumStages];
     //    alignas(8)   uint64_t buffer_free[kNumStages];
 
@@ -1563,6 +1601,7 @@ void flash_fwd_kernel(
             mbarrier_init(&smem.data_ready[s],  1);    // TMA signals
             mbarrier_init(&smem.buffer_free[s], 256);  // 2 consumer WGs
         }
+        mbarrier_init(&smem.q_ready, 1);
         // Prime buffer_free so the producer may fill every slot once.
         for (int s = 0; s < kNumStages; ++s)
             mbarrier_arrive_n(&smem.buffer_free[s], 256);
@@ -1573,12 +1612,14 @@ void flash_fwd_kernel(
     int k_begin = 0;
     int k_end   = params.n_kv_blocks;
     if constexpr (kIsCausal) {
-        k_end = min(k_end, (q_block + 1) * kBlockM / kBlockN + 1);
+        k_end = min(k_end, ((q_block + 1) * kBlockM + kBlockN - 1) / kBlockN);
     }
 
     // ── Q is loaded once and stays resident for the whole loop ────
-    if (threadIdx.x == 0)
+    if (threadIdx.x == 0) {
+        mbarrier_arrive_expect_tx(&smem.q_ready, kBlockM * kHeadDim * sizeof(Element));
         tma_load_2d(tma_q, smem.q, &smem.q_ready, {0, q_block * kBlockM});
+    }
 
     // ── Role dispatch ─────────────────────────────────────────────
     if (warpgroup == 0) {
@@ -1640,19 +1681,9 @@ Launch Configuration
 
 ## 11 — Measured Results
 
-Numbers from the FlashAttention-3 paper, H100 SXM5. (Confirmed against the
-paper's own authors' summary on the PyTorch blog and against independent
-coverage from Colfax Research: 740 TFLOP/s / 75% of peak BF16, ~1.2 PFLOP/s
-FP8, the FA2-on-H100 baseline of ~350 TFLOP/s / 35%, the 570→620 TFLOP/s
-step from ping-pong alone, and the 2.6× FP8 error reduction all check out
-exactly. One terminology note: the paper's own headline benchmark reports
-FP16, not BF16 — this chapter follows the rest of the book in saying BF16
-throughout, which is accurate for the *numbers*, since FP16 and BF16 share
-the same tensor-core throughput class on Hopper (same bit width, same
-rate), but worth knowing if you go compare against the paper's own tables.)
-
+These are **published H100 SXM results**, not measurements from this book's single H100 PCIe validation run. The paper reports up to 740 TFLOP/s for FP16 and close to 1.2 PFLOP/s for FP8. Although BF16 and FP16 share Hopper's nominal Tensor Core throughput class, that does not turn an FP16 benchmark into a measured BF16 result. The tables below identify the paper's FP16 headline correctly. See the [FlashAttention-3 paper](https://tridao.me/publications/flash3/flash3.pdf) and the [authors' summary](https://pytorch.org/blog/flashattention-3/).
 ```
-FA3 vs FA2 — Forward Pass, BF16
+FA3 vs FA2 — Forward Pass, FP16
 ══════════════════════════════════════════════════════════════════════
 
   Technique ladder (from §4.1):

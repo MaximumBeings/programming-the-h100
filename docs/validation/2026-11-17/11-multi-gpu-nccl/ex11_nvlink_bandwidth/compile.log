@@ -1,0 +1,12 @@
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu(202): warning #177-D: variable "elems_per_block" was declared but never referenced
+              size_t elems_per_block = (N + num_blocks - 1) / num_blocks;
+                     ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu(202): warning #177-D: variable "elems_per_block" was declared but never referenced
+              size_t elems_per_block = (N + num_blocks - 1) / num_blocks;
+                     ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+

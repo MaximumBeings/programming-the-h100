@@ -1,0 +1,123 @@
+==PROF== Connected to process 7300 (/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/06-wgmma-part-1/ex01_wgmma_basic/example)
+==PROF== Profiling "wgmma_kernel" - 0: 0%....50%....100% - 10 passes
+╔══════════════════════════════════════════════════════════╗
+║  ex01: wgmma.mma_async — m64n64k16 BF16→FP32            ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 PCIe (SM 9.0)
+Shape: m64n64k16, D_REGS=32 per thread, 128 threads total
+Patterned BF16 inputs; every accumulator checked against CPU GEMM.
+
+Threads with finite accumulators: 128 / 128
+D register values correct: 4096 / 4096
+Max absolute error: 0.00000000
+Sample d[0] = -0.246094 (expected -0.246094)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — wgmma computes correct BF16→FP32 result!  ║
+╚══════════════════════════════════════════════════════════╝
+==PROF== Disconnected from process 7300
+[7300] example@127.0.0.1
+  wgmma_kernel(const __nv_bfloat16 *, const __nv_bfloat16 *, float *, unsigned int *) (1, 1, 1)x(128, 1, 1), Context 1, Stream 7, Device 0, CC 9.0
+    Section: GPU Speed Of Light Throughput
+    ----------------------- ----------- ------------
+    Metric Name             Metric Unit Metric Value
+    ----------------------- ----------- ------------
+    DRAM Frequency                  Ghz         1.59
+    SM Frequency                    Ghz         1.13
+    Elapsed Cycles                cycle        23112
+    Memory Throughput                 %         2.57
+    DRAM Throughput                   %         0.02
+    Duration                         us        20.32
+    L1/TEX Cache Throughput           %        44.04
+    L2 Cache Throughput               %         2.57
+    SM Active Cycles              cycle       168.43
+    Compute (SM) Throughput           %         0.04
+    ----------------------- ----------- ------------
+
+    OPT   This kernel grid is too small to fill the available resources on this device, resulting in only 0.0 full      
+          waves across all SMs. Look at Launch Statistics for more details.                                             
+
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   128
+    Cluster Scheduling Policy                           PolicySpread
+    Cluster Size                                                   0
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                      1
+    Registers Per Thread             register/thread              58
+    Shared Memory Configuration Size           Kbyte          102.40
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block       byte/block               0
+    Static Shared Memory Per Block       Kbyte/block            4.10
+    # SMs                                         SM             114
+    Stack Size                                                  1024
+    Threads                                   thread             128
+    # TPCs                                                        57
+    Enabled TPC IDs                                              all
+    Uses Green Context                                             0
+    Waves Per SM                                                0.00
+    -------------------------------- --------------- ---------------
+
+    OPT   Est. Speedup: 99.12%                                                                                          
+          The grid for this launch is configured to execute only 1 block, which is less than the GPU's 114              
+          multiprocessors. This can underutilize some multiprocessors. If you do not intend to execute this kernel      
+          concurrently with other workloads, consider reducing the block size to have at least one block per            
+          multiprocessor or increase the size of the grid to fully utilize the available hardware resources. See the    
+          Hardware Model (https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-hw-model)            
+          description for more details on launch configurations.                                                        
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Max Active Clusters                 cluster            0
+    Max Cluster Size                      block            8
+    Overall GPU Occupancy                     %            0
+    Cluster Occupancy                         %            0
+    Block Limit Barriers                  block           32
+    Block Limit SM                        block           32
+    Block Limit Registers                 block            8
+    Block Limit Shared Mem                block           20
+    Block Limit Warps                     block           16
+    Theoretical Active Warps per SM        warp           32
+    Theoretical Occupancy                     %           50
+    Achieved Occupancy                        %         6.25
+    Achieved Active Warps Per SM           warp         4.00
+    ------------------------------- ----------- ------------
+
+    OPT   Est. Local Speedup: 87.51%                                                                                    
+          The difference between calculated theoretical (50.0%) and measured achieved occupancy (6.2%) can be the       
+          result of warp scheduling overheads or workload imbalances during the kernel execution. Load imbalances can   
+          occur between warps within a block as well as across blocks of the same kernel. See the CUDA Best Practices   
+          Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on     
+          optimizing occupancy.                                                                                         
+    ----- --------------------------------------------------------------------------------------------------------------
+    OPT   Est. Local Speedup: 50%                                                                                       
+          The 8.00 theoretical warps per scheduler this kernel can issue according to its occupancy are below the       
+          hardware maximum of 16. This kernel's theoretical occupancy (50.0%) is limited by the number of required      
+          registers.                                                                                                    
+
+    Section: GPU and Memory Workload Distribution
+    -------------------------- ----------- ------------
+    Metric Name                Metric Unit Metric Value
+    -------------------------- ----------- ------------
+    Average DRAM Active Cycles       cycle         7.60
+    Total DRAM Elapsed Cycles        cycle      1290240
+    Average L1 Active Cycles         cycle       168.43
+    Total L1 Elapsed Cycles          cycle      2622784
+    Average L2 Active Cycles         cycle      3122.62
+    Total L2 Elapsed Cycles          cycle      1763920
+    Average SM Active Cycles         cycle       168.43
+    Total SM Elapsed Cycles          cycle      2622784
+    Average SMSP Active Cycles       cycle       168.07
+    Total SMSP Elapsed Cycles        cycle     10491136
+    -------------------------- ----------- ------------
+
+    OPT   Est. Speedup: 8.762%                                                                                          
+          One or more L2 Slices have a much lower number of active cycles than the average number of active cycles.     
+          Maximum instance value is 61.87% above the average, while the minimum instance value is 66.34% below the      
+          average.                                                                                                      
+

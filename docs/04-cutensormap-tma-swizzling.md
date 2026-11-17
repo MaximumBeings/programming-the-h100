@@ -1,7 +1,11 @@
 # cuTensorMap, TMA & Swizzling
 ## Lesson 4 Companion Guide — Programming the H100
 
-> **Verified on:** CUDA 12.x + Hopper GPU (sm_90a).
+> **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
 > **Run with:** `./<out>` on any H100 or B200 instance.
 
@@ -64,14 +68,14 @@ Hardware Compatibility Matrix
 
 ### Cloud GPU Rental — Lambda Labs
 
-Usually the cheapest hourly H100.
+Check current provider availability and pricing.
 
 ```
 Lambda Labs Setup (H100)
 ══════════════════════════════════════════════════════════════════════
 
   1. https://lambdalabs.com/ → sign up → Launch Instance
-  2. Choose "1x H100 PCIe" (cheapest for learning)
+  2. Choose "1x H100 PCIe" (sufficient for the single-GPU examples)
   3. SSH: ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
   4. Verify: nvcc --version && nvidia-smi
   5. Compile any example: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out
@@ -213,7 +217,7 @@ Evolution of GPU Data Movement — Pre-Hopper to Hopper
 
   // In kernel: one thread, one instruction
   if (elect_one_thread) {
-      cp.async.bulk.tensor.2d.shared::cluster.global
+      cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes
           [smem_addr], [&tma_desc], {col_idx, row_idx};
   }
   // Thread IMMEDIATELY continues. TMA engine handles everything.
@@ -273,7 +277,7 @@ TMA Capabilities Overview
 
 The H100's ability to overlap compute and memory 100% rests on three independent hardware units that can run simultaneously:
 
-![The H100 async architecture — TMA and Tensor Cores overlap](images/ch04/01-h100-tma-async-architecture.svg)
+[![The H100 async architecture — TMA and Tensor Cores overlap](images/ch04/01-h100-tma-async-architecture.svg)](images/ch04/01-h100-tma-async-architecture.svg)
 
 *While WGMMA multiplies tile K out of SMEM, TMA independently loads tile K+1 from HBM into the other SMEM buffer. This overlap is only possible because TMA runs completely independently: with pre-Hopper thread-driven copies, the same threads that would drive WGMMA for tile K are instead busy computing addresses and issuing copies for tile K+1 — forced serialization. With TMA, one thread fires a single instruction and the rest immediately drive WGMMA; the descriptor handles everything else. For a well-tuned GEMM kernel, the bottleneck shifts from memory bandwidth to pure compute throughput — this is how H100 approaches near-theoretical FLOP utilization.*
 
@@ -343,7 +347,7 @@ Manual Address Computation — What Threads Had to Do
   );
 
   // In KERNEL (one thread, one instruction):
-  cp.async.bulk.tensor.2d.shared::cluster.global
+  cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes
       [smem_dest], [&descriptor], {col_start, row_start};
 
   // DONE. TMA computes all addresses, handles strides, applies swizzle.
@@ -1064,7 +1068,7 @@ Before explaining swizzling (§10), you need a solid understanding of why bank c
 
 Shared memory is physically divided into 32 banks. Each bank is an independently readable/writable memory array, 4 bytes wide. The 32 banks allow 32 threads (one warp) to perform 32 simultaneous independent accesses — one per bank — with no conflict. This is the ideal case.
 
-![Shared memory bank structure — conflict-free vs. 32-way-conflict access](images/ch04/02-shared-memory-banks.svg)
+[![Shared memory bank structure — conflict-free vs. 32-way-conflict access](images/ch04/02-shared-memory-banks.svg)](images/ch04/02-shared-memory-banks.svg)
 
 *32 banks, each 4 bytes wide; `bank = (byte_address / 4) % 32`, and the assignment repeats every 128 bytes. A stride-1 warp access (`smem[0..31]`) lands one thread per bank — all 32 serviced in a single cycle. A stride-32 access — the shape you get reading a column out of a row-major matrix, exactly the GEMM case in §9 above — puts every thread's address in bank 0, serializing the warp into 32 cycles. Swizzling (§10) rearranges the addresses so that what looks like the same bank lands in different physical banks.*
 
@@ -1204,7 +1208,7 @@ Swizzling — The XOR Formula
 
 128B swizzling is the recommended default for FP16 and BF16 GEMM on H100. It eliminates bank conflicts completely for the most common access patterns.
 
-![128B swizzle permutation — logical cell (y,x) to physical cell (y, x XOR (y & 7))](images/ch04/03-swizzle-128b-grid.svg)
+[![128B swizzle permutation — logical cell (y,x) to physical cell (y, x XOR (y & 7))](images/ch04/03-swizzle-128b-grid.svg)](images/ch04/03-swizzle-128b-grid.svg)
 
 *TMA treats the SMEM destination as a 2D array of 128-byte rows, each split into 8 cells of 16 bytes; the pattern repeats every 8 rows (1024 bytes). The grid is the formula `x' = x ^ (y & 7)` worked out for every (row, column) pair — column 0 is highlighted to show that it lands on a different physical cell in every one of the 8 rows, which is exactly what removes the bank conflict from a stride-128-byte (same logical column) access.*
 
@@ -1230,7 +1234,7 @@ adjacent rows.
 The narrower modes. You need these when your tile's row is too short for 128B
 swizzle to be legal — the mode has to divide evenly into the row.
 
-![64B and 32B swizzle permutation grids, side by side with the 128B grid's logic](images/ch04/04-swizzle-64b-32b-grids.svg)
+[![64B and 32B swizzle permutation grids, side by side with the 128B grid's logic](images/ch04/04-swizzle-64b-32b-grids.svg)](images/ch04/04-swizzle-64b-32b-grids.svg)
 
 *The narrower modes follow the exact same XOR rule, just over fewer cells. 64B permutes 4 cells (`x' = x ^ (y & 3)`, period 4 rows = 512 bytes) — both the left half (cells 0–3) and right half (cells 4–7) of each 128-byte row are permuted independently with that formula. 32B permutes pairs of cells (`x' = x ^ (y & 1)`, period 2 rows = 256 bytes).*
 
@@ -1423,7 +1427,7 @@ When TMA fetches data from HBM, it can optionally pre-fetch a larger block into 
 
 The motivation: HBM is organized in 128-byte cache lines. If you request only 32 bytes, the hardware still reads the entire 128-byte line from DRAM but only caches 32 bytes. You've wasted 75% of the DRAM bandwidth. By promoting to 128B, you ensure the full cache line is used, reducing redundant DRAM accesses for subsequent tiles that touch nearby data.
 
-![L2 promotion — fetch-size waste vs. full cache-line utilization](images/ch04/05-l2-promotion.svg)
+[![L2 promotion — fetch-size waste vs. full cache-line utilization](images/ch04/05-l2-promotion.svg)](images/ch04/05-l2-promotion.svg)
 
 *HBM moves data to L2 in fixed 128-byte cache lines no matter how little you ask for. Request 32 bytes with NONE and the hardware still pulls the full 128-byte line from DRAM, caching 32 and discarding 96 — 75% of that DRAM read is wasted. L2_128B keeps the whole line, so bandwidth efficiency is 100% and a later TMA call touching adjacent data gets an L2 hit instead of another DRAM trip. L2_256B goes further and pulls two consecutive 128-byte lines at once, which pays off when the tile is wider than 128B and the next row's data will be needed soon too.*
 
@@ -1500,7 +1504,7 @@ edge-case code path at all.
 
 When a tile extends beyond the boundary of the global tensor, TMA can automatically fill the out-of-bounds regions with a constant value. This eliminates the need for software boundary-check code in kernels — a significant simplification for tiled algorithms where the last tile may be partially out of bounds.
 
-![OOB fill — the SMEM tile split into valid data and three out-of-bounds fill regions](images/ch04/06-oob-fill.svg)
+[![OOB fill — the SMEM tile split into valid data and three out-of-bounds fill regions](images/ch04/06-oob-fill.svg)](images/ch04/06-oob-fill.svg)
 
 *Global tensor: 100 columns × 50 rows; tile size (boxDim): 128 × 64. A TMA call at (col=0, row=0) pulls a tile that overhangs both edges of the tensor: columns 0–99 and rows 0–49 are valid data from HBM, columns 100–127 and rows 50–63 are filled by the OOB handler, and the corner where both overhangs overlap is filled too. The fill happens in SMEM — HBM itself is never touched — so the kernel sees a full 128×64 tile with real data in bounds and fill values out of bounds, with no boundary `if` statements needed. This is what makes the last tile in a row, the last tile in a column, and a corner tile all handled by the same code path.*
 
@@ -1595,7 +1599,7 @@ Parameters:
       → globalDim[1] = 512  (rows, outermost)
   [6] globalStrides:    {4096}  (1024 cols × 4 bytes = 4096 bytes per row)
   [7] boxDim:           {64, 32}  (64 cols × 32 rows per tile)
-      Tile bytes = 64 × 32 × 4 = 8192 bytes = 8 KB
+      Tile bytes = 32 columns × 32 rows × 4 = 4096 bytes = 4 KB; the 128B swizzle requires the contiguous FP32 tile width to be at most 32 elements.
   [8] elementStrides:   {1, 1}  (dense)
   [9] interleave:       NONE
   [10] swizzle:         SWIZZLE_128B
@@ -1659,7 +1663,7 @@ Kernel launch coordinates: {col_start, row_start} where:
                 __FILE__, __LINE__, _s); exit(1); } } while(0)
 
 // Tile dimensions
-static constexpr int TILE_COLS = 64;    // inner dimension (columns)
+static constexpr int TILE_COLS = 32;    // inner dimension (columns)
 static constexpr int TILE_ROWS = 32;    // outer dimension (rows)
 static constexpr int TILE_ELEMS = TILE_COLS * TILE_ROWS;
 static constexpr int TILE_BYTES = TILE_ELEMS * sizeof(float);
@@ -1702,6 +1706,7 @@ __global__ void tma_load_kernel(
             : : "r"(mbar_addr)
         );
     }
+    asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
     __syncthreads();
 
     // ── STEP 2: Producer thread sets up TMA ───────────────────────
@@ -1711,7 +1716,7 @@ __global__ void tma_load_kernel(
         // arrive.expect_tx: signal arrival AND set expected byte count.
         // The barrier will complete when TMA delivers TILE_BYTES bytes.
         asm volatile(
-            "mbarrier.arrive.expect_tx.release.shared::cta.b64 _, [%0], %1;"
+            "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%0], %1;"
             : : "r"(mbar_addr), "r"((uint32_t)TILE_BYTES)
         );
 
@@ -1719,8 +1724,8 @@ __global__ void tma_load_kernel(
         // Format: {innermost_coord, outermost_coord}
         // = {column_start, row_start} for a 2D matrix.
         asm volatile(
-            "cp.async.bulk.tensor.2d.shared::cluster.global"
-            " [%0], [%1], {%2, %3}, [%4];"
+            "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes"
+            " [%0], [%1, {%2, %3}], [%4];"
             :
             : "r"(smem_dest),       // SMEM destination (32-bit shared addr)
               "l"(&tma_desc),       // descriptor address (64-bit)
@@ -1741,7 +1746,7 @@ __global__ void tma_load_kernel(
             asm volatile(
                 "{\n\t"
                 "  .reg .pred p;\n\t"
-                "  mbarrier.try_wait.parity.acquire.shared::cta.b64"
+                "  mbarrier.try_wait.parity.acquire.cta.shared::cta.b64"
                 "    p, [%1], %2;\n\t"
                 "  selp.u32 %0, 1, 0, p;\n\t"
                 "}\n\t"
@@ -1762,11 +1767,16 @@ __global__ void tma_load_kernel(
         int r = i / TILE_COLS;
         int c = i % TILE_COLS;
         float expected = (float)((row_start + r) * MAT_COLS + (col_start + c));
-        float got      = smem_tile[r][c];
+        // Undo the 128B TMA swizzle before reading the logical element.
+        int offset = i * sizeof(float);
+        offset ^= (offset >> 3) & 0x70;
+        float got = *reinterpret_cast<float*>(reinterpret_cast<char*>(smem_tile) + offset);
         if (fabsf(got - expected) < 0.5f) local_pass++;
     }
     atomicAdd(pass_count, (uint32_t)local_pass);
 
+    // All waiters must finish using the barrier before invalidation.
+    __syncthreads();
     // Cleanup
     if (tid == 0) {
         asm volatile("mbarrier.inval.shared::cta.b64 [%0];" : : "r"(mbar_addr));
@@ -1884,32 +1894,49 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex01_tma_basic.cu -->
+**Captured output — ex01_tma_basic.cu**
 
+> **Executed:** 2026-11-17T21:29:03.717488+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu) as `ex01_tma_basic.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_tma_basic.cu -o ex01_tma_basic -lcuda
+./ex01_tma_basic
 ```
+
+[Compiler log](validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/compile.log) · [Execution log](validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex01: cuTensorMap Setup + TMA Load + Verify             ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 Descriptor setup:
   Matrix:       256 × 128 FP32
-  Tile:         64 × 32 = 2048 elements = 8192 bytes
+  Tile:         32 × 32 = 1024 elements = 4096 bytes
   globalDim:    {256, 128}
   globalStride: {1024} bytes
-  boxDim:       {64, 32}
+  boxDim:       {32, 32}
   swizzle:      128B
   l2Promotion:  128B
 
 cuTensorMapEncodeTiled: SUCCESS
 
-Launching 16 tile blocks (4×4 tiles)...
+Launching 32 tile blocks (8×4 tiles)...
 Element checks: 32768 / 32768 passed
 
 ╔══════════════════════════════════════════════════════════╗
 ║  ✓ ALL PASS — TMA loaded all tiles correctly!          ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex01_tma_basic.cu -->
+
+
 
 The top banner is a plain hardcoded string, so its border lines up exactly. The pass/fail banner is built with `printf("║  %-56s  ║\n", ...)`, and `%-56s` pads to 56 *bytes* — the same quirk from Chapter 3. `"✓ ALL PASS — TMA loaded all tiles correctly!"` is 44 display characters but 48 bytes (`✓` and `—` are each 3-byte UTF-8 sequences), so the field gets only 8 padding spaces instead of the 12 it would need to fill 56 *columns*. The closing `║` lands 2 columns short of the border above and below it.
 
@@ -2002,13 +2029,13 @@ __global__ void tma_3d_kernel(
     if (tid == 0) {
         uint32_t smem_dest = __cvta_generic_to_shared(&smem_tile[0][0]);
         asm volatile(
-            "mbarrier.arrive.expect_tx.release.shared::cta.b64 _, [%0], %1;"
+            "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%0], %1;"
             : : "r"(mbar_addr), "r"((uint32_t)TILE_BYTES)
         );
         // 3D TMA: coordinates = {hd_start=0, seq_start, batch_start}
         asm volatile(
-            "cp.async.bulk.tensor.3d.shared::cluster.global"
-            " [%0], [%1], {%2, %3, %4}, [%5];"
+            "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes"
+            " [%0], [%1, {%2, %3, %4}], [%5];"
             :
             : "r"(smem_dest), "l"(&tma_desc),
               "r"(0),           // coord[0] = head_dim start
@@ -2025,7 +2052,7 @@ __global__ void tma_3d_kernel(
         while (!done) {
             asm volatile(
                 "{\n\t .reg .pred p;\n\t"
-                "  mbarrier.try_wait.parity.acquire.shared::cta.b64 p, [%1], 0;\n\t"
+                "  mbarrier.try_wait.parity.acquire.cta.shared::cta.b64 p, [%1], 0;\n\t"
                 "  selp.u32 %0, 1, 0, p;\n\t }\n\t"
                 : "=r"(done) : "r"(mbar_addr)
             );
@@ -2039,10 +2066,15 @@ __global__ void tma_3d_kernel(
         int h = i % HEAD_DIM;
         float expected = (float)(batch_idx * SEQ_LEN * HEAD_DIM
                                + (seq_start + s) * HEAD_DIM + h);
-        float got = __half2float(smem_tile[s][h]);
+        // Match both the TMA swizzle and FP16 rounding in the source.
+        expected = __half2float(__float2half(expected));
+        int offset = i * sizeof(__half);
+        offset ^= (offset >> 3) & 0x70;
+        float got = __half2float(*reinterpret_cast<__half*>(reinterpret_cast<char*>(smem_tile) + offset));
         if (fabsf(got - expected) < 0.6f) local_pass++;
     }
     atomicAdd(pass_count, (uint32_t)local_pass);
+    __syncthreads();
 
     if (tid == 0) {
         asm volatile("mbarrier.inval.shared::cta.b64 [%0];" : : "r"(mbar_addr));
@@ -2129,14 +2161,28 @@ int main() {
 }
 ```
 
-**Sample Output:**
+<!-- validation:start:ex02_tma_3d.cu -->
+**Captured output — ex02_tma_3d.cu**
 
+> **Executed:** 2026-11-17T21:29:06.638185+00:00 (UTC). **Status:** Compile PASS; execution PASS.
+> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
+> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
+
+Save the [tested source](validation/2026-11-17/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu) as `ex02_tma_3d.cu`, then run:
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_tma_3d.cu -o ex02_tma_3d -lcuda
+./ex02_tma_3d
 ```
+
+[Compiler log](validation/2026-11-17/04-cutensormap-tma-swizzling/ex02_tma_3d/compile.log) · [Execution log](validation/2026-11-17/04-cutensormap-tma-swizzling/ex02_tma_3d/run.log)
+
+```text
 ╔══════════════════════════════════════════════════════════╗
 ║  ex02: 3D TMA — Attention Tensor [B][S][D] Tile Load     ║
 ╚══════════════════════════════════════════════════════════╝
 
-GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+GPU: NVIDIA H100 PCIe (SM 9.0)
 3D Tensor: [4][128][64] FP16
 Tile:      [1][32][64] = 2048 elements = 4096 bytes
 
@@ -2149,6 +2195,9 @@ Element checks: 32768 / 32768 passed
 ║  ✓ ALL PASS                                              ║
 ╚══════════════════════════════════════════════════════════╝
 ```
+<!-- validation:end:ex02_tma_3d.cu -->
+
+
 
 Worth noticing: this banner's string is `"✓ ALL PASS"` with no em dash — just the one 3-byte checkmark. That costs the field 2 bytes versus its visual width, so `%-56s` pads it with 2 fewer spaces than a pure-ASCII string of the same length would get — and here that shortfall exactly cancels out the box's own two-space margins, so the right border lands flush with the border above and below it. Contrast with ex01 above, where two multi-byte characters (`✓` and `—`) ate 4 extra bytes and the border came up 2 columns short. Same mechanism, different outcome, depending on how many non-ASCII characters happen to be in the string.
 

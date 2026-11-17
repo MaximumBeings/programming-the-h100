@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="878.4pt" height="540pt" viewBox="0 0 878.4 540" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg role="img" xmlns:xlink="http://www.w3.org/1999/xlink" width="878.4pt" height="540pt" viewBox="0 0 878.4 540" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title>Nine-step iteration trace over a 4-stage circular buffer, with stage 0&#x27;s three reuses at iterations 0, 4, and 8 highlighted, each tagged with the phase bit (0, 1, 0) that lets a waiter tell the three passes apart</title>
+ <desc>Technical diagram for Programming the H100; see the adjacent chapter text for the full explanation.</desc>
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
@@ -21,196 +23,196 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 540 
-L 878.4 540 
-L 878.4 0 
-L 0 0 
+   <path d="M 0 540
+L 878.4 540
+L 878.4 0
+L 0 0
 z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 45.701396 200.304 
-L 126.672635 200.304 
-L 126.672635 136.008 
-L 45.701396 136.008 
+    <path d="M 45.701396 200.304
+L 126.672635 200.304
+L 126.672635 136.008
+L 45.701396 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
-    <path d="M 135.04897 200.304 
-L 216.020209 200.304 
-L 216.020209 136.008 
-L 135.04897 136.008 
+    <path d="M 135.04897 200.304
+L 216.020209 200.304
+L 216.020209 136.008
+L 135.04897 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
-    <path d="M 224.396544 200.304 
-L 305.367782 200.304 
-L 305.367782 136.008 
-L 224.396544 136.008 
+    <path d="M 224.396544 200.304
+L 305.367782 200.304
+L 305.367782 136.008
+L 224.396544 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
-    <path d="M 313.744117 200.304 
-L 394.715356 200.304 
-L 394.715356 136.008 
-L 313.744117 136.008 
+    <path d="M 313.744117 200.304
+L 394.715356 200.304
+L 394.715356 136.008
+L 313.744117 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
-    <path d="M 403.091691 200.304 
-L 484.06293 200.304 
-L 484.06293 136.008 
-L 403.091691 136.008 
+    <path d="M 403.091691 200.304
+L 484.06293 200.304
+L 484.06293 136.008
+L 403.091691 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_7">
-    <path d="M 492.439265 200.304 
-L 573.410504 200.304 
-L 573.410504 136.008 
-L 492.439265 136.008 
+    <path d="M 492.439265 200.304
+L 573.410504 200.304
+L 573.410504 136.008
+L 492.439265 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_8">
-    <path d="M 581.786839 200.304 
-L 662.758077 200.304 
-L 662.758077 136.008 
-L 581.786839 136.008 
+    <path d="M 581.786839 200.304
+L 662.758077 200.304
+L 662.758077 136.008
+L 581.786839 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_9">
-    <path d="M 671.134412 200.304 
-L 752.105651 200.304 
-L 752.105651 136.008 
-L 671.134412 136.008 
+    <path d="M 671.134412 200.304
+L 752.105651 200.304
+L 752.105651 136.008
+L 671.134412 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_10">
-    <path d="M 760.481986 200.304 
-L 841.453225 200.304 
-L 841.453225 136.008 
-L 760.481986 136.008 
+    <path d="M 760.481986 200.304
+L 841.453225 200.304
+L 841.453225 136.008
+L 760.481986 136.008
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_11">
-    <path d="M 40.117173 376.272 
-L 428.220696 376.272 
-Q 429.616752 376.272 429.616752 374.9184 
-L 429.616752 303.1776 
-Q 429.616752 301.824 428.220696 301.824 
-L 40.117173 301.824 
-Q 38.721117 301.824 38.721117 303.1776 
-L 38.721117 374.9184 
-Q 38.721117 376.272 40.117173 376.272 
+    <path d="M 40.117173 376.272
+L 428.220696 376.272
+Q 429.616752 376.272 429.616752 374.9184
+L 429.616752 303.1776
+Q 429.616752 301.824 428.220696 301.824
+L 40.117173 301.824
+Q 38.721117 301.824 38.721117 303.1776
+L 38.721117 374.9184
+Q 38.721117 376.272 40.117173 376.272
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="patch_12">
-    <path d="M 451.953645 376.272 
-L 833.07689 376.272 
-Q 834.472946 376.272 834.472946 374.9184 
-L 834.472946 303.1776 
-Q 834.472946 301.824 833.07689 301.824 
-L 451.953645 301.824 
-Q 450.55759 301.824 450.55759 303.1776 
-L 450.55759 374.9184 
-Q 450.55759 376.272 451.953645 376.272 
+    <path d="M 451.953645 376.272
+L 833.07689 376.272
+Q 834.472946 376.272 834.472946 374.9184
+L 834.472946 303.1776
+Q 834.472946 301.824 833.07689 301.824
+L 451.953645 301.824
+Q 450.55759 301.824 450.55759 303.1776
+L 450.55759 374.9184
+Q 450.55759 376.272 451.953645 376.272
 z
 " clip-path="url(#p3b1ba95da7)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 700; font-size: 16.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="436.597031" y="38.696836" transform="rotate(-0 436.597031 38.696836)">ABA Ambiguity — Phase Bits Disambiguate Barrier Reuse (N_STAGES=4)</text>
+    <text style="font-weight: 700; font-size: 16.2px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="436.597031" y="38.696836" transform="rotate(-0 436.597031 38.696836)">ABA Ambiguity — Phase Bits Disambiguate Barrier Reuse (N_STAGES=4)</text>
    </g>
    <g id="text_2">
-    <text style="font-style: italic; font-size: 12.1px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #8a1c1c" x="31.740838" y="71.712" transform="rotate(-0 31.740838 71.712)">Without phase bits: "counter == 1" can't tell pass 0 from pass 4 — barrier wraps.</text>
+    <text style="font-style: italic; font-size: 12.1px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #8a1c1c" x="31.740838" y="71.712" transform="rotate(-0 31.740838 71.712)">Without phase bits: "counter == 1" can't tell pass 0 from pass 4 — barrier wraps.</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(70.095718 158.187445)">iter 0</text>
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(64.001547 170.909516)">stage 0</text>
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(62.761843 183.632414)">phase 0</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(70.095718 158.187445)">iter 0</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(64.001547 170.909516)">stage 0</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(62.761843 183.632414)">phase 0</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(72.850648 109.203547)">wrap</text>
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(64.132914 120.605402)">(stage 0</text>
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(65.621742 132.008)">reused)</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(72.850648 109.203547)">wrap</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(64.132914 120.605402)">(stage 0</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(65.621742 132.008)">reused)</text>
    </g>
    <g id="text_5">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(161.487933 158.187445)">iter 1</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(155.765589 170.909516)">stage 1</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(154.48448 183.632414)">phase 0</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(161.487933 158.187445)">iter 1</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(155.765589 170.909516)">stage 1</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(154.48448 183.632414)">phase 0</text>
    </g>
    <g id="text_6">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(250.835507 158.187445)">iter 2</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(245.113163 170.909516)">stage 2</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(243.832054 183.632414)">phase 0</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(250.835507 158.187445)">iter 2</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(245.113163 170.909516)">stage 2</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(243.832054 183.632414)">phase 0</text>
    </g>
    <g id="text_7">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(340.18308 158.187445)">iter 3</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(334.460737 170.909516)">stage 3</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(333.179627 183.632414)">phase 0</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(340.18308 158.187445)">iter 3</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(334.460737 170.909516)">stage 3</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(333.179627 183.632414)">phase 0</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(427.486014 158.187445)">iter 4</text>
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(421.391842 170.909516)">stage 0</text>
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(420.152139 183.632414)">phase 1</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(427.486014 158.187445)">iter 4</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(421.391842 170.909516)">stage 0</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(420.152139 183.632414)">phase 1</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(430.240943 109.203547)">wrap</text>
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(421.523209 120.605402)">(stage 0</text>
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(423.012037 132.008)">reused)</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(430.240943 109.203547)">wrap</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(421.523209 120.605402)">(stage 0</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(423.012037 132.008)">reused)</text>
    </g>
    <g id="text_10">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(518.878228 158.187445)">iter 5</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(513.155884 170.909516)">stage 1</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(511.874775 183.632414)">phase 1</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(518.878228 158.187445)">iter 5</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(513.155884 170.909516)">stage 1</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(511.874775 183.632414)">phase 1</text>
    </g>
    <g id="text_11">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(608.225802 158.187445)">iter 6</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(602.503458 170.909516)">stage 2</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(601.222349 183.632414)">phase 1</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(608.225802 158.187445)">iter 6</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(602.503458 170.909516)">stage 2</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(601.222349 183.632414)">phase 1</text>
    </g>
    <g id="text_12">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(697.573376 158.187445)">iter 7</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(691.851032 170.909516)">stage 3</text>
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(690.569922 183.632414)">phase 1</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(697.573376 158.187445)">iter 7</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(691.851032 170.909516)">stage 3</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(690.569922 183.632414)">phase 1</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(784.876309 158.187445)">iter 8</text>
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(778.782137 170.909516)">stage 0</text>
-    <text style="font-weight: 700; font-size: 10.6px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(777.542434 183.632414)">phase 0</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(784.876309 158.187445)">iter 8</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(778.782137 170.909516)">stage 0</text>
+    <text style="font-weight: 700; font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(777.542434 183.632414)">phase 0</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(787.631238 109.203547)">wrap</text>
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(778.913504 120.605402)">(stage 0</text>
-    <text style="font-weight: 700; font-size: 9.5px; font-family: 'DejaVu Sans'; fill: #8a5a00" transform="translate(780.402332 132.008)">reused)</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(787.631238 109.203547)">wrap</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(778.913504 120.605402)">(stage 0</text>
+    <text style="font-weight: 700; font-size: 9.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #8a5a00" transform="translate(780.402332 132.008)">reused)</text>
    </g>
    <g id="text_15">
-    <text style="font-size: 12.3px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.740838" y="254.448" transform="rotate(-0 31.740838 254.448)">Physical barrier[0] fires 3 times above (iter 0, 4, 8) — phase flips 0→1→0 each time</text>
+    <text style="font-size: 12.3px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.740838" y="254.448" transform="rotate(-0 31.740838 254.448)">Physical barrier[0] fires 3 times above (iter 0, 4, 8) — phase flips 0→1→0 each time</text>
    </g>
    <g id="text_16">
-    <text style="font-size: 12.3px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.740838" y="276.1056" transform="rotate(-0 31.740838 276.1056)">it wraps, so mbarrier.try_wait.parity[bar], phase only unblocks for the matching generation.</text>
+    <text style="font-size: 12.3px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.740838" y="276.1056" transform="rotate(-0 31.740838 276.1056)">it wraps, so mbarrier.try_wait.parity[bar], phase only unblocks for the matching generation.</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 700; font-size: 11.8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(154.360372 326.917969)">Iter 0, stage 0, phase 0:</text>
-    <text style="font-weight: 700; font-size: 11.8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(116.425216 342.139969)">mbar_wait(empty_bar[0], phase=0)</text>
-    <text style="font-weight: 700; font-size: 11.8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(103.808434 357.597969)">→ fires on the 1st pass through stage 0</text>
+    <text style="font-weight: 700; font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(154.360372 326.917969)">Iter 0, stage 0, phase 0:</text>
+    <text style="font-weight: 700; font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(116.425216 342.139969)">mbar_wait(empty_bar[0], phase=0)</text>
+    <text style="font-weight: 700; font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(103.808434 357.597969)">→ fires on the 1st pass through stage 0</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 700; font-size: 11.8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(562.706705 326.917969)">Iter 4, stage 0, phase 1:</text>
-    <text style="font-weight: 700; font-size: 11.8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(524.771549 342.139969)">mbar_wait(empty_bar[0], phase=1)</text>
-    <text style="font-weight: 700; font-size: 11.8px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(461.462705 357.644062)">→ fires on the 4th pass — can't be confused with iter 0</text>
+    <text style="font-weight: 700; font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(562.706705 326.917969)">Iter 4, stage 0, phase 1:</text>
+    <text style="font-weight: 700; font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(524.771549 342.139969)">mbar_wait(empty_bar[0], phase=1)</text>
+    <text style="font-weight: 700; font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(461.462705 357.644062)">→ fires on the 4th pass — can't be confused with iter 0</text>
    </g>
    <g id="text_19">
-    <text style="font-style: italic; font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.740838" y="430.416" transform="rotate(-0 31.740838 430.416)">struct PipelineState { stage_idx; phase; iteration; }  —  advance() flips phase only when stage_idx wraps to 0.</text>
+    <text style="font-style: italic; font-size: 12px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.740838" y="430.416" transform="rotate(-0 31.740838 430.416)">struct PipelineState { stage_idx; phase; iteration; }  —  advance() flips phase only when stage_idx wraps to 0.</text>
    </g>
   </g>
  </g>

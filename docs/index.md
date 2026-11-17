@@ -1,5 +1,10 @@
 # Programming the H100
 
+> **Validation — November 17, 2026.** 27 complete CUDA programs compiled; 24 single-GPU workloads passed. Three multi-GPU workloads require additional hardware.
+> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+
+
 ## A hardware-level companion guide to NVIDIA Hopper
 
 <p class="hero-tagline">
@@ -10,7 +15,6 @@ with ASCII diagrams, worked examples with concrete numbers, and code you can
 read line by line.
 </p>
 
-> **Verified on:** CUDA 12.x + Hopper GPU (`sm_90a`).
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
 > **Run with:** `./<out>` on any H100 or B200 instance.
 
