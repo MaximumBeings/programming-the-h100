@@ -7,6 +7,7 @@
 
 
 > **Validation — November 17, 2026.** Architecture reference. SXM product specifications and models are distinguished from the PCIe execution host.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -415,7 +416,8 @@ to and from HBM passes through it.
 Two facts about it drive real kernel performance: it is organised into 128-byte
 lines made of four 32-byte **sectors**, and it charges you per *sector touched*,
 not per useful byte. That single detail is what "coalescing" means, and it is
-why two kernels that move the same amount of data can differ by 32× in speed.
+why the same useful payload can generate very different transaction counts.
+A transaction ratio is not itself a measured runtime ratio.
 
 ### 6.1 Structure and Behavior
 
@@ -431,7 +433,7 @@ L2 Cache — 50 MB Unified
   Partitions:        2 × 25 MB
   Cache line:        128 bytes
   Sectors per line:  4 × 32 bytes
-  Total lines:       50 MB / 128 B = 409,600 lines
+  Capacity model:    If 50 MiB is assumed, 50 × 2^20 / 128 = 409,600 lines
 
   Key behaviors:
 
@@ -449,16 +451,15 @@ L2 Cache — 50 MB Unified
      Uncoalesced access explodes the number of sectors requested,
      consuming L2 bandwidth and evicting useful cache lines.
 
-  3. GPC-LOCAL PARTITIONING
-     Each GPC is "closer" to one L2 partition.
-     Accesses to the nearby partition have lower latency.
-     The memory subsystem tries to map addresses so that
-     an SM's working set hits its local L2 partition.
+  3. CACHE LOCALITY
+     L2 is shared across SMs. Address mapping and concurrent traffic affect
+     locality and contention; the program cannot assume an SM's working
+     set is automatically assigned to a nearby partition.
 
   4. WRITE COALESCING
-     The L2 absorbs small, messy writes from SMs (via L1)
-     and batches them into clean, large writes to HBM.
-     This is critical for scatter/atomic operations.
+     Store transactions and L2 caching affect downstream memory traffic.
+     Coalescing is based on lane addresses; cache behavior does not turn
+     every scatter/atomic request into a contiguous HBM transfer.
 ```
 
 [![A 128-byte cache line has four sectors](images/ch01/13-l2-sectors.svg)](images/ch01/13-l2-sectors.svg)
@@ -467,7 +468,7 @@ L2 Cache — 50 MB Unified
 
 ### 6.2 Worked Example — L2 Sector Math
 
-Same amount of data, two access patterns, a 32× difference in cost. Work through
+Same useful payload, two access patterns, an eightfold difference in requested sectors. Work through
 both by hand — this is probably the most valuable arithmetic in the chapter.
 
 ```
@@ -482,9 +483,9 @@ Thread 31: loads 4 bytes from 0x107C
 
 Total bytes: 32 × 4 = 128 bytes = exactly 1 cache line
 Sectors touched: 4 (each sector = 32 bytes, 8 threads per sector)
-L2 transactions: 1 cache line fetch (may fetch 1-4 sectors)
+Requested footprint: four sectors within one cache line
 
-Result: PERFECTLY COALESCED — 1 L2 transaction for 32 threads.
+Result: COALESCED — four 32-byte sectors cover the 128 useful bytes.
 
 
 Bad scenario: 32 threads each load a float with stride 128 bytes
@@ -497,18 +498,20 @@ Thread 31: 0x1F80
 
 Total bytes still 128, but spread across 32 different cache lines.
 Sectors touched: 32 (one sector per thread, all different lines)
-L2 transactions: 32 separate cache line fetches!
+Requested footprint: 32 sectors spread across 32 cache lines.
 
-Result: 32× WORSE bandwidth usage for the same amount of data.
-This is why coalescing matters so much.
+Result: eight times as many sectors (32 versus 4), 1,024 requested bytes
+for the same 128 useful bytes. Cache hits affect downstream HBM traffic;
+this sector ratio is not a runtime ratio.
 ```
 
 ---
 
 ## 7 — GPCs — Graphics Processing Clusters
 
-The 132 SMs are not a flat pool. They are grouped into eight **Graphics
-Processing Clusters** of 18 SMs each.
+The enabled SMs are grouped into **Graphics Processing Clusters**. The full
+GH100 die has eight GPCs with 18 SMs each; the 132-SM SXM product disables
+some resources, so its enabled GPCs do not all contain 18 active SMs.
 
 For most of GPU history this grouping was invisible to programmers. On Hopper it
 stopped being invisible, because *thread block clusters* — groups of blocks that
@@ -521,13 +524,15 @@ One GPC, drawn out. The pieces to notice: the 18 SMs, their pairing into TPCs,
 and the DSMEM interconnect that lets SMs read one another's shared memory
 directly — without going out to L2 and back.
 
-One GPC contains 18 Streaming Multiprocessors (SMs), organized into 9 Texture Processing Clusters (TPCs) of 2 SMs each, a connection to its local L2 cache partition, and a Distributed Shared Memory (DSMEM) network.
+In the full GH100 configuration, one GPC contains 18 SMs organized as nine TPCs of two SMs each. Product configurations enable fewer resources. Clusters provide distributed shared-memory access within a GPC; L2 is a GPU-wide resource.
 
 [![A GPC contains multiple TPCs](images/ch01/14-gpc-internal.svg)](images/ch01/14-gpc-internal.svg)
 
 *Figure 7.1 — Full-die schematic: nine texture processing clusters, two SMs per TPC.*
 
 ### 7.2 Why GPCs Matter for Kernel Design
+
+Source: [NVIDIA Hopper tuning guide cluster and occupancy limits](https://docs.nvidia.com/cuda/hopper-tuning-guide/index.html).
 
 The practical consequence of everything above: how large can a cluster be, and
 what does each size cost you in synchronisation?
@@ -539,14 +544,14 @@ Implication for Thread Block Clusters:
   A cluster of thread blocks must all run on SMs within the SAME GPC.
   (Because clusters need DSMEM, and DSMEM only exists within a GPC.)
 
-  GPC has 18 SMs → maximum cluster size = 16 thread blocks
-  (leaves ~2 SMs available for other work or yield failures)
+  Portable maximum: eight blocks, subject to device/configuration limits.
+  Larger clusters require nonportable opt-in and actual device support.
+  Query cudaOccupancyMaxPotentialClusterSize and cudaOccupancyMaxActiveClusters.
 
-  Practical cluster sizes:
-    Size  2: 9 clusters per GPC, low sync overhead (87 cycles)
-    Size  4: 4 clusters per GPC, moderate sync overhead
-    Size  8: 2 clusters per GPC, good utilization
-    Size 16: 1 cluster per GPC, ~2 SMs idle, 150-cycle sync cost
+  The 18-SM full-die GPC diagram does not establish a cluster-size limit,
+  blocks-per-SM placement rule, active-cluster count or synchronization cost.
+  Registers, shared memory, warps, enabled SMs and cluster shape all matter.
+
 ```
 
 ---
@@ -1124,10 +1129,11 @@ What Happens When You Run Out of Registers
     2. Shared memory      ← ~20 cycles (CUDA 13.0+ spill target)
     3. Local memory       ← ~200-400 cycles (lives in L2/HBM!)
 
-  CUDA 13.0 improvement:
-    Before: spill → local memory (through L2/HBM, very slow)
-    After:  spill → shared memory first (much faster)
-            Only falls back to local memory if shared mem is full
+  CUDA 13.0 opt-in feature (not used by the CUDA 12.8 examples here):
+    In supported whole-program compilation, enable_smem_spilling permits
+    PTXAS to use shared memory first, with remaining spills in local memory.
+    It is disabled by default and consumes shared-memory capacity; measure
+    both spill traffic and occupancy before assuming a performance gain.
 
   How to detect spilling:
     nvcc --ptxas-options=-v  →  shows "spill loads" and "spill stores"
@@ -1136,9 +1142,12 @@ What Happens When You Run Out of Registers
   How to reduce register usage:
     ├── __launch_bounds__(maxThreads, minBlocks)
     ├── Recompute values instead of storing them
-    ├── Use smaller data types (FP16 → half the registers)
+    ├── Pack compatible FP16 pairs when supported; scalar FP16 alone does
+    │   not guarantee half the physical register allocation
     └── Restructure code to reduce live variables
 ```
+
+Source: [NVIDIA shared-memory register spilling requirements](https://developer.nvidia.com/blog/how-to-improve-cuda-kernel-performance-with-shared-memory-register-spilling/).
 
 ### 14.4 WGMMA Register Layout
 

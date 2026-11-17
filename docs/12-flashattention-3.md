@@ -5,6 +5,7 @@
 
 
 > **Validation — November 17, 2026.** 12 online-softmax numerical reference cases passed on CUDA; the FA3 scheduling listings remain explicitly labeled skeletons.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -487,7 +488,7 @@ FlashAttention 1 → 2 → 3
             (2) ping-pong scheduling across two warpgroups
             (3) 2-stage pipelining within a warpgroup
             (4) FP8 with block quantization + incoherent processing
-  Result:   740 TFLOP/s BF16 (75% of peak), ~1.2 PFLOP/s FP8
+  Result:   740 TFLOP/s FP16 (75% of peak), ~1.2 PFLOP/s FP8
 ```
 
 ### 3.2 Why FA2 Left 65% of the H100 Unused
@@ -502,14 +503,14 @@ FA2 on H100 — The Diagnosis
   FA2's inner loop, in H100 terms:
 
     for each K/V block:
-        load K_j, V_j into SMEM      ◄── synchronous cp.async
+        load K_j, V_j into SMEM      ◄── asynchronous copy; wait before use
         __syncthreads()              ◄── ALL warps wait
         S = Q K_j^T                  ◄── mma.sync (Ampere-style)
         softmax bookkeeping          ◄── SFU work, tensor cores IDLE
         O += P V_j                   ◄── mma.sync
         __syncthreads()
 
-  Four things are wrong on Hopper, each costing double-digit percent:
+  Four potential costs motivate the Hopper-specific design:
 
   1. THE LOAD IS NOT FREE
      cp.async still burns SM instruction issue on address math.
@@ -569,36 +570,23 @@ they are being applied to.
 FA3 — Cumulative Throughput (FP16 forward, H100 SXM5)
 ══════════════════════════════════════════════════════════════════════
 
-  Baseline: FlashAttention-2 on H100          ~350 TFLOP/s   (35%)
-                                               │
-  + Technique 1: warp specialization + TMA     │
-    (producer warps fetch, consumer warps      ▼
-     compute; §5)                             ~570 TFLOP/s   (58%)
-                                               │
-  + Technique 2: ping-pong across two          │
-    warpgroups (§6)                            ▼
-                                              ~620 TFLOP/s   (63%)
-                                               │
-  + Technique 3: 2-stage pipeline inside       │
-    each warpgroup (§7)                        ▼
-                                          640-660 TFLOP/s   (65-67%)
-                                               │
-  + tuning, tile shapes, epilogue              ▼
-                                           up to 740 TFLOP/s (75%)
+  Published examples use different comparison scopes:
 
-  FP8 path (§9):                          up to ~1.2 PFLOP/s
+  Headline: up to 740 TFLOP/s FP16; close to 1.2 PFLOP/s FP8.
+  Ping-pong example (§3.1): 570 → 620–640 TFLOP/s,
+    FP16 forward, head dimension 128, sequence length 8192.
+  Table 2 ablation (fixed batch=4, sequence=8448, heads=16, d=128):
+    Full FA3                                      661 TFLOP/s
+    No GEMM-softmax pipelining; warp-specialised    582 TFLOP/s
+    GEMM-softmax pipelining; no warp specialisation 570 TFLOP/s
 
-  ══════════════════════════════════════════════════════════════════
-  Read the ladder carefully. Technique 1 — just using the
-  hardware the way Chapters 5, 8 and 9 describe — is worth more
-  than the two clever scheduling tricks combined.
-
-  The exotic parts buy the last 15%. Getting the basics right
-  buys the first 23 points.
-  ══════════════════════════════════════════════════════════════════
+  These are not a cumulative ladder with each row adding one feature.
+  The chapter skeleton has no measured throughput.
 ```
 
 [![FA3 paper results and the ideas behind them](images/ch12/07-throughput-ladder.svg)](images/ch12/07-throughput-ladder.svg)
+
+Source for the examples above: [FlashAttention-3 paper, §3.1 and Table 2](https://tridao.me/publications/flash3/flash3.pdf). The table ablates overlapping GEMM/softmax and warp specialisation; it does not isolate every implementation detail independently.
 
 ### 4.2 Tile Shapes and the Two GEMMs
 
@@ -834,10 +822,7 @@ __device__ void consumer_loop_naive(
 }
 ```
 
-This already gets you to ~570 TFLOP/s, because the *loads* now overlap perfectly
-with compute. But look at the two `wgmma_wait_group<0>()` calls and the block
-between them. The tensor cores stop dead during softmax, exactly as the arithmetic
-in §3.2 predicted. That is the remaining 42%.
+The skeleton shows how operand loading can overlap matrix work; it does not establish a throughput number or perfect overlap. Its `wgmma_wait_group<0>()` calls expose a serial softmax interval between matrix operations. Other overheads also contribute, so the gap to peak cannot all be assigned to softmax.
 
 ---
 
@@ -1017,11 +1002,11 @@ Ping-Pong — Cycle Accounting for One Iteration
       max(2,048 tensor cycles, 1,536 softmax) = 2,048 — i.e., in this
       idealized accounting the tensor cores are never the ones waiting.
 
-    Measured whole-kernel: 570 → 620 TFLOP/s  (63% of peak)
+    Published §3.1 example: 570 → 620–640 TFLOP/s (FP16)
 
   ══════════════════════════════════════════════════════════════════
   Note the gap between the model (tensor cores idealized as never
-  waiting) and reality (63% of peak). The remainder is the register
+  waiting) and a published whole-kernel result. Other costs include register
   pressure that two big accumulators create, plus epilogue, plus the
   tail, plus everything this toy cycle count leaves out (instruction
   issue overhead, imperfect overlap at the loop's prologue/epilogue).
@@ -1686,13 +1671,8 @@ These are **published H100 SXM results**, not measurements from this book's sing
 FA3 vs FA2 — Forward Pass, FP16
 ══════════════════════════════════════════════════════════════════════
 
-  Technique ladder (from §4.1):
-
-    FlashAttention-2 on H100              ~350 TFLOP/s    35%
-    + warp specialization + TMA           ~570 TFLOP/s    58%
-    + ping-pong                           ~620 TFLOP/s    63%
-    + intra-warpgroup 2-stage             ~660 TFLOP/s    67%
-    + tuning                          up to 740 TFLOP/s   75%
+  Headline FP16 forward: up to 740 TFLOP/s (about 75% of nominal peak).
+  Controlled ablation and ping-pong example: see §4.1; their shapes differ.
 
   Speedup over FA2:   1.5 – 2.0×  (forward)
                       1.5 – 1.75× (backward)
@@ -1703,7 +1683,7 @@ FA3 vs FA2 — Forward Pass, FP16
                       incoherent processing (§9.4)
 
   Behaviour across shapes:
-    ├── Head dim 64, 128, 256 all benefit; 128 is the sweet spot
+    ├── Results depend on head dimension, sequence length and mask
     ├── Sequence 512 → 16k; longer sequences amortise the
     │   prologue better and land nearer the top of the range
     └── Short sequences are dominated by launch and epilogue
@@ -1712,12 +1692,12 @@ FA3 vs FA2 — Forward Pass, FP16
 ```
 
 ```
-What the Remaining 25% Is
+Possible Costs Below the Compute Roof
 ══════════════════════════════════════════════════════════════════════
 
   75% of peak is excellent. It is not 100%, and it is worth
-  knowing where the rest goes — these are the same categories
-  Chapter 13 teaches you to measure.
+  testing possible costs — these are diagnostic categories, not
+  a measured attribution of the headline result’s missing 25%.
 
   ├── Softmax that ping-pong and pipelining cannot hide.
   │   The overlap is good, not perfect; row reductions have
@@ -1728,16 +1708,17 @@ What the Remaining 25% Is
   │   For 32 K-blocks that is ~6% of iterations running
   │   un-pipelined.
   │
-  ├── Register pressure. §7.2 — 214 registers per thread means
-  │   one block per SM, so there is no second block to cover
-  │   a stall.
+  ├── Register pressure. A 384-thread block averaging 214 registers
+  │   would require 82,176 registers, beyond the 65,536-register SM.
+  │   Warp-specific budgets and compiler allocation must be checked;
+  │   do not infer residency from a consumer-only register count.
   │
   ├── The causal tail (§8). Even with paired scheduling, the
   │   diagonal blocks do masked work at a lower rate.
   │
-  └── HBM, occasionally. At d=64 the arithmetic intensity is
-      halved and short sequences can slip back toward
-      memory-bound. Chapter 8 §1's roofline tells you when.
+  └── Memory traffic. Measure HBM and on-chip operand traffic
+      for the actual tile/reuse pattern; head dimension alone
+      does not determine arithmetic intensity or the bottleneck.
 ```
 
 ---
@@ -1768,22 +1749,22 @@ Merging two partials (split-K, §8.2):
 ### The Three Techniques
 
 ```
-Technique                  Mechanism                        Gain
+Technique                  Mechanism                 Evidence scope
 ──────────────────────────────────────────────────────────────────
-Warp specialization        Producer WG runs TMA;            350 → 570
+Warp specialization        Producer WG runs TMA;            Table 2 ablation
   (§5)                     consumer WGs run wgmma;
                            setmaxnreg moves registers
 
-Ping-pong                  Two consumer WGs offset by       570 → 620
+Ping-pong                  Two consumer WGs offset by       §3.1 example
   (§6)                     half a phase via named
                            barriers; softmax of one
                            hides under GEMMs of other
 
-2-stage intra-WG           Issue QK_{j+1} and PV_j,         620 → 660
+2-stage intra-WG           Issue QK_{j+1} and PV_j,         Table 2 ablation
   (§7)                     then softmax_j underneath
                            both; wait_group<1> not <0>
 
-FP8 (§9)                   Block quant + V transpose        740 → 1200
+FP8 (§9)                   Block quant + V transpose        Separate FP8 path
                            + Hadamard incoherent proc.
 ```
 

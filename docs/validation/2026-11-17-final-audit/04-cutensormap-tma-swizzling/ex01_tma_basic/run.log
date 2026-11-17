@@ -1,0 +1,22 @@
+╔══════════════════════════════════════════════════════════╗
+║  ex01: cuTensorMap Setup + TMA Load + Verify             ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Descriptor setup:
+  Matrix:       256 × 128 FP32
+  Tile:         32 × 32 = 1024 elements = 4096 bytes
+  globalDim:    {256, 128}
+  globalStride: {1024} bytes
+  boxDim:       {32, 32}
+  swizzle:      128B
+  l2Promotion:  128B
+
+cuTensorMapEncodeTiled: SUCCESS
+
+Launching 32 tile blocks (8×4 tiles)...
+Element checks: 32768 / 32768 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — TMA loaded all tiles correctly!          ║
+╚══════════════════════════════════════════════════════════╝

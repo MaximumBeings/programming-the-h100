@@ -5,6 +5,7 @@
 
 
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -180,12 +181,12 @@ TMA Engine — What It Does Internally
 
   1. Reads the cuTensorMap descriptor (128 bytes) — knows shape, strides, swizzle
   2. Computes the byte address of every element in the requested tile
-  3. Issues read requests to HBM3 — fetches data in 128-byte bursts
+  3. Requests source data through the memory hierarchy (L2 hits may avoid HBM)
   4. As data arrives in L2:
      ├── Applies swizzle pattern (XOR address permutation)
      └── Writes directly to shared memory — bypasses L1 cache
   5. Tracks progress via the mbarrier's tx-count (decrements as bytes arrive)
-  6. When all bytes delivered → signals mbarrier → phase flips → consumers unblock
+  6. Reports transaction completion; the phase completes when arrivals and bytes agree
 
   ALL of steps 1-6 happen in dedicated hardware with ZERO SM involvement.
 ```
@@ -637,12 +638,10 @@ mbarrier::complete_tx::bytes — How It Works
 
   During cp.async.bulk execution (hardware):
   ─────────────────────────────────────────────────────────────────
-  Time → TMA delivers data in 128-byte bursts from HBM:
-    Burst 1 arrives → tx-count -= 128 → tx-count = TILE_BYTES - 128
-    Burst 2 arrives → tx-count -= 128 → tx-count = TILE_BYTES - 256
-    ...
-    Last burst arrives → tx-count = 0
-    Both counts (threads + tx) = 0 → PHASE FLIPS → consumers unblock
+  The transfer reports completion against expected transaction bytes.
+  Exact internal burst sizes/timing are not the synchronization contract.
+  When pending arrivals and transaction bytes are both satisfied, the phase
+  completes; consumers observe that completion through the proper acquire wait.
 
   Consumer threads poll:
     mbarrier.try_wait.parity.acquire [mbar], phase
@@ -696,24 +695,16 @@ bulk_group — How It Works
 
   ─── bulk_group vs mbarrier — When to Use Each ───────────────────
 
-  Use mbarrier when:
-  ├── You need precise byte-level completion tracking
-  ├── Integration with complex producer/consumer pipelines
-  ├── Multiple producers signaling a single barrier
-  └── WAR hazard prevention (consumers signal separate barrier)
+  Choose by the documented instruction form, not pipeline complexity:
+  global→shared loads use transaction-counted mbarriers;
+  shared→global stores use bulk async groups.
 
-  Use bulk_group when:
-  ├── Simple pipeline: issue copies, wait for batch, use data
-  ├── Fewer moving parts — no mbarrier init/arrive/wait boilerplate
-  ├── Performance is similar to mbarrier for simple cases
-  └── You want Ampere-style commit/wait semantics with TMA
+  The issuing thread commits and waits for its own bulk groups.
+  A .read wait permits source-buffer reuse after source reads finish;
+  a full wait also covers destination writes and visibility to that thread.
+  Coordinate other participating threads separately. A wait is not a
+  replacement for publishing generic shared stores before an async store.
 
-  ─── bulk_group Implicit Acquire Fence ───────────────────────────
-
-  cp.async.bulk.wait_group includes an implicit ACQUIRE FENCE.
-  After wait_group returns, all data written by the completed copies
-  is guaranteed visible to the Generic Proxy (your threads).
-  No separate fence.proxy.async needed after a wait_group.
 ```
 
 ---
@@ -725,9 +716,8 @@ A self-contained section about something most kernels leave on the table.
 Every TMA fetch passes through L2 on its way to shared memory, and by default
 the hardware decides how long it stays there. But you usually know better than
 the hardware: a tile you will re-read next iteration should stay; a tile you
-will never touch again should be evicted immediately so it stops crowding out
-data that matters. L2 is shared by all 132 SMs, so this is not a private
-decision.
+will never touch again may deserve lower retention priority. Hints do not
+force eviction. L2 is shared across the enabled SMs, so this affects other CTAs.
 
 §8.2 covers `createpolicy`, which packs your intent into a 64-bit descriptor.
 §8.3 gives concrete recipes by workload — the fastest route if you want the
@@ -1034,7 +1024,7 @@ Structured Copy: Shared::CTA → Global (Store / Write-back)
 
   Key differences vs load:
   ├── dst and src are SWAPPED: tensor map is the destination!
-  ├── Uses bulk_group for completion (not mbarrier — writes are "fire and forget")
+  ├── Uses bulk_group completion; commit and the appropriate wait remain required
   ├── The cuTensorMap was created with the global array as the base
   └── TMA writes from SMEM back to the corresponding tile in HBM
 
@@ -1493,10 +1483,10 @@ cp.reduce.async — All Variants and Operands
           : "memory"
       );
   }
-  // Commit the reduction group
-  asm volatile("cp.async.bulk.commit_group;");
-  // No need to wait — next iteration can start immediately.
-  // TMA handles the atomic add in the background.
+  // On the issuing thread, commit this reduction to its bulk group.
+  // Wait for source reads before any thread overwrites smem_partial.
+  // A full wait is needed before relying on destination completion;
+  // coordinate the block before reusing collectively written storage.
 ```
 
 ---
@@ -1530,8 +1520,8 @@ Step 2: tid=0 calls arrive.expect_tx(mbar, 4096)
         → pending_threads: 1→0, pending_tx: 0→4096
 Step 3: Create evict_last policy (keep weight in L2 for reuse)
 Step 4: tid=0 issues cp.async.bulk with policy
-Step 5: All threads poll mbarrier (tx-count decrements as 128B bursts arrive)
-        32 bursts × 128B = 4096B → tx reaches 0 → phase flips
+Step 5: Threads acquire-wait for the phase whose arrivals and 4096 expected
+        transaction bytes are satisfied; internal burst sizes are not assumed
 Step 6: All threads use smem data
 Step 7: phase ^= 1. Repeat for next tile.
 ```
@@ -1743,6 +1733,7 @@ Checks: 6144 / 6144 passed
 
 
 
+
 `GPU:` varies with the card the binary runs on; everything else is deterministic. The host seeds `h_src[i] = (float)i`, so for each of the `K_TILES=6` tiles the verify loop checks `tile[i]` against `(float)(k * TILE_ELEMS + i)` — all `6 × 1024 = 6144` elements match. One cosmetic note: unlike the two-glyph PASS banners in earlier chapters, this one carries only a single 3-byte UTF-8 glyph (`✓`, no trailing em dash), so `%-56s`'s byte-counted padding comes up exactly even with the border instead of landing short.
 
 ### 15.2 Full Example: TMA Store + cp.reduce.async
@@ -1923,6 +1914,7 @@ Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
 ╚══════════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex02_reduce_async.cu -->
+
 
 
 

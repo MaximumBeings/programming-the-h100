@@ -5,6 +5,7 @@
 
 
 > **Validation — November 17, 2026.** Nsight Compute 2025.1.1 profiled the tested Chapter 6 WGMMA program; ordinary-user and successful elevated-permission logs are linked below.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -342,15 +343,16 @@ The Minimal Useful Command
       ncu --import report.ncu-rep --page details
 
   ══════════════════════════════════════════════════════════════════
-  ALWAYS SKIP THE FIRST LAUNCHES
+  CHOOSE COLD-START OR STEADY-STATE SCOPE
 
   The first launch of a kernel pays for module load, JIT if the
   cubin does not match the GPU, cold instruction cache, cold L2,
   and cold TLB. It can be several times slower than steady state
-  and it is not what you are shipping.
+  and matters if the application’s target is cold-start latency.
 
-  If your program launches the kernel once, wrap it in a loop of
-  ten and profile launch 5.
+  For steady-state throughput, warm up then profile a representative
+  repeated launch; reset mutable inputs where needed for correctness.
+  For one-shot latency, retain and report initialization costs.
   ══════════════════════════════════════════════════════════════════
 ```
 
@@ -1386,7 +1388,7 @@ Cluster Kernels (Chapter 2 §1-2)
 
 ## 12 — Four Worked Diagnoses
 
-Symptom to fix, in the order you would actually encounter them.
+These four diagnoses are illustrative teaching scenarios, with invented counter values and timings. They are not additional captured profiles from the dated validation host. The captured profile is identified in the setup section.
 
 ### 12.1 The Uncoalesced Transpose
 

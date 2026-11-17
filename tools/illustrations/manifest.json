@@ -235,7 +235,7 @@
     "file": "docs/images/ch02/04-dsmem-architecture.svg",
     "title": "Distributed access, separate ownership",
     "lede": "A cluster does not merge all shared-memory allocations into one flat physical SRAM.",
-    "height": 758,
+    "height": 839,
     "width": 760,
     "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
   },

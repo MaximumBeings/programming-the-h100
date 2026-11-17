@@ -36,11 +36,17 @@ jobs:
       - name: Verify published execution records
         run: python3 tools/verify_validation_records.py
 
+      - name: Verify fresh audit evidence
+        run: python3 tools/verify_final_audit.py
+
       - name: Verify SVG readability
         run: python3 tools/verify_svg_readability.py
 
       - name: Build strictly
         run: mkdocs build --strict
+
+      - name: Verify built internal links
+        run: python3 tools/verify_site_links.py
 
       - name: Deploy
         run: mkdocs gh-deploy --force

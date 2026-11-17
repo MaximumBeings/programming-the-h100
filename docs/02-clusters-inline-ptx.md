@@ -5,6 +5,7 @@
 
 
 > **Validation — November 17, 2026.** 6 complete CUDA programs compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -50,6 +51,9 @@ The six complete programs in this chapter were compiled and run on the recorded 
 The `a` suffix enables architecture-specific features; it is not part of the runtime compute-capability number. See NVIDIA’s [cluster documentation](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#thread-block-clusters) and [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html). In particular, `compute_90a` PTX is not supported on Blackwell.
 
 ### Cloud GPU Rental — Lambda Labs
+
+The `hello.cu` setup smoke check below is a suggested local check, not one
+of the 27 named programs with dated compile/execution evidence.
 
 Lambda Labs offers H100 instances (the ideal hardware for this guide).
 
@@ -814,6 +818,7 @@ ALL TESTS PASSED — Clusters working correctly!
 
 
 
+
 With a size-2 cluster, blocks 0–1 form cluster 0 and blocks 2–3 form cluster 1. Each block writes `global_block_id × 100` into its own shared memory, then reads index 0 of its partner's shared memory across the DSMEM interconnect — block 0 reads block 1's value (100), block 1 reads block 0's value (0), and the same pattern repeats for the second cluster. `prop.name` and the exact SM count/clock reported by `cudaGetDeviceProperties` will vary by the specific H100 SKU (SXM5 vs PCIe) and driver version; everything below the GPU line is deterministic given this launch configuration.
 
 ---
@@ -883,7 +888,7 @@ clusters worth the complexity for GEMM and attention kernels.
 
 ### 3.1 The Multicast Optimization
 
-TMA (Tensor Memory Accelerator) is the H100's hardware unit for copying large tiles of data from global memory (HBM) to shared memory without involving the CPU or the thread warps. TMA multicast extends this by allowing a SINGLE HBM fetch to be delivered to MULTIPLE SMs simultaneously.
+TMA (Tensor Memory Accelerator) is the H100's hardware unit for copying large tiles of data from global memory (HBM) to shared memory without involving the CPU or the thread warps. TMA multicast distributes a requested tile to selected cluster blocks; this is not an exact physical HBM-transaction-count guarantee.
 
 This is especially powerful for GEMM (matrix multiplication) kernels. In a typical GEMM, every block in a cluster needs the same tile of matrix A. Without multicast, each block issues its own TMA fetch, causing N redundant HBM reads for cluster size N. With multicast, a single TMA fetch delivers the data to all N SMs at once.
 
@@ -1822,6 +1827,7 @@ Test 11: vote.ballot (even lanes → 0x55555555)
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex02_ptx_basics.cu -->
+
 
 
 
@@ -2790,6 +2796,7 @@ Test 6: Combined — global→SMEM→compute with SCALE_FACTOR[0]=2.0
 
 
 
+
 Tests are numbered 2, 3, 4 and 6 rather than 1–4 because they follow the file's own "Test N: .state_space" numbering scheme from the comment headers above (Test 1 is `.reg`, shown only as a comment since register values need no device round-trip to verify, and Test 5, `.local`, is a diagnostic spill case covered in prose rather than as a counted pass/fail check).
 
 ---
@@ -2808,7 +2815,7 @@ with that distinction is most of what this section is for.
 
 PTX is a strongly typed assembly language. Every instruction specifies the type it operates on as a suffix (e.g., `.u32`, `.f32`, `.b32`). This is different from x86 assembly, where the register name implies the size but not the type interpretation.
 
-The key insight: PTX registers are all 32-bit (or register pairs for 64-bit), but the INTERPRETATION changes based on the type modifier. The bits `0x3F800000` are `1.0f` if interpreted as `.f32`, but are `1,065,353,216` if interpreted as `.u32`.
+The key insight: PTX registers have declared widths and types; physical allocation is implementation-dependent, but the INTERPRETATION changes based on the type modifier. The bits `0x3F800000` are `1.0f` if interpreted as `.f32`, but are `1,065,353,216` if interpreted as `.u32`.
 
 ```
 PTX Type System — Categories and Interpretations
@@ -2998,18 +3005,19 @@ FP8 Training Strategy — Automatic Scaling
   ─────────────────────────────────────────────────────────────────
   Before quantizing to FP8:
     1. Find the MAX absolute value in the tensor: max_val = max(|X|)
-    2. Compute scale factor: scale = max_val / 448.0  (for E4M3)
+    2. For nonzero finite max_val: scale = max_val / 448.0 (E4M3)
+       If max_val = 0, choose a nonzero scale (for example 1).
     3. Scale the tensor: X_scaled = X / scale
     4. Now X_scaled fits in [-448, 448] → safe to quantize to FP8
 
   Before dequantizing from FP8:
     1. Multiply by scale: X_reconstructed = X_fp8 * scale
 
-  The H100 Transformer Engine automates this:
-    ├── Hardware monitors per-tensor statistics each step
-    ├── Computes optimal scales automatically
-    ├── Applies scaling transparently in the fused kernel
-    └── No manual loss scaling or intervention needed
+  Transformer Engine combines software recipes with FP8 hardware:
+    ├── Quantization kernels collect amax statistics and apply chosen scales
+    ├── Recipes choose current or historical amax and scaling policy
+    ├── Distributed training may require amax reduction across devices
+    └── Validate overflow, zero-amax handling and accuracy for the workload
 
   ─── Forward vs Backward Pass Format Selection ────────────────────
 
@@ -3025,8 +3033,8 @@ FP8 Training Strategy — Automatic Scaling
   ─── PTX Instructions for FP8 ────────────────────────────────────
   // FP32 → FP8 E4M3 conversion:
   asm("cvt.rn.satfinite.e4m3x2.f32 %0, %1, %2;"
-      : "=r"(packed_fp8)    // two E4M3 values packed in 16 bits
-      : "f"(val_lo), "f"(val_hi)
+      : "=h"(packed_fp8)    // declare packed_fp8 as uint16_t
+      : "f"(val_hi), "f"(val_lo) // first source occupies upper byte
   );
 
   // FP8 E4M3 → FP32:
@@ -3036,6 +3044,8 @@ FP8 Training Strategy — Automatic Scaling
 ```
 
 ---
+
+Sources: [NVIDIA Transformer Engine scaling recipes](https://docs.nvidia.com/deeplearning/transformer-engine/features/low_precision_training/fp8_delayed_scaling/fp8_delayed_scaling.html), [CUDA 12.8 PTX conversion and WGMMA operands](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html).
 
 ## 10 — Packed Data Types
 
@@ -3051,7 +3061,7 @@ you nonsense. Chapters 6 and 7 assume you have this section internalised.
 
 GPU registers are 32 bits wide. For 16-bit types like FP16 and BF16, this means we can pack two values into a single register and operate on both simultaneously. This is SIMD (Single Instruction, Multiple Data) within a register — one instruction does the work of two.
 
-The tensor cores REQUIRE packed data. When you feed FP16 data to a WGMMA instruction, it reads `.f16x2` format — two FP16 values packed in one 32-bit register. If your data isn't packed, the compiler adds packing instructions, wasting cycles. Understanding packing lets you arrange your data to minimize this overhead.
+Register-A FP16 WGMMA expects packed .f16x2 fragments with the documented lane layout. Shared-memory operands use descriptors instead. Inline PTX does not automatically repair an incorrectly packed operand; match the selected instruction variant.
 
 ```
 Packed Types — Memory Layout and Operations
@@ -3090,9 +3100,11 @@ Packed Types — Memory Layout and Operations
 
   ─── WGMMA Register Layout ───────────────────────────────────────
   For wgmma.mma_async with M64N128K16 FP16:
-    A matrix:  64 × .f16x2 registers per warp group thread
-    B matrix:  32 × .f16x2 registers per warp group thread
-    C/D matrix: 64 × .f32  registers per warp group thread
+    Register-A variant: 4 × .f16x2 registers per thread.
+    Shared-A variant: a shared-memory descriptor, not register fragments.
+    B matrix: shared-memory descriptor for both variants.
+    C/D with FP32 accumulation: 64 × .f32 registers per thread.
+    D with FP16 accumulation: 32 packed .f16x2 registers per thread.
 
   Your data must be in .f16x2 format before calling WGMMA!
   This is why all CUTLASS loading code involves packing.
@@ -3297,8 +3309,8 @@ Bank Layout — Visual Map
     smem[0]=bank 0, smem[32]=bank 0, smem[64]=bank 0... → 32-WAY CONFLICT ✗
 
   Stride 16:  thread i reads smem[i * 16]
-    smem[0]=bank 0, smem[16]=bank 16, smem[32]=bank 0... → 2-WAY CONFLICT
-    (16 pairs of threads hit the same bank → 2 cycles)
+    smem[0]=bank 0, smem[16]=bank 16, smem[32]=bank 0... → 16-WAY CONFLICT
+    (16 distinct words target each of the two banks)
 
   Stride 33 (with padding):  thread i reads smem[i * 33]
     smem[0]=bank 0, smem[33]=bank 1, smem[66]=bank 2... → NO CONFLICT ✓
@@ -3368,14 +3380,16 @@ Fixing Bank Conflicts — Padding and Swizzling
 Sections 13 through 16 form a single short arc: how addresses get converted
 between state spaces, and why you would ever need to do it.
 
-Start here, with Unified Virtual Addressing. UVA is the reason a plain C++
-pointer works no matter which kind of memory it points at: the state space is
-encoded in the pointer's high bits, and the hardware decodes it on every access.
-Convenient — and, as the next section shows, not free.
+Generic addressing and Unified Virtual Addressing solve different problems.
+Generic PTX addresses let supported instructions address several state spaces
+without a state-space qualifier. Their encoding is implementation-defined;
+use `cvta` rather than inventing tag values or stripping fixed high bits.
 
 ### 13.1 Unified Virtual Addressing (UVA)
 
-UVA maps all GPU memory spaces into a single 64-bit virtual address space. The high bits of any pointer tell the hardware which physical subsystem to route the access to. This is why a single `float*` in CUDA C++ can point to global memory, shared memory, or constant memory — the hardware figures out which one at dereference time by inspecting the address bits.
+UVA provides a unified virtual address space for supported host and device
+allocations. It does not make block shared memory into host-addressable global
+storage, and it is not the definition of generic PTX state-space addressing.
 
 [![Generic pointers and address-space conversion](images/ch02/14-uva-address-space.svg)](images/ch02/14-uva-address-space.svg)
 
@@ -3387,15 +3401,14 @@ UVA maps all GPU memory spaces into a single 64-bit virtual address space. The h
 
 Two kinds of address, and the difference matters more than it first appears.
 
-A **generic** pointer is the ordinary C++ kind: 64 bits, tagged with its state
-space, works everywhere, costs a few cycles per access while the hardware decodes
-the tag. A **state-space** pointer is a bare integer — usually 32 bits for shared
-memory — with no tag at all. It is what PTX instructions actually want, it is
-half the size, and dereferencing it as a C++ pointer will crash.
+A generic address and a state-space address are distinct representations.
+Use the conversion and width expected by the selected PTX instruction. No
+universal tag pattern, fixed conversion latency or guaranteed crash follows
+from the distinction; an invalid address conversion or access is undefined.
 
 ### 14.1 Generic Pointers (Default)
 
-Every pointer you write in CUDA C++ is generic — 64-bit, works for any memory space, costs a few cycles for hardware routing on each dereference.
+CUDA C++ pointers can be passed as generic addresses to inline PTX. The compiler may infer their state space; do not assume a fixed routing overhead on every dereference.
 
 ### 14.2 State-Space Pointers (Explicit)
 
@@ -3406,21 +3419,21 @@ Generic vs State-Space — Side-by-Side
 ══════════════════════════════════════════════════════════════════════
 
   Generic (C++ default):
-    float* ptr = &smem[5];         // 64-bit, tagged address
-    float val = *ptr;              // hardware decodes tag → routes to SMEM
+    float* ptr = &smem[5];         // C++ shared-memory pointer
+    float val = *ptr;              // ordinary C++ access to shared memory
     ptr[2] = 3.14f;                // C++ arithmetic works
     // Use for: all normal CUDA C++ code
 
   State-space (explicit, 32-bit for SMEM):
     uint32_t smem_addr = __cvta_generic_to_shared(&smem[5]);
     // smem_addr = raw byte offset, NOT a C++ pointer
-    // *(float*)smem_addr  → CRASH (missing tag bits!)
+    // Do not cast this offset to a C++ pointer and dereference it.
 
     // ONLY valid use: pass to PTX instructions
     asm("ld.shared.f32 %0, [%1];" : "=f"(val) : "r"(smem_addr));
     // Use for: ldmatrix, TMA, mapa, atom.shared — anything that REQUIRES it
 
-  When you MUST use state-space addresses:
+  Common instructions whose addressing form must be checked:
     ├── ldmatrix (tensor core loading)
     ├── stmatrix (tensor core storing, Hopper+)
     ├── cp.async.bulk.tensor (TMA)
@@ -3433,8 +3446,8 @@ Generic vs State-Space — Side-by-Side
 ## 15 — cvta — Convert To Address
 
 `cvta` — "convert to address" — is the instruction that moves between the two
-pointer forms from §14. Strip the tag to get a raw shared-memory offset, or add
-it back to get a pointer C++ can use.
+pointer forms from §14. It performs the specified address-space conversion;
+its implementation need not be a simple bit mask.
 
 You will type `__cvta_generic_to_shared()` more than almost any other intrinsic
 in this book: every TMA copy, every `mbarrier` operation, and every `ldmatrix`
@@ -3442,7 +3455,7 @@ in later chapters begins with one.
 
 ### 15.1 What cvta Does
 
-`cvta` strips or adds the state-space tag bits, converting between 64-bit generic addresses and state-space-specific offsets.
+`cvta` converts between generic and state-space addresses. The pointer must belong to the specified space; use `isspacep` when membership is uncertain.
 
 ```
 cvta — Complete Reference
@@ -3450,10 +3463,10 @@ cvta — Complete Reference
 
   C++ Intrinsic                         Result    Notes
   ────────────────────────────────────────────────────────────────
-  __cvta_generic_to_shared(ptr)         uint32_t  strips tag, 32-bit offset
-  __cvta_generic_to_global(ptr)         uint64_t  strips tag, full 64-bit addr
-  __cvta_generic_to_local(ptr)          uint32_t  strips tag
-  __cvta_generic_to_constant(ptr)       uint32_t  strips tag
+  __cvta_generic_to_shared(ptr)         size_t    address in the selected state space
+  __cvta_generic_to_global(ptr)         size_t    address in the selected state space
+  __cvta_generic_to_local(ptr)         size_t    address in the selected state space
+  __cvta_generic_to_constant(ptr)         size_t    address in the selected state space
 
   PTX (when no C++ intrinsic available):
     cvta.to.shared.u32  smem, generic;   // generic→shared
@@ -3467,6 +3480,8 @@ cvta — Complete Reference
 ```
 
 ---
+
+Sources: [CUDA address conversion intrinsics](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#address-space-conversion-functions), [PTX generic addressing](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#generic-addressing).
 
 ## 16 — mapa & Cluster-Wide Memory
 
@@ -3872,6 +3887,7 @@ Test 6: mov.b32 bit reinterpret (float↔uint32)
 
 
 
+
 The `SMEM offset=0x%X` value in Test 1 is whatever small 32-bit offset `__cvta_generic_to_shared` happens to assign — it is driver/compiler-chosen, not a fixed address, so don't expect `0x0` specifically on your own run; the surrounding PASS depends only on the two loaded values being 42.0 and 99.0, not on that offset. `0x40490FD0` is the exact IEEE-754 single-precision bit pattern for `3.14159f` — that part is architecture-independent and will match on any run.
 
 ---
@@ -4148,6 +4164,7 @@ Test 5: mad hi+lo (0xFFFFFFFF * 0xFFFFFFFF)
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex05_ptx_datatypes.cu -->
+
 
 
 
@@ -4700,6 +4717,7 @@ Verification (first 8 and last 4 elements):
 ╚══════════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex06_comprehensive.cu -->
+
 
 
 

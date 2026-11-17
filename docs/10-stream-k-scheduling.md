@@ -14,6 +14,7 @@
 ## Lesson 4 Companion Guide — Advanced Scheduling and Dependent Grid Execution
 
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -811,6 +812,7 @@ ALL PASS ✓
 
 
 
+
 The dated H100 run above passed the per-tile CPU-reference checks. CTA execution and print order can vary. This correctness test does not measure how long a particular split spends waiting or establish the performance of a larger launch.
 
 ---
@@ -1341,7 +1343,7 @@ Source: [CUDA 12.8 PTX `griddepcontrol`](https://docs.nvidia.com/cuda/archive/12
 
 ### 10.1 Why the Host Must Authorize
 
-The GPU's default stream policy is "strict serialization always." Relaxing this for a specific kernel pair requires explicit opt-in from the CPU at launch time. Device-side code alone cannot override stream policy — if it could, rogue kernels could corrupt dependent data by racing ahead without CPU consent.
+Kernels submitted to the same CUDA stream normally execute in order. Programmatic dependent launch opts a specific dependent launch into earlier scheduling; independent work in other streams is a separate concurrency mechanism. The dependent kernel still needs to establish prerequisite completion before reading the producer’s output. See [CUDA’s programmatic dependent launch contract](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#programmatic-dependent-launch-and-synchronization).
 
 ```
 Host-Side Launch API for Dependent Grids
@@ -1655,6 +1657,7 @@ Verification (first 8 elements):
 ALL PASS ✓
 ```
 <!-- validation:end:ex10_dependent_launch.cu -->
+
 
 
 
@@ -2063,16 +2066,18 @@ Dependent-Launch Production Checklist
         Don't move it earlier "for safety" — it wastes overlap.
 
   □ 5. ALWAYS USE BOTH griddepcontrol INSTRUCTIONS TOGETHER
-        If Kernel A uses launch_dependents: Kernel B MUST use .wait.
-        Omitting .wait causes data corruption. This is a hard requirement.
+        A dependent kernel launched with programmatic serialization
+        must establish prerequisite completion before consuming output,
+        using .wait or another valid completion protocol.
 
   □ 6. ALWAYS SET THE HOST ATTRIBUTE
         cudaLaunchAttributeProgrammaticStreamSerialization = 1
-        Without this, the device instructions are silently no-ops.
-        Verify with nvcc -keep + grep for griddepcontrol in PTX.
+        Without this opt-in, the dependent launch retains ordinary
+        same-stream ordering. PTX inspection confirms instruction
+        emission; a timeline is needed to observe actual overlap.
 
   □ 7. PROFILE BEFORE AND AFTER WITH nsys
-        Measure: total wall time (Kernel A end to Kernel B end).
+        Measure: total elapsed time (Kernel A start to Kernel B end).
         Check: does Kernel A's tail overlap with Kernel B's startup?
         Watch: sm__warps_active during Kernel A's tail.
 

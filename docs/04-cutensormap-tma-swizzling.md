@@ -5,6 +5,7 @@
 
 
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -76,7 +77,7 @@ Hardware Compatibility Matrix
     Ampere: threads compute addresses, issue cp.async (16 bytes at a time),
             SM is tethered to the copy engine for every chunk.
     Hopper: one thread fills a 128-byte descriptor, fires cp.async.bulk.tensor,
-            SM is COMPLETELY FREE. TMA runs independently. Zero thread cost.
+            One issuer launches the request; threads still manage readiness and reuse.
 ```
 
 ### Cloud GPU Rental — Lambda Labs
@@ -130,7 +131,8 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — TMA Differences
   WHAT IS NEW IN BLACKWELL:
     ├── Larger maximum box dimensions supported
     ├── Additional data types (FP4/MX formats)
-    ├── tmem (tensor memory) as a TMA destination (new state space)
+    ├── Tensor memory uses its own tcgen05 copy/MMA instructions;
+    │   do not treat it as an ordinary TMA shared-memory destination
     └── New cuTensorMapEncodeTiledMemref() variant for tmem
 
   PORTING: Change -arch=sm_90a to -arch=sm_100a. Done.
@@ -194,7 +196,7 @@ To understand why TMA (Tensor Memory Accelerator) exists, you need to understand
 
 This created a fundamental coupling: the SM (Streaming Multiprocessor) — the unit that does compute — was tethered to the data-movement operation. Even if the copy was "asynchronous" (as in Ampere's `cp.async`), threads still had to touch every 16-byte chunk and compute its address. The SM's instruction issue slots were consumed by housekeeping rather than arithmetic.
 
-TMA breaks this coupling entirely. You describe the *entire* transfer — its shape, strides, destination, swizzle pattern — once in a 128-byte descriptor. Then a single thread fires one instruction referencing that descriptor. The SM is immediately free. The TMA hardware engine handles everything else in the background, with zero further SM involvement.
+TMA breaks this coupling entirely. You describe the *entire* transfer — its shape, strides, destination, swizzle pattern — once in a 128-byte descriptor. Then a single thread fires one instruction referencing that descriptor. The issuer can proceed while hardware performs the transfer. Threads still manage synchronization, descriptor state and destination lifetime; overlap depends on available resources.
 
 ```
 Evolution of GPU Data Movement — Pre-Hopper to Hopper
@@ -236,7 +238,7 @@ Evolution of GPU Data Movement — Pre-Hopper to Hopper
   // Thread IMMEDIATELY continues. TMA engine handles everything.
 
   Threads consumed:  1 thread fires the instruction. 0 threads for the copy.
-  SM utilization:    Tensor Cores run at 100% while TMA moves data.
+  Potential overlap: Tensor Cores compute while TMA transfers another ready stage.
   Improvement:       COMPLETE decoupling of compute and memory.
   The SM is not involved AT ALL in the actual data movement.
 ```
@@ -288,7 +290,7 @@ TMA Capabilities Overview
 
 ### 1.3 The Perfect Asynchronicity — Why TMA Enables True Pipelining
 
-The H100's ability to overlap compute and memory 100% rests on three independent hardware units that can run simultaneously:
+Hopper can overlap data movement and computation when dependencies, buffers and execution resources permit. Separate issue, TMA and Tensor Core resources make that overlap possible; they do not guarantee 100% utilization:
 
 [![Load the next tile while computing this one](images/ch04/01-h100-tma-async-architecture.svg)](images/ch04/01-h100-tma-async-architecture.svg)
 
@@ -1177,7 +1179,7 @@ out.
 
 Swizzling is an address-mapping function applied to the bytes as TMA writes them to shared memory. Instead of writing element (y, x) to the "obvious" address `base + y * row_bytes + x * element_size`, TMA applies an XOR operation to the address bits, shuffling which bank each element lands in.
 
-The key insight: swizzling rearranges data so that elements which would conflict (map to the same bank in a naive layout) are spread across different banks. From the thread's perspective, they still access the same logical coordinates. The XOR is invisible — the hardware applies it consistently so reads and writes see the same mapping.
+The key insight: swizzling rearranges data so that elements which would conflict (map to the same bank in a naive layout) are spread across different banks. From the thread's perspective, they still access the same logical coordinates. The logical-to-physical mapping must be applied by every access path. TMA and matching matrix descriptors can interpret it in hardware; ordinary shared loads/stores require the correct transformed address.
 
 ```
 Swizzling — The XOR Formula
@@ -1246,8 +1248,9 @@ adjacent rows.
 
 ### 10.3 64B and 32B Swizzle — When to Use Each
 
-The narrower modes. You need these when your tile's row is too short for 128B
-swizzle to be legal — the mode has to divide evenly into the row.
+Choose a supported mode for the tensor-map combination and the consumer layout.
+For a non-interleaved tiled map, the innermost box extent in bytes must not
+exceed the selected swizzle width; a short extent is not automatically illegal.
 
 [![Narrower swizzles use smaller windows](images/ch04/04-swizzle-64b-32b-grids.svg)](images/ch04/04-swizzle-64b-32b-grids.svg)
 
@@ -1262,18 +1265,17 @@ When to use 64B:
 When to use 32B:
 - Required when interleave = CU_TENSOR_MAP_INTERLEAVE_32B
   (interleaving and swizzle are coupled -- see Sec 11)
-- Very narrow tiles where inner dim <= 16 bytes
+- Narrow tiles whose inner extent and alignment satisfy the descriptor rules
 - INT8/UINT8 data with specific narrow layouts
 
 Swizzle Selection Rule of Thumb
 ──────────────────────────────────────────────────────────────────────
-Start with SWIZZLE_128B for all FP16/BF16 GEMM workloads.
-It provides the most conflict-free coverage and matches the
-128-byte cache line width of the L2 cache.
+Check the exact tensor-map constraints before choosing a mode.
+For non-interleaved tiled maps, boxDim[0] × element size must be a multiple
+of 16 bytes and no greater than the selected 32/64/128-byte swizzle width.
+The supported shared layout, destination alignment and consumer instructions
+must agree. Benchmark bank conflicts for the actual access pattern.
 
-Downgrade to SWIZZLE_64B or SWIZZLE_32B only if:
-  Your boxDim[0] x sizeof(element) < 128 bytes (smaller than 128B span)
-  In that case, the wider swizzle would permute addresses beyond your tile.
 ```
 
 ### 10.4 Setting Up Swizzle in the Descriptor
@@ -1292,8 +1294,8 @@ Swizzle Enumeration Values
 
   When swizzle = NONE:
     Data lands in SMEM at the "natural" address.
-    Reading sequentially: no conflict. Reading columns: 32-way conflict.
-    Use NONE only if you know your access pattern is always stride-1.
+    Bank conflicts depend on element width, row stride and lane addresses.
+    Column reads are not universally 32-way conflicting.
 
   Important: the swizzle in the descriptor must MATCH the SMEM layout
   that your kernel code expects when reading from SMEM.
@@ -1395,14 +1397,13 @@ The Coupling Requirement — 32B Interleave Must Use 32B Swizzle
 
   Why they are coupled:
   ─────────────────────────────────────────────────────────────────
-  The TMA hardware pipeline for 32B de-interleaving produces 32-byte
-  aligned output chunks. The swizzling logic is applied AFTER the
-  de-interleave step. The 32B swizzle is designed to pair with 32B
-  chunks — it applies the XOR permutation at 32-byte granularity.
+  This is an explicit API compatibility constraint. Do not infer the
+  ordinary 16-byte-atom swizzle mapping for this interleaved layout;
+  follow the matching tensor-layout definition.
 
   If you set INTERLEAVE_32B but SWIZZLE_128B, the hardware behavior
-  is UNDEFINED. cuTensorMapEncodeTiled may return an error, or the
-  behavior may be silently wrong.
+  is invalid: check the cuTensorMapEncodeTiled return status before
+  using the descriptor.
 
   Summary of valid combinations:
   ─────────────────────────────────────────────────────────────────
@@ -1873,6 +1874,7 @@ Element checks: 32768 / 32768 passed
 
 
 
+
 The top banner is a plain hardcoded string, so its border lines up exactly. The pass/fail banner is built with `printf("║  %-56s  ║\n", ...)`, and `%-56s` pads to 56 *bytes* — the same quirk from Chapter 3. `"✓ ALL PASS — TMA loaded all tiles correctly!"` is 44 display characters but 48 bytes (`✓` and `—` are each 3-byte UTF-8 sequences), so the field gets only 8 padding spaces instead of the 12 it would need to fill 56 *columns*. The closing `║` lands 2 columns short of the border above and below it.
 
 ### 14.2 Full Example: Multi-Dimensional TMA (3D Tensor)
@@ -2131,6 +2133,7 @@ Element checks: 32768 / 32768 passed
 ╚══════════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex02_tma_3d.cu -->
+
 
 
 

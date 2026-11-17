@@ -5,6 +5,7 @@
 
 
 > **Validation — November 17, 2026.** 1 complete CUDA program compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -43,8 +44,9 @@ which documents a hardware behaviour that is not in the official numbers.
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
-Same requirements as Chapter 6: Hopper or later, compiled for `sm_90a`. The FP8
-and sparse sections have no pre-Hopper equivalent at all. Skip ahead if you
+Same WGMMA target as Chapter 6: Hopper, compiled for `sm_90a`. Ampere already
+supports structured sparse MMA, and Ada supports FP8 MMA; these are different
+instruction paths, not fallbacks for the WGMMA listings. Skip ahead if you
 already have a machine set up.
 
 ### What Hardware Can You Use?
@@ -298,7 +300,7 @@ wgmma.wait_group — The Synchronization Point
     Use when: you want to pipeline — let the newest group keep computing
               while you read and store the result of the completed older groups.
 
-  N = K (any positive value) → Keep K groups running in background.
+  N = K (valid immediate 0–7) → Allow at most K groups to remain pending.
     Useful for deep pipelining where you overlap multiple in-flight groups.
     Requires careful management to avoid overwriting active accumulator registers.
 
@@ -314,7 +316,7 @@ wgmma.wait_group — The Synchronization Point
   Assuming Groups 0/1 use registers disjoint from pending Group 2:
   What you can now safely do:
     ├── Read D registers for Group 0's output — they are final ✓
-    ├── Write Group 0's result to global memory via stmatrix ✓
+    ├── Stage Group 0 fragments via stmatrix, then store to global memory ✓
     └── Keep Group 2 running in the background ✓ (it's the 1 permitted)
 
   What you CANNOT do:
@@ -350,7 +352,7 @@ actually go.
 
 ### 4.1 The Complete Overlap Pattern
 
-The real power of groups becomes clear when you see the full pipeline. The key insight is that you are not just "commit then wait" — you are interleaving math, data preparation, and synchronization so that tensor cores are never idle.
+The real power of groups becomes clear when you see the full pipeline. The key insight is that you are not just "commit then wait" — you are interleaving math, data preparation, and synchronization to reduce avoidable idle time. Benefit depends on the workload.
 
 [![Commit a batch; wait for the required age](images/ch07/01-commit-wait-pipeline-timeline.svg)](images/ch07/01-commit-wait-pipeline-timeline.svg)
 
@@ -382,6 +384,8 @@ The Pipelined wgmma Pattern — Complete Timeline
       Update pointers, addresses
       [optional] TMA load for (m, n+2) as well
 
+  // Use a DISTINCT accumulator set and a ready, separately owned SMEM stage.
+  // Wait for its load completion before issuing the next tile’s WGMMA.
   // wgmma for NEXT tile:
   for each K tile:
       wgmma.mma_async ...          // K tiles for (m, n+1)
@@ -392,16 +396,14 @@ The Pipelined wgmma Pattern — Complete Timeline
                                    //   Group G is guaranteed done
                                    //   Group G+1 may still run
 
-  // Epilogue for tile (m, n) — Group G's results are ready:
-  wgmma.fence.sync.aligned;
+  // Epilogue for tile (m, n), assuming no pending group uses its registers:
   stmatrix → smem, then TMA store smem → global
 
   // Now drain Group G+1:
   wgmma.wait_group 0;
-  wgmma.fence.sync.aligned;
   stmatrix → smem, TMA store ...
 
-  Tensor cores:  ████████████████████  (nearly continuously busy!)
+  Tensor cores:  overlapping work is possible; this is not a measured trace.
   Epilogue work: ░░░░░░[store]░░░░[store] (overlapped with math!)
 
   ─── The Five-Step Rhythm ────────────────────────────────────────
@@ -473,7 +475,7 @@ After `wgmma.wait_group<0>` completes, the D matrix elements are scattered acros
 
 Writing these back to SMEM with normal `st.shared` instructions would be a nightmare: each thread would need to compute complex, non-linear addresses to place its register values in the right SMEM locations. And even then, the result might have bank conflicts.
 
-`stmatrix` is the inverse of `ldmatrix`. Just as `ldmatrix` gathered data from SMEM into the exact register layout that wgmma expects, `stmatrix` scatters the wgmma output from registers back into SMEM in a clean, contiguous, conflict-free layout.
+`stmatrix` stores the inverse of its corresponding `ldmatrix` fragment mapping. A WGMMA epilogue must select and pack matching fragments and supply valid addresses. Conflict behavior depends on those addresses and the layout; the instruction does not infer or fix them.
 
 ```
 stmatrix — The Scatter Operation
@@ -536,7 +538,7 @@ address arithmetic.
 
 ### 7.1 Phase 1: Address Responsibility
 
-The address assignment in stmatrix follows the SAME pattern as ldmatrix. This symmetry is intentional — if you read with ldmatrix and write with stmatrix using the same address formula, the data is correctly reconstructed.
+The address assignment in stmatrix follows the SAME pattern as ldmatrix. This symmetry is intentional — if you read with ldmatrix and write with stmatrix using the same address formula, the corresponding ldmatrix fragments are reconstructed. WGMMA accumulators still require the correct fragment selection and packing.
 
 [![stmatrix: four address-providing quadrants](images/ch07/03-stmatrix-address-quadrants.svg)](images/ch07/03-stmatrix-address-quadrants.svg)
 
@@ -846,10 +848,8 @@ E4M3 vs E5M2 — Why Two Formats Exist
   FP8 E4M3 (4-bit exponent, 3-bit mantissa):
   ─────────────────────────────────────────────────────────────────
   Bit layout: [S|EEEE|MMM]
-  Max value: 448  (= 1.111 × 2^(14-7) = 1.875 × 128 = 240... actually 448)
-             More precisely: max normal = (1 + 7/8) × 2^7 = 1.875 × 128 = 240
-             With special encoding: max = 448
-  Min normal: 2^(0-7) = 2^(-6) ≈ 0.016
+  Max finite: (1 + 6/8) × 2^(15-7) = 1.75 × 256 = 448
+  Min normal: 2^(1-7) = 2^(-6) = 0.015625
   Precision: 3-bit mantissa → 1 in 8 fractional resolution
 
   Represents NaN (but NOT Inf — unique property of E4M3).
@@ -884,32 +884,32 @@ E4M3 vs E5M2 — Why Two Formats Exist
   Value: 100.5
 
   In E4M3 (±448 range, 3-bit mantissa):
-    Closest representable: 100.0 (close, ±0.5% error) ✓
+    Nearest value: 104.0 (neighbors are 96 and 104; error ≈3.5%)
 
   In E5M2 (±57344 range, 2-bit mantissa):
-    Closest representable: ~96.0 (larger quantization error) ←worse precision
+    Nearest value: 96.0 (neighbors are 96 and 112; error ≈4.5%)
 
   Value: 5000.0 (a large gradient spike)
 
   In E4M3 (±448): OVERFLOW! Clamps to 448 or becomes NaN ✗
-  In E5M2 (±57344): 5000.0 → ~4096.0 (within range, acceptable precision) ✓
+  In E5M2 (±57344): 5000.0 → 5120.0 (nearest; error 2.4%)
 ```
 
 ---
 
 ## 11 — FP8 Packed Types
 
-The same packing story from Chapter 2 §10, now at its most extreme: four FP8
-values in a single 32-bit register.
+Packing places several FP8 values in one register-sized word. It matters for
+conversion and instruction operand formats, but it is distinct from memory
+coalescing: neighboring lanes can access adjacent scalar bytes and still share
+transactions. A scalar byte access does not universally waste 31 bytes.
 
-The reason is worth stating, because it explains a lot of GPU memory behaviour.
-The memory system never fetches less than a 32-byte sector. Request one FP8
-byte and you have paid for thirty-two. Packing is how you make sure the other
-thirty-one are useful to you.
+### 11.1 Why Packing Is Useful
 
-### 11.1 Why Packing Is Necessary
-
-The GPU memory controller never fetches less than 32 bytes (one "sector") at a time. If you request a single FP8 byte, the GPU fetches 32 bytes, delivers your 1 byte, and wastes the other 31. To fix this, FP8 values must always be accessed in packed groups. NVIDIA defines two packing types: `x2` (two FP8 in 16 bits) and `x4` (four FP8 in 32 bits).
+Use the pack required by each instruction. Hopper FP8 register-A WGMMA fragments
+use `.b32` registers containing four FP8 values; conversion instructions commonly
+produce two-value `.b16` packs. Descriptor-based operands instead refer to a
+supported shared-memory layout. See [PTX FP8 fragments](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#matrix-fragments-for-wgmma-mma-async-m64nnk32).
 
 [![Pack FP8 values with an explicit bit order](images/ch07/06-fp8-packed-x4-x2.svg)](images/ch07/06-fp8-packed-x4-x2.svg)
 
@@ -951,7 +951,7 @@ FP8 Packed Types — x2 and x4
   └─────────────────────┴──────────────────────┘
 
   Use for:
-  ├── Feeding WGMMA tensor cores (the tensor core ingests 16-bit chunks of FP8)
+  ├── Conversion/transport when a two-value pack matches the instruction
   ├── Converting from FP16/FP32 (cvt instructions produce x2 output)
   └── The hardware has dedicated logic to convert FP16→FP8 in x2 format.
 
@@ -961,13 +961,12 @@ FP8 Packed Types — x2 and x4
       One load instruction fills a register with 4 FP8 values.
       Good for: scale factor search, max reduction, general processing.
 
-  x2: Matches FP16 width → hardware can reuse FP16 paths.
-      Tensor core data path accepts 16-bit chunks.
-      Good for: WGMMA input, conversion results, tensor core feeding.
+  x2: Holds two conversion results in a .b16 operand.
+      Combine/rearrange packs when a later instruction requires .b32 fragments.
 
   Most workflows:
     Load from SMEM/HBM: use x4 (load 32-bit registers)
-    Feed to WGMMA:      use x2 (the tensor core reads 16-bit pairs)
+    Feed register A:   use the documented four-value .b32 fragment mapping
     Convert FP16→FP8:   use x2 output (cvt produces x2 format)
 ```
 
@@ -999,8 +998,8 @@ cvt.satfinite — FP8 Quantization Instruction
   PTX:
     cvt.rn.satfinite.e4m3x2.f16x2  fp8_pair, fp16_pair;
     cvt.rn.satfinite.e5m2x2.f16x2  fp8_pair, fp16_pair;
-    cvt.rn.satfinite.e4m3x2.f32    fp8_pair, f32_lo, f32_hi;
-    cvt.rn.satfinite.e5m2x2.f32    fp8_pair, f32_lo, f32_hi;
+    cvt.rn.satfinite.e4m3x2.f32    fp8_pair, f32_hi, f32_lo;
+    cvt.rn.satfinite.e5m2x2.f32    fp8_pair, f32_hi, f32_lo;
 
   What it does:
   ├── .rn: Round to nearest (IEEE 754 default rounding mode)
@@ -1086,8 +1085,8 @@ Scaling Factors — The Core Curriculum of FP8
 
   BLOCK-WISE / MICRO-SCALING (one scale per small tile, e.g., 16×16 or 32×32):
   ─────────────────────────────────────────────────────────────────
-  Also called MX (Microscaling) or MXFP8.
-  Each tile gets its own 8-bit scale factor.
+  Generic block scaling is not automatically the standardized MXFP8 format.
+  The scale type and block shape are part of the chosen numerical scheme.
   Best precision but highest overhead (store and apply many scale factors).
   Used in DeepSeek V3 and other frontier models.
   Blackwell natively supports MX formats; Hopper needs software assist.
@@ -1231,78 +1230,45 @@ FP8 A Loading — SS vs RS Path (Hopper AND Blackwell)
 
 ## 14 — FP8 Precision Pitfalls — K-Slicing
 
-The most valuable section in the chapter, and the one you will not find in the
-documentation.
+An FP32 destination register does not by itself specify a scalar-FMA rounding
+sequence. Accumulation precision depends on the instruction contract and the
+implementation. Long reductions also compound input quantization and rounding.
+Measure numerical error against a higher-precision reference over representative
+shapes and value ranges, including cancellation and outliers.
 
-FP8 wgmma is specified as accumulating in FP32. Measured on real H100 silicon,
-it does not — the effective accumulator behaves closer to 22 bits of mantissa
-than 32. For short K it makes no difference. For long K it compounds, and your
-GEMM quietly loses precision as the reduction gets deeper.
-
-The fix is **K-slicing**: break the reduction into chunks, and promote to real
-FP32 between them. This section shows how to decide chunk size, and what it
-costs. If you are shipping FP8 inference, read this one twice.
+Two-level accumulation periodically drains a Tensor Core partial sum and adds it
+into a separate FP32 total with ordinary arithmetic. This can improve accuracy,
+at a cost in registers, instructions and synchronization.
 
 ### 14.1 The "FP22" Accumulation Issue
 
-Even though FP8 wgmma is documented as using an FP32 accumulator, two independent empirical reports back up the claim that the real precision is lower, and they are worth citing by name rather than treating as one settled industry number. The SageAttention2 paper measured H100/Ada `mma(f32f8f8f32)` accumulation behaving like roughly FP22 (~13 kept mantissa bits beyond the sign and exponent). DeepSeek-V3's technical report separately measured H800 FP8 GEMM accumulation retaining only about 14 bits — a close but not identical figure, from a different model/kernel. Treat "FP22" as a convenient shorthand for "measurably less than FP32, by low-teens bits, in at least two independent measurements" rather than an exact, hardware-documented constant.
+Published implementations report reduced internal precision in particular FP8
+matrix paths. [SageAttention2](https://arxiv.org/abs/2411.10958) calls its observed
+behavior “FP22”; the [DeepSeek-V3 report, §3.3.2](https://arxiv.org/html/2412.19437v1#S3.SS3.SSS2)
+reports about 14 retained bits on its H800 path and periodic promotion after
+128 reduction elements. These are empirical findings from those implementations,
+not a portable 22-bit-mantissa guarantee. FP32 itself has 24 significant binary
+digits including the implicit leading bit, rather than 32 mantissa bits.
 
 ```
-FP8 Precision Pitfalls — Accumulation Depth
+Two-level accumulation — conceptual protocol
 ══════════════════════════════════════════════════════════════════════
+  total_fp32 = 0
+  for each K slice:
+      issue WGMMA into a separate/reset partial accumulator
+      commit and wait for every group using that partial
+      total_fp32 += partial       // ordinary FP32 arithmetic
+      prepare/reset partial and fence before its next WGMMA use
 
-  The documented behavior:
-    FP8 wgmma uses .f32 accumulator registers.
-    You would expect IEEE 754 FP32 accuracy in the accumulation.
-
-  The empirical behavior on H100:
-    Large K dot products show error consistent with ~FP22 precision
-    (fewer effective mantissa bits than full FP32).
-    The error grows with K — the larger the inner product dimension,
-    the more the precision difference compounds.
-
-  Why this happens:
-  ─────────────────────────────────────────────────────────────────
-  The FP8 tensor core hardware accumulates in a physically FP32
-  register, BUT the internal arithmetic path from FP8 multiply
-  to FP32 accumulate may involve intermediate rounding steps
-  that don't preserve all 23 FP32 mantissa bits.
-  This is a hardware implementation detail, not a bug per se.
-
-  Practical impact:
-  ─────────────────────────────────────────────────────────────────
-  For small K (e.g., K=64 or K=128): precision loss is negligible.
-  For large K (e.g., K=4096 or more): error can compound noticeably.
-  In training: may contribute to model quality degradation vs BF16.
-  In inference: usually acceptable (the model was trained with these errors anyway).
-
-  ─── The Solution: K-Slicing ─────────────────────────────────────
-
-  Instead of computing the full K-dimension in one wgmma sequence,
-  split K into smaller "slices" and accumulate the slice results
-  in higher precision (BF16 or FP32).
-
-  Without K-slicing (one big dot product):
-    Σ_{k=0}^{K-1} A[m][k] × B[k][n]
-    → Accumulated with ~FP22 effective precision for all K steps.
-    Error: O(K × ε_FP22) where ε_FP22 is the FP22 machine epsilon.
-
-  With K-slicing (split K into S slices of K/S each):
-    For s = 0 to S-1:
-      partial[s] = Σ_{k=s*K/S}^{(s+1)*K/S-1} A[m][k] × B[k][n]
-      (FP8 wgmma, ~K/S steps → less accumulation error per slice)
-
-    Final = Σ_{s=0}^{S-1} partial[s]  (reduce in FP32 or BF16)
-
-    Error: O((K/S) × ε_FP22) per slice, then O(S × ε_FP32) for reduction.
-    Total error ≈ O(K/S × ε_FP22) → reduced by factor S vs no slicing!
-
-  Practical recommendation:
-    For K > 512: use K-slicing with slices of 64-256.
-    For K ≤ 512: single wgmma sequence is usually fine.
-    Monitor output quality: if FP8 results diverge from BF16 reference
-    by more than expected quantization error, try K-slicing.
+  Apply each slice's dequantization scale at the correct point if its
+  A/B scale product differs across K. A single final scale is insufficient
+  when different slices were quantized with different scales.
 ```
+
+Choose slice depth by an accuracy/performance sweep. Neither K≤512 nor any
+fixed slice size guarantees acceptable error for every input. FP32 reduction
+avoids introducing a BF16 rounding step between partials; the improvement still
+depends on data, cancellation, quantization and the selected instruction path.
 
 ---
 
@@ -1385,9 +1351,9 @@ The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. Th
 
 Where the "which two" information lives.
 
-`sp-meta` is a register holding two bits per quartet, naming the positions of
-the surviving elements. Two bits, four positions, two survivors — exactly enough
-to reconstruct the original layout, and no more.
+`sp-meta` records retained positions in the instruction’s prescribed fragment
+layout. For 2:4 inputs, two 2-bit indices form a 4-bit field per quartet;
+two bits total would not encode all six possible pairs.
 
 The encoding is fiddly and differs by data type. Work through the worked example
 rather than trusting your reading of the table.
@@ -1411,7 +1377,7 @@ metadata corresponding to each call's A tile. Advancing K requires updating
 the operands and metadata according to the documented matrix layout; the
 ISA does not require a four-call or two-call unroll to cycle metadata.
 
-Source: [CUDA 12.8 PTX sparse WGMMA layouts and metadata](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions-sparse-wgmma-mma-async).
+Source: [CUDA 12.8 PTX sparse WGMMA layouts and metadata](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async-sp).
 
 ---
 
@@ -1437,7 +1403,7 @@ each contributing lane's register with the metadata for its assigned matrix
 coordinates; broadcasting a single register value is only correct when the
 actual sparsity pattern makes those lane-specific fields identical.
 
-Source: [PTX sparse WGMMA sparsity selector](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions-sparse-wgmma-mma-async).
+Source: [PTX sparse WGMMA sparsity selector](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async-sp).
 
 ---
 
@@ -1780,9 +1746,17 @@ Output verification: 0 errors across both 64×64 tiles
 
 
 
+
 The tested listing retains conservative `wgmma.fence` calls after waits. These calls are unnecessary for reading completed results; the waits provide completion. Its source comments are preserved with the executed artifact.
 
-`GPU:` identifies the tested SKU. This example uses **FP16 inputs and FP16 accumulators**: the PTX WGMMA BF16 input variant requires FP32 accumulators. Inputs are rounded to FP16 before the reference is computed. Both complete 64×64 output tiles are checked, including all four `stmatrix.x4` slices per warp; checking only positive register sums would miss an incomplete epilogue. See the [CUDA 12.8 PTX WGMMA specification](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions-wgmma-mma).
+`GPU:` identifies the tested SKU. This example uses **FP16 inputs and FP16 accumulators**: the PTX WGMMA BF16 input variant requires FP32 accumulators. Inputs are rounded to FP16 before the reference is computed. Both complete 64×64 output tiles are checked, including all four `stmatrix.x4` slices per warp; checking only positive register sums would miss an incomplete epilogue. The uniform input makes every expected output equal: this catches missing stores and nonfinite values, but cannot detect every transposition or permutation. Before reusing the epilogue with new layouts, add nonuniform inputs and check each logical coordinate against a reference. See the [CUDA 12.8 PTX WGMMA specification](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async).
+
+!!! note "Stronger nonuniform audit test"
+
+    From the repository root, `python3 tools/audit_nonuniform_epilogue.py` prepares an audit variant and checks its reference pattern on the CPU. It uses 4,096 distinct, exactly representable FP16 output values to expose coordinate permutations. The device implementation is preserved; only host inputs and coordinate checks change.
+
+    `python3 tools/audit_nonuniform_epilogue.py --run` additionally compiles and executes that variant on a suitable Hopper host, saving separate timestamped source hashes and logs under `build/audit/`. **The follow-up GPU test passed on November 17, 2026:** zero coordinate errors across both 64×64 output tiles on an H100 80GB HBM3. See the [captured source, commands and output](final-audit.md). This checks the implemented shape and layout; it does not establish correctness for arbitrary layouts.
+
 
 The closing banner repeats Chapter 6's byte-vs-codepoint `%-56s` quirk, with this chapter's own numbers: `✓ ALL PASS — commit/wait pipeline + stmatrix working!` is 53 codepoints but 57 UTF-8 bytes (`✓` and `—` each cost 3 bytes for 1 displayed column, wasting 2 bytes apiece). Since 57 already exceeds the 56-byte field width, `printf` pads with nothing, and the line prints at its raw length. Measured in the columns a terminal actually draws, that puts the whole bordered line — the fixed `"║  "` and `"  ║"` margins plus 53 content columns, 59 in total — exactly 1 column short of the 60-column border above it, the same shortfall Chapter 6 hit with a differently-worded message of the same coincidental 53-codepoint length.
 
@@ -1828,7 +1802,8 @@ CORRECTION: there is no "m8n8 + .b8" stmatrix on Hopper — that combination
 is not a documented instruction. The ONLY 8-bit stmatrix shape is m16n8,
 it is TRANSPOSE-ONLY (.trans is mandatory, not optional), and it requires
 Blackwell-family targets (sm_100a and newer) — not sm_90a. On Hopper, an
-INT8 or FP8 accumulator you want in SMEM goes through the FP32 path below
+INT8 uses s32 accumulators; store them with integer stores or explicitly convert.
+FP8 inputs support f16/f32 accumulators; choose the corresponding output path.
 (or a manual scatter), same as any other type stmatrix.b16 can't take.
 
 FP32 accumulators: stmatrix has NO .f32 variant!
@@ -1845,7 +1820,7 @@ Format   Bits  E  M  Max Value  Best For              Notes
 ──────────────────────────────────────────────────────────────────────────
 E4M3     8     4  3  448        Forward pass (weights, acts)  Has NaN, no Inf
 E5M2     8     5  2  57344      Backward pass (gradients)     Has Inf and NaN
-e4m3x2   16    —  —  —          WGMMA input, cvt output       2 E4M3 packed
+e4m3x2   16    —  —  —          Conversion/transport pack       2 E4M3 packed
 e4m3x4   32    —  —  —          Storage, transport            4 E4M3 packed
 e5m2x2   16    —  —  —          WGMMA input, cvt output       2 E5M2 packed
 e5m2x4   32    —  —  —          Storage, transport            4 E5M2 packed
@@ -1911,7 +1886,7 @@ Using ldmatrix.b8 on Hopper (sm_90a)       Compile error          Use SS path or
 sp-sel nonzero for FP8 sparse wgmma        Wrong/undefined result Use sp-sel=0 for FP8/INT8
 Metadata does not match the current A tile Wrong sparse product Supply correct per-lane metadata
 TF32 metadata uses 1-bit indices          Invalid encoding      Pack 4-bit indices 4 or 14
-Large K FP8 without K-slicing             Precision drift        Slice K ≤ 256, reduce partial
+FP8 numerical error exceeds tolerance      Accuracy failure      Test scaling and FP32 two-level accumulation
 ```
 
 <!-- practice:start -->

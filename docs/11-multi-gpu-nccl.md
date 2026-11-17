@@ -13,7 +13,7 @@
 
 ## Lesson 5 Companion Guide — Hardware Topology to Collective Primitives
 
-> **Validation — November 17, 2026.** All 3 complete CUDA programs compiled. Multi-GPU workloads were not run: the tests require 2 or 8 GPUs and this host has 1.
+> **Validation — November 17, 2026.** The [two-H100 follow-up audit](final-audit.md) compiled all three complete programs and executed the corrected peer-transfer benchmark and NCCL AllReduce with full-buffer checks. The eight-GPU training workload remains hardware-blocked. Historical single-GPU transcripts are preserved and labeled below.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -190,17 +190,17 @@ NVLink Gen 4 — H100 Physical Specifications
   PCIe path (old way):
     GPU A → PCIe bus → CPU/Root Complex → PCIe bus → GPU B
     Latency: ~5-10 µs for a round trip
-    Bandwidth: 128 GB/s ceiling
+    Budget: 128 GB/s bidirectional; 64 GB/s per direction
 
   NVLink path (direct):
     GPU A → NVLink fabric → GPU B
     Latency: ~1-2 µs for a round trip
     Per-GPU budget: 900 GB/s bidirectional; 450 GB/s per direction
 
-  For gradient AllReduce at 1 GB of gradients:
-    PCIe path: 1 GB / 128 GB/s ≈ 7.8 ms per transfer
+  Ideal one-way transfer model for 1 GB (decimal):
+    PCIe path: 1 GB / 64 GB/s ≈ 15.6 ms per one-way transfer
     NVLink:    1 GB / 450 GB/s ≈ 2.2 ms per transfer
-               (and the NVSwitch can reduce in-flight — even faster)
+    These are link-budget lower bounds, not AllReduce runtimes.
 
   ─── What NVLink Enables ─────────────────────────────────────────
 
@@ -675,38 +675,17 @@ UVA and Peer Access — How GPUs See Each Other's Memory
 
   ─── Peer Access ─────────────────────────────────────────────────
 
-  UVA alone doesn't enable fast GPU-to-GPU access. You also need:
-    cudaDeviceCanAccessPeer(&can, dev0, dev1);  // check NVLink
-    cudaSetDevice(dev0);
-    cudaDeviceEnablePeerAccess(dev1, 0);   // enable dev0→dev1
-    cudaSetDevice(dev1);
-    cudaDeviceEnablePeerAccess(dev0, 0);   // enable dev1→dev0
+  cudaDeviceCanAccessPeer reports address-access capability, not link type.
+  Enable the direction used by the kernel: GPU 0 accessing GPU 1 memory.
+  Peer traffic may traverse NVLink or PCIe according to the actual topology.
+  Record nvidia-smi topo -m (and platform documentation) before labeling a link.
 
-  After EnablePeerAccess:
-    A kernel running on GPU 0 can LOAD/STORE from GPU 1's memory.
-    The hardware routes the access over NVLink transparently.
-    No CPU involvement, no bounce buffer in system RAM.
+  More blocks can expose more independent memory requests; one block or SM
+  does not correspond to one NVLink lane. Kernel copies and cudaMemcpyPeer
+  use different execution paths, and either can benefit from sufficient work.
+  NCCL selects algorithms/protocols for collectives; it is not merely a DMA
+  wrapper, nor does raw peer access inherently prevent fabric saturation.
 
-  Without EnablePeerAccess:
-    cudaMemcpyPeer() falls back to:
-      GPU 0 HBM → PCIe → CPU DRAM → PCIe → GPU 1 HBM
-    This is ~7-10× slower than the NVLink path.
-
-  ─── The Straw-to-Firehose Problem ───────────────────────────────
-
-  Even with peer access, RAW load/store from a kernel is slow:
-    NVLink peak: 900 GB/s total bidirectional
-    A single SM issuing load/store: uses ~1 NVLink lane at a time
-    → You might achieve 5-50 GB/s from kernel LD/ST, not 450 GB/s
-
-  To saturate NVLink you need:
-    Many SMs issuing simultaneous loads (or use a DMA engine)
-    Or: use cudaMemcpyPeer() which uses the TMA-like DMA path
-    Or: use NCCL which knows how to saturate the fabric correctly
-
-  This is why raw P2P is insufficient for training: NCCL provides
-  the coordinated, all-GPU-simultaneous data movement needed to
-  actually use the full 900 GB/s of NVLink bandwidth.
 ```
 
 ---
@@ -715,290 +694,228 @@ UVA and Peer Access — How GPUs See Each Other's Memory
 
 **Manual Worked Example:**
 
-We measure the actual achieved bandwidth for three paths on a multi-GPU system:
-1. GPU 0 → CPU (host) memory → GPU 1 (staged copy, old way)
-2. GPU 0 → GPU 1 via cudaMemcpyPeer (NVLink if available)
-3. Kernel-based cross-GPU store (shows straw-vs-firehose effect)
+This example measures three complete-buffer paths and checks every destination byte:
+1. GPU 0 → pinned host memory → GPU 1 (staged copy).
+2. GPU 0 → GPU 1 using the CUDA peer-copy API.
+3. A kernel on GPU 0 reading GPU 1 memory, with one block or an SM-count-sized grid.
+
+Bandwidth is payload bytes divided by elapsed time. Staged timing includes both
+legs and their synchronization; kernel and peer-copy timings use events on GPU 0.
+These scopes differ. Peer capability does not establish NVLink presence: record
+`nvidia-smi topo -m` and the host configuration before interpreting any number.
+No fixed speedup or link saturation is promised.
 
 ```
-Expected results on H100 DGX (NVLink enabled):
-  Staged via CPU:        ~25-40 GB/s   (PCIe both ways)
-  cudaMemcpyPeer:        ~300-450 GB/s (NVLink DMA path, unidirectional)
-  Kernel LD/ST (1 SM):   ~5-20 GB/s   (straw: 1 lane of NVLink)
-  Kernel LD/ST (132 SM): ~150-350 GB/s (firehose: many lanes utilized)
-
-On a system without NVLink (PCIe only):
-  cudaMemcpyPeer falls back to staged CPU path → ~25-40 GB/s
-  Kernel LD/ST: similar to staged, or slower
-```
-
-```
-═══════════════════════════════════════════════════════
-  FILE:    ex11_nvlink_bandwidth.cu
-  COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex11_nvlink_bandwidth.cu -o ex11
-           (Also works on sm_80, sm_86, sm_89)
-  RUN:     ./ex11_nvlink_bandwidth
-  EXPECT:  Bandwidth table showing staged vs peer vs kernel paths.
-           Peer bandwidth should be ~7-10× higher than staged on H100.
-═══════════════════════════════════════════════════════
+FILE: ex11_nvlink_bandwidth.cu
+COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex11_nvlink_bandwidth.cu -o ex11_nvlink_bandwidth
+RUN: ./ex11_nvlink_bandwidth
+EXPECT: Full-buffer verification PASS for each executed path; timings vary.
 ```
 
 ```cuda
-// ═══════════════════════════════════════════════════════════════════
-// ex11_nvlink_bandwidth.cu
-//
-// PURPOSE: Measure and compare GPU-to-GPU transfer bandwidth across
-// three different code paths:
-//   Path 1: Staged via CPU (pinned host buffer)
-//   Path 2: cudaMemcpyPeer (DMA, uses NVLink if available)
-//   Path 3: Kernel-based LD/ST (shows straw-vs-firehose effect)
-//
-// This demonstrates WHY raw P2P kernel access is insufficient and
-// why NCCL uses DMA primitives to saturate NVLink bandwidth.
-//
-// WORKS ON: Any multi-GPU system. NVLink bonus visible on DGX/HGX.
-//           Falls back gracefully if < 2 GPUs available.
-// ═══════════════════════════════════════════════════════════════════
-
+// ex11_nvlink_bandwidth.cu — complete-buffer P2P audit benchmark.
+// Peer capability is not proof of NVLink. Record nvidia-smi topo -m separately.
 #include <cstdio>
-#include <cstring>
 #include <cstdlib>
+#include <chrono>
 #include <cuda_runtime.h>
 
 #define CHECK_CUDA(call) do { \
-    cudaError_t _err = (call); \
-    if (_err != cudaSuccess) { \
-        fprintf(stderr, "CUDA ERROR at %s:%d — %s\n", \
-                __FILE__, __LINE__, cudaGetErrorString(_err)); \
+    cudaError_t e = (call); \
+    if (e != cudaSuccess) { \
+        fprintf(stderr, "CUDA %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
         exit(1); \
     } \
-} while(0)
+} while (0)
 
-// ── Timing helper ─────────────────────────────────────────────────
-float elapsed_ms(cudaEvent_t start, cudaEvent_t stop) {
-    float ms = 0;
-    cudaEventElapsedTime(&ms, start, stop);
+__global__ void peer_copy_kernel(const float* __restrict__ src,
+                                 float* __restrict__ dst, size_t n) {
+    // Every launch covers all n, including the one-block configuration.
+    for (size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+         i < n; i += (size_t)blockDim.x * gridDim.x)
+        dst[i] = src[i];
+}
+
+double rate(size_t bytes, double ms) {
+    if (!(ms > 0.0)) { fprintf(stderr, "Invalid elapsed time\n"); exit(1); }
+    return (double)bytes / (ms * 1e6);
+}
+
+float elapsed(cudaEvent_t begin, cudaEvent_t end) {
+    float ms;
+    CHECK_CUDA(cudaEventElapsedTime(&ms, begin, end));
     return ms;
 }
 
-// ── Kernel: LD/ST cross-GPU copy (reads src on remote GPU) ────────
-// Each thread copies one float from remote (peer) GPU memory.
-// This uses LOAD from GPU 0's perspective while src lives on GPU 1.
-// With few blocks: shows "straw" — one NVLink lane.
-// With many blocks: approaches NVLink saturation.
-__global__ void peer_copy_kernel(const float* __restrict__ src,
-                                  float* __restrict__ dst,
-                                  int N) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < N) {
-        dst[idx] = src[idx];   // load from peer GPU memory
+// Copy back and inspect every byte outside the timed region.
+bool verify(int owner, const void* dst, unsigned char* host,
+            size_t bytes, unsigned char expected, const char* label) {
+    CHECK_CUDA(cudaSetDevice(owner));
+    CHECK_CUDA(cudaMemcpy(host, dst, bytes, cudaMemcpyDeviceToHost));
+    size_t errors = 0;
+    for (size_t i = 0; i < bytes; ++i) {
+        if (host[i] != expected) {
+            if (errors < 4) fprintf(stderr, "%s byte %zu: got %u expected %u\n",
+                                   label, i, (unsigned)host[i], (unsigned)expected);
+            ++errors;
+        }
     }
-}
-
-// ── Measure bandwidth for a given code path ───────────────────────
-double measure_bandwidth_GBs(size_t bytes, float time_ms) {
-    return (double)bytes / (time_ms * 1e-3) / 1e9;
-}
-
-// ── Print device info ─────────────────────────────────────────────
-void print_device_info(int dev) {
-    cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, dev);
-    printf("  GPU %d: %s  (sm_%d%d, %d MB HBM, %d SMs)\n",
-           dev, prop.name, prop.major, prop.minor,
-           (int)(prop.totalGlobalMem / 1024 / 1024),
-           prop.multiProcessorCount);
+    printf("  %s full-buffer verification: %s (%zu byte errors)\n",
+           label, errors == 0 ? "PASS" : "FAIL", errors);
+    return errors == 0;
 }
 
 int main() {
-    printf("═══════════════════════════════════════════════════════\n");
-    printf("  ex11_nvlink_bandwidth — GPU-to-GPU Transfer Benchmark\n");
-    printf("═══════════════════════════════════════════════════════\n\n");
-
-    int num_gpus;
-    CHECK_CUDA(cudaGetDeviceCount(&num_gpus));
-    printf("GPUs detected: %d\n", num_gpus);
-    for (int i = 0; i < num_gpus; ++i) print_device_info(i);
-
-    if (num_gpus < 2) {
-        printf("\nNeed at least 2 GPUs for P2P benchmark. Exiting.\n");
-        return 0;
+    int count;
+    CHECK_CUDA(cudaGetDeviceCount(&count));
+    printf("GPUs detected: %d\n", count);
+    for (int dev = 0; dev < count; ++dev) {
+        cudaDeviceProp p;
+        CHECK_CUDA(cudaGetDeviceProperties(&p, dev));
+        printf("GPU %d: %s, SM %d.%d, %d SMs\n",
+               dev, p.name, p.major, p.minor, p.multiProcessorCount);
     }
-
-    const int dev0 = 0, dev1 = 1;
-    const size_t N        = 32 * 1024 * 1024;   // 32M floats = 128 MB
-    const size_t bytes    = N * sizeof(float);
-    const int    WARMUP   = 3;
-    const int    ITERS    = 10;
-
-    printf("\nTransfer size: %.0f MB\n\n", bytes / 1e6);
-
-    // ── Allocate GPU buffers ──────────────────────────────────────
-    float *d0_src, *d0_dst;   // on GPU 0
-    float *d1_src, *d1_dst;   // on GPU 1
-    float *h_pinned;           // pinned host buffer for staging
-
+    if (count < 2) { fprintf(stderr, "Requires at least 2 GPUs\n"); return 2; }
+    const int dev0 = 0, dev1 = 1, warmup = 3, iters = 10;
+    const size_t n = 32 * 1024 * 1024, bytes = n * sizeof(float);
+    float *src0, *dst0, *src1, *dst1;
+    unsigned char* host;
+    CHECK_CUDA(cudaMallocHost(&host, bytes));
     CHECK_CUDA(cudaSetDevice(dev0));
-    CHECK_CUDA(cudaMalloc(&d0_src, bytes));
-    CHECK_CUDA(cudaMalloc(&d0_dst, bytes));
-    CHECK_CUDA(cudaMemset(d0_src, 1, bytes));
-
+    CHECK_CUDA(cudaMalloc(&src0, bytes)); CHECK_CUDA(cudaMalloc(&dst0, bytes));
+    CHECK_CUDA(cudaMemset(src0, 0x01, bytes));
+    CHECK_CUDA(cudaDeviceSynchronize());
     CHECK_CUDA(cudaSetDevice(dev1));
-    CHECK_CUDA(cudaMalloc(&d1_src, bytes));
-    CHECK_CUDA(cudaMalloc(&d1_dst, bytes));
-    CHECK_CUDA(cudaMemset(d1_src, 2, bytes));
+    CHECK_CUDA(cudaMalloc(&src1, bytes)); CHECK_CUDA(cudaMalloc(&dst1, bytes));
+    CHECK_CUDA(cudaMemset(src1, 0x02, bytes));
+    // Complete GPU 1 initialization before GPU 0 can read its peer source.
+    CHECK_CUDA(cudaDeviceSynchronize());
 
-    CHECK_CUDA(cudaMallocHost(&h_pinned, bytes));   // pinned for DMA
-
-    // ── Check and enable peer access ─────────────────────────────
-    int can_peer = 0;
-    CHECK_CUDA(cudaDeviceCanAccessPeer(&can_peer, dev0, dev1));
-    printf("NVLink/Peer access available (dev%d ↔ dev%d): %s\n\n",
-           dev0, dev1, can_peer ? "YES ✓" : "NO ✗ (will use PCIe fallback)");
-
-    if (can_peer) {
-        CHECK_CUDA(cudaSetDevice(dev0));
-        CHECK_CUDA(cudaDeviceEnablePeerAccess(dev1, 0));
-        CHECK_CUDA(cudaSetDevice(dev1));
-        CHECK_CUDA(cudaDeviceEnablePeerAccess(dev0, 0));
-    }
-
-    // ── Events for timing ─────────────────────────────────────────
-    cudaEvent_t start, stop;
+    int can01 = 0;
+    CHECK_CUDA(cudaDeviceCanAccessPeer(&can01, dev0, dev1));
+    printf("GPU 0 can access GPU 1 memory: %s (does not identify NVLink)\n",
+           can01 ? "YES" : "NO");
+    printf("Record topology with nvidia-smi topo -m. Payload: %zu bytes\n", bytes);
+    bool enabled_by_us = false;
     CHECK_CUDA(cudaSetDevice(dev0));
-    CHECK_CUDA(cudaEventCreate(&start));
-    CHECK_CUDA(cudaEventCreate(&stop));
-
-    // ══════════════════════════════════════════════════════════════
-    // PATH 1: Staged via CPU (GPU0 → pinned host → GPU1)
-    // ══════════════════════════════════════════════════════════════
-    printf("─── Path 1: Staged via CPU (pinned host buffer) ────\n");
-
-    // Warmup
-    for (int i = 0; i < WARMUP; ++i) {
-        CHECK_CUDA(cudaSetDevice(dev0));
-        CHECK_CUDA(cudaMemcpy(h_pinned, d0_src, bytes, cudaMemcpyDeviceToHost));
-        CHECK_CUDA(cudaSetDevice(dev1));
-        CHECK_CUDA(cudaMemcpy(d1_dst, h_pinned, bytes, cudaMemcpyHostToDevice));
-    }
-
-    float staged_ms = 0;
-    for (int i = 0; i < ITERS; ++i) {
-        CHECK_CUDA(cudaSetDevice(dev0));
-        CHECK_CUDA(cudaEventRecord(start));
-        CHECK_CUDA(cudaMemcpy(h_pinned, d0_src, bytes, cudaMemcpyDeviceToHost));
-        CHECK_CUDA(cudaSetDevice(dev1));
-        CHECK_CUDA(cudaMemcpy(d1_dst, h_pinned, bytes, cudaMemcpyHostToDevice));
-        CHECK_CUDA(cudaSetDevice(dev0));
-        CHECK_CUDA(cudaEventRecord(stop));
-        CHECK_CUDA(cudaEventSynchronize(stop));
-        staged_ms += elapsed_ms(start, stop);
-    }
-    staged_ms /= ITERS;
-    double staged_GBs = measure_bandwidth_GBs(bytes, staged_ms);
-    printf("  Round-trip time:  %.2f ms\n", staged_ms);
-    printf("  Effective BW:     %.1f GB/s (%.0f MB/s)\n\n",
-           staged_GBs, staged_GBs * 1e3);
-
-    // ══════════════════════════════════════════════════════════════
-    // PATH 2: cudaMemcpyPeer (NVLink DMA if available)
-    // ══════════════════════════════════════════════════════════════
-    printf("─── Path 2: cudaMemcpyPeer (NVLink DMA path) ───────\n");
-
-    // Warmup
-    for (int i = 0; i < WARMUP; ++i) {
-        CHECK_CUDA(cudaMemcpyPeer(d1_dst, dev1, d0_src, dev0, bytes));
-    }
-
-    float peer_ms = 0;
-    CHECK_CUDA(cudaSetDevice(dev0));
-    for (int i = 0; i < ITERS; ++i) {
-        CHECK_CUDA(cudaEventRecord(start));
-        CHECK_CUDA(cudaMemcpyPeer(d1_dst, dev1, d0_src, dev0, bytes));
-        CHECK_CUDA(cudaEventRecord(stop));
-        CHECK_CUDA(cudaEventSynchronize(stop));
-        peer_ms += elapsed_ms(start, stop);
-    }
-    peer_ms /= ITERS;
-    double peer_GBs = measure_bandwidth_GBs(bytes, peer_ms);
-    printf("  Transfer time:    %.2f ms\n", peer_ms);
-    printf("  Effective BW:     %.1f GB/s  %s\n\n",
-           peer_GBs,
-           can_peer ? "(NVLink)" : "(PCIe fallback)");
-
-    // ══════════════════════════════════════════════════════════════
-    // PATH 3: Kernel-based LD/ST (straw vs firehose)
-    // Kernel on GPU 0 reads from GPU 1's memory (peer mapped)
-    // ══════════════════════════════════════════════════════════════
-    printf("─── Path 3: Kernel LD/ST (straw vs firehose) ───────\n");
-
-    if (!can_peer) {
-        printf("  Skipped: peer access not available.\n\n");
-    } else {
-        cudaDeviceProp prop;
-        cudaGetDeviceProperties(&prop, dev0);
-        int total_sms = prop.multiProcessorCount;
-
-        // Test with 1 SM and with all SMs
-        const int sm_configs[] = {1, total_sms};
-        for (int c = 0; c < 2; ++c) {
-            int num_blocks = sm_configs[c];
-            int threads    = 256;
-            // Each block handles N/num_blocks elements
-            size_t elems_per_block = (N + num_blocks - 1) / num_blocks;
-
-            // Warmup
-            CHECK_CUDA(cudaSetDevice(dev0));
-            for (int i = 0; i < WARMUP; ++i) {
-                peer_copy_kernel<<<num_blocks, threads>>>(d1_src, d0_dst, (int)N);
-            }
-            CHECK_CUDA(cudaDeviceSynchronize());
-
-            float kernel_ms = 0;
-            for (int i = 0; i < ITERS; ++i) {
-                CHECK_CUDA(cudaEventRecord(start));
-                peer_copy_kernel<<<num_blocks, threads>>>(d1_src, d0_dst, (int)N);
-                CHECK_CUDA(cudaEventRecord(stop));
-                CHECK_CUDA(cudaEventSynchronize(stop));
-                kernel_ms += elapsed_ms(start, stop);
-            }
-            kernel_ms /= ITERS;
-            double kernel_GBs = measure_bandwidth_GBs(bytes, kernel_ms);
-            printf("  %3d SM(s), %5d blocks: %.2f ms → %.1f GB/s  %s\n",
-                   num_blocks, num_blocks, kernel_ms, kernel_GBs,
-                   num_blocks == 1 ? "← \"straw\" (1 NVLink lane)" : "← \"firehose\" (all lanes)");
+    if (can01) {
+        cudaError_t e = cudaDeviceEnablePeerAccess(dev1, 0);
+        if (e == cudaErrorPeerAccessAlreadyEnabled) {
+            (void)cudaGetLastError(); // consume the expected already-enabled status
+        } else {
+            CHECK_CUDA(e);
+            enabled_by_us = true;
         }
-        printf("\n");
     }
+    cudaEvent_t start, stop;
+    CHECK_CUDA(cudaEventCreate(&start)); CHECK_CUDA(cudaEventCreate(&stop));
+    bool ok = true;
 
-    // ── Summary ───────────────────────────────────────────────────
-    printf("═══════════════════════════════════════════════════════\n");
-    printf("  SUMMARY: GPU 0 → GPU 1 bandwidth comparison\n");
-    printf("═══════════════════════════════════════════════════════\n");
-    printf("  Staged via CPU:     %.1f GB/s\n", staged_GBs);
-    printf("  cudaMemcpyPeer:     %.1f GB/s  (%.1f× vs staged)\n",
-           peer_GBs, peer_GBs / staged_GBs);
-    if (can_peer)
-        printf("  Note: NVLink theoretical peak: ~450 GB/s per direction\n");
-    else
-        printf("  Note: No NVLink detected. Both paths use PCIe.\n");
-    printf("═══════════════════════════════════════════════════════\n");
+    // Staged path, GPU 0 -> host -> GPU 1; host timing covers both devices.
+    CHECK_CUDA(cudaSetDevice(dev1));
+    CHECK_CUDA(cudaMemset(dst1, 0, bytes)); CHECK_CUDA(cudaDeviceSynchronize());
+    double staged_ms = 0;
+    for (int i = -warmup; i < iters; ++i) {
+        auto begin = std::chrono::steady_clock::now();
+        CHECK_CUDA(cudaSetDevice(dev0));
+        CHECK_CUDA(cudaMemcpy(host, src0, bytes, cudaMemcpyDeviceToHost));
+        CHECK_CUDA(cudaSetDevice(dev1));
+        CHECK_CUDA(cudaMemcpy(dst1, host, bytes, cudaMemcpyHostToDevice));
+        CHECK_CUDA(cudaDeviceSynchronize());
+        auto end = std::chrono::steady_clock::now();
+        if (i >= 0) staged_ms += std::chrono::duration<double, std::milli>(end-begin).count();
+    }
+    staged_ms /= iters;
+    ok &= verify(dev1, dst1, host, bytes, 0x01, "Staged 0->1");
+    printf("  Staged complete-transfer time: %.6f ms, payload %.3f GB/s\n",
+           staged_ms, rate(bytes, staged_ms));
 
-    // Cleanup
-    cudaSetDevice(dev0);
-    if (can_peer) cudaDeviceDisablePeerAccess(dev1);
-    cudaFree(d0_src); cudaFree(d0_dst);
-    cudaSetDevice(dev1);
-    if (can_peer) cudaDeviceDisablePeerAccess(dev0);
-    cudaFree(d1_src); cudaFree(d1_dst);
-    cudaFreeHost(h_pinned);
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
-    return 0;
+    // Peer-copy API; the runtime chooses the path supported by this system.
+    CHECK_CUDA(cudaSetDevice(dev1));
+    CHECK_CUDA(cudaMemset(dst1, 0, bytes)); CHECK_CUDA(cudaDeviceSynchronize());
+    CHECK_CUDA(cudaSetDevice(dev0));
+    double peer_ms = 0;
+    for (int i = -warmup; i < iters; ++i) {
+        CHECK_CUDA(cudaEventRecord(start));
+        CHECK_CUDA(cudaMemcpyPeerAsync(dst1, dev1, src0, dev0, bytes, 0));
+        CHECK_CUDA(cudaEventRecord(stop)); CHECK_CUDA(cudaEventSynchronize(stop));
+        if (i >= 0) peer_ms += elapsed(start, stop);
+    }
+    peer_ms /= iters;
+    ok &= verify(dev1, dst1, host, bytes, 0x01, "Peer API 0->1");
+    printf("  Peer API transfer time: %.6f ms, payload %.3f GB/s (link unclassified)\n",
+           peer_ms, rate(bytes, peer_ms));
+
+    if (can01) {
+        cudaDeviceProp p;
+        CHECK_CUDA(cudaGetDeviceProperties(&p, dev0));
+        const int grids[] = {1, p.multiProcessorCount};
+        for (int blocks : grids) {
+            CHECK_CUDA(cudaSetDevice(dev0));
+            CHECK_CUDA(cudaMemset(dst0, 0, bytes)); CHECK_CUDA(cudaDeviceSynchronize());
+            double ms = 0;
+            for (int i = -warmup; i < iters; ++i) {
+                CHECK_CUDA(cudaEventRecord(start));
+                peer_copy_kernel<<<blocks, 256>>>(src1, dst0, n);
+                CHECK_CUDA(cudaGetLastError());
+                CHECK_CUDA(cudaEventRecord(stop)); CHECK_CUDA(cudaEventSynchronize(stop));
+                if (i >= 0) ms += elapsed(start, stop);
+            }
+            ms /= iters;
+            ok &= verify(dev0, dst0, host, bytes, 0x02, "Kernel 1->0");
+            printf("  Kernel grid %d blocks: %.6f ms, payload %.3f GB/s\n",
+                   blocks, ms, rate(bytes, ms));
+        }
+    } else printf("Kernel peer reads skipped: GPU 0 cannot access GPU 1 memory.\n");
+
+    // Events belong to GPU 0; destroy them while their owner is current.
+    CHECK_CUDA(cudaSetDevice(dev0));
+    CHECK_CUDA(cudaEventDestroy(start)); CHECK_CUDA(cudaEventDestroy(stop));
+    if (enabled_by_us) CHECK_CUDA(cudaDeviceDisablePeerAccess(dev1));
+    CHECK_CUDA(cudaFree(src0)); CHECK_CUDA(cudaFree(dst0));
+    CHECK_CUDA(cudaSetDevice(dev1));
+    CHECK_CUDA(cudaFree(src1)); CHECK_CUDA(cudaFree(dst1));
+    CHECK_CUDA(cudaFreeHost(host));
+    printf("Full-buffer checks: %s\n", ok ? "PASS" : "FAIL");
+    return ok ? 0 : 1;
 }
 ```
 
+!!! info "Corrected benchmark — two-GPU execution passed"
+
+    The historical record below applies to the old source, not the corrected listing above. That old kernel copied only `gridDim.x × blockDim.x` elements while reporting bandwidth for the entire buffer. Its multi-GPU bandwidth figures are invalid. The revised grid-stride version compiled and passed every full-buffer check on two H100 GPUs; its captured result is shown below. The dated source and logs remain unchanged for provenance.
+
+**Current two-GPU result — ex11_nvlink_bandwidth.cu**
+
+> Executed: `2026-11-17T23:36:24.075201+00:00` (UTC). Compile PASS; execution PASS. System: 2× H100 80GB HBM3, 132 SMs each, NV18 topology; CUDA 12.8.93, driver 580.105.08, Ubuntu 24.04.5 LTS.
+
+[Current tested source](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu) · [Compiler log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log) · [Execution log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log) · [Full audit](final-audit.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex11_nvlink_bandwidth.cu -o ex11_nvlink_bandwidth
+./ex11_nvlink_bandwidth
+```
+
+```text
+GPUs detected: 2
+GPU 0: NVIDIA H100 80GB HBM3, SM 9.0, 132 SMs
+GPU 1: NVIDIA H100 80GB HBM3, SM 9.0, 132 SMs
+GPU 0 can access GPU 1 memory: YES (does not identify NVLink)
+Record topology with nvidia-smi topo -m. Payload: 134217728 bytes
+  Staged 0->1 full-buffer verification: PASS (0 byte errors)
+  Staged complete-transfer time: 4.878781 ms, payload 27.511 GB/s
+  Peer API 0->1 full-buffer verification: PASS (0 byte errors)
+  Peer API transfer time: 0.347469 ms, payload 386.273 GB/s (link unclassified)
+  Kernel 1->0 full-buffer verification: PASS (0 byte errors)
+  Kernel grid 1 blocks: 131.141272 ms, payload 1.023 GB/s
+  Kernel 1->0 full-buffer verification: PASS (0 byte errors)
+  Kernel grid 132 blocks: 1.070518 ms, payload 125.376 GB/s
+Full-buffer checks: PASS
+```
+
 <!-- validation:start:ex11_nvlink_bandwidth.cu -->
+**Historical, superseded source:** this transcript records the original one-GPU prerequisite exit. The [final audit](final-audit.md) validates the corrected listing above.
+
 **Captured output — ex11_nvlink_bandwidth.cu**
 
 > **Executed:** 2026-11-17T21:29:53.498073+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
@@ -1032,13 +949,16 @@ Need at least 2 GPUs for P2P benchmark. Exiting.
 
 
 
-The captured one-GPU run verifies the prerequisite diagnostic, not peer bandwidth. The two-GPU workload remains unexecuted; the figures labeled expected are hardware-dependent estimates, not measurements from this validation host.
+
+The historical one-GPU transcript verifies only the old prerequisite diagnostic. Use the current two-GPU record above for the corrected source and measured peer-bandwidth results. These measurements describe this topology and payload; they are not universal performance guarantees.
 
 ---
 
 ## 10 — SLURM
 
 ### 10.1 Workload Management and Rank Identity
+
+See [Slurm’s GPU management documentation](https://slurm.schedmd.com/gres.html#GPU_Management) for job-step visibility, ordinal remapping and configuration-dependent cgroup restrictions.
 
 SLURM (Simple Linux Utility for Resource Management) is the job scheduler used
 on most HPC clusters. It is responsible for allocating GPUs, setting up process
@@ -1067,23 +987,25 @@ SLURM Concepts — Terminology Reference
 
   Namespace:
     The SLURM job ID, shared by all tasks in the same job.
-    Used as a key prefix in PMIx key-value store.
+    May be used by an application as part of a rendezvous namespace.
 
   ─── Device Isolation ─────────────────────────────────────────────
 
-  SLURM enforces GPU isolation via two mechanisms:
+  GPU visibility and isolation depend on the cluster configuration:
 
   1. CUDA_VISIBLE_DEVICES:
      For local rank 0: CUDA_VISIBLE_DEVICES=0    → sees only GPU 0
      For local rank 1: CUDA_VISIBLE_DEVICES=1    → sees only GPU 1
-     From inside your code: always call cudaGetDevice(0) → correct.
+     If each task sees exactly one GPU: cudaSetDevice(0).
+     If multiple GPUs are visible, use the launcher’s binding policy.
+     cudaGetDevice(&device) queries the current logical ordinal.
      CONSEQUENCE: if you print "GPU 0" in logs, it might physically
      be GPU 5. Use cudaDeviceGetPCIBusId() to get the true device.
 
   2. Linux cgroups (control groups):
      Kernel-level device allowlist.
-     Even if you ignore CUDA_VISIBLE_DEVICES, the OS blocks access.
-     Cannot be circumvented from user space.
+     With device constraints enabled, the OS restricts device access.
+     Do not assume this policy is enabled on every cluster.
 
   ─── A Minimal SLURM Script ───────────────────────────────────────
 
@@ -1559,6 +1481,7 @@ With 4 GPUs, N=16:
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include <pthread.h>
 #include <cuda_runtime.h>
 #include <nccl.h>
@@ -1587,6 +1510,7 @@ static __thread int g_rank_id = -1;
 // ── Shared state across all threads ──────────────────────────────
 struct SharedState {
     int          n_gpus;
+    int*         rank_ok;     // one slot per rank; read by main after pthread_join
     ncclUniqueId nccl_id;
     ncclComm_t*  comms;       // one per GPU
     pthread_barrier_t barrier; // synchronize all threads
@@ -1681,7 +1605,7 @@ void* worker(void* arg) {
         CHECK_CUDA(cudaEventRecord(stop, stream));
         CHECK_CUDA(cudaStreamSynchronize(stream));
         float ms;
-        cudaEventElapsedTime(&ms, start, stop);
+        CHECK_CUDA(cudaEventElapsedTime(&ms, start, stop));
         total_ms += ms;
     }
     float avg_ms = total_ms / ITERS;
@@ -1693,7 +1617,7 @@ void* worker(void* arg) {
 
     bool ok = true;
     for (int i = 0; i < n_elems; ++i) {
-        if (fabsf(h_result[i] - expected) > 0.01f) {
+        if (!std::isfinite(h_result[i]) || fabsf(h_result[i] - expected) > 0.01f) {
             ok = false;
             if (rank == 0) {
                 printf("  ERROR: result[%d] = %.1f, expected %.1f\n",
@@ -1702,6 +1626,8 @@ void* worker(void* arg) {
             break;
         }
     }
+
+    shared->rank_ok[rank] = ok ? 1 : 0;
 
     // ── Step 10: Report ───────────────────────────────────────────
     // AllReduce bus bandwidth = 2×(N-1)/N × data_size / time
@@ -1730,11 +1656,11 @@ void* worker(void* arg) {
 
     // ── Cleanup ───────────────────────────────────────────────────
     free(h_result);
-    cudaFree(d_buf);
-    cudaFree(d_result);
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
-    cudaStreamDestroy(stream);
+    CHECK_CUDA(cudaFree(d_buf));
+    CHECK_CUDA(cudaFree(d_result));
+    CHECK_CUDA(cudaEventDestroy(start));
+    CHECK_CUDA(cudaEventDestroy(stop));
+    CHECK_CUDA(cudaStreamDestroy(stream));
     CHECK_NCCL(ncclCommDestroy(shared->comms[rank]));
     return nullptr;
 }
@@ -1744,19 +1670,8 @@ int main() {
     printf("  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo\n");
     printf("═══════════════════════════════════════════════════════\n\n");
 
-    int n_gpus = 0;  // initialize explicitly: cudaGetDeviceCount can
-                      // return an ERROR (not just count=0) when NO
-                      // CUDA-capable device exists at all, and its
-                      // return code is never checked below -- an
-                      // uninitialized n_gpus would then hold garbage
-                      // stack bytes instead of a sane value (verified:
-                      // this printed "found -1" on one real run of
-                      // this exact pattern in ex13, and on another run
-                      // the garbage value was non-garbage enough to
-                      // slip past the "< 2" check entirely and hang
-                      // the whole program waiting on a barrier no
-                      // thread would ever reach).
-    cudaGetDeviceCount(&n_gpus);
+    int n_gpus = 0;
+    CHECK_CUDA(cudaGetDeviceCount(&n_gpus));
     if (n_gpus < 2) {
         printf("Need >= 2 GPUs for NCCL test. Found %d. Exiting.\n", n_gpus);
         return 1;
@@ -1764,7 +1679,7 @@ int main() {
     printf("GPUs found: %d\n", n_gpus);
     for (int i = 0; i < n_gpus; ++i) {
         cudaDeviceProp p;
-        cudaGetDeviceProperties(&p, i);
+        CHECK_CUDA(cudaGetDeviceProperties(&p, i));
         printf("  GPU %d: %s\n", i, p.name);
     }
 
@@ -1774,6 +1689,7 @@ int main() {
     SharedState shared;
     shared.n_gpus = n_gpus;
     shared.comms  = new ncclComm_t[n_gpus];
+    shared.rank_ok = new int[n_gpus]();
     pthread_barrier_init(&shared.barrier, nullptr, n_gpus);
 
     // ── Launch one thread per GPU ─────────────────────────────────
@@ -1782,10 +1698,12 @@ int main() {
 
     for (int i = 0; i < n_gpus; ++i) {
         args[i] = {i, n_gpus, N_ELEMS, &shared};
-        pthread_create(&threads[i], nullptr, worker, &args[i]);
+        int status = pthread_create(&threads[i], nullptr, worker, &args[i]);
+        if (status != 0) { fprintf(stderr, "pthread_create: %s\n", strerror(status)); exit(1); }
     }
     for (int i = 0; i < n_gpus; ++i) {
-        pthread_join(threads[i], nullptr);
+        int status = pthread_join(threads[i], nullptr);
+        if (status != 0) { fprintf(stderr, "pthread_join: %s\n", strerror(status)); exit(1); }
     }
 
     printf("\n═══════════════════════════════════════════════════════\n");
@@ -1793,15 +1711,62 @@ int main() {
            n_gpus, n_gpus, n_gpus * (n_gpus + 1) / 2);
     printf("═══════════════════════════════════════════════════════\n");
 
+    bool all_ok = true;
+    for (int i = 0; i < n_gpus; ++i) all_ok &= shared.rank_ok[i] == 1;
+    printf("All-rank numerical verification: %s\n", all_ok ? "PASS" : "FAIL");
+    delete[] shared.rank_ok;
     pthread_barrier_destroy(&shared.barrier);
     delete[] shared.comms;
     delete[] threads;
     delete[] args;
-    return 0;
+    return all_ok ? 0 : 1;
 }
 ```
 
+!!! info "Corrected result checks — two-GPU execution passed"
+
+    The current listing rejects nonfinite outputs and propagates every rank's verification failure to the process exit status. The historical source and one-GPU logs below predate these changes and do not validate this listing. Fresh compilation and two-GPU execution passed; see the captured result below.
+
+**Current two-GPU result — ex12_nccl_allreduce.cu**
+
+> Executed: `2026-11-17T23:36:28.640907+00:00` (UTC). Compile PASS; execution PASS. System: 2× H100 80GB HBM3, 132 SMs each, NV18 topology; CUDA 12.8.93, driver 580.105.08, Ubuntu 24.04.5 LTS.
+
+[Current tested source](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu) · [Compiler log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log) · [Execution log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log) · [Full audit](final-audit.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex12_nccl_allreduce.cu -o ex12_nccl_allreduce -lnccl
+./ex12_nccl_allreduce
+```
+
+```text
+═══════════════════════════════════════════════════════
+  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo
+═══════════════════════════════════════════════════════
+
+GPUs found: 2
+  GPU 0: NVIDIA H100 80GB HBM3
+  GPU 1: NVIDIA H100 80GB HBM3
+
+  AllReduce results:
+    N_GPUs:     2
+    Data size:  33.55 MB (8M elements × float)
+    Avg time:   0.151 ms
+    Alg BW:     222.85 GB/s  (bytes / time)
+    Bus BW:     222.85 GB/s  (2×(N-1)/N × alg BW)
+    Expected result per element: 3
+    First 8 values: 3 3 3 3 3 3 3 3
+  GPU 1: PASS ✓ (result[0]=3, expected=3)
+  GPU 0: PASS ✓ (result[0]=3, expected=3)
+
+═══════════════════════════════════════════════════════
+  Expected sum = 2 × (2 + 1) / 2 = 3
+═══════════════════════════════════════════════════════
+All-rank numerical verification: PASS
+```
+
 <!-- validation:start:ex12_nccl_allreduce.cu -->
+**Historical, superseded source:** this transcript records the original one-GPU prerequisite exit. The [final audit](final-audit.md) validates the corrected listing above.
+
 **Captured output — ex12_nccl_allreduce.cu**
 
 > **Executed:** 2026-11-17T21:29:55.906085+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
@@ -1832,7 +1797,8 @@ Need >= 2 GPUs for NCCL test. Found 1. Exiting.
 
 
 
-The dated compiler and execution logs above show a successful build and the one-GPU prerequisite exit. They do not validate a multi-rank AllReduce or its timing. The initialized device count avoids using an indeterminate value if device enumeration fails; CUDA API errors should still be checked explicitly.
+
+The dated compiler and execution logs above cover the historical source and its one-GPU prerequisite exit. The corrected listing checks device enumeration errors, rejects nonfinite results, and returns failure if any rank fails verification; its successful two-GPU result is recorded above.
 
 ---
 
@@ -3308,6 +3274,7 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex13_hybrid_parallel_training.cu -o ex13_hybrid
 ERROR: Need 8 GPUs, found 1. Exiting.
 ```
 <!-- validation:end:ex13_hybrid_parallel_training.cu -->
+
 
 
 

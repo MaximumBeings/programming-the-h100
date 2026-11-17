@@ -1,0 +1,18 @@
+/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu(91): warning #549-D: variable "e" is used before its value is set
+              do { cudaError_t e = (e); if (e != cudaSuccess) { fprintf(
+                                    ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu(91): warning #549-D: variable "e" is used before its value is set
+              do { cudaError_t e = (e); if (e != cudaSuccess) { fprintf(
+                                    ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu(91): warning #549-D: variable "e" is used before its value is set
+              do { cudaError_t e = (e); if (e != cudaSuccess) { fprintf(
+                                    ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+

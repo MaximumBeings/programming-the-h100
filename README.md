@@ -22,16 +22,22 @@ hooks/fix_anchors.py             build-time link repair (see below)
 mkdocs.yml                       site config and nav
 ```
 
-The chapters include an independent H100 PCIe validation pass executed on November 17, 2026. Dated compiler commands, tested sources, execution logs, system information, and coverage limits are published beside the examples. See `docs/validation/2026-11-17/system-information.txt`.
+The original November 17, 2026 H100 PCIe validation remains preserved in `docs/validation/2026-11-17`: 27 complete programs compiled, 24 single-GPU workloads passed, and three multi-GPU workloads were blocked by its one-GPU configuration.
 
-All 27 complete CUDA programs compile with CUDA 12.8.93; 24 single-GPU workloads pass. The three Chapter 11 multi-GPU workloads still require 2 or 8 GPUs. Chapter 12’s teaching skeleton is distinguished from its executable numerical reference. Chapter 13 includes actual Nsight Compute output. Smaller fragments and illustrations are inventoried rather than claimed as compiled translation units.
+A separate two-H100 audit records 27 compilations, 26 passing workloads and one hardware-blocked eight-GPU workload. [The final audit summary](docs/final-audit.md) and its raw manifests are the authority for current sources, commands, timestamps and scope. The fresh run covers the corrected Chapter 11 peer-memory benchmark and NCCL failure checks. Historical transcripts remain labeled as historical where a current source supersedes them. Chapter 12’s executable recurrence reference is separate from its incomplete FA3 skeleton; Chapter 13 distinguishes captured profiles from illustrative diagnoses.
 
-`python3 tools/validate_examples.py` extracts complete programs and saves dated evidence; optional arguments select chapter/example names. `python3 tools/validate_attention.py` checks the online-softmax recurrence on CUDA. `tools/publish_validation.py` checks source hashes before publishing captured results. `tools/render_diagrams.py` renders all SVGs for visual inspection (requires CairoSVG and Pillow).
+Collect fresh evidence with `python3 tools/validate_examples.py`; each run gets a unique UTC folder under ignored `validation/`. Positional chapter/example filters remain supported. `--list` lists source hashes without execution, `--out PATH` selects a fresh directory and rejects existing contents, and `--compile-only` explicitly labels workloads unexecuted. Compile/runtime failures return 1; hardware prerequisites return 2, including programs that print a prerequisite diagnostic but exit zero.
+
+`tools/publish_final_audit.py` prepares the separate final audit from collected records and refuses to overwrite an existing publication. It checks all 27 current source hashes and includes the nonuniform Chapter 7 audit, attention reference and optional captured memcheck log. `tools/verify_final_audit.py` verifies the published inventory, source and log hashes, statuses and summary without executing CUDA. The historical publisher `tools/publish_validation.py` is retained for its original workflow; do not use it to replace the preserved dated archive.
+
+`python3 tools/validate_attention.py` runs the online-softmax recurrence checks on CUDA. `tools/audit_nonuniform_epilogue.py --run` builds and runs the stronger Chapter 7 host-input/reference variant while preserving its device implementation. `tools/render_diagrams.py` renders SVGs for inspection (requires CairoSVG and Pillow).
 
 ## Local preview
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 mkdocs serve
 ```
 
@@ -61,7 +67,7 @@ time by matching each anchor against the page's real heading slugs. It also:
 - gives Chapter 9 an `<h1>` from the nav title, since its source file starts
   mid-sequence at `## 9`.
 
-`mkdocs build --strict` passes with zero broken links.
+`mkdocs build --strict` checks construction; `python3 tools/verify_site_links.py` checks internal links in the built site.
 
 Built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
 
@@ -69,7 +75,7 @@ Built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
 
 Start with `docs/getting-started.md`. `python3 tools/h100_preflight.py` checks CUDA-visible Hopper devices and the installed compiler without PyTorch; `--minimum-gpus 8` checks the prerequisite for the eight-GPU teaching workload. The recorded preflight ran on the H100 PCIe host on November 17, 2026.
 
-`python3 tools/verify_validation_records.py` checks that all complete chapter programs and downloadable sources still match their recorded execution hashes. CI runs this before the strict documentation build. It is an evidence-consistency check, not a GPU execution test.
+`python3 tools/verify_validation_records.py` checks historical source downloads, commands, dates and displayed output against their original records. A current chapter source may differ only when a fully verified fresh audit contains its exact hash with a successful compile and workload, and the historical transcript explicitly links to its superseding audit. This applies to both corrected Chapter 11 programs. CI runs both historical and fresh verifiers before building the documentation; these checks do not execute CUDA.
 
 Every chapter includes learning goals, two self-checks with expandable worked answers, and an original SVG opening illustration. `tools/create_chapter_openers.py` regenerates those illustrations.
 

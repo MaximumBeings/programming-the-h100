@@ -1,0 +1,19 @@
+╔══════════════════════════════════════════════════════╗
+║  PTX State Spaces — Test Suite                        ║
+╚══════════════════════════════════════════════════════╝
+
+Test 2: .shared — Thread 0 reads thread 1's slot (expected 2.5)
+  ✓ PASS: thread 0 read 2.5 from thread 1's slot
+
+Test 3: .global — Multiply by 10 via explicit PTX
+  ✓ PASS: all 8 values multiplied by 10 correctly
+
+Test 4: .const — Read SCALE_FACTOR[0] = 2.0 via PTX and C++
+  ✓ PASS: PTX read = 2.0, C++ read = 2.0 (both = 2.0)
+
+Test 6: Combined — global→SMEM→compute with SCALE_FACTOR[0]=2.0
+  ✓ PASS: 128 elements scaled by 2.0 (sample: in=5 out=10)
+
+╔══════════════════════════════════════════════════════╗
+║  Results: 4/4 tests passed                            ║
+╚══════════════════════════════════════════════════════╝

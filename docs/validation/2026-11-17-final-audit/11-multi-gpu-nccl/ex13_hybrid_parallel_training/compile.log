@@ -1,0 +1,20 @@
+/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu(392): warning #177-D: variable "output_cols" was declared but never referenced
+      int output_cols = (pp == 0) ? H_SHARD : HIDDEN;
+          ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu(417): warning #550-D: variable "loss_this_gpu" was set but never used
+      float loss_this_gpu = 0.0f;
+            ^
+
+/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu(392): warning #177-D: variable "output_cols" was declared but never referenced
+      int output_cols = (pp == 0) ? H_SHARD : HIDDEN;
+          ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu(417): warning #550-D: variable "loss_this_gpu" was set but never used
+      float loss_this_gpu = 0.0f;
+            ^
+

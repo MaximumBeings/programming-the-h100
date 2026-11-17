@@ -14,6 +14,7 @@
 ## Lesson 3 Companion Guide — High-Performance CUDA Kernels on the H100
 
 > **Validation — November 17, 2026.** 4 complete CUDA programs compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -174,36 +175,32 @@ The Roofline Model — Visual and Equations
 
 ### 1.2 Computing AI for Real Operations
 
-Let's calculate the AI for common deep learning operations. This tells you immediately which class each operation falls into.
+Calculate intensity with an explicit traffic model and instruction family.
+For the FP16 rows below, count each stored element as two bytes and assume one
+read per input and one write per output. Cache misses, repeated tile loads,
+reductions and intermediate arrays can increase actual HBM traffic.
 
 ```
-Arithmetic Intensity — Common Operations
+Arithmetic Intensity — Illustrative Whole-Problem Traffic
 ══════════════════════════════════════════════════════════════════════
 
-  Operation         FLOPs                Bytes (FP16)  AI          Class
-  ─────────────────────────────────────────────────────────────────────
-  elementwise relu  N (one comparison)   2N (read+write)  0.5       Memory
-  layer norm        ~5N                  ~4N              ~1.25     Memory
-  softmax           ~5N                  ~4N              ~1.25     Memory
-  bias add          N                    3N               0.33      Memory
-  GEMM (M=N=K=4096) 2×4096³ ≈ 137G FLOP 3×4096²×2=100MB  ~1370    Compute
-  GEMM (M=N=K=256)  2×256³  ≈ 33M FLOP  3×256²×2=400KB   ~83      Compute
-  GEMM (M=1, N=K=4096) 2×4096² ≈ 33M   ~34MB             ~1       Memory!
-  Attention (seq=2048, d=64) complex     complex           ~10-50   Compute
+  Operation                Useful work          Bytes       Intensity
+  ─────────────────────────────────────────────────────────────────
+  FP16 ReLU                N comparisons        4N          0.25 comparison/B
+  FP16 bias add            N additions          6N          0.167 FLOP/B
+  FP16 GEMM n=4096         2n³                   6n²         1365 FLOP/B
+  FP16 GEMM n=256          2n³                   6n²         85.3 FLOP/B
+  FP16 GEMM M=1,N=K=4096   2MNK                  2(MK+NK+MN) ≈1 FLOP/B
 
-  INTERPRETATION:
-    GEMM with large, square matrices → deep into compute-bound territory
-    GEMM with tiny batch or tiny M → memory-bound (vector-matrix mult)
-    All pointwise ops (relu, gelu, etc.) → heavily memory-bound
-    Attention → context-dependent, can be either
+  Compare only with the appropriate arithmetic roof. For the SXM FP16
+  Tensor Core ridge near 295 FLOP/B, the n=256 model lies below the ridge,
+  while n=4096 lies above it. A scalar-FP32 implementation has a different
+  roof and element width. Comparisons, exponentials and divisions also
+  need their own throughput accounting; a FLOP ceiling alone is incomplete.
 
-  ─── Why This Matters ────────────────────────────────────────────
-  If you spend 3 days optimizing the arithmetic throughput of a
-  softmax kernel (AI ≈ 1.25), you're optimizing the WRONG thing.
-  The bottleneck is bandwidth. Fuse it into the preceding GEMM
-  (which is compute-bound) instead. This is why epilogue fusion
-  (Section 15-16) is so valuable — it eliminates entire kernels'
-  worth of bandwidth by merging them into the GEMM epilogue.
+  Fusion may eliminate an intermediate global read/write, but softmax and
+  normalization require reductions. They are not arbitrary pointwise
+  epilogues; the fused algorithm must preserve their dependency structure.
 
   Computing AI for your own kernel:
   ─────────────────────────────────────────────────────────────────
@@ -603,7 +600,15 @@ KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
 
 
 
-Kernel A's achieved GFLOPS (372.6) is exactly `ai_theoretical × bw_achieved` (0.125 × 2980.0) — that identity is the roofline model itself: in the memory-bound regime, performance is bandwidth times arithmetic intensity, nothing else. Kernel B's 85.3 FLOP/Byte (computed precisely from the exact tile sizes) lands a bit below the "≈89" quoted in the comment above the kernel, which rounds FLOPs to 268M and bytes to 3MB before dividing — the precise 268.4M/3.145728MB ratio the program actually computes is 85.3, a reminder that back-of-envelope rounding and a program's exact arithmetic can disagree by a few percent even when both are "right."
+
+The captured output reports 207.3 GFLOP/s and 1658.5 GB/s for Kernel A.
+Their ratio is 0.125 FLOP/byte because both rates use the same elapsed time:
+`work/time = (work/bytes) × (bytes/time)`. That identity holds for any bottleneck;
+it does not prove bandwidth saturation. Kernel B's displayed 85.3 FLOP/byte uses
+whole-problem compulsory bytes, not measured HBM traffic. Its scalar tiled
+implementation reloads inputs across CTAs, so that estimate is not the complete
+traffic model. Treat the program's printed classifications as hypotheses and
+confirm them with Chapter 13's counters and timing procedure.
 
 ---
 
@@ -611,7 +616,7 @@ Kernel A's achieved GFLOPS (372.6) is exactly `ai_theoretical × bw_achieved` (0
 
 ### 2.1 The Three Signatures of a Compute-Bound Kernel
 
-When your kernel's AI exceeds the ridge point, arithmetic throughput becomes the bottleneck. But recognizing a compute-bound kernel in practice — before you profile — requires understanding what the hardware tells you.
+An AI above the matching ridge identifies a lower modeled arithmetic ceiling. To call an implementation compute-bound, investigate its execution-pipe demand, achieved throughput, and stalls; low HBM utilization alone is insufficient.
 
 [![A producer can wait on a busy consumer](images/ch08/02-producer-consumer-imbalance.svg)](images/ch08/02-producer-consumer-imbalance.svg)
 
@@ -629,7 +634,7 @@ Compute-Bound Signatures — What to Look For
 
   SIGNATURE 2: Producer/Consumer Warp Imbalance
   ─────────────────────────────────────────────────────────────────
-  The most DIAGNOSTIC signature of a compute-bound kernel.
+  A clue to investigate consumer-side work, not a complete diagnosis.
   When you look at the kernel timeline in Nsight Compute, you see:
 
   Time →
@@ -638,8 +643,9 @@ Compute-Bound Signatures — What to Look For
 
   The producer warps are idle (waiting at barriers) while consumer
   warps are 100% busy doing WGMMA.
-  If producers are blocking, that means consumers can't keep up
-  — the math is the bottleneck.
+  Producers waiting for a free stage show that consumers are not releasing
+  stages fast enough. The cause may be arithmetic, epilogue work, scheduling,
+  dependencies or synchronization. Measure before selecting a fix.
 
   SIGNATURE 3: High SM Activity, Low Memory Transactions
   ─────────────────────────────────────────────────────────────────
@@ -652,7 +658,7 @@ Compute-Bound Signatures — What to Look For
   1. Profile with: ncu --metrics all ./my_kernel
   2. Look for "achieved_occupancy" and "sm__throughput.avg.pct_of_peak"
   3. Look for "l1tex__t_bytes.sum" and "dram__bytes.sum"
-  4. If dram utilization is low but SM utilization is high → compute-bound
+  4. Identify the busy execution pipe and stalls; SM activity alone is not arithmetic saturation
 
   ─── Common Compute-Bound Kernels ────────────────────────────────
   ├── GEMM with large M,N,K (the king of compute-bound)
@@ -692,7 +698,7 @@ Compute-Bound Optimization Hierarchy
   ✗ Bank conflicts (usually not the bottleneck)
   ✗ Global memory coalescing (already high AI means few global reads)
   ✗ Occupancy optimization (more threads may hurt register availability)
-  ✗ Removing arithmetic operations (you're compute-bound already!)
+  ✓ Reduce unnecessary arithmetic when it preserves the required result
 
   The goal is simple: keep the tensor cores busy 100% of the time.
   Everything else is in service of that goal.
@@ -1270,6 +1276,7 @@ Role assignment: CORRECT
 
 
 
+
 Every value lands exactly on `6i+14` because this kernel does pure FP32 arithmetic on values that are exact in binary floating point (small integers and products of small integers) — unlike the BF16 accumulation examples in Chapters 6-7, there is no rounding to trace here, so the "Got" and "Expected" columns match bit-for-bit, including at the boundary case `i=127` (776.0), which matches the manual worked example above.
 
 ---
@@ -1307,44 +1314,24 @@ setmaxnreg — What It Does and When to Use It
           of 8 on both ends; 255 is not itself a multiple of 8 and
           was never a legal value here)
 
-  ─── The Timeline ─────────────────────────────────────────────────
+  ─── Budget Registers Within the CTA ────────────────────────────
 
-  Kernel launch at, say, 64 registers/thread (fits 1024 threads/SM):
+  For one 128-thread producer and one 128-thread consumer:
+    producer limit = 32, consumer limit = 232
+    final allocation = 128×32 + 128×232 = 33792 registers
+    average budget = 33792/256 = 132 registers per thread
 
-  WG0 (producer) execution:
-    [setup]
-    setmaxnreg.dec.sync.aligned.u32 32;  ← "I only need 32 regs"
-    [producer loop: TMA loads, barrier management]
-    [uses only 32 registers → SM can now schedule more warps here]
+  A 64-register initial budget cannot fund that split: decreasing one
+  warpgroup releases only 4096 registers, while the other needs 21504 more.
+  Select a sufficient initial allocation and check compiler/resource output.
+  Register allocation granularity can require rounding above this average.
 
-  WG1 (consumer) execution:
-    [setup]
-    setmaxnreg.inc.sync.aligned.u32 232; ← "I need 232 regs for accumulators"
-    [consumer loop: WGMMA, holds large accumulator in 232 registers]
-    [SM grants 232 regs; fewer consumer threads can fit per SM, but that's ok]
-
-  ─── What Actually Happens in Hardware ───────────────────────────
-
-  Before setmaxnreg:
-    All threads allocated launch-time register count (e.g., 64)
-    Register file: 65536 regs / 64 regs/thread = 1024 threads active
-
-  After WG0 calls setmaxnreg.dec(32):
-    WG0 frees (64-32) × 128 = 4096 registers back to the pool
-    These freed registers can be given to other warps
-
-  After WG1 calls setmaxnreg.inc(232):
-    WG1 requests (232-64) × 128 = 21504 more registers from the pool
-    If available, WG1 gets 232 registers per thread
-    If not available, WG1 stalls (rare — WG0 already freed some)
-
-  ─── The Right Pattern ───────────────────────────────────────────
-  1. Launch kernel at a LOW register count (e.g., 64)
-     → More threads can be scheduled initially → better memory latency hiding
-  2. Producer warpgroup calls setmaxnreg.dec early in its code
-     → Frees registers for consumers to claim
-  3. Consumer warpgroup calls setmaxnreg.inc before its WGMMA loop
-     → Claims the freed registers for accumulators
+  setmaxnreg redistributes registers from the CTA's own register pool.
+  It does not lend them to another CTA or increase resident block occupancy
+  after launch. An increase blocks until enough registers are available;
+  newly acquired register contents are undefined and must be initialized.
+  All warps in the warpgroup must execute the same instruction, and must
+  explicitly synchronize before a subsequent setmaxnreg operation.
 
   ─── C++ Interface ───────────────────────────────────────────────
   // CUDA 12.3+ provides intrinsics:
@@ -1371,18 +1358,17 @@ We launch 256 threads. WG0 decreases to 32 registers (producer), WG1 increases t
 3. The register counts are (conceptually) different between warpgroups
 
 ```
-Register allocation timeline:
-  Launch:  all 256 threads allocated 64 registers each
-           SM holds: 65536 / 64 = 1024 threads per SM (high occupancy)
+Register allocation timeline for the executable below:
+  Launch contract: __maxnreg__(80), two 128-thread warpgroups.
+  Budget for this split: 256×80 = 20480 registers.
 
-  After WG0 setmaxnreg.dec(32):
-    WG0 has 32 regs/thread = 128 × 32 = 4096 regs total
-    Released: 128 × (64-32) = 4096 regs back to pool
+  WG0 decreases 80→32: releases 128×48 = 6144 registers.
+  WG1 increases 80→128: requests 128×48 = 6144 registers.
+  Final split: 128×32 + 128×128 = 20480 registers.
 
-  After WG1 setmaxnreg.inc(128):
-    WG1 wants 128 regs/thread = 128 × 128 = 16384 regs total
-    Requests: 128 × (128-64) = 8192 additional regs from pool
-    Pool had 4096 freed from WG0 + remaining allocation → available
+  The arithmetic check validates the tested execution; it does not measure
+  each thread's live register use or demonstrate an occupancy increase.
+
 ```
 
 ```
@@ -1636,6 +1622,7 @@ WG1 (CONSUMER, 128 regs after resize):
 
 
 
+
 [Captured SASS](validation/2026-11-17/setmaxnreg-sass.log) contains both `USETMAXREG.TRY_ALLOC.CTAPOOL` and `USETMAXREG.DEALLOC.CTAPOOL`.
 
 Both warpgroups' arithmetic results are exact for these inputs. The kernel explicitly specifies an 80-register entry budget with `__maxnreg__(80)`: one 128-thread warpgroup releases to 32 and the other increases to 128, preserving the combined budget. Without a known entry register count, `ptxas` can ignore `setmaxnreg` (diagnostic C7508), so successful arithmetic alone would not prove register redistribution occurred. Check the compiler log and the SASS for `USETMAXREG.TRY_ALLOC` and `USETMAXREG.DEALLOC` as well as the runtime output.
@@ -1719,7 +1706,7 @@ Warp Group Count Selection — Decision Tree
 
 The H100's HBM3 has ~500 cycle latency for individual memory accesses. WGMMA executes in ~30-60 cycles. Without pipelining, every time the consumer needs new tile data, it waits 500 cycles of doing nothing. This is a 10-17× utilization gap.
 
-Pipelining eliminates this idle time by overlapping the DATA MOVEMENT for tile N+1 with the COMPUTATION of tile N. The consumer is always computing while the producer is always loading.
+Pipelining can reduce this idle time by overlapping data movement for a future tile with computation on a ready tile. Prologue, drain, bandwidth limits and imbalanced stages still leave gaps.
 
 [![Pipeline depth creates room for overlap](images/ch08/05-pipelining-stages-0-2-4.svg)](images/ch08/05-pipelining-stages-0-2-4.svg)
 
@@ -1761,20 +1748,15 @@ Pipelining — What It Means Concretely
   Stage 4:          [MMA T3]  (drain)
   ...and so on, steady state: always one load + one MMA per step
 
-  The key insight: with N pipeline stages, we can hide up to N×(load latency)
-  of memory latency. With 4 stages and 500-cycle loads, we hide 2000 cycles!
+  Stage depth supplies a finite lookahead window, not a multiplier on
+  memory latency. A rough model asks whether the time from issuing a load
+  until its stage is consumed covers measured issue-to-readiness latency.
+  How many stage intervals fit in that window depends on the schedule.
 
-  ─── The Mathematical Condition for Full Overlap ──────────────────
-  For complete hiding of load latency:
-    num_stages × stage_time_math > load_latency
-    num_stages × MMA_time > HBM_latency
-    num_stages × ~50 cycles > ~500 cycles
-    num_stages > 10
+  TMA does not remove HBM latency. More stages may hide it behind useful
+  work, but also consume shared memory and can reduce resident CTAs.
+  Sweep legal stage counts, verify ownership/completion, and measure.
 
-  Wait — in practice, TMA hides the HBM latency internally (it's a
-  DMA engine, not thread-synchronous). What we actually need:
-    num_stages × MMA_time > TMA_issue_to_completion_latency
-    In practice: 3-4 stages is sufficient for H100 with TMA.
 ```
 
 ### 7.2 What the Pipeline Stages Physically Are
@@ -2242,6 +2224,7 @@ Output Verification (element 0 and element 10):
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex04_circular_buffer.cu -->
+
 
 
 

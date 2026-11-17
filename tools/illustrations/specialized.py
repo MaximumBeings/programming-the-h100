@@ -5,7 +5,6 @@ def reset(x):x.parts=list(x.header_parts);x.y=x.start_y
 
 def node(x,xx,y,w,title,body='',color='teal',h=94):
     ink,tint=COLORS[color];x.rect(xx,y,w,h,tint,LINE,12)
-    n=len(__import__('drawing').wrap(title,w-24,20))
     yy=x.paragraph(xx+w/2,y+30,title,w-24,20,ink,650,25,'middle')
     if body:x.paragraph(xx+w/2,yy+4,body,w-24,17,INK,450,23,'middle')
 
@@ -77,6 +76,19 @@ def cluster(x):
         x.text(xx+184,y+160,'DSMEM',14,MUTED)
     x.y=y+299
     x.note('One GPC, separate clusters','Blocks in a cluster are co-scheduled within a GPC. Remote shared-memory access uses a rank and an offset within that cluster; readiness and lifetime remain explicit.')
+
+def dsmem(x):
+    y=x.y
+    x.rect(28,y,704,350,'#f8fafc')
+    x.text(48,y+32,'ONE THREAD BLOCK CLUSTER',16,MUTED,650)
+    node(x,48,y+66,300,'Block A / rank 0','Own shared array: [1, 3]','teal',130)
+    node(x,412,y+66,300,'Block B / rank 1','Own shared array: [2, 4]','blue',130)
+    x.line(351,y+136,407,y+136,MUTED,2,True)
+    x.line(409,y+163,353,y+163,MUTED,2,True)
+    x.text(380,y+116,'DSMEM',14,MUTED,650,'middle')
+    node(x,48,y+236,664,'Same offset; another rank','map_shared_rank(local_ptr, peer_rank)','violet',88)
+    x.y=y+380
+    x.note('Access does not transfer ownership','Each block keeps its own shared-memory allocation. Publish the data before a peer reads it, and keep the owning block alive until remote accesses finish.')
 
 def multicast(x):
     y=x.y
@@ -203,7 +215,7 @@ def rails(x):
 
 CUSTOM={
  'ch01/01':hardware,'ch01/02':sm,'ch01/12':memorypath,'ch01/24':gemm,
- 'ch02/02':exchange,'ch02/03':cluster,'ch02/04':cluster,'ch02/06':multicast,'ch02/07':compileflow,'ch02/09':tile,
+ 'ch02/02':exchange,'ch02/03':cluster,'ch02/04':dsmem,'ch02/06':multicast,'ch02/07':compileflow,'ch02/09':tile,
  'ch03/04':engines,'ch03/05':proxies,'ch03/06':proxies,'ch03/10':mbarprotocol,'ch03/12':handshake,
  'ch05/05':im2col,'ch05/06':multicast,'ch08/07':ring,'ch09/01':handshake,'ch11/02':nvswitch,'ch11/03':rails}
 def refine(x):

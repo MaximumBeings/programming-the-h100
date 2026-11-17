@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shlex
 import sys
 
 
@@ -32,6 +33,8 @@ def verify(root, date):
                 errors.append(f'Duplicate program: {key}')
             complete[key] = digest(code)
     passed, blocked = 0, 0
+    fresh_rows = None
+    superseded = set()
     for row in rows:
         key = row['page'], row['example']
         if key in recorded:
@@ -42,7 +45,26 @@ def verify(root, date):
         if not source.is_file() or digest(source.read_text()) != row['sha256']:
             errors.append(f'Downloadable source does not match execution record: {key}')
         if complete.get(key) != row['sha256']:
-            errors.append(f'Chapter source does not match execution record: {key}')
+            # Historical downloads stay immutable. A changed chapter source needs
+            # a fully verified fresh PASS record and an explicit displayed notice.
+            if fresh_rows is None:
+                fresh_rows = {}
+                try:
+                    from verify_final_audit import verify as verify_fresh
+                    fresh_errors = verify_fresh(root)
+                    if not fresh_errors:
+                        fresh = json.loads((root / 'docs/validation/2026-11-17-final-audit/results.json').read_text())
+                        fresh_rows = {(r['page'], r['example']): r for r in fresh}
+                    else:
+                        errors.append('Fresh evidence cannot supersede history: ' + '; '.join(fresh_errors))
+                except (OSError, ValueError, KeyError, TypeError) as error:
+                    errors.append(f'Fresh evidence cannot supersede history: {error}')
+            newer = fresh_rows.get(key, {})
+            if (newer.get('sha256') != complete.get(key) or newer.get('compile_exit') != 0
+                    or newer.get('status') != 'PASS' or newer.get('run_exit') != 0):
+                errors.append(f'Chapter source has no verified fresh PASS record: {key}')
+            else:
+                superseded.add(key)
         if row.get('compile_exit') != 0:
             errors.append(f'Compilation did not pass: {key}')
         for name in ('compile.log', 'run.log'):
@@ -50,6 +72,32 @@ def verify(root, date):
                 errors.append(f'Missing {name}: {key}')
         run = (folder / 'run.log').read_text() if (folder / 'run.log').is_file() else ''
         needs_hardware = 'Need at least 2 GPUs' in run or 'Need >= 2 GPUs' in run or 'Need 8 GPUs' in run
+        chapter = (root / row['page']).read_text()
+        marker = re.compile(r'<!-- validation:start:' + re.escape(row['example']) +
+                            r' -->.*?<!-- validation:end:' + re.escape(row['example']) + r' -->', re.S)
+        sections = marker.findall(chapter)
+        if len(sections) != 1:
+            errors.append(f'Expected one displayed execution record: {key}')
+        else:
+            section = sections[0]
+            if key in superseded and not ('historical' in section.lower() and 'supersed' in section.lower() and 'final-audit.md' in section):
+                errors.append(f'Changed source needs a historical/superseded notice and fresh audit link inside its displayed record: {key}')
+            shown = re.search(r'```text\n(.*?)\n```', section, re.S)
+            normalise = lambda value: '\n'.join(line.rstrip() for line in value.splitlines()).strip('\n')
+            if not shown or normalise(shown[1]) != normalise(run):
+                errors.append(f'Displayed output differs from captured run.log: {key}')
+            if row.get('timestamp', '') not in section:
+                errors.append(f'Displayed execution date differs from the record: {key}')
+            expected_command = [row['example'] if arg.endswith('/' + row['example'])
+                                else Path(row['example']).stem if arg.endswith('/example')
+                                else arg for arg in row['command']]
+            command = re.search(r'```bash\n(.*?)\n```', section, re.S)
+            expected_shell = shlex.join(expected_command) + '\n./' + Path(row['example']).stem
+            if not command or command[1].strip() != expected_shell:
+                errors.append(f'Displayed compile/run commands differ from captured command: {key}')
+            expected_status = 'multi-GPU workload NOT RUN' if needs_hardware else 'execution PASS'
+            if expected_status not in section:
+                errors.append(f'Displayed workload status contradicts the captured run: {key}')
         if needs_hardware:
             blocked += 1
             if 'multi-GPU workload NOT RUN' not in (root / row['page']).read_text():
@@ -64,7 +112,7 @@ def verify(root, date):
         print('FAIL:', message)
     if errors:
         return 1
-    print(f'PASS: {len(rows)} complete programs match their dated source hashes.')
+    print(f'PASS: {len(rows)} historical program records match downloads, commands, dates and displayed outputs; {len(superseded)} current sources have verified fresh superseding PASS records.')
     print(f'Coverage: {passed} successful workloads; {blocked} hardware-blocked workloads, explicitly labeled.')
     print('Scope: evidence consistency only; this command does not execute CUDA or prove numerical correctness.')
     return 0

@@ -5,6 +5,7 @@
 
 
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -511,7 +512,7 @@ A shared-operand handoff — conceptual sequence, not a complete kernel
   Consumer: use its required completion protocol before using results.
 ```
 
-See [NVIDIA’s async-proxy memory model](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-memory-operations).
+See [NVIDIA’s async-proxy memory model](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#async-proxy).
 
 ### 5.2 Why Two Proxies Exist — The Hardware Reality
 
@@ -643,7 +644,9 @@ Fence Scopes and Their Costs
   With a RELEASE fence after the write and ACQUIRE fence before the read:
     Thread A: write data → RELEASE fence → write flag
     Thread B: read flag → ACQUIRE fence → read data
-  The fences prevent reordering across the fence boundary.
+  The flag accesses must be atomic/strong operations in a matching
+  synchronization pattern. Fences alone do not repair a data race on
+  a plain C++ flag; use cuda::atomic_ref release/acquire publication.
 ```
 
 ### 7.2 Release Fence — Producer Side
@@ -668,7 +671,7 @@ Release Fence — Visualization
     st.global [A], val_A;
     st.global [B], val_B;
     fence.release.cta;         // release fence (CTA scope)
-    st.shared [flag], 1;       // signal: writes above are visible
+    st.relaxed.cta.shared.u32 [flag], 1; // strong publication operation
 
   Use cases:
   ─────────────────────────────────────────────────────────────────
@@ -697,7 +700,7 @@ Acquire Fence — Visualization
   were done before the matching release fence on the producer side.
 
   PTX:
-    ld.shared [flag], flag_val;
+    ld.relaxed.cta.shared.u32 flag_val, [flag]; // repeat until ready
     fence.acquire.cta;             // acquire fence
     ld.shared [A], val_A;          // guaranteed to see producer's A
     ld.shared [B], val_B;          // guaranteed to see producer's B
@@ -735,7 +738,7 @@ async-to-generic proxy fence. A consumer observes the TMA load's mbarrier
 completion with acquire semantics before ordinary shared-memory reads. It does
 not need an extra `fence.proxy.async` after that successful completion wait.
 
-Source: [CUDA 12.8 PTX async proxy and bulk completion](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-copying-and-reduction-instructions).
+Source: [CUDA 12.8 PTX async proxy and bulk completion](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-bulk-and-tensor-copy-completion-instructions).
 
 ---
 
@@ -2159,6 +2162,7 @@ Element checks: 1024 / 1024 passed
 
 
 
+
 The preserved listing's comments call try_wait nonblocking and mbarrier Hopper-only. Basic mbarrier also exists on Ampere; this program specifically requires Hopper transaction tracking and bulk copies, and try_wait may suspend. Its unqualified wait forms retain default acquire semantics.
 
 `GPU:` and the SM pair come from `cudaGetDeviceProperties` and vary with the hardware the binary runs on — any Hopper or newer card prints `SM 9.0` or higher; the rest of the output is deterministic. The kernel runs `K=4` iterations of the init → `arrive.expect_tx` → poll-`try_wait.parity` → verify → flip-phase pipeline over one `BLOCK_SIZE=64` block, so every one of the `K × TILE_SIZE = 4 × 256 = 1024` elements loaded into `smem` is checked against `(float)(k * TILE_SIZE + i)`, and all 1024 checks pass since the host seeds `h_input[i] = (float)i` to match exactly. One cosmetic note: the closing box's right edge lands two columns short of the border above it. That's not a typo in this guide — it's the real behavior of `printf("║  %-56s  ║\n", ...)` on the actual program: the field width `56` is a *byte* count, and the string being padded contains two multi-byte UTF-8 glyphs (`✓` and the em dash `—`, 3 bytes each instead of 1), so the padding comes up short of the visual width the border uses. The `✗ FAILURES DETECTED` variant (only one multi-byte glyph) happens to land flush by comparison.
@@ -2432,6 +2436,7 @@ Sample: in=7 → out=14 (expected 14)
 ╚══════════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex02_war_prevention.cu -->
+
 
 
 

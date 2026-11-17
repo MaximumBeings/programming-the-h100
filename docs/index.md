@@ -3,9 +3,9 @@
 [![FIELD GUIDE: Programming the H100](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
 
 
-> **Validation — November 17, 2026.** 27 complete CUDA programs compiled; 24 single-GPU workloads passed. Three multi-GPU workloads require additional hardware.
-> **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
-> [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
+> **Validation — November 17, 2026.** The [final audit](final-audit.md) records compilation of all 27 complete CUDA programs, execution of 26 workloads, the stronger Chapter 7 coordinate test, and 12 attention-reference cases. The eight-GPU training workload requires additional hardware.
+> **Follow-up system:** 2× H100 80GB HBM3, 132 SMs each, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
+> The [original single-GPU records](validation/2026-11-17/results.json) remain available as historical evidence. Each tested source and captured output is linked beside its example or in the follow-up audit. Diagrams open as original SVGs for zooming.
 
 
 ## A hardware-level companion guide to NVIDIA Hopper
@@ -212,11 +212,13 @@ have a slow kernel in front of you right now, start at Chapter 13.
 ## Running this book locally
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 mkdocs serve
 ```
 
-Then open <http://127.0.0.1:8000>.
+Then open <http://127.0.0.1:8000>. See [Getting Started](getting-started.md) for Windows activation, remote preview and GPU prerequisites.
 
 To publish it to GitHub Pages, push to `main` — the workflow in
 `.github/workflows/ci.yml` builds the site and deploys it for you. Edit the

@@ -5,6 +5,7 @@
 
 
 > **Validation — November 17, 2026.** 1 complete CUDA program compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -156,7 +157,7 @@ Ampere already supports sparse Tensor Core instructions (`mma.sp`). Sparse and
 dense peak figures count different work assumptions and require different data
 representations. Neither format support nor a product-peak ratio predicts an
 application speedup. See NVIDIA's [Ampere Tensor Core guidance](https://docs.nvidia.com/cuda/ampere-tuning-guide/index.html#improved-tensor-core-operations)
-and the [PTX sparse MMA contract](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#warp-level-matrix-instructions-mma-sp).
+and the [PTX sparse MMA contract](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#multiply-and-accumulate-instruction-mma-sp-mma-sp-ordered-metadata).
 
 ---
 
@@ -281,7 +282,7 @@ copies. Chapter 7 takes them much further.
 
 `wgmma.fence.sync.aligned` orders ordinary register accesses before subsequent WGMMA accesses to the same accumulator or register-A fragments. Issue it before the first WGMMA and after ordinary code modifies a register that a later WGMMA will access. Same-shape WGMMA operations accumulating into the same registers already have an ordering guarantee; they do not need a fence between every multiply.
 
-A fence does **not** wait for a pending matrix multiply to finish. Commit the relevant group and wait before ordinary code reads or modifies its registers. Generic shared-memory writes need `fence.proxy.async.shared::cta` before the async proxy consumes them, together with synchronization of the threads that wrote the data. TMA completion uses the appropriate mbarrier protocol. See the [PTX WGMMA register-ordering rules](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions-wgmma-fence).
+A fence does **not** wait for a pending matrix multiply to finish. Commit the relevant group and wait before ordinary code reads or modifies its registers. Generic shared-memory writes need `fence.proxy.async.shared::cta` before the async proxy consumes them, together with synchronization of the threads that wrote the data. TMA completion uses the appropriate mbarrier protocol. See the [PTX WGMMA register-ordering rules](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-fence).
 
 ```text
 Ordinary code initializes accumulator registers
@@ -493,9 +494,10 @@ The Immediate Operands — Scale and Transpose
     A full scaling factor (like 0.5) would require a 16-bit float.
     There are not enough bits left in the instruction encoding for that.
     Negation only requires flipping one sign bit — fits in 1 bit.
-    For actual scaling, apply it before loading to SMEM (e.g., in TMA).
+    Apply numerical scaling in arithmetic before quantization/staging or in
+    a suitable epilogue. A TMA tensor copy does not multiply values by a scale.
 
-  Use case: computing A×B - C (subtract, not add):
+  Use case: subtracting the new matrix product from the existing accumulator:
     scale_d = 1, imm-scale-b = -1:  d = A × (-B) + d  = d - A×B
 
   imm-trans-a / imm-trans-b: In-flight matrix transpose
@@ -615,30 +617,22 @@ D Register Distribution — m64n128k16 FP32 Example
 
   ─── How Elements Are Assigned to Threads ─────────────────────────
 
-  The hardware assigns output elements in "stripes" across the warpgroup.
-  The goal is to place each result in the registers of the thread physically
-  closest to the tensor core math unit that computed it.
-  This minimizes the write distance and avoids cross-register-file routing.
+  The PTX specification defines the lane/register mapping. For m64nNk16
+  with FP32 accumulators, the complete program below checks this mapping:
 
-  The pattern for m64, BF16, with 128 threads (4 warps):
-  ─────────────────────────────────────────────────────────────────
-  warp  = threadIdx.x >> 5              // 0..3 within warp group
-  lane  = threadIdx.x & 31              // 0..31 within warp
-  w_in_wg = warp & 3                   // warp index within warp group (0..3)
-  m_base = w_in_wg * 16               // each warp handles 16 rows of M=64
+    warp = (threadIdx.x / 32) % 4
+    lane = threadIdx.x % 32
+    row  = warp * 16 + lane / 4 + ((reg % 4) / 2) * 8
+    col  = (reg / 4) * 8 + (lane % 4) * 2 + reg % 2
 
-  Thread (warp w, lane l) owns D rows:
-    Rows: m_base, m_base+1, ..., m_base+7   (8 rows spread across the 16)
-    plus: m_base+8, m_base+9, ..., m_base+15 (interleaved with other lanes)
+  Each lane owns two rows, separated by 8, in its warp's 16-row slice.
+  Groups of four lanes cover eight adjacent columns; successive groups
+  of four accumulator registers advance by eight columns.
 
-  More precisely: within each 8-row sub-tile, 4 consecutive lanes share
-  the same 4 rows, interleaved with the next group of 4 lanes.
-
-  The exact mapping is hardware-defined and opaque. What you need to know:
-  ├── Each thread holds 64 FP32 values for m64n128k16.
-  ├── These values are NOT contiguous in the output matrix.
-  ├── Writing them back to SMEM requires stmatrix (see §15).
-  └── The stmatrix instruction knows the right layout and does the scatter.
+  This mapping supports ordinary scalar/vector epilogue stores.
+  stmatrix is another option after selecting, converting and packing
+  fragments into its documented source layout; it does not infer a
+  WGMMA layout automatically.
 
   ─── Computing Number of Output Registers ─────────────────────────
 
@@ -826,7 +820,8 @@ Swizzle Address Formula — How the XOR Works
 
   ─── Manual Worked Example (128B swizzle, BF16) ──────────────────
 
-  Tile base at smem address base_ptr.
+  Tile base at a 1024-byte-aligned smem address base_ptr.
+  This simplified XOR uses 128-byte rows and zero swizzle-base offset.
   Element at logical position (row=3, col=0) of the A tile.
 
   linear_offset = 3 × 128 + 0 × 2 = 384 bytes
@@ -846,6 +841,8 @@ Swizzle Address Formula — How the XOR Works
 ```
   ─── Code Pattern for ldmatrix Address Calculation ───────────────
 
+  // Assumptions: 128-byte pitch, 1024-byte-aligned swizzle base,
+  // BF16 elements and the m64k16 register-A fragment mapping.
   // Warp-group context:
   int lane     = threadIdx.x & 31;        // 0..31 within warp
   int warp     = threadIdx.x >> 5;        // warp id
@@ -1139,9 +1136,9 @@ TF32 Tile Shapes — m64nXk8
   Valid N values: 8 to 256 in multiples of 8 (same 32 options as BF16).
 
   Why TF32?
-  ├── Same dynamic range as FP32 (8-bit exponent) — no overflow issues
+  ├── FP32-like exponent range (8-bit exponent); arithmetic can still overflow
   ├── 10-bit mantissa — slightly less precision than FP32's 23-bit
-  ├── Tensor core throughput: same as FP16/BF16 (2× vs FP32 math cores)
+  ├── TF32 has its own throughput ceiling; do not reuse the FP16/BF16 roof
   └── Use when: you have FP32 data and want tensor core speed without
       the precision risk of converting to BF16.
 
@@ -1234,7 +1231,7 @@ FP32.
 
 ### 15.1 Why stmatrix Exists
 
-After `wgmma.wait_group<0>`, the D matrix elements are scattered across all 128 threads' registers in the fragmented wgmma output layout. To write these results back to a contiguous region of SMEM (or global memory), you need `stmatrix` — the inverse of `ldmatrix`. It takes the distributed register fragments and deposits them into a contiguous SMEM layout that threads can easily write to global memory.
+After `wgmma.wait_group<0>`, the D matrix elements are scattered across all 128 threads' registers in the fragmented wgmma output layout. Ordinary stores can write them using the documented lane/register mapping. `stmatrix` is an optional warp-level shared-memory store for appropriately arranged and packed 16-bit fragments; it does not store directly to global memory or automatically rearrange arbitrary WGMMA accumulators.
 
 ```
 stmatrix — The Inverse of ldmatrix
@@ -1257,7 +1254,7 @@ stmatrix — The Inverse of ldmatrix
   common BF16/TF32 cases. There is no instruction variant that takes
   32-bit register values straight to SMEM.
 
-  The fix: convert before you store.
+  For a 16-bit output: convert and arrange fragments before stmatrix.
   ─────────────────────────────────────────────────────────────────
   Downcast each FP32 accumulator to BF16 (or FP16) in registers — a
   single __float2bfloat16 per element — THEN call stmatrix.x4.b16 on the
@@ -1632,6 +1629,7 @@ Sample d[0] = -0.246094 (expected -0.246094)
 
 
 
+
 The recorded test uses signed, nonuniform values that are exactly representable in BF16. The host reconstructs every WGMMA register's `(row, column)` position and compares it with a CPU GEMM computed from those BF16 inputs, with a `1e-5` absolute tolerance and an explicit finite-value check. All 4,096 values match with zero measured error in this run. Constant inputs alone would not detect a permuted input layout or accumulator mapping.
 
 ---
@@ -1683,8 +1681,8 @@ group, after any register writes to the accumulator."
 ```
 Call wgmma.fence.sync.aligned:
   □ Before the FIRST wgmma.mma_async in a warp group
-  □ After the LAST wgmma.mma_async, before reading d[] registers
-  □ Between two wgmma calls if the second reuses registers from the first
+  □ After ordinary instructions modify registers a subsequent WGMMA accesses
+  □ Use commit/wait for completion before ordinary reads of pending results
   □ After ldmatrix, before the wgmma that uses those A registers
 
 Do NOT confuse with:

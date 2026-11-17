@@ -4,6 +4,7 @@
 
 
 > **Validation — November 17, 2026.** 4 complete CUDA programs compiled and executed successfully.
+> **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -498,6 +499,7 @@ Handshake Results:
 
 
 
+
 ---
 
 ## 10 — ABA Ambiguity and Phase Bits
@@ -673,9 +675,10 @@ Producer Loop — Full State Machine
   if (warp_id_in_warpgroup == 0 && elect_one()) {  // true for exactly 1 thread total
       // Issue TMA instructions
   }
-  // "elect_one()" implemented via (scope: 1 warp = 32 lanes):
-  uint32_t is_elected;
-  asm volatile("elect.sync %0, 0xFFFFFFFF;" : "=r"(is_elected));
+  // elect_one() denotes a warp-scoped election helper (pseudocode).
+  // A simple deterministic issuer for a full block is threadIdx.x == 0;
+  // use a tested helper when election rather than a fixed lane is required.
+
 ```
 
 ---
@@ -720,8 +723,10 @@ Consumer's Read Pointer and Release Pointer
           → Confirm WGMMA on stage 3 done
           → Signal EMPTY for stage 3 → Release ptr=3
 
-  Key: release pointer is always 1 step BEHIND read pointer.
-  This ensures we never release a stage while its WGMMA is still in flight.
+  In this schedule, one committed group corresponds to one read stage.
+  Release only stages whose last reader group has completed; changing the
+  group/stage association requires changing the release bookkeeping.
+  Drain pending groups and release their stages after the steady-state loop.
 
   ─── wgmma.wait_group ────────────────────────────────────────────
   // wgmma.wait_group<N> waits until at most N wgmma groups are outstanding.
@@ -738,12 +743,13 @@ Consumer's Read Pointer and Release Pointer
       // 1. Wait for current stage's data to be ready
       mbar_wait(&full_bar[read_stage], read_phase)
 
-      // 2. Memory fence before WGMMA (cross-proxy fence)
-      //    Ensures SMEM writes (by TMA) are visible to WGMMA hardware.
-      asm volatile("fence.proxy.async.shared::cta;");
+      // 2. The acquire wait above observes the TMA load's completion.
+      //    Keep this SMEM stage owned until its WGMMA readers complete.
 
-      // 3. Commit WGMMA group (announces start of new group)
-      asm volatile("wgmma.fence.aligned;");
+      // 3. Fence ordinary register updates before WGMMA when required.
+      //    This is not a commit, nor a substitute for the readiness wait.
+      //    Place wgmma.fence.sync.aligned before the first issue and after
+      //    ordinary code modifies registers used by subsequent WGMMA.
 
       // 4. Issue WGMMA (asynchronous!)
       wgmma_mma_async(A_tile[read_stage], B_tile[read_stage], accumulator)
@@ -762,16 +768,14 @@ Consumer's Read Pointer and Release Pointer
       advance(read_state);
       advance(release_state);
 
-  ─── Why the Cross-Proxy Fence Is Critical ───────────────────────
-  TMA writes to SMEM through the "proxy" (the DMA engine).
-  WGMMA reads from SMEM through the "tensor core" unit.
-  These are DIFFERENT hardware paths. Without a proxy fence,
-  the compiler (and hardware) does not guarantee that SMEM writes
-  from TMA are visible to the WGMMA tensor core units.
+  ─── Keep Readiness and Proxy Publication Separate ──────────────
+  A phase-aware acquire wait observes the load's completion before reading
+  the stage. Generic shared-memory stores used to prepare WGMMA operands
+  require the appropriate generic-to-async proxy publication protocol.
+  fence.proxy.async is not a wait for an unfinished TMA transfer.
+  A load issued through the async proxy and its transaction-counted barrier
+  do not need a second fence merely because WGMMA uses Tensor Core hardware.
 
-  fence.proxy.async.shared::cta forces all pending TMA writes to
-  be visible before any subsequent WGMMA can start reading.
-  Miss this fence → data races → wrong results → very hard to debug.
 ```
 
 ---
@@ -1228,6 +1232,7 @@ Ping-Pong Behavior Check:
 
 
 
+
 ---
 
 ## 15 — Epilogue Fundamentals
@@ -1435,8 +1440,9 @@ Six-Stage Epilogue Lifecycle
     c. Synchronize: bar.sync (all threads confirm fence)
     d. TMA store: ONE thread issues cp.async.bulk.tensor (S→G)
        TMA handles the actual HBM write asynchronously.
-    e. producer_commit: notify the SMEM store pipeline that
-       this buffer is committed and can be reused next subtile.
+    e. Commit the store group. Before reusing its SMEM source, the issuing
+       thread waits for source-read completion and coordinates writers.
+       Commit alone does not release the buffer.
 ```
 
 ---
@@ -1767,6 +1773,7 @@ FP8 amax reduction result: 44.6000
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex07_epilogue.cu -->
+
 
 
 
@@ -2517,6 +2524,7 @@ Design Summary:
 ╚══════════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex08_comprehensive.cu -->
+
 
 
 

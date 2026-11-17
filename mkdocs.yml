@@ -109,6 +109,7 @@ extra:
 nav:
   - Home: index.md
   - Getting Started & Installation: getting-started.md
+  - Validation & Final Audit: final-audit.md
   - Part I — The Machine:
       - 1. NVIDIA H100 GPU Architecture: 01-h100-architecture.md
   - Part II — The Instruction Layer:

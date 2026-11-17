@@ -1,0 +1,17 @@
+Execution UTC: 2026-11-17T23:33:59.608456+00:00
+GPU: NVIDIA H100 80GB HBM3
+PyTorch: 2.7.0 CUDA runtime: 12.8
+Reference algorithm only: no FA3 kernel or throughput claim.
+N=17 d=32 causal=False: PASS max_abs_error=0.000000298
+N=17 d=32 causal=True: PASS max_abs_error=0.000000309
+N=17 d=64 causal=False: PASS max_abs_error=0.000000358
+N=17 d=64 causal=True: PASS max_abs_error=0.000000358
+N=33 d=32 causal=False: PASS max_abs_error=0.000000358
+N=33 d=32 causal=True: PASS max_abs_error=0.000000548
+N=33 d=64 causal=False: PASS max_abs_error=0.000000238
+N=33 d=64 causal=True: PASS max_abs_error=0.000000358
+N=65 d=32 causal=False: PASS max_abs_error=0.000000328
+N=65 d=32 causal=True: PASS max_abs_error=0.000000298
+N=65 d=64 causal=False: PASS max_abs_error=0.000000179
+N=65 d=64 causal=True: PASS max_abs_error=0.000000298
+PASS: 12 cases, including causal masks and partial final tiles.
