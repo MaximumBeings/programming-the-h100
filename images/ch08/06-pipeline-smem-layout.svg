@@ -260,65 +260,65 @@ z
 " clip-path="url(#pdaffe1d107)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="428.608125" y="38.485481" transform="rotate(-0 428.608125 38.485481)">Pipeline Stages — Physical SMEM Layout (3 Stages)</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="428.608125" y="38.485481" transform="rotate(-0 428.608125 38.485481)">Pipeline Stages — Physical SMEM Layout (3 Stages)</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 14.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="51.233044" y="97.998968" transform="rotate(-0 51.233044 97.998968)">Shared Memory — 228 KB available per SM</text>
+    <text style="font-weight: 650; font-size: 15.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="51.233044" y="97.998968" transform="rotate(-0 51.233044 97.998968)">Shared Memory — 228 KB available per SM</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 14.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="169.162757" y="144.952258" transform="rotate(-0 169.162757 144.952258)">Stage 0</text>
+    <text style="font-weight: 650; font-size: 15.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="169.162757" y="144.952258" transform="rotate(-0 169.162757 144.952258)">Stage 0</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(146.03916 179.437517)">A tile 0</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(145.09276 193.83986)">(32 KB)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(144.38916 179.75752)">A tile 0</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(143.29776 194.15986)">(32 KB)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(146.25213 233.09842)">B tile 0</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(145.09276 247.500764)">(32 KB)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(144.61713 233.41842)">B tile 0</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(143.29776 247.82076)">(32 KB)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(143.27585 317.317478)">mbarrier</text>
-    <text style="font-weight: 450; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(131.51173 330.400458)">full + empty</text>
+    <text style="font-weight: 450; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(141.24585 317.63748)">mbarrier</text>
+    <text style="font-weight: 450; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(128.70173 330.72046)">full + empty</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 14.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="388.175081" y="144.952258" transform="rotate(-0 388.175081 144.952258)">Stage 1</text>
+    <text style="font-weight: 650; font-size: 15.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="388.175081" y="144.952258" transform="rotate(-0 388.175081 144.952258)">Stage 1</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(366.44149 179.437517)">A tile 1</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(364.10508 193.83986)">(32 KB)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(364.90649 179.75752)">A tile 1</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(362.31008 194.15986)">(32 KB)</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(366.65446 233.09842)">B tile 1</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(364.10508 247.500764)">(32 KB)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(365.13446 233.41842)">B tile 1</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(362.31008 247.82076)">(32 KB)</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(362.28817 317.317478)">mbarrier</text>
-    <text style="font-weight: 450; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(350.52405 330.400458)">full + empty</text>
+    <text style="font-weight: 450; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(360.25817 317.63748)">mbarrier</text>
+    <text style="font-weight: 450; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(347.71405 330.72046)">full + empty</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 14.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="607.187404" y="144.952258" transform="rotate(-0 607.187404 144.952258)">Stage 2</text>
+    <text style="font-weight: 650; font-size: 15.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="607.187404" y="144.952258" transform="rotate(-0 607.187404 144.952258)">Stage 2</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(584.18881 179.437517)">A tile 2</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(583.11740 193.83986)">(32 KB)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(582.55381 179.75752)">A tile 2</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(581.32240 194.15986)">(32 KB)</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(584.40178 233.09842)">B tile 2</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(583.11740 247.500764)">(32 KB)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(582.78178 233.41842)">B tile 2</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(581.32240 247.82076)">(32 KB)</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(581.30050 317.317478)">mbarrier</text>
-    <text style="font-weight: 450; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(569.53637 330.400458)">full + empty</text>
+    <text style="font-weight: 450; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(579.27050 317.63748)">mbarrier</text>
+    <text style="font-weight: 450; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(566.72637 330.72046)">full + empty</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(737.81395 214.883401)">Epilogue</text>
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(744.64901 228.326464)">buffer</text>
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(730.66995 241.769526)">(remaining</text>
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(732.95945 255.211714)">228-192=</text>
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(743.78033 268.653901)">36 KB)</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(735.77895 215.20340)">Epilogue</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(743.20401 228.64646)">buffer</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(728.14495 242.08953)">(remaining</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(730.64945 255.53171)">228-192=</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(742.16533 268.97390)">36 KB)</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="51.233044" y="383.072516" transform="rotate(-0 51.233044 383.072516)">3 × (32+32) KB = 192 KB committed to tiles — a 4th stage at this size would need 256 KB and blow the 228 KB budget.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="51.233044" y="383.072516" transform="rotate(-0 51.233044 383.072516)">3 × (32+32) KB = 192 KB committed to tiles — a 4th stage at this size would need 256 KB and blow the 228 KB budget.</text>
    </g>
   </g>
  </g>

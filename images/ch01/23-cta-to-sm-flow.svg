@@ -223,26 +223,26 @@ z
 " clip-path="url(#p99067914f4)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="37.784008" transform="rotate(-0 306 37.784008)">Thread Block (CTA) -&gt; SM Assignment</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="37.784008" transform="rotate(-0 306 37.784008)">Thread Block (CTA) -&gt; SM Assignment</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(204.15302 97.47414)">GigaThread Engine finds an SM with free</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(220.33779 108.78414)">warp slots, registers, shared mem</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(172.81253 120.09414)">[Hopper] cluster constraint: adjacent SMs, same GPC</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(190.28302 96.59174)">GigaThread Engine finds an SM with free</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(208.86279 109.24174)">warp slots, registers, shared mem</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(154.76753 121.89174)">[Hopper] cluster constraint: adjacent SMs, same GPC</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="182.567882" transform="rotate(-0 306 182.567882)">SM receives the CTA, begins execution</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="182.567882" transform="rotate(-0 306 182.567882)">SM receives the CTA, begins execution</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(213.15581 237.281398)">Hardware divides the CTA into warps</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(261.17476 248.922406)">(32 threads each)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(200.50581 237.23451)">Hardware divides the CTA into warps</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(255.14976 249.88451)">(32 threads each)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(211.10906 297.649914)">Warps assigned to SMSPs round-robin</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(207.25663 308.959914)">(spread across all 4, not kept together)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(197.97406 297.43751)">Warps assigned to SMSPs round-robin</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(194.08663 310.08751)">(spread across all 4, not kept together)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="398.662601" transform="rotate(-0 306 398.662601)">__syncthreads() must coordinate warps across different SMSPs via shared-memory barrier logic.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="398.662601" transform="rotate(-0 306 398.662601)">__syncthreads() must coordinate warps across different SMSPs via shared-memory barrier logic.</text>
    </g>
   </g>
  </g>

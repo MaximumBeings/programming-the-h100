@@ -256,74 +256,74 @@ z
 " clip-path="url(#p9b48fd5574)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.822113" transform="rotate(-0 360 37.822113)">128B Swizzle — XORing Row Bits Into Bank Bits</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.822113" transform="rotate(-0 360 37.822113)">128B Swizzle — XORing Row Bits Into Bank Bits</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="54.47025" transform="rotate(-0 360 54.47025)">linear_offset = row × 128 + col × 2        mask = ((linear_offset &gt;&gt; 7) &amp; 0x7) &lt;&lt; 4        smem_ptr = (base + linear_offset) ^ mask</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="54.47025" transform="rotate(-0 360 54.47025)">linear_offset = row × 128 + col × 2        mask = ((linear_offset &gt;&gt; 7) &amp; 0x7) &lt;&lt; 4        smem_ptr = (base + linear_offset) ^ mask</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="94.78125" transform="rotate(-0 122.544 94.78125)">row</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="94.78125" transform="rotate(-0 122.544 94.78125)">row</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="94.78125" transform="rotate(-0 283.176 94.78125)">linear_offset</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="94.78125" transform="rotate(-0 283.176 94.78125)">linear_offset</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="94.78125" transform="rotate(-0 443.808 94.78125)">row_bits[7:9]</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="94.78125" transform="rotate(-0 443.808 94.78125)">row_bits[7:9]</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="94.78125" transform="rotate(-0 604.44 94.78125)">mask (bank shift)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="94.78125" transform="rotate(-0 604.44 94.78125)">mask (bank shift)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="187.276923" transform="rotate(-0 122.544 187.276923)">0</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="187.276923" transform="rotate(-0 122.544 187.276923)">0</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="187.276923" transform="rotate(-0 283.176 187.276923)">0 B</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="187.276923" transform="rotate(-0 283.176 187.276923)">0 B</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="187.276923" transform="rotate(-0 443.808 187.276923)">000</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="187.276923" transform="rotate(-0 443.808 187.276923)">000</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="187.276923" transform="rotate(-0 604.44 187.276923)">0</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="187.276923" transform="rotate(-0 604.44 187.276923)">0</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="236.993823" transform="rotate(-0 122.544 236.993823)">1</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="236.993823" transform="rotate(-0 122.544 236.993823)">1</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="236.993823" transform="rotate(-0 283.176 236.993823)">128 B</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="236.993823" transform="rotate(-0 283.176 236.993823)">128 B</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="236.993823" transform="rotate(-0 443.808 236.993823)">001</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="236.993823" transform="rotate(-0 443.808 236.993823)">001</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="236.993823" transform="rotate(-0 604.44 236.993823)">16</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="236.993823" transform="rotate(-0 604.44 236.993823)">16</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="286.710723" transform="rotate(-0 122.544 286.710723)">2</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="286.710723" transform="rotate(-0 122.544 286.710723)">2</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="286.710723" transform="rotate(-0 283.176 286.710723)">256 B</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="286.710723" transform="rotate(-0 283.176 286.710723)">256 B</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="286.710723" transform="rotate(-0 443.808 286.710723)">010</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="286.710723" transform="rotate(-0 443.808 286.710723)">010</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="286.710723" transform="rotate(-0 604.44 286.710723)">32</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="286.710723" transform="rotate(-0 604.44 286.710723)">32</text>
    </g>
    <g id="text_19">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="336.427623" transform="rotate(-0 122.544 336.427623)">3</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="122.544" y="336.427623" transform="rotate(-0 122.544 336.427623)">3</text>
    </g>
    <g id="text_20">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="336.427623" transform="rotate(-0 283.176 336.427623)">384 B</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="283.176" y="336.427623" transform="rotate(-0 283.176 336.427623)">384 B</text>
    </g>
    <g id="text_21">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="336.427623" transform="rotate(-0 443.808 336.427623)">011</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="443.808" y="336.427623" transform="rotate(-0 443.808 336.427623)">011</text>
    </g>
    <g id="text_22">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="336.427623" transform="rotate(-0 604.44 336.427623)">48</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="604.44" y="336.427623" transform="rotate(-0 604.44 336.427623)">48</text>
    </g>
    <g id="text_23">
-    <text style="font-weight: 450; font-size: 9.240px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(170.75069 388.5711)">Every row gets a different mask → a different bank shift for the same column.</text>
-    <text style="font-weight: 450; font-size: 9.240px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(145.59300 401.14485)">No two rows collide in the same bank — the XOR is what makes the access conflict-free.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(138.33569 389.09618)">Every row gets a different mask → a different bank shift for the same column.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(108.54300 401.74617)">No two rows collide in the same bank — the XOR is what makes the access conflict-free.</text>
    </g>
   </g>
  </g>

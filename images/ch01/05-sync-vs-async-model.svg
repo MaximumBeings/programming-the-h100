@@ -281,57 +281,57 @@ z
 " clip-path="url(#p13fbca24e6)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.822113" transform="rotate(-0 360 37.822113)">Synchronous vs. Asynchronous Execution Model</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.822113" transform="rotate(-0 360 37.822113)">Synchronous vs. Asynchronous Execution Model</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(72.20916 81.843344)">A100</text>
-    <text style="font-weight: 650; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(57.59955 93.957406)">(Ampere)</text>
+    <text style="font-weight: 650; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(71.03916 81.89537)">A100</text>
+    <text style="font-weight: 650; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(55.37955 94.54537)">(Ampere)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(190.34734 82.216586)">Issue</text>
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(191.13816 93.397406)">Load</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(188.28734 82.01000)">Issue</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(189.19816 94.66000)">Load</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(295.51816 82.277016)">WAIT</text>
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(294.86512 92.897367)">(idle)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(293.37316 81.79019)">WAIT</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(292.86512 94.44019)">(idle)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="412.38" y="86.97393" transform="rotate(-0 412.38 86.97393)">Compute</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="412.38" y="86.97393" transform="rotate(-0 412.38 86.97393)">Compute</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(504.62734 82.216586)">Issue</text>
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(505.41816 93.397406)">Load</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(502.56734 82.01000)">Issue</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(503.47816 94.66000)">Load</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(609.79816 82.277016)">WAIT</text>
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(609.14512 92.897367)">(idle)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(607.65316 81.79019)">WAIT</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(607.14512 94.44019)">(idle)</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="366.984" y="135.09225" transform="rotate(-0 366.984 135.09225)">Thread cannot proceed until the load returns -- memory latency stalls compute directly</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="366.984" y="135.09225" transform="rotate(-0 366.984 135.09225)">Thread cannot proceed until the load returns -- memory latency stalls compute directly</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(71.69212 209.494844)">H100</text>
-    <text style="font-weight: 650; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(58.73861 221.608906)">(Hopper)</text>
+    <text style="font-weight: 650; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(70.50212 209.54688)">H100</text>
+    <text style="font-weight: 650; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(56.61861 222.19688)">(Hopper)</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(214.30266 204.9375)">Tell TMA:</text>
-    <text style="font-weight: 650; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(200.79273 214.53125)">"copy tile i+1"</text>
-    <text style="font-weight: 650; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(181.31570 224.93125)">(returns immediately)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(209.31266 202.98837)">Tell TMA:</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(193.59773 215.63837)">"copy tile i+1"</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(170.20070 228.28837)">(returns immediately)</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(368.58000 209.3625)">Compute on tile i</text>
-    <text style="font-weight: 650; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(341.10000 219.73125)">(TMA works in background)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(359.79000 208.92588)">Compute on tile i</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(326.57000 221.57588)">(TMA works in background)</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="562.536" y="215.710313" transform="rotate(-0 562.536 215.710313)">Barrier</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="562.536" y="215.710313" transform="rotate(-0 562.536 215.710313)">Barrier</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="412.38" y="262.74375" transform="rotate(-0 412.38 262.74375)">Memory latency is HIDDEN under compute, not just tolerated</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="412.38" y="262.74375" transform="rotate(-0 412.38 262.74375)">Memory latency is HIDDEN under compute, not just tolerated</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(158.71977 336.996406)">Why pipelined kernels (GEMMs, attention) approach the roofline on H100:</text>
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(147.77695 349.346406)">fetch tile i+1 while computing tile i -- the TMA unit owns address generation,</text>
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(155.55609 361.696406)">bounds checking and the transfer itself, so the SM core never blocks on it.</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(141.42977 337.01641)">Why pipelined kernels (GEMMs, attention) approach the roofline on H100:</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(129.81195 349.66641)">fetch tile i+1 while computing tile i -- the TMA unit owns address generation,</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(138.07109 362.31641)">bounds checking and the transfer itself, so the SM core never blocks on it.</text>
    </g>
   </g>
  </g>

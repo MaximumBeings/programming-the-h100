@@ -245,47 +245,47 @@ L 261.08 294.57924
 " clip-path="url(#p06d645ab55)" style="fill: none; stroke: #777777; stroke-width: 1.4; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-<text transform="translate(79.0704 55.663626)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#0d47a1">HBM3 (on-package)</text>
+<text transform="translate(74.26040 55.98363)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#0d47a1">HBM3 (on-package)</text>
 </g>
    <g id="text_2">
-<text transform="translate(79.0704 72.49521)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#475569">3.35 TB/s per GPU</text>
+<text transform="translate(74.64540 72.81521)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">3.35 TB/s per GPU</text>
 </g>
    <g id="text_3">
-<text transform="translate(416.331709 62.249898)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="#475569">fastest</text>
+<text transform="translate(413.90171 62.56990)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="italic" fill="#475569">fastest</text>
 </g>
    <g id="text_4">
-<text transform="translate(79.0704 121.526346)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#0d47a1">NVLink 4 (GPU ↔ GPU, via NVSwitch)</text>
+<text transform="translate(69.88540 121.84635)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#0d47a1">NVLink 4 (GPU ↔ GPU, via NVSwitch)</text>
 </g>
    <g id="text_5">
-<text transform="translate(79.0704 138.35793)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#475569">450 GB/s per direction  (900 GB/s bidir)</text>
+<text transform="translate(69.67540 138.67793)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">450 GB/s per direction  (900 GB/s bidir)</text>
 </g>
    <g id="text_6">
-<text transform="translate(79.0704 187.389066)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#8a5a00">PCIe Gen5 (GPU ↔ CPU)</text>
+<text transform="translate(72.97540 187.70907)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#8a5a00">PCIe Gen5 (GPU ↔ CPU)</text>
 </g>
    <g id="text_7">
-<text transform="translate(79.0704 204.22065)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#475569">~64 GB/s per direction</text>
+<text transform="translate(73.68540 204.54065)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">~64 GB/s per direction</text>
 </g>
    <g id="text_8">
-<text transform="translate(79.0704 253.251786)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#8a5a00">ConnectX-7 (node ↔ node, NDR InfiniBand)</text>
+<text transform="translate(68.53540 253.57179)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#8a5a00">ConnectX-7 (node ↔ node, NDR InfiniBand)</text>
 </g>
    <g id="text_9">
-<text transform="translate(79.0704 270.08337)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#475569">50 GB/s per direction per NIC</text>
+<text transform="translate(72.09540 270.40337)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">50 GB/s per direction per NIC</text>
 </g>
    <g id="text_10">
-<text transform="translate(79.0704 319.114506)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#b71c1c">InfiniBand fabric (rack ↔ rack)</text>
+<text transform="translate(71.70040 319.43451)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#b71c1c">InfiniBand fabric (rack ↔ rack)</text>
 </g>
    <g id="text_11">
-<text transform="translate(79.0704 335.94609)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#475569">50 GB/s per NIC</text>
+<text transform="translate(75.24040 336.26609)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">50 GB/s per NIC</text>
 </g>
    <g id="text_12">
-<text transform="translate(413.000772 325.700778)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="italic" fill="#475569">slowest</text>
+<text transform="translate(410.26077 326.02078)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="italic" fill="#475569">slowest</text>
 </g>
    <g id="text_13">
-<text transform="translate(58.536 377.731244)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#172033">Ratio NVLink → ConnectX-7: 450 / 50 = 9× bandwidth drop leaving the node.</text>
-<text transform="translate(58.536 389.733978)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#172033">Everything in the software stack below is designed to minimize inter-node traffic.</text>
+<text transform="translate(40.26100 377.72761)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Ratio NVLink → ConnectX-7: 450 / 50 = 9× bandwidth drop leaving the node.</text>
+<text transform="translate(39.32600 390.37761)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Everything in the software stack below is designed to minimize inter-node traffic.</text>
 </g>
    <g id="text_14">
-<text transform="translate(12.649219 18.977578)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="15.5" font-weight="700" font-style="normal" fill="#172033">DGX H100 Node — Bandwidth Hierarchy (one GPU&#x27;s view)</text>
+<text transform="translate(-1.09578 19.29758)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="16.5" font-weight="700" font-style="normal" fill="#172033">DGX H100 Node — Bandwidth Hierarchy (one GPU&#x27;s view)</text>
 </g>
   </g>
  </g>

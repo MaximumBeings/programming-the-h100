@@ -238,50 +238,50 @@ z
 " clip-path="url(#pe29793923a)" style="fill: #475569; stroke: #475569; stroke-width: 1.6; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.677047" transform="rotate(-0 360 37.677047)">Ampere cp.async vs Hopper cp.async.bulk — Hardware Occupancy for a 4 KB Tile</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.677047" transform="rotate(-0 360 37.677047)">Ampere cp.async vs Hopper cp.async.bulk — Hardware Occupancy for a 4 KB Tile</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 11.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="207.78885" y="49.526905" transform="rotate(-0 207.78885 49.526905)">Ampere (sm_80) — cp.async</text>
+    <text style="font-weight: 650; font-size: 12.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="207.78885" y="49.526905" transform="rotate(-0 207.78885 49.526905)">Ampere (sm_80) — cp.async</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(120.48929 104.480123)">256 cp.async calls × 128 threads</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(134.34047 115.576185)">= ~32,768 instruction slots</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(105.88929 104.30155)">256 cp.async calls × 128 threads</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(122.39047 116.95155)">= ~32,768 instruction slots</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="207.78885" y="166.450648" transform="rotate(-0 207.78885 166.450648)">Warp schedulers — OCCUPIED (issuing)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="207.78885" y="166.450648" transform="rotate(-0 207.78885 166.450648)">Warp schedulers — OCCUPIED (issuing)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="207.78885" y="206.512964" transform="rotate(-0 207.78885 206.512964)">LSU — BUSY (every 16B chunk)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="207.78885" y="206.512964" transform="rotate(-0 207.78885 206.512964)">LSU — BUSY (every 16B chunk)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="207.78885" y="241.463568" transform="rotate(-0 207.78885 241.463568)">Tensor Cores — IDLE (threads too busy)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="207.78885" y="241.463568" transform="rotate(-0 207.78885 241.463568)">Tensor Cores — IDLE (threads too busy)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 11.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #1b5e20" x="512.21115" y="49.526905" transform="rotate(-0 512.21115 49.526905)">Hopper (sm_90a) — cp.async.bulk</text>
+    <text style="font-weight: 650; font-size: 12.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #1b5e20" x="512.21115" y="49.526905" transform="rotate(-0 512.21115 49.526905)">Hopper (sm_90a) — cp.async.bulk</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(431.57281 104.480123)">1 cp.async.bulk call × 1 thread</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(461.65656 116.106607)">= 1 instruction slot</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(418.29281 104.56676)">1 cp.async.bulk call × 1 thread</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(453.57656 117.21676)">= 1 instruction slot</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="512.21115" y="166.450648" transform="rotate(-0 512.21115 166.450648)">Warp schedulers — 1 issue, then free</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="512.21115" y="166.450648" transform="rotate(-0 512.21115 166.450648)">Warp schedulers — 1 issue, then free</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="512.21115" y="206.512964" transform="rotate(-0 512.21115 206.512964)">TMA engine — running independently</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="512.21115" y="206.512964" transform="rotate(-0 512.21115 206.512964)">TMA engine — running independently</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="512.21115" y="241.463568" transform="rotate(-0 512.21115 241.463568)">Tensor Cores — RUNNING MATH, fully used</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="512.21115" y="241.463568" transform="rotate(-0 512.21115 241.463568)">Tensor Cores — RUNNING MATH, fully used</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(340.97113 138.677528)">32,768×</text>
-    <text style="font-weight: 450; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(347.35664 147.679579)">fewer</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(335.47613 137.73355)">32,768×</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(343.59664 150.38355)">fewer</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="291.236211" transform="rotate(-0 360 291.236211)">Ratio: 32,768× reduction in instruction overhead for the same 4 KB transfer — those freed instruction slots go directly to Tensor Core utilization.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="291.236211" transform="rotate(-0 360 291.236211)"><tspan x="360" y="284.086">Ratio: 32,768× reduction in instruction overhead for the same 4 KB transfer — those freed instruction slots go directly to Tensor</tspan><tspan x="360" y="298.386">Core utilization.</tspan></text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.910px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(55.02860 342.518211)">Ampere's cp.async still makes every thread compute its own address and issue its own copy (async only in that it doesn't block);</text>
-    <text style="font-weight: 450; font-style: normal; font-size: 8.910px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(143.19167 354.668211)">Hopper's cp.async.bulk hands the whole block's transfer to one thread and the TMA engine.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(-8.78140 342.93701)">Ampere's cp.async still makes every thread compute its own address and issue its own copy (async only in that it doesn't block);</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(97.51167 355.58701)">Hopper's cp.async.bulk hands the whole block's transfer to one thread and the TMA engine.</text>
    </g>
   </g>
  </g>

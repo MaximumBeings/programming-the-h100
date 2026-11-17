@@ -228,7 +228,7 @@ L 0 3.5
       </g>
      </g>
      <g id="text_1">
-<text transform="translate(106.715559 253.968484)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="#172033">iter 0</text>
+<text transform="translate(104.87056 254.28848)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">iter 0</text>
 </g>
     </g>
     <g id="xtick_2">
@@ -238,7 +238,7 @@ L 0 3.5
       </g>
      </g>
      <g id="text_2">
-<text transform="translate(209.730944 253.968484)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="#172033">iter 1</text>
+<text transform="translate(208.05594 254.28848)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">iter 1</text>
 </g>
     </g>
     <g id="xtick_3">
@@ -248,7 +248,7 @@ L 0 3.5
       </g>
      </g>
      <g id="text_3">
-<text transform="translate(312.746328 253.968484)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="#172033">iter 2</text>
+<text transform="translate(310.91133 254.28848)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">iter 2</text>
 </g>
     </g>
     <g id="xtick_4">
@@ -258,7 +258,7 @@ L 0 3.5
       </g>
      </g>
      <g id="text_4">
-<text transform="translate(415.761713 253.968484)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="#172033">iter 3</text>
+<text transform="translate(413.92171 254.28848)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">iter 3</text>
 </g>
     </g>
    </g>
@@ -275,7 +275,7 @@ L -3.5 0
       </g>
      </g>
      <g id="text_5">
-<text transform="translate(7.2 67.989187)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#172033">issue QK</text>
+<text transform="translate(5.11000 68.30919)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">issue QK</text>
 </g>
     </g>
     <g id="ytick_2">
@@ -285,7 +285,7 @@ L -3.5 0
       </g>
      </g>
      <g id="text_6">
-<text transform="translate(8.759375 138.213187)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#172033">issue PV</text>
+<text transform="translate(6.72438 138.53319)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">issue PV</text>
 </g>
     </g>
     <g id="ytick_3">
@@ -295,39 +295,39 @@ L -3.5 0
       </g>
      </g>
      <g id="text_7">
-<text transform="translate(10.114063 208.437187)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10" font-weight="400" font-style="normal" fill="#172033">softmax</text>
+<text transform="translate(8.20906 208.75719)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">softmax</text>
 </g>
     </g>
    </g>
    <g id="text_8">
-<text transform="translate(159.422774 69.935153)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="normal" fill="#0d47a1">QK₀</text>
+<text transform="translate(157.13777 70.25515)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#0d47a1">QK₀</text>
 </g>
    <g id="text_9">
-<text transform="translate(262.438159 69.935153)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="normal" fill="#0d47a1">QK₁</text>
+<text transform="translate(260.34316 70.25515)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#0d47a1">QK₁</text>
 </g>
    <g id="text_10">
-<text transform="translate(263.126159 140.159153)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="normal" fill="#0d47a1">PV₀</text>
+<text transform="translate(260.97116 140.47915)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#0d47a1">PV₀</text>
 </g>
    <g id="text_11">
-<text transform="translate(252.657159 210.228231)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="400" font-style="normal" fill="#8a5a00">softmax₀</text>
+<text transform="translate(246.24716 210.54823)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#8a5a00">softmax₀</text>
 </g>
    <g id="text_12">
-<text transform="translate(365.453543 69.935153)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="normal" fill="#0d47a1">QK₂</text>
+<text transform="translate(363.19354 70.25515)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#0d47a1">QK₂</text>
 </g>
    <g id="text_13">
-<text transform="translate(366.141543 140.159153)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="normal" fill="#0d47a1">PV₁</text>
+<text transform="translate(364.17654 140.47915)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#0d47a1">PV₁</text>
 </g>
    <g id="text_14">
-<text transform="translate(355.672543 210.228231)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="400" font-style="normal" fill="#8a5a00">softmax₁</text>
+<text transform="translate(349.49754 210.54823)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#8a5a00">softmax₁</text>
 </g>
    <g id="text_15">
-<text transform="translate(468.468928 69.935153)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="normal" fill="#0d47a1">QK₃</text>
+<text transform="translate(466.20893 70.25515)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#0d47a1">QK₃</text>
 </g>
    <g id="text_16">
-<text transform="translate(469.156928 140.159153)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="normal" fill="#0d47a1">PV₂</text>
+<text transform="translate(467.02693 140.47915)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#0d47a1">PV₂</text>
 </g>
    <g id="text_17">
-<text transform="translate(458.687928 210.228231)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="400" font-style="normal" fill="#8a5a00">softmax₂</text>
+<text transform="translate(452.30793 210.54823)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#8a5a00">softmax₂</text>
 </g>
    <g id="patch_13">
     <path d="M 373.752543 280.411018
@@ -340,11 +340,11 @@ z
 " style="fill: #475569; stroke: #475569; stroke-width: 1.2; stroke-linecap: round"/>
    </g>
    <g id="text_18">
-<text transform="translate(308.671293 292.149108)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="#475569">both wgmma groups in flight</text>
-<text transform="translate(303.496293 302.951569)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="#475569">while softmax runs underneath</text>
+<text transform="translate(295.07129 291.54534)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">both wgmma groups in flight</text>
+<text transform="translate(288.81129 304.19534)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">while softmax runs underneath</text>
 </g>
    <g id="text_19">
-<text transform="translate(86.073359 17.077969)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13" font-weight="700" font-style="normal" fill="#172033">2-Stage Intra-Warpgroup Pipeline — One Consumer, Steady State</text>
+<text transform="translate(70.31836 17.39797)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="14" font-weight="700" font-style="normal" fill="#172033">2-Stage Intra-Warpgroup Pipeline — One Consumer, Steady State</text>
 </g>
   </g>
  </g>

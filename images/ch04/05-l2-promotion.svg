@@ -168,40 +168,40 @@ z
 " clip-path="url(#p6f5517a57e)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.653363" transform="rotate(-0 360 37.653363)">L2 Promotion — Using the Full HBM Cache Line</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.653363" transform="rotate(-0 360 37.653363)">L2 Promotion — Using the Full HBM Cache Line</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="45.72" y="80.838" transform="rotate(-0 45.72 80.838)">No promotion (32B fetch)</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="45.72" y="80.838" transform="rotate(-0 45.72 80.838)">No promotion (32B fetch)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="82.8225" y="102.745431" transform="rotate(-0 82.8225 102.745431)">32B needed</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="82.8225" y="102.745431" transform="rotate(-0 82.8225 102.745431)">32B needed</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="231.2325" y="102.745431" transform="rotate(-0 231.2325 102.745431)">96B fetched, then discarded</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="231.2325" y="102.745431" transform="rotate(-0 231.2325 102.745431)">96B fetched, then discarded</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="45.72" y="137.535429" transform="rotate(-0 45.72 137.535429)">128B still read from DRAM — only 32B kept. 75% wasted.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="45.72" y="137.535429" transform="rotate(-0 45.72 137.535429)">128B still read from DRAM — only 32B kept. 75% wasted.</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="45.72" y="167.551714" transform="rotate(-0 45.72 167.551714)">L2_128B promotion</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="45.72" y="167.551714" transform="rotate(-0 45.72 167.551714)">L2_128B promotion</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="194.13" y="189.459146" transform="rotate(-0 194.13 189.459146)">128B cached — all usable</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="194.13" y="189.459146" transform="rotate(-0 194.13 189.459146)">128B cached — all usable</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="45.72" y="224.249143" transform="rotate(-0 45.72 224.249143)">Full cache line kept. Next adjacent TMA call: L2 hit.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="45.72" y="224.249143" transform="rotate(-0 45.72 224.249143)">Full cache line kept. Next adjacent TMA call: L2 hit.</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="45.72" y="254.265429" transform="rotate(-0 45.72 254.265429)">L2_256B promotion</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="45.72" y="254.265429" transform="rotate(-0 45.72 254.265429)">L2_256B promotion</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="194.13" y="276.17286" transform="rotate(-0 194.13 276.17286)">line N: 128B</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="194.13" y="276.17286" transform="rotate(-0 194.13 276.17286)">line N: 128B</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="490.95" y="276.17286" transform="rotate(-0 490.95 276.17286)">line N+1: 128B</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="490.95" y="276.17286" transform="rotate(-0 490.95 276.17286)">line N+1: 128B</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="45.72" y="310.962857" transform="rotate(-0 45.72 310.962857)">Two consecutive lines cached — for wide tiles with high reuse.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="45.72" y="310.962857" transform="rotate(-0 45.72 310.962857)">Two consecutive lines cached — for wide tiles with high reuse.</text>
    </g>
   </g>
  </g>

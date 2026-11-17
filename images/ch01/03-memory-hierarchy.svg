@@ -109,37 +109,37 @@ OTHER DEALINGS IN THE FONT SOFTWARE.</metadata>
    </cc:Work>
   </rdf:RDF>
  </metadata>
-<rect width="1100" height="660" rx="20" fill="#f8fafc"/><g font-family="Arial, Liberation Sans, sans-serif" fill="#172033"><text x="44" y="55" font-size="30" font-weight="700">H100 SXM · Memory hierarchy</text><text x="44" y="88" font-size="18" fill="#475569">Capacity and bandwidth are different quantities. Always check the scope.</text>
+<rect width="1100" height="660" rx="20" fill="#f8fafc"/><g font-family="Arial, Liberation Sans, sans-serif" fill="#172033"><text x="44" y="55" font-size="31" font-weight="700">H100 SXM · Memory hierarchy</text><text x="44" y="88" font-size="19" fill="#475569">Capacity and bandwidth are different quantities. Always check the scope.</text>
 <rect x="36" y="112" width="1028" height="106" rx="12" fill="#fff" stroke="#cbd5e1"/>
 <rect x="36" y="112" width="8" height="106" rx="4" fill="#0f766e"/>
-<text x="64" y="143" font-size="18" fill="#0f766e" font-weight="700">01</text>
-<text x="110" y="144" font-size="24" font-weight="700">Registers</text>
-<text x="110" y="174" font-size="19">256 KiB per SM</text>
-<text x="110" y="199" font-size="17" fill="#475569">Thread-private operands</text>
-<text x="525" y="154" font-size="22" font-weight="700">No single bandwidth number</text>
-<text x="525" y="186" font-size="17" fill="#475569">Depends on instruction and register reuse</text>
+<text x="64" y="143" font-size="19" fill="#0f766e" font-weight="700">01</text>
+<text x="110" y="144" font-size="25" font-weight="700">Registers</text>
+<text x="110" y="174" font-size="20">256 KiB per SM</text>
+<text x="110" y="199" font-size="18" fill="#475569">Thread-private operands</text>
+<text x="525" y="154" font-size="23" font-weight="700">No single bandwidth number</text>
+<text x="525" y="186" font-size="18" fill="#475569">Depends on instruction and register reuse</text>
 <rect x="36" y="230" width="1028" height="106" rx="12" fill="#fff" stroke="#cbd5e1"/>
 <rect x="36" y="230" width="8" height="106" rx="4" fill="#0f766e"/>
-<text x="64" y="261" font-size="18" fill="#0f766e" font-weight="700">02</text>
-<text x="110" y="262" font-size="24" font-weight="700">Shared memory</text>
-<text x="110" y="292" font-size="19">Up to 228 KiB per SM</text>
-<text x="110" y="317" font-size="17" fill="#475569">32 banks × 4 bytes</text>
-<text x="525" y="272" font-size="22" font-weight="700">≈253 GB/s per SM (model)</text>
-<text x="525" y="304" font-size="17" fill="#475569">≈33 TB/s across 132 SXM SMs at 1.98 GHz</text>
+<text x="64" y="261" font-size="19" fill="#0f766e" font-weight="700">02</text>
+<text x="110" y="262" font-size="25" font-weight="700">Shared memory</text>
+<text x="110" y="292" font-size="20">Up to 228 KiB per SM</text>
+<text x="110" y="317" font-size="18" fill="#475569">32 banks × 4 bytes</text>
+<text x="525" y="272" font-size="23" font-weight="700">≈253 GB/s per SM (model)</text>
+<text x="525" y="304" font-size="18" fill="#475569">≈33 TB/s across 132 SXM SMs at 1.98 GHz</text>
 <rect x="36" y="348" width="1028" height="106" rx="12" fill="#fff" stroke="#cbd5e1"/>
 <rect x="36" y="348" width="8" height="106" rx="4" fill="#0f766e"/>
-<text x="64" y="379" font-size="18" fill="#0f766e" font-weight="700">03</text>
-<text x="110" y="380" font-size="24" font-weight="700">L2 cache</text>
-<text x="110" y="410" font-size="19">50 MB on H100 SXM</text>
-<text x="110" y="435" font-size="17" fill="#475569">Shared across SMs</text>
-<text x="525" y="390" font-size="22" font-weight="700">Workload-dependent throughput</text>
-<text x="525" y="422" font-size="17" fill="#475569">Cache hits, transactions and contention matter</text>
+<text x="64" y="379" font-size="19" fill="#0f766e" font-weight="700">03</text>
+<text x="110" y="380" font-size="25" font-weight="700">L2 cache</text>
+<text x="110" y="410" font-size="20">50 MB on H100 SXM</text>
+<text x="110" y="435" font-size="18" fill="#475569">Shared across SMs</text>
+<text x="525" y="390" font-size="23" font-weight="700">Workload-dependent throughput</text>
+<text x="525" y="422" font-size="18" fill="#475569">Cache hits, transactions and contention matter</text>
 <rect x="36" y="466" width="1028" height="106" rx="12" fill="#fff" stroke="#cbd5e1"/>
 <rect x="36" y="466" width="8" height="106" rx="4" fill="#0f766e"/>
-<text x="64" y="497" font-size="18" fill="#0f766e" font-weight="700">04</text>
-<text x="110" y="498" font-size="24" font-weight="700">HBM3</text>
-<text x="110" y="528" font-size="19">80 GB on H100 SXM</text>
-<text x="110" y="553" font-size="17" fill="#475569">GPU-wide external memory</text>
-<text x="525" y="508" font-size="22" font-weight="700">3.35 TB/s product peak</text>
-<text x="525" y="540" font-size="17" fill="#475569">Sustained throughput depends on the workload</text>
-<text x="44" y="620" font-size="16" fill="#475569">Bank model: 32 × 4 B × 1.98 GHz. Product capacities and HBM peak: NVIDIA H100 datasheet.</text></g></svg>
+<text x="64" y="497" font-size="19" fill="#0f766e" font-weight="700">04</text>
+<text x="110" y="498" font-size="25" font-weight="700">HBM3</text>
+<text x="110" y="528" font-size="20">80 GB on H100 SXM</text>
+<text x="110" y="553" font-size="18" fill="#475569">GPU-wide external memory</text>
+<text x="525" y="508" font-size="23" font-weight="700">3.35 TB/s product peak</text>
+<text x="525" y="540" font-size="18" fill="#475569">Sustained throughput depends on the workload</text>
+<text x="44" y="620" font-size="17" fill="#475569">Bank model: 32 × 4 B × 1.98 GHz. Product capacities and HBM peak: NVIDIA H100 datasheet.</text></g></svg>

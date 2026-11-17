@@ -180,25 +180,25 @@ z
 " clip-path="url(#p5dba3dd2f7)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="36.903363" transform="rotate(-0 360 36.903363)">mbarrier Object — 64 Bits in Shared Memory</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="36.903363" transform="rotate(-0 360 36.903363)">mbarrier Object — 64 Bits in Shared Memory</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(91.10487 116.3625)">Phase bit</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(98.69675 126.291875)">(1 bit)</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(99.23363 137.091875)">0 or 1</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(86.29487 114.78119)">Phase bit</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(95.83675 127.43119)">(1 bit)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(96.39863 140.08119)">0 or 1</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.70388 115.5875)">Pending thread</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(264.27450 126.7625)">arrival count</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(221.91012 136.691875)">(decrements as threads arrive)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(250.76388 114.19369)">Pending thread</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(257.78950 126.84369)">arrival count</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(205.87012 139.49369)">(decrements as threads arrive)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(495.59713 115.5875)">Pending transaction</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(516.32650 125.9875)">byte count</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(463.31197 136.691875)">(decrements as TMA data arrives)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(485.20713 114.19369)">Pending transaction</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(510.78650 126.84369)">byte count</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(445.58197 139.49369)">(decrements as TMA data arrives)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-style: normal; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="204.48" transform="rotate(-0 360 204.48)">Barrier completes when BOTH counts reach zero — then the phase bit flips automatically</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="204.48" transform="rotate(-0 360 204.48)">Barrier completes when BOTH counts reach zero — then the phase bit flips automatically</text>
    </g>
   </g>
  </g>

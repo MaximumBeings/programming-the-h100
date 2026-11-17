@@ -200,36 +200,36 @@ z
 " clip-path="url(#pbe965eeaa0)" style="fill: #2e7d32; stroke: #2e7d32; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.549517" transform="rotate(-0 360 37.549517)">Two-Barrier WAR Prevention — Producer / Consumer Handshake</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.549517" transform="rotate(-0 360 37.549517)">Two-Barrier WAR Prevention — Producer / Consumer Handshake</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(170.19338 80.35505)">data_bar</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(114.72720 93.052082)">"Has data arrived from TMA?"</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(167.91838 80.70705)">data_bar</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(106.81220 93.40408)">"Has data arrived from TMA?"</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(498.26209 80.35505)">release_bar</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(444.86803 92.180207)">"Are consumers done reading?"</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(495.20209 80.29463)">release_bar</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(436.43803 92.94463)">"Are consumers done reading?"</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(153.63400 174.158808)">Producer thread:</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(127.27088 183.672558)">wait(release_bar) → proceed</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(131.65400 194.072558)">arrive.expect_tx(data_bar)</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(139.88712 204.583808)">cp.async.bulk → smem</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(144.84900 171.10031)">Producer thread:</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(112.29588 183.75031)">wait(release_bar) → proceed</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(118.05400 196.40031)">arrive.expect_tx(data_bar)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(127.85712 209.05031)">cp.async.bulk → smem</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(487.24600 173.313183)">Consumer warps:</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(468.88913 183.672558)">wait(data_bar) → proceed</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(475.68850 194.183808)">compute on smem tile</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(466.18600 204.472558)">arrive.release(release_bar)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(478.06100 170.62187)">Consumer warps:</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(455.44913 183.27187)">wait(data_bar) → proceed</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(464.19850 195.92187)">compute on smem tile</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(452.24600 208.57187)">arrive.release(release_bar)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(282.77831 96.276582) rotate(-354)">consumer waits on data_bar</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(263.04331 97.22698) rotate(-354)">consumer waits on data_bar</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #2e7d32" transform="translate(281.99331 175.258854) rotate(-354)">producer waits on release_bar</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #2e7d32" transform="translate(260.76831 176.20925) rotate(-354)">producer waits on release_bar</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="296.346462" transform="rotate(-0 360 296.346462)">Producer never overwrites a tile until release_bar says every consumer is done reading it</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="296.346462" transform="rotate(-0 360 296.346462)">Producer never overwrites a tile until release_bar says every consumer is done reading it</text>
    </g>
   </g>
  </g>

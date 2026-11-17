@@ -144,30 +144,30 @@ z
 " clip-path="url(#p47f2720e9b)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="309.6" y="36.903363" transform="rotate(-0 309.6 36.903363)">f16x2 — Two FP16 Values Packed in One 32-Bit Register</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="309.6" y="36.903363" transform="rotate(-0 309.6 36.903363)">f16x2 — Two FP16 Values Packed in One 32-Bit Register</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(160.29700 114.261012)">FP16 value 1</text>
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(162.61755 125.063473)">(bits 31–16)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(157.08700 113.68924)">FP16 value 1</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(159.68255 126.33924)">(bits 31–16)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(388.49863 114.261012)">FP16 value 0</text>
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(394.63519 125.063473)">(bits 15–0)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(385.16363 113.68924)">FP16 value 0</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(391.93519 126.33924)">(bits 15–0)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="80.288372" y="78.588" transform="rotate(-0 80.288372 78.588)">31</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="80.288372" y="78.588" transform="rotate(-0 80.288372 78.588)">31</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="299.176744" y="78.588" transform="rotate(-0 299.176744 78.588)">16 15</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="299.176744" y="78.588" transform="rotate(-0 299.176744 78.588)">16 15</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="521.539535" y="78.588" transform="rotate(-0 521.539535 78.588)">0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="521.539535" y="78.588" transform="rotate(-0 521.539535 78.588)">0</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="309.6" y="181.884" transform="rotate(-0 309.6 181.884)">Packing: mov.b32 packed, {lo_16bit, hi_16bit};   ({lo, hi} syntax places lo in the LOW bits — counterintuitive but correct)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="309.6" y="181.884" transform="rotate(-0 309.6 181.884)"><tspan x="309.6" y="174.734">Packing: mov.b32 packed, {lo_16bit, hi_16bit}; ({lo, hi} syntax places lo in the LOW bits — counterintuitive but</tspan><tspan x="309.6" y="189.034">correct)</tspan></text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="309.6" y="210.936" transform="rotate(-0 309.6 210.936)">add.f16x2 / mul.f16x2 / fma.rn.f16x2 operate on BOTH halves in one instruction — required input layout for WGMMA</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="309.6" y="210.936" transform="rotate(-0 309.6 210.936)"><tspan x="309.6" y="203.786">add.f16x2 / mul.f16x2 / fma.rn.f16x2 operate on BOTH halves in one instruction — required input layout for</tspan><tspan x="309.6" y="218.086">WGMMA</tspan></text>
    </g>
   </g>
  </g>

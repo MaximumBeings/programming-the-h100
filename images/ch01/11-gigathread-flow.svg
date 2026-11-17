@@ -256,30 +256,30 @@ z
 " clip-path="url(#pc73a29cc94)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="37.953363" transform="rotate(-0 306 37.953363)">GigaThread Engine -- Kernel Launch Flow</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="37.953363" transform="rotate(-0 306 37.953363)">GigaThread Engine -- Kernel Launch Flow</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="93.538313" transform="rotate(-0 306 93.538313)">CPU launches kernel via CUDA driver</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="93.538313" transform="rotate(-0 306 93.538313)">CPU launches kernel via CUDA driver</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(239.94000 150.998438)">Receive kernel descriptor</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(211.21172 162.698438)">(grid/block dims, shared mem, regs)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(233.20000 150.87544)">Receive kernel descriptor</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(201.63172 163.52544)">(grid/block dims, shared mem, regs)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="221.030437" transform="rotate(-0 306 221.030437)">Create CTA work queue</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="221.030437" transform="rotate(-0 306 221.030437)">Create CTA work queue</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(209.74273 279.362437)">For each unstarted CTA: does any SM</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(202.68927 291.062437)">have free warp slots/regs/shared mem?</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(199.74773 279.23944)">For each unstarted CTA: does any SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(192.19927 291.88944)">have free warp slots/regs/shared mem?</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(210.15758 347.828437)">[Hopper] Cluster-aware: all CTAs in a</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(215.07508 359.528437)">cluster must land on adjacent SMs,</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(280.52336 372.020859)">same GPC</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(200.28758 347.62665)">[Hopper] Cluster-aware: all CTAs in a</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(205.87508 360.27665)">cluster must land on adjacent SMs,</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(277.77836 372.92665)">same GPC</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(228.33719 427.994437)">CTA lands on an SM -&gt; begins</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(262.88797 439.694437)">executing warps</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(220.31719 427.87144)">CTA lands on an SM -&gt; begins</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.53297 440.52144)">executing warps</text>
    </g>
   </g>
  </g>

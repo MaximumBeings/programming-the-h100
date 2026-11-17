@@ -256,58 +256,58 @@ z
 " clip-path="url(#pae3ea102db)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="414" y="38.278421" transform="rotate(-0 414 38.278421)">Signature 2 — Producer/Consumer Warp Imbalance</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="414" y="38.278421" transform="rotate(-0 414 38.278421)">Signature 2 — Producer/Consumer Warp Imbalance</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="56.37913" y="96.918942" transform="rotate(-0 56.37913 96.918942)">LOAD</text>
+    <text style="font-weight: 450; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="56.37913" y="96.918942" transform="rotate(-0 56.37913 96.918942)">LOAD</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="105.464348" y="96.918942" transform="rotate(-0 105.464348 96.918942)">LOAD</text>
+    <text style="font-weight: 450; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="105.464348" y="96.918942" transform="rotate(-0 105.464348 96.918942)">LOAD</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="154.549565" y="96.918942" transform="rotate(-0 154.549565 96.918942)">LOAD</text>
+    <text style="font-weight: 450; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="154.549565" y="96.918942" transform="rotate(-0 154.549565 96.918942)">LOAD</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="284.274783" y="96.919395" transform="rotate(-0 284.274783 96.919395)">WAIT (stalled on barrier)</text>
+    <text style="font-weight: 450; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="284.274783" y="96.919395" transform="rotate(-0 284.274783 96.919395)">WAIT (stalled on barrier)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="414" y="96.918942" transform="rotate(-0 414 96.918942)">LOAD</text>
+    <text style="font-weight: 450; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="414" y="96.918942" transform="rotate(-0 414 96.918942)">LOAD</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="463.085217" y="96.918942" transform="rotate(-0 463.085217 96.918942)">LOAD</text>
+    <text style="font-weight: 450; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="463.085217" y="96.918942" transform="rotate(-0 463.085217 96.918942)">LOAD</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="543.725217" y="96.918942" transform="rotate(-0 543.725217 96.918942)">WAIT</text>
+    <text style="font-weight: 450; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="543.725217" y="96.918942" transform="rotate(-0 543.725217 96.918942)">WAIT</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #0d47a1" x="31.836522" y="63.987623" transform="rotate(-0 31.836522 63.987623)">Producer warps (TMA):</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #0d47a1" x="31.836522" y="63.987623" transform="rotate(-0 31.836522 63.987623)">Producer warps (TMA):</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="63.391304" y="163.143704" transform="rotate(-0 63.391304 163.143704)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="63.391304" y="163.143704" transform="rotate(-0 63.391304 163.143704)">MMA</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="189.610435" y="163.143704" transform="rotate(-0 189.610435 163.143704)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="189.610435" y="163.143704" transform="rotate(-0 189.610435 163.143704)">MMA</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="315.829565" y="163.143704" transform="rotate(-0 315.829565 163.143704)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="315.829565" y="163.143704" transform="rotate(-0 315.829565 163.143704)">MMA</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="442.048696" y="163.143704" transform="rotate(-0 442.048696 163.143704)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="442.048696" y="163.143704" transform="rotate(-0 442.048696 163.143704)">MMA</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="568.267826" y="163.143704" transform="rotate(-0 568.267826 163.143704)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="568.267826" y="163.143704" transform="rotate(-0 568.267826 163.143704)">MMA</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="31.836522" y="130.472151" transform="rotate(-0 31.836522 130.472151)">Consumer warps (WGMMA):</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="31.836522" y="130.472151" transform="rotate(-0 31.836522 130.472151)">Consumer warps (WGMMA):</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-style: normal; font-size: 12.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.836522" y="246.820075" transform="rotate(-0 31.836522 246.820075)">Producers idle while consumers stay 100% busy → math is the bottleneck.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 13.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.836522" y="246.820075" transform="rotate(-0 31.836522 246.820075)">Producers idle while consumers stay 100% busy → math is the bottleneck.</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-size: 12.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.836522" y="313.304604" transform="rotate(-0 31.836522 313.304604)">Diagnosis: if the producer timeline shows long WAIT stretches while the</text>
+    <text style="font-weight: 450; font-size: 13.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.836522" y="313.304604" transform="rotate(-0 31.836522 313.304604)">Diagnosis: if the producer timeline shows long WAIT stretches while the</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 450; font-size: 12.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.836522" y="335.244498" transform="rotate(-0 31.836522 335.244498)">consumer timeline is a solid block of MMA, the kernel is compute-bound.</text>
+    <text style="font-weight: 450; font-size: 13.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.836522" y="335.244498" transform="rotate(-0 31.836522 335.244498)">consumer timeline is a solid block of MMA, the kernel is compute-bound.</text>
    </g>
   </g>
  </g>

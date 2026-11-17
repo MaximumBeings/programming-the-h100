@@ -423,81 +423,81 @@ z
 " clip-path="url(#p7d2cc9ff4b)" style="fill: #00695c; stroke: #00695c; stroke-width: 1.2; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="38.163363" transform="rotate(-0 360 38.163363)">TMA Multicast — One HBM Fetch Delivered to All Blocks</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="38.163363" transform="rotate(-0 360 38.163363)">TMA Multicast — One HBM Fetch Delivered to All Blocks</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="58.512" transform="rotate(-0 360 58.512)">GEMM scenario: cluster of 4 blocks, all need the same Tile A</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="58.512" transform="rotate(-0 360 58.512)">GEMM scenario: cluster of 4 blocks, all need the same Tile A</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 10.780px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="45.72" y="99.408" transform="rotate(-0 45.72 99.408)">WITHOUT Multicast</text>
+    <text style="font-weight: 650; font-size: 11.78px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="45.72" y="99.408" transform="rotate(-0 45.72 99.408)">WITHOUT Multicast</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="108.576" y="141.5825" transform="rotate(-0 108.576 141.5825)">Block 0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="108.576" y="141.5825" transform="rotate(-0 108.576 141.5825)">Block 0</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 7.260px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(99.96291 209.987906)">HBM</text>
-    <text style="font-weight: 450; font-size: 7.260px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(74.68548 218.234297)">Tile A (own fetch)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(95.65791 208.98290)">HBM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(58.91548 221.63290)">Tile A (own fetch)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="269.208" y="141.5825" transform="rotate(-0 269.208 141.5825)">Block 1</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="269.208" y="141.5825" transform="rotate(-0 269.208 141.5825)">Block 1</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 7.260px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(260.59491 209.987906)">HBM</text>
-    <text style="font-weight: 450; font-size: 7.260px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(235.31748 218.234297)">Tile A (own fetch)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(256.28991 208.98290)">HBM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(219.54748 221.63290)">Tile A (own fetch)</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="429.84" y="141.5825" transform="rotate(-0 429.84 141.5825)">Block 2</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="429.84" y="141.5825" transform="rotate(-0 429.84 141.5825)">Block 2</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 7.260px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(421.22691 209.987906)">HBM</text>
-    <text style="font-weight: 450; font-size: 7.260px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(395.94948 218.234297)">Tile A (own fetch)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(416.92191 208.98290)">HBM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(380.17948 221.63290)">Tile A (own fetch)</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="590.472" y="141.5825" transform="rotate(-0 590.472 141.5825)">Block 3</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="590.472" y="141.5825" transform="rotate(-0 590.472 141.5825)">Block 3</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 7.260px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(581.85891 209.987906)">HBM</text>
-    <text style="font-weight: 450; font-size: 7.260px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(556.58148 218.234297)">Tile A (own fetch)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(577.55391 208.98290)">HBM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(540.81148 221.63290)">Tile A (own fetch)</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.020px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="360" y="262.992" transform="rotate(-0 360 262.992)">Result: 4 separate HBM reads of the same data — 4× bandwidth waste</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="360" y="262.992" transform="rotate(-0 360 262.992)">Result: 4 separate HBM reads of the same data — 4× bandwidth waste</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 650; font-size: 10.780px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="45.72" y="317.52" transform="rotate(-0 45.72 317.52)">WITH Multicast</text>
+    <text style="font-weight: 650; font-size: 11.78px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="45.72" y="317.52" transform="rotate(-0 45.72 317.52)">WITH Multicast</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(75.57384 356.392531)">Elected</text>
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(76.37855 365.882531)">Thread</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(70.35384 355.76293)">Elected</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(71.36355 368.41293)">Thread</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.18997 356.246438)">HBM</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(234.06356 365.742281)">Tile A (128 KB)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(255.13497 355.51416)">HBM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(224.87356 368.16416)">Tile A (128 KB)</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 7.480px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #00695c" x="164.448" y="343.4208" transform="rotate(-0 164.448 343.4208)">1 fetch</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #00695c" x="164.448" y="343.4208" transform="rotate(-0 164.448 343.4208)">1 fetch</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 650; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(248.74573 438.267688)">TMA Unit</text>
-    <text style="font-weight: 650; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(244.51980 446.955891)">(multicast)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(241.44073 437.34279)">TMA Unit</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(236.25480 449.99279)">(multicast)</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(105.67898 511.477891)">SM 0</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(103.84180 520.577891)">SMEM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(101.63398 510.75889)">SM 0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(98.81680 523.40889)">SMEM</text>
    </g>
    <g id="text_19">
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(267.17598 511.477891)">SM 1</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(264.47380 520.577891)">SMEM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(263.50098 510.75889)">SM 1</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(259.44880 523.40889)">SMEM</text>
    </g>
    <g id="text_20">
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(427.02298 511.477891)">SM 2</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(425.10580 520.577891)">SMEM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(423.01298 510.75889)">SM 2</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(420.08080 523.40889)">SMEM</text>
    </g>
    <g id="text_21">
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(587.62498 511.477891)">SM 3</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(585.73780 520.577891)">SMEM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(583.59998 510.75889)">SM 3</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(580.71280 523.40889)">SMEM</text>
    </g>
    <g id="text_22">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.020px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #00695c" x="360" y="569.712" transform="rotate(-0 360 569.712)">Result: 1 HBM read satisfies all 4 blocks — 4× bandwidth savings</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #00695c" x="360" y="569.712" transform="rotate(-0 360 569.712)">Result: 1 HBM read satisfies all 4 blocks — 4× bandwidth savings</text>
    </g>
   </g>
  </g>

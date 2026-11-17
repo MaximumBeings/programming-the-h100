@@ -109,21 +109,21 @@ OTHER DEALINGS IN THE FONT SOFTWARE.</metadata>
    </cc:Work>
   </rdf:RDF>
  </metadata>
-<rect width="1100" height="650" fill="#f8fafc"/><g font-family="Arial, Liberation Sans, sans-serif" fill="#172033"><text x="40" y="50" font-size="29" font-weight="700">WGMMA · Ordering is not completion</text><text x="40" y="86" font-size="18" fill="#475569">Use the register fence before WGMMA; use commit / wait before reading results.</text>
+<rect width="1100" height="650" fill="#f8fafc"/><g font-family="Arial, Liberation Sans, sans-serif" fill="#172033"><text x="40" y="50" font-size="30" font-weight="700">WGMMA · Ordering is not completion</text><text x="40" y="86" font-size="19" fill="#475569">Use the register fence before WGMMA; use commit / wait before reading results.</text>
 <rect x="40" y="112" width="1020" height="106" rx="12" fill="#ccfbf1" stroke="#94a3b8"/>
-<text x="64" y="141" font-size="21" font-weight="700">1 · Prepare operands</text>
-<text x="64" y="172" font-size="22">Ordinary register writes → wgmma.fence.sync.aligned</text>
-<text x="64" y="199" font-size="17" fill="#334155">Shared-memory writes → fence.proxy.async + producer synchronization</text>
+<text x="64" y="141" font-size="22" font-weight="700">1 · Prepare operands</text>
+<text x="64" y="172" font-size="23">Ordinary register writes → wgmma.fence.sync.aligned</text>
+<text x="64" y="199" font-size="18" fill="#334155">Shared-memory writes → fence.proxy.async + producer synchronization</text>
 <rect x="40" y="236" width="1020" height="106" rx="12" fill="#dbeafe" stroke="#94a3b8"/>
-<text x="64" y="265" font-size="21" font-weight="700">2 · Issue and commit</text>
-<text x="64" y="296" font-size="22">wgmma.mma_async → wgmma.commit_group</text>
-<text x="64" y="323" font-size="17" fill="#334155">Same-shape WGMMA accumulation has its own ordering guarantee.</text>
+<text x="64" y="265" font-size="22" font-weight="700">2 · Issue and commit</text>
+<text x="64" y="296" font-size="23">wgmma.mma_async → wgmma.commit_group</text>
+<text x="64" y="323" font-size="18" fill="#334155">Same-shape WGMMA accumulation has its own ordering guarantee.</text>
 <rect x="40" y="360" width="1020" height="106" rx="12" fill="#fef3c7" stroke="#94a3b8"/>
-<text x="64" y="389" font-size="21" font-weight="700">3 · Wait for completion</text>
-<text x="64" y="420" font-size="22">wgmma.wait_group.sync.aligned 0</text>
-<text x="64" y="447" font-size="17" fill="#334155">A fence does not wait for pending arithmetic to complete.</text>
+<text x="64" y="389" font-size="22" font-weight="700">3 · Wait for completion</text>
+<text x="64" y="420" font-size="23">wgmma.wait_group.sync.aligned 0</text>
+<text x="64" y="447" font-size="18" fill="#334155">A fence does not wait for pending arithmetic to complete.</text>
 <rect x="40" y="484" width="1020" height="106" rx="12" fill="#ede9fe" stroke="#94a3b8"/>
-<text x="64" y="513" font-size="21" font-weight="700">4 · Use the result</text>
-<text x="64" y="544" font-size="22">Read / convert accumulator registers → store the epilogue</text>
-<text x="64" y="571" font-size="17" fill="#334155">Fence again only if ordinary register writes precede a later WGMMA.</text>
-<text x="40" y="628" font-size="16" fill="#475569">Source: NVIDIA CUDA 12.8 PTX ISA, asynchronous WGMMA proxy operations.</text></g></svg>
+<text x="64" y="513" font-size="22" font-weight="700">4 · Use the result</text>
+<text x="64" y="544" font-size="23">Read / convert accumulator registers → store the epilogue</text>
+<text x="64" y="571" font-size="18" fill="#334155">Fence again only if ordinary register writes precede a later WGMMA.</text>
+<text x="40" y="628" font-size="17" fill="#475569">Source: NVIDIA CUDA 12.8 PTX ISA, asynchronous WGMMA proxy operations.</text></g></svg>

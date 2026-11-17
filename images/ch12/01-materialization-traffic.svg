@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg role="img" xmlns:xlink="http://www.w3.org/1999/xlink" width="483.12pt" height="395.528857pt" viewBox="0 0 483.12 395.528857" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg role="img" xmlns:xlink="http://www.w3.org/1999/xlink" width="483.12pt" height="396.024pt" viewBox="0 0 483.12 396.024" xmlns="http://www.w3.org/2000/svg" version="1.1">
 <!-- typography: inter-v1 -->
 <metadata id="font-license">Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
 
@@ -157,29 +157,29 @@ z
 " clip-path="url(#p22f1e4848e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 1.6; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-<text transform="translate(115.391939 100.923145)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#b71c1c">545.2 MB</text>
+<text transform="translate(113.09194 101.24314)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#b71c1c">545.2 MB</text>
 </g>
    <g id="text_2">
-<text transform="translate(80.85233 328.748366)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.8" font-weight="400" font-style="normal" fill="#172033">Naive (3 separate kernels)</text>
+<text transform="translate(73.36733 329.06837)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Naive (3 separate kernels)</text>
 </g>
    <g id="text_3">
-<text transform="translate(315.142514 297.584665)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#1b5e20">8.4 MB</text>
+<text transform="translate(313.44751 297.90466)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#1b5e20">8.4 MB</text>
 </g>
    <g id="text_4">
-<text transform="translate(291.820905 328.748366)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.8" font-weight="400" font-style="normal" fill="#172033">Flash (fused, tiled)</text>
+<text transform="translate(286.54090 329.06837)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Flash (fused, tiled)</text>
 </g>
    <g id="text_5">
-<text transform="translate(163.154096 65.947651)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="#0d47a1">65× less</text>
-<text transform="translate(155.240231 78.550522)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="10.5" font-weight="700" font-style="normal" fill="#0d47a1">HBM traffic</text>
+<text transform="translate(161.13910 66.24409)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#0d47a1">65× less</text>
+<text transform="translate(152.52523 78.89409)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11.5" font-weight="700" font-style="normal" fill="#0d47a1">HBM traffic</text>
 </g>
    <g id="text_6">
-<text transform="translate(42.518117 361.781524)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.1" font-weight="400" font-style="normal" fill="#475569">Useful input/output is 8.4 MB either way (Q, K, V in; O out) — the naive form just writes</text>
-<text transform="translate(32.173266 372.704013)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.1" font-weight="400" font-style="normal" fill="#475569">S and P to HBM as intermediates that never needed to exist there. S alone is 134 MB at this</text>
-<text transform="translate(94.062508 383.626501)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.1" font-weight="400" font-style="normal" fill="#475569">size; the H100&#x27;s entire L2 is 50 MB, so it cannot even be cached.</text>
+<text transform="translate(3.33812 360.37401)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">Useful input/output is 8.4 MB either way (Q, K, V in; O out) — the naive form just writes</text>
+<text transform="translate(-8.75673 373.02401)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569"><tspan x="0" y="-7.15">S and P to HBM as intermediates that never needed to exist there. S alone is 134 MB at</tspan><tspan x="0" y="7.15">this</tspan></text>
+<text transform="translate(64.93751 385.67401)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">size; the H100&#x27;s entire L2 is 50 MB, so it cannot even be cached.</text>
 </g>
    <g id="text_7">
-<text transform="translate(60.345422 18.637221)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.3" font-weight="700" font-style="normal" fill="#172033">Naive Attention vs FlashAttention — HBM Traffic</text>
-<text transform="translate(113.614 34.600857)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.3" font-weight="700" font-style="normal" fill="#172033">(N=8192, d=128, BF16, one head)</text>
+<text transform="translate(48.90042 18.95722)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="14.3" font-weight="700" font-style="normal" fill="#172033">Naive Attention vs FlashAttention — HBM Traffic</text>
+<text transform="translate(105.76400 34.92086)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="14.3" font-weight="700" font-style="normal" fill="#172033">(N=8192, d=128, BF16, one head)</text>
 </g>
   </g>
  </g>

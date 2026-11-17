@@ -167,28 +167,28 @@ z
 " clip-path="url(#p62931b2e9f)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.653363" transform="rotate(-0 342 37.653363)">Coalesced vs. Uncoalesced Warp Memory Access</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.653363" transform="rotate(-0 342 37.653363)">Coalesced vs. Uncoalesced Warp Memory Access</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(126.89666 80.520473)">BEST CASE -- coalesced</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(172.61579 88.494286)"/>
-    <text style="font-size: 8.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(110.296461 102.441739)">32 threads, consecutive addresses</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(117.50299 113.545817)">0x1000, 0x1004, ... 0x107C</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(177.24212 122.034286)"/>
-    <text style="font-size: 8.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(124.971555 136.420473)">All fit in 1 x 128B cache line</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(137.68910 147.600473)">-&gt; 1 L2 transaction</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(117.78666 74.71708)">BEST CASE -- coalesced</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(167.62079 87.36708)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(90.39146 101.76254)">32 threads, consecutive addresses</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(107.63299 114.41254)">0x1000, 0x1004, ... 0x107C</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(173.31712 127.06254)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(109.73655 141.89672)">All fit in 1 x 128B cache line</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(130.89910 154.54672)">-&gt; 1 L2 transaction</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(435.81037 80.520473)">WORST CASE -- uncoalesced</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(494.20684 88.494286)"/>
-    <text style="font-size: 8.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(431.83167 102.441739)">32 threads, stride-128B addresses</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(437.60919 113.545817)">0x1000, 0x1080, 0x1100, ...</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(496.72559 122.034286)"/>
-    <text style="font-size: 8.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(455.28817 136.420473)">32 different cache lines</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(451.61925 147.600473)">-&gt; 32 L2 transactions</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(424.90037 74.71708)">WORST CASE -- uncoalesced</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(489.30184 87.36708)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(412.33667 101.76254)">32 threads, stride-128B addresses</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(427.74419 114.41254)">0x1000, 0x1080, 0x1100, ...</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(493.19559 127.06254)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(441.85317 141.89672)">32 different cache lines</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(443.78425 154.54672)">-&gt; 32 L2 transactions</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="345.486316" y="233.639741" transform="rotate(-0 345.486316 233.639741)">Same 128 bytes moved either way -- 32x difference in L2 transactions issued</text>
+    <text style="font-weight: 650; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="345.486316" y="233.639741" transform="rotate(-0 345.486316 233.639741)">Same 128 bytes moved either way -- 32x difference in L2 transactions issued</text>
    </g>
   </g>
  </g>

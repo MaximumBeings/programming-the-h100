@@ -226,89 +226,89 @@ z
 " clip-path="url(#p3b1ba95da7)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="436.597031" y="38.696836" transform="rotate(-0 436.597031 38.696836)">ABA Ambiguity — Phase Bits Disambiguate Barrier Reuse (N_STAGES=4)</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="436.597031" y="38.696836" transform="rotate(-0 436.597031 38.696836)">ABA Ambiguity — Phase Bits Disambiguate Barrier Reuse (N_STAGES=4)</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-style: normal; font-size: 12.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.740838" y="71.712" transform="rotate(-0 31.740838 71.712)">Without phase bits: "counter == 1" can't tell pass 0 from pass 4 — barrier wraps.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 13.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.740838" y="71.712" transform="rotate(-0 31.740838 71.712)">Without phase bits: "counter == 1" can't tell pass 0 from pass 4 — barrier wraps.</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(68.50572 158.187445)">iter 0</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(62.06655 170.909516)">stage 0</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(60.86184 183.632414)">phase 0</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(67.28072 158.50744)">iter 0</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(60.30155 171.22952)">stage 0</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(58.96684 183.95241)">phase 0</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(70.76065 109.203547)">wrap</text>
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(60.97291 120.605402)">(stage 0</text>
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(62.70674 132.008)">reused)</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(69.58565 108.27577)">wrap</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(59.03291 120.92577)">(stage 0</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(60.88674 133.57577)">reused)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(161.12793 158.187445)">iter 1</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(155.06059 170.909516)">stage 1</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(152.58448 183.632414)">phase 0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(160.01793 158.50744)">iter 1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(153.41059 171.22952)">stage 1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(150.68948 183.95241)">phase 0</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(249.36051 158.187445)">iter 2</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(243.29316 170.909516)">stage 2</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(241.93205 183.632414)">phase 0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(248.14551 158.50744)">iter 2</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(241.53816 171.22952)">stage 2</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(240.03705 183.95241)">phase 0</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(338.65808 158.187445)">iter 3</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(332.59074 170.909516)">stage 3</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(331.27963 183.632414)">phase 0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(337.44808 158.50744)">iter 3</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(330.84074 171.22952)">stage 3</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(329.38463 183.95241)">phase 0</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(425.80601 158.187445)">iter 4</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(419.45684 170.909516)">stage 0</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(419.48214 183.632414)">phase 1</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(424.58101 158.50744)">iter 4</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(417.69184 171.22952)">stage 0</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(417.70214 183.95241)">phase 1</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(428.15094 109.203547)">wrap</text>
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(418.36321 120.605402)">(stage 0</text>
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(420.09704 132.008)">reused)</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(426.97594 108.27577)">wrap</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(416.42321 120.92577)">(stage 0</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(418.27704 133.57577)">reused)</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(517.48823 158.187445)">iter 5</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(512.45088 170.909516)">stage 1</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(511.20477 183.632414)">phase 1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(516.28823 158.50744)">iter 5</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(510.80088 171.22952)">stage 1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(509.42477 183.95241)">phase 1</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(606.69080 158.187445)">iter 6</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(600.68346 170.909516)">stage 2</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(600.55235 183.632414)">phase 1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(605.47580 158.50744)">iter 6</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(598.92846 171.22952)">stage 2</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(598.77235 183.95241)">phase 1</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(696.33338 158.187445)">iter 7</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(689.98103 170.909516)">stage 3</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(689.89992 183.632414)">phase 1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(695.14838 158.50744)">iter 7</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(688.23103 171.22952)">stage 3</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(688.11992 183.95241)">phase 1</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(783.35131 158.187445)">iter 8</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(776.84714 170.909516)">stage 0</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(775.64243 183.632414)">phase 0</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(782.13631 158.50744)">iter 8</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(775.08214 171.22952)">stage 0</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(773.74743 183.95241)">phase 0</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(785.54124 109.203547)">wrap</text>
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(775.75350 120.605402)">(stage 0</text>
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(777.48733 132.008)">reused)</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(784.36624 108.27577)">wrap</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(773.81350 120.92577)">(stage 0</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(775.66733 133.57577)">reused)</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.740838" y="254.448" transform="rotate(-0 31.740838 254.448)">Physical barrier[0] fires 3 times above (iter 0, 4, 8) — phase flips 0→1→0 each time</text>
+    <text style="font-weight: 450; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.740838" y="254.448" transform="rotate(-0 31.740838 254.448)">Physical barrier[0] fires 3 times above (iter 0, 4, 8) — phase flips 0→1→0 each time</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.740838" y="276.1056" transform="rotate(-0 31.740838 276.1056)">it wraps, so mbarrier.try_wait.parity[bar], phase only unblocks for the matching generation.</text>
+    <text style="font-weight: 450; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.740838" y="276.1056" transform="rotate(-0 31.740838 276.1056)">it wraps, so mbarrier.try_wait.parity[bar], phase only unblocks for the matching generation.</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 650; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(147.94537 326.917969)">Iter 0, stage 0, phase 0:</text>
-    <text style="font-weight: 650; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(106.58022 342.139969)">mbar_wait(empty_bar[0], phase=0)</text>
-    <text style="font-weight: 650; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(94.34343 357.597969)">→ fires on the 1st pass through stage 0</text>
+    <text style="font-weight: 650; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(142.28037 327.23797)">Iter 0, stage 0, phase 0:</text>
+    <text style="font-weight: 650; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(98.23522 342.45997)">mbar_wait(empty_bar[0], phase=0)</text>
+    <text style="font-weight: 650; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(85.06343 357.91797)">→ fires on the 1st pass through stage 0</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 650; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(557.56671 326.917969)">Iter 4, stage 0, phase 1:</text>
-    <text style="font-weight: 650; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(516.29655 342.139969)">mbar_wait(empty_bar[0], phase=1)</text>
-    <text style="font-weight: 650; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(445.27271 357.644062)">→ fires on the 4th pass — can't be confused with iter 0</text>
+    <text style="font-weight: 650; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(552.01671 327.23797)">Iter 4, stage 0, phase 1:</text>
+    <text style="font-weight: 650; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(508.06655 342.45997)">mbar_wait(empty_bar[0], phase=1)</text>
+    <text style="font-weight: 650; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(432.14771 357.96406)">→ fires on the 4th pass — can't be confused with iter 0</text>
    </g>
    <g id="text_19">
-    <text style="font-weight: 450; font-style: normal; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.740838" y="430.416" transform="rotate(-0 31.740838 430.416)">struct PipelineState { stage_idx; phase; iteration; }  —  advance() flips phase only when stage_idx wraps to 0.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.740838" y="430.416" transform="rotate(-0 31.740838 430.416)">struct PipelineState { stage_idx; phase; iteration; }  —  advance() flips phase only when stage_idx wraps to 0.</text>
    </g>
   </g>
  </g>

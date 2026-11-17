@@ -187,34 +187,34 @@ z
 " clip-path="url(#p18fcd75d9c)" style="fill: #8a5a00; stroke: #8a5a00; stroke-width: 1.5; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-<text transform="translate(104.29575 84.902112)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.6" font-weight="700" font-style="normal" fill="#8a5a00">WARPGROUP 0  (warps 0-3, 128 threads) — PRODUCER</text>
-<text transform="translate(169.09125 96.424737)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.6" font-weight="700" font-style="normal" fill="#8a5a00">setmaxnreg.dec → 32 registers</text>
-<text transform="translate(64.719 107.947362)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.6" font-weight="700" font-style="normal" fill="#8a5a00">One thread: cp.async.bulk.tensor for K_j, V_j + mbarrier bookkeeping</text>
+<text transform="translate(85.55075 84.09474)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">WARPGROUP 0  (warps 0-3, 128 threads) — PRODUCER</text>
+<text transform="translate(158.70125 96.74474)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">setmaxnreg.dec → 32 registers</text>
+<text transform="translate(41.84400 109.39474)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">One thread: cp.async.bulk.tensor for K_j, V_j + mbarrier bookkeeping</text>
 </g>
    <g id="text_2">
-<text transform="translate(63.871148 161.33971)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">WARPGROUP 1  (warps 4-7)</text>
-<text transform="translate(101.114016 172.501527)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">CONSUMER A</text>
-<text transform="translate(53.820609 183.66407)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">setmaxnreg.inc → 160-232 regs</text>
-<text transform="translate(41.931867 194.826612)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">wgmma QK → softmax → wgmma PV</text>
-<text transform="translate(88.222617 205.989155)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">for its own Q rows</text>
+<text transform="translate(52.53115 158.68443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">WARPGROUP 1  (warps 4-7)</text>
+<text transform="translate(95.35902 171.33443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">CONSUMER A</text>
+<text transform="translate(40.94061 183.98443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">setmaxnreg.inc → 160-232 regs</text>
+<text transform="translate(26.92187 196.63443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">wgmma QK → softmax → wgmma PV</text>
+<text transform="translate(80.84762 209.28443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">for its own Q rows</text>
 </g>
    <g id="text_3">
-<text transform="translate(293.879766 161.33971)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#1b5e20">WARPGROUP 2  (warps 8-11)</text>
-<text transform="translate(334.412508 172.501527)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#1b5e20">CONSUMER B</text>
-<text transform="translate(287.064609 183.66407)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#1b5e20">setmaxnreg.inc → 160-232 regs</text>
-<text transform="translate(303.189211 194.826612)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#1b5e20">same, offset half a phase</text>
-<text transform="translate(331.259953 205.989155)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#1b5e20">(§6 ping-pong)</text>
+<text transform="translate(282.17977 158.68443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">WARPGROUP 2  (warps 8-11)</text>
+<text transform="translate(328.69251 171.33443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">CONSUMER B</text>
+<text transform="translate(274.18461 183.98443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">setmaxnreg.inc → 160-232 regs</text>
+<text transform="translate(293.03921 196.63443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">same, offset half a phase</text>
+<text transform="translate(325.17495 209.28443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">(§6 ping-pong)</text>
 </g>
    <g id="text_4">
-<text transform="translate(183.842734 134.679012)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="italic" fill="#475569">K_j, V_j via SMEM circular buffer</text>
+<text transform="translate(165.44773 134.99901)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="italic" fill="#475569">K_j, V_j via SMEM circular buffer</text>
 </g>
    <g id="text_5">
-<text transform="translate(67.735734 257.883927)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">Registers given up by the producer (setmaxnreg.dec) are not saved — they are</text>
-<text transform="translate(49.93568 269.04647)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">TRANSFERRED to the consumers, who each carry a [B_r×d] FP32 accumulator (64 regs</text>
-<text transform="translate(131.408766 280.209012)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">alone at B_r=d=128) plus S, plus softmax statistics.</text>
+<text transform="translate(35.89573 256.71647)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Registers given up by the producer (setmaxnreg.dec) are not saved — they are</text>
+<text transform="translate(14.72568 269.36647)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">TRANSFERRED to the consumers, who each carry a [B_r×d] FP32 accumulator (64 regs</text>
+<text transform="translate(111.02377 282.01647)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">alone at B_r=d=128) plus S, plus softmax statistics.</text>
 </g>
    <g id="text_6">
-<text transform="translate(63.265 17.837812)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="14" font-weight="700" font-style="normal" fill="#172033">FA3 Thread Block — 384 Threads, 3 Warpgroups</text>
+<text transform="translate(51.54500 18.15781)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="15" font-weight="700" font-style="normal" fill="#172033">FA3 Thread Block — 384 Threads, 3 Warpgroups</text>
 </g>
   </g>
  </g>

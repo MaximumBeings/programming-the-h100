@@ -341,71 +341,71 @@ z
 " clip-path="url(#pbf9dae509f)" style="fill: #00695c; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="439.2" y="38.559381" transform="rotate(-0 439.2 38.559381)">wgmma Commit/Wait Groups — What Actually Overlaps</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="439.2" y="38.559381" transform="rotate(-0 439.2 38.559381)">wgmma Commit/Wait Groups — What Actually Overlaps</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 14.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.868852" y="67.994182" transform="rotate(-0 31.868852 67.994182)">Naive — wait after every batch</text>
+    <text style="font-weight: 650; font-size: 15.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.868852" y="67.994182" transform="rotate(-0 31.868852 67.994182)">Naive — wait after every batch</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="70.495082" y="94.532481" transform="rotate(-0 70.495082 94.532481)">K-loop (tile 0)</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="70.495082" y="94.532481" transform="rotate(-0 70.495082 94.532481)">K-loop (tile 0)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="130.892459" y="94.532481" transform="rotate(-0 130.892459 94.532481)">wait</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="130.892459" y="94.532481" transform="rotate(-0 130.892459 94.532481)">wait</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="174.434754" y="94.532032" transform="rotate(-0 174.434754 94.532032)">store</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="174.434754" y="94.532032" transform="rotate(-0 174.434754 94.532032)">store</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="234.832131" y="94.532481" transform="rotate(-0 234.832131 94.532481)">K-loop (tile 1)</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="234.832131" y="94.532481" transform="rotate(-0 234.832131 94.532481)">K-loop (tile 1)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="295.229508" y="94.532481" transform="rotate(-0 295.229508 94.532481)">wait</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="295.229508" y="94.532481" transform="rotate(-0 295.229508 94.532481)">wait</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="338.771803" y="94.532032" transform="rotate(-0 338.771803 94.532032)">store</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="338.771803" y="94.532032" transform="rotate(-0 338.771803 94.532032)">store</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.868852" y="133.262836" transform="rotate(-0 31.868852 133.262836)">tensor cores:</text>
+    <text style="font-weight: 450; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.868852" y="133.262836" transform="rotate(-0 31.868852 133.262836)">tensor cores:</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="371.077377" y="146.047418" transform="rotate(-0 371.077377 146.047418)">idle during wait + store</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="371.077377" y="146.047418" transform="rotate(-0 371.077377 146.047418)">idle during wait + store</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 14.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.868852" y="195.84" transform="rotate(-0 31.868852 195.84)">Pipelined — wait_group&lt;1&gt; keeps the newest batch running</text>
+    <text style="font-weight: 650; font-size: 15.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.868852" y="195.84" transform="rotate(-0 31.868852 195.84)">Pipelined — wait_group&lt;1&gt; keeps the newest batch running</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(53.21194 216.455899)">issue tile 0</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(39.87915 229.178797)">+ commit → G0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(50.67694 216.77590)">issue tile 0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(36.21915 229.49880)">+ commit → G0</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(151.91695 216.455899)">prepare tile 1</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(145.19262 229.178797)">(TMA, pointers)</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(148.89695 216.77590)">prepare tile 1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(141.51262 229.49880)">(TMA, pointers)</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(265.13046 216.455899)">issue tile 1</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(251.79768 229.178797)">+ commit → G1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(262.71046 216.77590)">issue tile 1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(248.25268 229.49880)">+ commit → G1</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(347.46482 216.455899)">wait_group&lt;1&gt;</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(362.96358 229.178797)">(G0 done)</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(343.98982 216.77590)">wait_group&lt;1&gt;</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(360.58858 229.49880)">(G0 done)</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(446.10736 216.456313)">fence + stmatrix</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(464.08990 229.178383)">+ store G0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(442.26736 216.77631)">fence + stmatrix</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(461.58490 229.49838)">+ store G0</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(553.41187 216.455899)">wait_group&lt;0&gt;</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(571.37063 229.178797)">(G1 done)</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(549.82187 216.77590)">wait_group&lt;0&gt;</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(569.11063 229.49880)">(G1 done)</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(653.28441 216.456313)">fence + stmatrix</text>
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(672.49695 229.178383)">+ store G1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(649.44441 216.77631)">fence + stmatrix</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(670.10695 229.49838)">+ store G1</text>
    </g>
    <g id="text_19">
-    <text style="font-weight: 450; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.868852" y="264.473018" transform="rotate(-0 31.868852 264.473018)">tensor cores:</text>
+    <text style="font-weight: 450; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.868852" y="264.473018" transform="rotate(-0 31.868852 264.473018)">tensor cores:</text>
    </g>
    <g id="text_20">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.868852" y="303.499636" transform="rotate(-0 31.868852 303.499636)">nearly continuously busy — epilogue work overlaps the next batch's math</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.868852" y="303.499636" transform="rotate(-0 31.868852 303.499636)">nearly continuously busy — epilogue work overlaps the next batch's math</text>
    </g>
    <g id="text_21">
     <g id="patch_28">
@@ -421,8 +421,8 @@ Q 26.948852 415.352561 31.868852 415.352561
 z
 " style="fill: #e0f2f1; stroke: #00695c; stroke-linejoin: miter"/>
     </g>
-    <text style="font-weight: 450; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(9.03823 385.980545)">wait_group&lt;N&gt;: N = groups still ALLOWED to be pending, not groups to wait for.</text>
-    <text style="font-weight: 450; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(13.13385 404.430545)">wait_group&lt;1&gt; after committing G0 and G1 → G0 guaranteed done, G1 may still run.</text>
+    <text style="font-weight: 450; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(-9.99177 385.980545)">wait_group&lt;N&gt;: N = groups still ALLOWED to be pending, not groups to wait for.</text>
+    <text style="font-weight: 450; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(-6.50615 404.430545)">wait_group&lt;1&gt; after committing G0 and G1 → G0 guaranteed done, G1 may still run.</text>
    </g>
   </g>
  </g>

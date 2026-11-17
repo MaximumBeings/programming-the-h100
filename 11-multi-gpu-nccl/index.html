@@ -2698,7 +2698,7 @@
 
 
 <h1 id="multi-gpu-systems-nccl-and-distributed-training">Multi-GPU Systems, NCCL, and Distributed Training<a class="headerlink" href="#multi-gpu-systems-nccl-and-distributed-training" title="Permanent link">&para;</a></h1>
-<p><a href="../images/chapter-openers/11-multigpu.svg"><img alt="CHAPTER 11: One workload. Many GPUs." src="../images/chapter-openers/11-multigpu.svg" /></a></p>
+<p><a href="../images/chapter-openers/11-multigpu.svg?v=6e99791d6cbd"><img style="min-width: 1386.00px" alt="CHAPTER 11: One workload. Many GPUs." src="../images/chapter-openers/11-multigpu.svg?v=6e99791d6cbd" /></a></p>
 <!-- learning:start -->
 <div class="admonition tip">
 <p class="admonition-title">Your goal in this chapter</p>
@@ -2950,7 +2950,7 @@ GPU at full 900 GB/s simultaneously, with no contention.</p>
 </span><span id="__span-4-52"><a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a>    Each GPU has 18 total NVLink links → split across 4 switches:
 </span><span id="__span-4-53"><a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a>    18 / 4 ≈ 4-5 links per switch per GPU  (some asymmetric)
 </span></code></pre></div>
-<p><a href="../images/ch11/02-nvswitch-fabric.svg"><img alt="NVSwitch fabric: all 8 GPUs equidistant via 4 NVSwitches" src="../images/ch11/02-nvswitch-fabric.svg" /></a></p>
+<p><a href="../images/ch11/02-nvswitch-fabric.svg?v=1c68e5b94b7a"><img style="min-width: 770.11px" alt="NVSwitch fabric: all 8 GPUs equidistant via 4 NVSwitches" src="../images/ch11/02-nvswitch-fabric.svg?v=1c68e5b94b7a" /></a></p>
 <hr />
 <h2 id="4-the-dgx-h100-node">4 — The DGX H100 Node<a class="headerlink" href="#4-the-dgx-h100-node" title="Permanent link">&para;</a></h2>
 <h3 id="41-full-hardware-layout-and-bandwidth-budget">4.1 Full Hardware Layout and Bandwidth Budget<a class="headerlink" href="#41-full-hardware-layout-and-bandwidth-budget" title="Permanent link">&para;</a></h3>
@@ -3014,7 +3014,7 @@ where the bottlenecks are.</p>
 </span><span id="__span-5-55"><a id="__codelineno-5-55" name="__codelineno-5-55" href="#__codelineno-5-55"></a>    CPU is not interrupted; it does not copy data.
 </span><span id="__span-5-56"><a id="__codelineno-5-56" name="__codelineno-5-56" href="#__codelineno-5-56"></a>    This is how inter-node AllReduce achieves near-theoretical speed.
 </span></code></pre></div>
-<p><a href="../images/ch11/01-bandwidth-hierarchy.svg"><img alt="DGX H100 node bandwidth hierarchy, from on-package HBM3 down to rack-to-rack InfiniBand" src="../images/ch11/01-bandwidth-hierarchy.svg" /></a></p>
+<p><a href="../images/ch11/01-bandwidth-hierarchy.svg?v=f6fd82029f3a"><img style="min-width: 738.86px" alt="DGX H100 node bandwidth hierarchy, from on-package HBM3 down to rack-to-rack InfiniBand" src="../images/ch11/01-bandwidth-hierarchy.svg?v=f6fd82029f3a" /></a></p>
 <hr />
 <h2 id="5-connectx-7-and-the-inter-node-bottleneck">5 — ConnectX-7 and the Inter-Node Bottleneck<a class="headerlink" href="#5-connectx-7-and-the-inter-node-bottleneck" title="Permanent link">&para;</a></h2>
 <h3 id="51-the-9-drop-engineering-the-handoff">5.1 The 9× Drop — Engineering the Handoff<a class="headerlink" href="#51-the-9-drop-engineering-the-handoff" title="Permanent link">&para;</a></h3>
@@ -3200,7 +3200,7 @@ own dedicated, isolated plane of switches.</p>
 </span><span id="__span-8-60"><a id="__codelineno-8-60" name="__codelineno-8-60" href="#__codelineno-8-60"></a>    The NIC offloads the AllReduce to the switch fabric.
 </span><span id="__span-8-61"><a id="__codelineno-8-61" name="__codelineno-8-61" href="#__codelineno-8-61"></a>    GPU sees: enqueue gradient, receive result. No N-way coordination.
 </span></code></pre></div>
-<p><a href="../images/ch11/03-rail-sharp-architecture.svg"><img alt="Scalable Unit rail architecture: 8 isolated rails per node feeding leaf switches that perform SHARP in-network reduction" src="../images/ch11/03-rail-sharp-architecture.svg" /></a></p>
+<p><a href="../images/ch11/03-rail-sharp-architecture.svg?v=4fa40a8591f7"><img style="min-width: 794.95px" alt="Scalable Unit rail architecture: 8 isolated rails per node feeding leaf switches that perform SHARP in-network reduction" src="../images/ch11/03-rail-sharp-architecture.svg?v=4fa40a8591f7" /></a></p>
 <hr />
 <h2 id="8-infiniband-topology-leaf-spine-core">8 — InfiniBand Topology: Leaf, Spine, Core<a class="headerlink" href="#8-infiniband-topology-leaf-spine-core" title="Permanent link">&para;</a></h2>
 <h3 id="81-the-three-layer-fat-tree">8.1 The Three-Layer Fat Tree<a class="headerlink" href="#81-the-three-layer-fat-tree" title="Permanent link">&para;</a></h3>
@@ -4008,7 +4008,7 @@ distributed training. Understanding their data flows tells you when to use each.
 </span><span id="__span-19-90"><a id="__codelineno-19-90" name="__codelineno-19-90" href="#__codelineno-19-90"></a>  NCCL's standard AllToAll is CPU-driven and synchronous; for MoE,
 </span><span id="__span-19-91"><a id="__codelineno-19-91" name="__codelineno-19-91" href="#__codelineno-19-91"></a>  prefer NVSHMEM or DeepEP for device-initiated async transfers.
 </span></code></pre></div>
-<p><a href="../images/ch11/04-nccl-big-six.svg"><img alt="The six NCCL collectives' data-flow patterns: Broadcast, Reduce, AllReduce, AllGather, ReduceScatter, All-to-All" src="../images/ch11/04-nccl-big-six.svg" /></a></p>
+<p><a href="../images/ch11/04-nccl-big-six.svg?v=ef48db8f2ee3"><img style="min-width: 1132.05px" alt="The six NCCL collectives' data-flow patterns: Broadcast, Reduce, AllReduce, AllGather, ReduceScatter, All-to-All" src="../images/ch11/04-nccl-big-six.svg?v=ef48db8f2ee3" /></a></p>
 <h3 id="132-nccl-api-reference-all-six-primitives">13.2 NCCL API Reference — All Six Primitives<a class="headerlink" href="#132-nccl-api-reference-all-six-primitives" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>NCCL Function Signatures — Complete Reference
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>══════════════════════════════════════════════════════════════════════
@@ -4651,7 +4651,7 @@ L/N to 2L/N, and so on.</p>
 </span><span id="__span-29-43"><a id="__codelineno-29-43" name="__codelineno-29-43" href="#__codelineno-29-43"></a>
 </span><span id="__span-29-44"><a id="__codelineno-29-44" name="__codelineno-29-44" href="#__codelineno-29-44"></a>  Rule: use M &gt;&gt; N to minimize pipeline bubble.
 </span></code></pre></div>
-<p><a href="../images/ch11/06-pipeline-bubble-timeline.svg"><img alt="GPipe pipeline schedule timeline for N=4 stages, comparing M=4 and M=8 microbatches, showing the bubble shrink predicted by the corrected formula" src="../images/ch11/06-pipeline-bubble-timeline.svg" /></a></p>
+<p><a href="../images/ch11/06-pipeline-bubble-timeline.svg?v=502744672468"><img style="min-width: 1098.71px" alt="GPipe pipeline schedule timeline for N=4 stages, comparing M=4 and M=8 microbatches, showing the bubble shrink predicted by the corrected formula" src="../images/ch11/06-pipeline-bubble-timeline.svg?v=502744672468" /></a></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>  ─── 1F1B Schedule (One-Forward One-Backward) ────────────────────
 </span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>
 </span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>  Even better schedule: after filling the pipeline, alternate forward
@@ -4777,7 +4777,7 @@ scaling compute.</p>
 <hr />
 <h2 id="18-putting-it-all-together-production-checklist">18 — Putting It All Together — Production Checklist<a class="headerlink" href="#18-putting-it-all-together-production-checklist" title="Permanent link">&para;</a></h2>
 <h3 id="181-hybrid-parallelism-selection">18.1 Hybrid Parallelism Selection<a class="headerlink" href="#181-hybrid-parallelism-selection" title="Permanent link">&para;</a></h3>
-<p><a href="../images/ch11/05-parallelism-comparison.svg"><img alt="Four parallelism strategies compared: what each splits and what it synchronizes" src="../images/ch11/05-parallelism-comparison.svg" /></a></p>
+<p><a href="../images/ch11/05-parallelism-comparison.svg?v=d98cb56ba130"><img style="min-width: 1249.92px" alt="Four parallelism strategies compared: what each splits and what it synchronizes" src="../images/ch11/05-parallelism-comparison.svg?v=d98cb56ba130" /></a></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>Choosing Your Parallelism Strategy
 </span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>

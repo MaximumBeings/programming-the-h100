@@ -233,50 +233,50 @@ z
 " clip-path="url(#p57eb6f9820)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="346.388438" y="38.815424" transform="rotate(-0 346.388438 38.815424)">Circular Pipeline Buffer — Ring at Iteration 5 (Write=1, Read=3)</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="346.388438" y="38.815424" transform="rotate(-0 346.388438 38.815424)">Circular Pipeline Buffer — Ring at Iteration 5 (Write=1, Read=3)</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(321.40000 116.440136)">Stage 0</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(331.22500 133.123886)">FULL</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(317.52281 148.202636)">(next for</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(311.13375 163.796074)">consumer)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(319.57500 116.76014)">Stage 0</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(329.98500 133.44389)">FULL</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(315.48781 148.52264)">(next for</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(308.55875 164.11607)">consumer)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(443.96152 259.279665)">Stage 1</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(439.18027 276.042165)">LOADING</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(434.91527 290.585603)">(producer</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(424.93558 306.185603)">writing here)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(442.25152 259.59967)">Stage 1</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(436.92027 276.36217)">LOADING</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(432.53527 290.90560)">(producer</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(421.92058 306.50560)">writing here)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(321.52500 402.119195)">Stage 2</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(331.22500 418.802945)">FULL</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(321.16344 433.881695)">(next in</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(323.26469 449.01857)">queue)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(319.71500 402.43919)">Stage 2</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(329.98500 419.12295)">FULL</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(319.37844 434.20169)">(next in</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(321.58469 449.33857)">queue)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(200.30348 259.279665)">Stage 3</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(204.12660 274.71279)">IN_USE</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(189.96723 291.035603)">(consumer</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(180.84286 306.185603)">reading here)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(198.49348 259.59967)">Stage 3</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(202.38160 275.03279)">IN_USE</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(187.38723 291.35560)">(consumer</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(177.63786 306.50560)">reading here)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(333.23639 269.505798)">ring</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(325.95392 282.228697)">buffer</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(332.39412 294.950767)">N=4</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(332.33639 269.82580)">ring</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(324.51392 282.54870)">buffer</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(331.36412 295.27077)">N=4</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(537.00403 245.071072)">Write pointer</text>
-    <text style="font-weight: 650; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(536.31060 259.474353)">(producer, stage 1)</text>
+    <text style="font-weight: 650; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(533.91903 245.39107)">Write pointer</text>
+    <text style="font-weight: 650; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(531.80060 259.79435)">(producer, stage 1)</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(10.76112 295.072009)">Read pointer</text>
-    <text style="font-weight: 650; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(7.92597 309.474353)">(consumer, stage 3)</text>
+    <text style="font-weight: 650; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(7.73112 295.39201)">Read pointer</text>
+    <text style="font-weight: 650; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(3.11597 309.79435)">(consumer, stage 3)</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="89.620217" y="537.945882" transform="rotate(-0 89.620217 537.945882)">Prologue (fill) → Steady state (overlap) → Drain (flush) — depth=2, so the</text>
+    <text style="font-weight: 450; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="89.620217" y="537.945882" transform="rotate(-0 89.620217 537.945882)">Prologue (fill) → Steady state (overlap) → Drain (flush) — depth=2, so the</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="89.620217" y="560.392094" transform="rotate(-0 89.620217 560.392094)">producer always stays 2 stages ahead of the consumer around this ring.</text>
+    <text style="font-weight: 450; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="89.620217" y="560.392094" transform="rotate(-0 89.620217 560.392094)">producer always stays 2 stages ahead of the consumer around this ring.</text>
    </g>
   </g>
  </g>

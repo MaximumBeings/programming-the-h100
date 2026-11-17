@@ -2026,7 +2026,7 @@
 
 
 <h1 id="kernel-design-warp-specialization-pipelining">Kernel Design, Warp Specialization &amp; Pipelining<a class="headerlink" href="#kernel-design-warp-specialization-pipelining" title="Permanent link">&para;</a></h1>
-<p><a href="../images/chapter-openers/08-design.svg"><img alt="CHAPTER 08: Give each warp a useful role." src="../images/chapter-openers/08-design.svg" /></a></p>
+<p><a href="../images/chapter-openers/08-design.svg?v=c2f411535616"><img style="min-width: 1386.00px" alt="CHAPTER 08: Give each warp a useful role." src="../images/chapter-openers/08-design.svg?v=c2f411535616" /></a></p>
 <!-- learning:start -->
 <div class="admonition tip">
 <p class="admonition-title">Your goal in this chapter</p>
@@ -2127,7 +2127,7 @@ which one you are — and how far from peak performance you currently sit.</p>
 <p>The key quantity is <strong>Arithmetic Intensity (AI)</strong>: how many floating-point operations
 you perform per byte of data you move between the memory hierarchy and the compute
 units.</p>
-<p><a href="../images/ch08/01-roofline-chart.svg"><img alt="H100 SXM5 roofline: FP16 Tensor Core and FP32 CUDA Core roofs on a log-log plot, with ridge points at AI≈20 and AI≈295 FLOP/Byte and example kernels placed by their arithmetic intensity" src="../images/ch08/01-roofline-chart.svg" /></a></p>
+<p><a href="../images/ch08/01-roofline-chart.svg?v=52ae7389f2ca"><img style="min-width: 957.60px" alt="H100 SXM5 roofline: FP16 Tensor Core and FP32 CUDA Core roofs on a log-log plot, with ridge points at AI≈20 and AI≈295 FLOP/Byte and example kernels placed by their arithmetic intensity" src="../images/ch08/01-roofline-chart.svg?v=52ae7389f2ca" /></a></p>
 <p><em>The two H100 roofs — FP32 CUDA Core (ridge ≈20 FLOP/Byte) and FP16 Tensor Core (ridge ≈295 FLOP/Byte) — with softmax and two GEMM sizes plotted by their own AI.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>The Roofline Model — Visual and Equations
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
@@ -2583,7 +2583,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h2 id="2-compute-bound-kernels">2 — Compute-Bound Kernels<a class="headerlink" href="#2-compute-bound-kernels" title="Permanent link">&para;</a></h2>
 <h3 id="21-the-three-signatures-of-a-compute-bound-kernel">2.1 The Three Signatures of a Compute-Bound Kernel<a class="headerlink" href="#21-the-three-signatures-of-a-compute-bound-kernel" title="Permanent link">&para;</a></h3>
 <p>When your kernel's AI exceeds the ridge point, arithmetic throughput becomes the bottleneck. But recognizing a compute-bound kernel in practice — before you profile — requires understanding what the hardware tells you.</p>
-<p><a href="../images/ch08/02-producer-consumer-imbalance.svg"><img alt="Producer warps idle on repeated WAIT segments while consumer warps run a continuous, uninterrupted block of MMA instructions" src="../images/ch08/02-producer-consumer-imbalance.svg" /></a></p>
+<p><a href="../images/ch08/02-producer-consumer-imbalance.svg?v=97e718b8cee0"><img style="min-width: 1065.17px" alt="Producer warps idle on repeated WAIT segments while consumer warps run a continuous, uninterrupted block of MMA instructions" src="../images/ch08/02-producer-consumer-imbalance.svg?v=97e718b8cee0" /></a></p>
 <p><em>Signature 2 in the timeline: producers stall on barriers while consumers stay 100% busy — the most diagnostic sign that math, not memory, is the bottleneck.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Compute-Bound Signatures — What to Look For
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>══════════════════════════════════════════════════════════════════════
@@ -2664,7 +2664,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h2 id="3-memory-bound-kernels">3 — Memory-Bound Kernels<a class="headerlink" href="#3-memory-bound-kernels" title="Permanent link">&para;</a></h2>
 <h3 id="31-the-three-memory-bound-categories">3.1 The Three Memory-Bound Categories<a class="headerlink" href="#31-the-three-memory-bound-categories" title="Permanent link">&para;</a></h3>
 <p>Memory-bound is not a single condition. The bottleneck can be at three different points in the memory hierarchy, each with different fixes.</p>
-<p><a href="../images/ch08/03-diagnosis-flowchart.svg"><img alt="Decision flowchart: HBM bandwidth over 80% of peak means bandwidth-bound, otherwise FLOP rate over 20% means partially compute-bound, otherwise SM utilization over 50% means latency-bound, otherwise locality-bound" src="../images/ch08/03-diagnosis-flowchart.svg" /></a></p>
+<p><a href="../images/ch08/03-diagnosis-flowchart.svg?v=8fb6b490e95b"><img style="min-width: 1056.17px" alt="Decision flowchart: HBM bandwidth over 80% of peak means bandwidth-bound, otherwise FLOP rate over 20% means partially compute-bound, otherwise SM utilization over 50% means latency-bound, otherwise locality-bound" src="../images/ch08/03-diagnosis-flowchart.svg?v=8fb6b490e95b" /></a></p>
 <p><em>The diagnosis flowchart from the categories below, walked top to bottom against three profiler metrics until one "yes" lands on a verdict.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Three Categories of Memory-Bound Kernels
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>══════════════════════════════════════════════════════════════════════
@@ -2753,7 +2753,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h3 id="41-the-core-concept-intentional-role-division">4.1 The Core Concept — Intentional Role Division<a class="headerlink" href="#41-the-core-concept-intentional-role-division" title="Permanent link">&para;</a></h3>
 <p>On any GPU, an SM hosts many active warps, but only a few can issue instructions each cycle. The default scheduling model lets all warps do the same type of work (e.g., all warps do loads AND math). This creates competition: warps doing math occupy slots that warps needing to do loads could use.</p>
 <p>Warp Specialization breaks this competition by giving different warps <strong>permanently different jobs</strong> for the entire kernel execution. Some warps become dedicated "producers" that only move data. Other warps become dedicated "consumers" that only perform arithmetic.</p>
-<p><a href="../images/ch08/04-warp-specialization-before-after.svg"><img alt="Four mixed warps each interleaving LOAD, wait, and MMA with staggered idle gaps, versus one dedicated producer warpgroup issuing only TMA and two dedicated consumer warpgroups issuing only MMA back to back" src="../images/ch08/04-warp-specialization-before-after.svg" /></a></p>
+<p><a href="../images/ch08/04-warp-specialization-before-after.svg?v=f0b806c57486"><img style="min-width: 1162.06px" alt="Four mixed warps each interleaving LOAD, wait, and MMA with staggered idle gaps, versus one dedicated producer warpgroup issuing only TMA and two dedicated consumer warpgroups issuing only MMA back to back" src="../images/ch08/04-warp-specialization-before-after.svg?v=f0b806c57486" /></a></p>
 <p><em>Without specialization every warp idles during its own loads; with specialization the producer's TMA loads and the consumers' WGMMA run back to back, warpgroup by warpgroup, on the same SM.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Warp Specialization — Before and After
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3593,7 +3593,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h3 id="71-why-pipelining-is-mandatory">7.1 Why Pipelining Is Mandatory<a class="headerlink" href="#71-why-pipelining-is-mandatory" title="Permanent link">&para;</a></h3>
 <p>The H100's HBM3 has ~500 cycle latency for individual memory accesses. WGMMA executes in ~30-60 cycles. Without pipelining, every time the consumer needs new tile data, it waits 500 cycles of doing nothing. This is a 10-17× utilization gap.</p>
 <p>Pipelining eliminates this idle time by overlapping the DATA MOVEMENT for tile N+1 with the COMPUTATION of tile N. The consumer is always computing while the producer is always loading.</p>
-<p><a href="../images/ch08/05-pipelining-stages-0-2-4.svg"><img alt="Three stacked timelines: serial load-then-compute at ~9% utilization, 2-stage pipelining overlapping loads and math at &gt;95% utilization, and a 4-stage pipeline where every step runs one Load and one MMA simultaneously" src="../images/ch08/05-pipelining-stages-0-2-4.svg" /></a></p>
+<p><a href="../images/ch08/05-pipelining-stages-0-2-4.svg?v=3b80c138233e"><img style="min-width: 1111.49px" alt="Three stacked timelines: serial load-then-compute at ~9% utilization, 2-stage pipelining overlapping loads and math at &gt;95% utilization, and a 4-stage pipeline where every step runs one Load and one MMA simultaneously" src="../images/ch08/05-pipelining-stages-0-2-4.svg?v=3b80c138233e" /></a></p>
 <p><em>Going from zero to two to four pipeline stages: each added stage overlaps one more load with compute, until every step is doing both at once.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>Pipelining — What It Means Concretely
 </span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3647,7 +3647,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span></code></pre></div>
 <h3 id="72-what-the-pipeline-stages-physically-are">7.2 What the Pipeline Stages Physically Are<a class="headerlink" href="#72-what-the-pipeline-stages-physically-are" title="Permanent link">&para;</a></h3>
 <p>Each "stage" in the pipeline corresponds to a physical allocation of shared memory. With N stages, you allocate N copies of the A-tile and B-tile in shared memory. This allows N tiles to be "in flight" simultaneously: some being loaded by TMA, others being consumed by WGMMA — for 32KB+32KB A/B tiles on H100's 228KB SMEM budget, N tops out at 3 (CORRECTED below: a 4th stage at this tile size would need 256KB and blow the budget).</p>
-<p><a href="../images/ch08/06-pipeline-smem-layout.svg"><img alt="228KB of shared memory divided into three stages, each holding a 32KB A tile, a 32KB B tile, and an mbarrier pair, with 36KB left over as an epilogue buffer" src="../images/ch08/06-pipeline-smem-layout.svg" /></a></p>
+<p><a href="../images/ch08/06-pipeline-smem-layout.svg?v=e9e71c7c2e9b"><img style="min-width: 1119.54px" alt="228KB of shared memory divided into three stages, each holding a 32KB A tile, a 32KB B tile, and an mbarrier pair, with 36KB left over as an epilogue buffer" src="../images/ch08/06-pipeline-smem-layout.svg?v=e9e71c7c2e9b" /></a></p>
 <p><em>Three stages at 32+32 KB each commit 192 KB of the 228 KB budget — the most this tile size allows, with 36 KB left for the epilogue.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>Pipeline Stages — Physical SMEM Layout
 </span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3694,7 +3694,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <h2 id="8-circular-buffering-and-multi-stage-pipelines">8 — Circular Buffering and Multi-Stage Pipelines<a class="headerlink" href="#8-circular-buffering-and-multi-stage-pipelines" title="Permanent link">&para;</a></h2>
 <h3 id="81-the-circular-buffer-as-a-ring">8.1 The Circular Buffer as a Ring<a class="headerlink" href="#81-the-circular-buffer-as-a-ring" title="Permanent link">&para;</a></h3>
 <p>With N pipeline stages in shared memory, the producer and consumer work through the stages in a circular (ring) fashion. The producer writes to stage <code>i % N</code>, the consumer reads from stage <code>(i - depth) % N</code>, where <code>depth</code> is how many stages ahead the producer stays.</p>
-<p><a href="../images/ch08/07-circular-buffer-ring.svg"><img alt="Four pipeline stages arranged in a ring, snapshotted at iteration 5: stage 0 and 2 full, stage 1 being loaded by the producer, stage 3 being consumed, write pointer at stage 1 and read pointer at stage 3" src="../images/ch08/07-circular-buffer-ring.svg" /></a></p>
+<p><a href="../images/ch08/07-circular-buffer-ring.svg?v=d966dcc06826"><img style="min-width: 879.93px" alt="Four pipeline stages arranged in a ring, snapshotted at iteration 5: stage 0 and 2 full, stage 1 being loaded by the producer, stage 3 being consumed, write pointer at stage 1 and read pointer at stage 3" src="../images/ch08/07-circular-buffer-ring.svg?v=d966dcc06826" /></a></p>
 <p><em>At iteration 5 the producer (write pointer) is two stages ahead of the consumer (read pointer) — the <code>depth=2</code> the kernel maintains all the way through steady state.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Circular Buffer — Ring Operation
 </span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>══════════════════════════════════════════════════════════════════════

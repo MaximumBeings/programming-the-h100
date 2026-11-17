@@ -152,31 +152,31 @@ z
 " clip-path="url(#p0b3cb272be)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="293.895" y="37.203363" transform="rotate(-0 293.895 37.203363)">Transfer Time for 1 MB, Block A → Block B</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="293.895" y="37.203363" transform="rotate(-0 293.895 37.203363)">Transfer Time for 1 MB, Block A → Block B</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(45.10912 66.682929)">Global memory</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(43.49412 77.387304)">(write + read HBM)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(37.21912 66.41412)">Global memory</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(33.55412 79.06412)">(write + read HBM)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="606.840937" y="75.154294" transform="rotate(-0 606.840937 75.154294)">~80 μs</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="606.840937" y="75.154294" transform="rotate(-0 606.840937 75.154294)">~80 μs</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(46.64912 139.416786)">L2 cache</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(42.36413 149.041786)">(optimistic, fits in L2)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(41.88912 138.60829)">L2 cache</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(31.46413 151.25829)">(optimistic, fits in L2)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="255.149313" y="147.113151" transform="rotate(-0 255.149313 147.113151)">~12 μs</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="255.149313" y="147.113151" transform="rotate(-0 255.149313 147.113151)">~12 μs</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(44.73913 210.905018)">DSMEM (cluster)</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(43.26913 221.000643)">fill SMEM, sync, read</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(35.92413 210.33183)">DSMEM (cluster)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif" transform="translate(32.31913 222.98183)">fill SMEM, sync, read</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="255.149313" y="219.072008" transform="rotate(-0 255.149313 219.072008)">~4 μs</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="255.149313" y="219.072008" transform="rotate(-0 255.149313 219.072008)">~4 μs</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="293.895" y="269.197714" transform="rotate(-0 293.895 269.197714)">DSMEM is roughly 10-20× faster than global memory for intra-cluster exchange — and runs in parallel with HBM traffic, not instead of it</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="293.895" y="269.197714" transform="rotate(-0 293.895 269.197714)"><tspan x="293.895" y="262.048">DSMEM is roughly 10-20× faster than global memory for intra-cluster exchange — and runs in parallel with HBM</tspan><tspan x="293.895" y="276.348">traffic, not instead of it</tspan></text>
    </g>
   </g>
  </g>

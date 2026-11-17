@@ -180,30 +180,30 @@ z
 " clip-path="url(#pe3ae453bb6)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 1.6; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-<text transform="translate(96.338672 108.003946)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#0d47a1">Data</text>
-<text transform="translate(73.977344 123.007364)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#0d47a1">Parallelism</text>
+<text transform="translate(95.25367 108.32395)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#0d47a1">Data</text>
+<text transform="translate(71.41234 123.32736)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#0d47a1">Parallelism</text>
 </g>
    <g id="text_2">
-<text transform="translate(73.733125 158.181307)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#0d47a1">GPU 0: full model</text>
-<text transform="translate(77.18125 167.783495)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#0d47a1">+ batch shard 0</text>
+<text transform="translate(61.34813 156.97740)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">GPU 0: full model</text>
+<text transform="translate(65.97625 169.62740)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">+ batch shard 0</text>
 </g>
    <g id="text_3">
-<text transform="translate(73.733125 206.826686)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#0d47a1">GPU 1: full model</text>
-<text transform="translate(77.18125 216.428874)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#0d47a1">+ batch shard 1</text>
+<text transform="translate(61.68313 205.62278)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">GPU 1: full model</text>
+<text transform="translate(66.31125 218.27278)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">+ batch shard 1</text>
 </g>
    <g id="text_4">
-<text transform="translate(73.733125 255.472065)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#0d47a1">GPU 2: full model</text>
-<text transform="translate(77.18125 265.074252)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#0d47a1">+ batch shard 2</text>
+<text transform="translate(61.37813 254.26816)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">GPU 2: full model</text>
+<text transform="translate(66.00625 266.91816)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">+ batch shard 2</text>
 </g>
    <g id="text_5">
-<text transform="translate(69.021938 284.194706)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">Full model replicated</text>
-<text transform="translate(82.986281 294.276347)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">on every GPU.</text>
-<text transform="translate(71.9685 304.358644)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">Each GPU: different</text>
-<text transform="translate(88.962094 314.44094)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">data batch.</text>
+<text transform="translate(56.20694 280.66282)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Full model replicated</text>
+<text transform="translate(74.10128 293.31282)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">on every GPU.</text>
+<text transform="translate(59.79850 305.96282)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Each GPU: different</text>
+<text transform="translate(82.08209 318.61282)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">data batch.</text>
 </g>
    <g id="text_6">
-<text transform="translate(76.825 355.0043)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#0d47a1">Sync: AllReduce</text>
-<text transform="translate(66.523125 364.606487)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#0d47a1">gradients each step.</text>
+<text transform="translate(65.29500 353.80039)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">Sync: AllReduce</text>
+<text transform="translate(52.04312 366.45039)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">gradients each step.</text>
 </g>
   </g>
   <g id="axes_2">
@@ -247,30 +247,30 @@ z
 " clip-path="url(#p1924cff0fa)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 1.6; stroke-linejoin: miter"/>
    </g>
    <g id="text_7">
-<text transform="translate(312.032227 108.003946)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#8a5a00">Tensor</text>
-<text transform="translate(296.277344 123.007364)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#8a5a00">Parallelism</text>
+<text transform="translate(310.36223 108.32395)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#8a5a00">Tensor</text>
+<text transform="translate(293.71234 123.32736)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#8a5a00">Parallelism</text>
 </g>
    <g id="text_8">
-<text transform="translate(273.328125 180.984141)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#8a5a00">W[:, 0:k]</text>
-<text transform="translate(275.655 190.585704)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#8a5a00">(GPU 0)</text>
+<text transform="translate(267.26312 179.77992)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">W[:, 0:k]</text>
+<text transform="translate(269.99000 192.42992)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">(GPU 0)</text>
 </g>
    <g id="text_9">
-<text transform="translate(355.268125 180.984141)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#8a5a00">W[:, k:2k]</text>
-<text transform="translate(360.255 190.585704)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#8a5a00">(GPU 1)</text>
+<text transform="translate(348.40813 179.77992)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">W[:, k:2k]</text>
+<text transform="translate(354.92500 192.42992)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">(GPU 1)</text>
 </g>
    <g id="text_10">
-<text transform="translate(274.181031 229.311528)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="400" font-style="normal" fill="#475569">(one weight matrix, split in half)</text>
+<text transform="translate(248.95603 229.63153)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">(one weight matrix, split in half)</text>
 </g>
    <g id="text_11">
-<text transform="translate(295.987875 294.276347)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">One layer&#x27;s weight</text>
-<text transform="translate(296.592281 304.358644)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">matrix split across</text>
-<text transform="translate(293.740219 314.44094)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">GPUs (column/row).</text>
+<text transform="translate(284.50287 292.02864)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">One layer&#x27;s weight</text>
+<text transform="translate(285.40728 304.67864)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">matrix split across</text>
+<text transform="translate(281.29022 317.32864)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">GPUs (column/row).</text>
 </g>
    <g id="text_12">
-<text transform="translate(299.125 335.799925)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#8a5a00">Sync: AllReduce</text>
-<text transform="translate(296.09 345.402112)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#8a5a00">activations/grads</text>
-<text transform="translate(291.560625 355.0043)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#8a5a00">EVERY layer (needs</text>
-<text transform="translate(316.031875 364.606487)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#8a5a00">NVLink).</text>
+<text transform="translate(287.59500 331.54821)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">Sync: AllReduce</text>
+<text transform="translate(283.81500 344.19821)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">activations/grads</text>
+<text transform="translate(277.50063 356.84821)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">EVERY layer (needs</text>
+<text transform="translate(309.94688 369.49821)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">NVLink).</text>
 </g>
   </g>
   <g id="axes_3">
@@ -337,30 +337,30 @@ z
 " clip-path="url(#p022055a047)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.6; stroke-linejoin: miter"/>
    </g>
    <g id="text_13">
-<text transform="translate(529.139844 108.004435)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#1b5e20">Pipeline</text>
-<text transform="translate(518.577344 123.007853)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#1b5e20">Parallelism</text>
+<text transform="translate(527.25984 108.32443)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#1b5e20">Pipeline</text>
+<text transform="translate(516.01234 123.32785)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#1b5e20">Parallelism</text>
 </g>
    <g id="text_14">
-<text transform="translate(527.298125 158.18162)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">GPU 0: layers</text>
-<text transform="translate(550.32375 167.783182)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">0-7</text>
+<text transform="translate(517.59312 156.97740)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">GPU 0: layers</text>
+<text transform="translate(547.83375 169.62740)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">0-7</text>
 </g>
    <g id="text_15">
-<text transform="translate(527.298125 206.826999)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">GPU 1: layers</text>
-<text transform="translate(547.540625 216.428561)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">8-15</text>
+<text transform="translate(517.92813 205.62278)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">GPU 1: layers</text>
+<text transform="translate(544.42562 218.27278)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">8-15</text>
 </g>
    <g id="text_16">
-<text transform="translate(527.298125 255.472377)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">GPU 2: layers</text>
-<text transform="translate(544.7575 265.07394)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">16-23</text>
+<text transform="translate(517.62312 254.26816)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">GPU 2: layers</text>
+<text transform="translate(540.68750 266.91816)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">16-23</text>
 </g>
    <g id="text_17">
-<text transform="translate(522.022594 294.276347)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">Different LAYERS</text>
-<text transform="translate(517.84425 304.358644)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">placed on different</text>
-<text transform="translate(518.159906 314.44094)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">GPUs (depth split).</text>
+<text transform="translate(511.27759 292.02864)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Different LAYERS</text>
+<text transform="translate(506.15425 304.67864)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">placed on different</text>
+<text transform="translate(506.57491 317.32864)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">GPUs (depth split).</text>
 </g>
    <g id="text_18">
-<text transform="translate(512.3875 345.402112)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">Sync: point-to-point</text>
-<text transform="translate(514.77 355.0043)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">send/recv between</text>
-<text transform="translate(520.2125 364.606487)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#1b5e20">adjacent stages.</text>
+<text transform="translate(498.08750 342.67430)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">Sync: point-to-point</text>
+<text transform="translate(501.05000 355.32430)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">send/recv between</text>
+<text transform="translate(508.55750 367.97430)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">adjacent stages.</text>
 </g>
   </g>
   <g id="axes_4">
@@ -430,40 +430,40 @@ z
 " clip-path="url(#p9763adecf8)" style="fill: #ede7f6; stroke: #4527a0; stroke-width: 1.6; stroke-linejoin: miter"/>
    </g>
    <g id="text_19">
-<text transform="translate(756.766992 100.502726)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#4527a0">Expert</text>
-<text transform="translate(740.877344 115.506144)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#4527a0">Parallelism</text>
-<text transform="translate(759.353906 130.508585)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12.5" font-weight="700" font-style="normal" fill="#4527a0">(MoE)</text>
+<text transform="translate(755.22699 100.82273)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#4527a0">Expert</text>
+<text transform="translate(738.31234 115.82614)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#4527a0">Parallelism</text>
+<text transform="translate(757.90891 130.82859)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.5" font-weight="700" font-style="normal" fill="#4527a0">(MoE)</text>
 </g>
    <g id="text_20">
-<text transform="translate(719.548688 158.31744)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="700" font-style="normal" fill="#4527a0">Expert 0</text>
-<text transform="translate(721.11975 167.438925)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="700" font-style="normal" fill="#4527a0">(GPU 0)</text>
+<text transform="translate(712.82369 156.87318)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">Expert 0</text>
+<text transform="translate(714.70475 169.52318)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">(GPU 0)</text>
 </g>
    <g id="text_21">
-<text transform="translate(804.148687 158.31744)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="700" font-style="normal" fill="#4527a0">Expert 1</text>
-<text transform="translate(805.71975 167.438925)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="700" font-style="normal" fill="#4527a0">(GPU 1)</text>
+<text transform="translate(797.80869 156.87318)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">Expert 1</text>
+<text transform="translate(799.68975 169.52318)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">(GPU 1)</text>
 </g>
    <g id="text_22">
-<text transform="translate(719.548688 206.962819)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="700" font-style="normal" fill="#4527a0">Expert 2</text>
-<text transform="translate(721.11975 216.084303)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="700" font-style="normal" fill="#4527a0">(GPU 2)</text>
+<text transform="translate(712.85869 205.51856)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">Expert 2</text>
+<text transform="translate(714.73975 218.16856)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">(GPU 2)</text>
 </g>
    <g id="text_23">
-<text transform="translate(804.148687 206.962819)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="700" font-style="normal" fill="#4527a0">Expert 3</text>
-<text transform="translate(805.71975 216.084303)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="7.6" font-weight="700" font-style="normal" fill="#4527a0">(GPU 3)</text>
+<text transform="translate(797.44369 205.51856)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">Expert 3</text>
+<text transform="translate(799.32475 218.16856)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">(GPU 3)</text>
 </g>
    <g id="text_24">
-<text transform="translate(741.548625 284.19405)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">Different EXPERTS</text>
-<text transform="translate(740.14425 294.276347)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">placed on different</text>
-<text transform="translate(741.13125 304.358644)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">GPUs; router picks</text>
-<text transform="translate(746.293313 314.44094)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.4" font-weight="400" font-style="normal" fill="#172033">top-k per token.</text>
+<text transform="translate(729.96863 280.66250)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Different EXPERTS</text>
+<text transform="translate(728.45425 293.31250)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">placed on different</text>
+<text transform="translate(729.59125 305.96250)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">GPUs; router picks</text>
+<text transform="translate(736.39331 318.61250)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">top-k per token.</text>
 </g>
    <g id="text_25">
-<text transform="translate(746.495 345.402112)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#4527a0">Sync: All-to-All</text>
-<text transform="translate(741.631875 355.0043)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#4527a0">token dispatch +</text>
-<text transform="translate(759.248125 364.606487)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8" font-weight="700" font-style="normal" fill="#4527a0">combine.</text>
+<text transform="translate(735.80500 342.67430)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">Sync: All-to-All</text>
+<text transform="translate(729.74688 355.32430)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">token dispatch +</text>
+<text transform="translate(752.69312 367.97430)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">combine.</text>
 </g>
   </g>
   <g id="text_26">
-<text transform="translate(160.520664 18.977578)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="15.5" font-weight="700" font-style="normal" fill="#172033">Four Parallelism Strategies — What Gets Split, What Gets Synced</text>
+<text transform="translate(145.18566 19.29758)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="16.5" font-weight="700" font-style="normal" fill="#172033">Four Parallelism Strategies — What Gets Split, What Gets Synced</text>
 </g>
  </g>
  <defs>

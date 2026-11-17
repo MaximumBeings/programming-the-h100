@@ -115,7 +115,7 @@
 }
 
 /* Keep technical figures crisp, with the same quiet framing in both themes. */
-.md-typeset img[src$=".svg"] {
+.md-typeset img[src*=".svg"] {
   display: block;
   max-width: 100%;
   height: auto;
@@ -127,4 +127,13 @@
 
 .md-typeset {
   line-height: 1.7;
+}
+
+/* Preserve the SVG label floor instead of shrinking dense figures to fit. */
+.md-typeset a:has(> img[src*=".svg"]) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border-radius: 0.5rem;
 }

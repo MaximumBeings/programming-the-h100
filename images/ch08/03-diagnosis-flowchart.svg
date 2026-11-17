@@ -302,62 +302,62 @@ z
 " clip-path="url(#p4ea4a19737)" style="fill: #00695c; stroke: #00695c; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="417.6" y="38.825766" transform="rotate(-0 417.6 38.825766)">Memory-Bound Diagnosis Flowchart</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="417.6" y="38.825766" transform="rotate(-0 417.6 38.825766)">Memory-Bound Diagnosis Flowchart</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="333.434483" y="66.93152" transform="rotate(-0 333.434483 66.93152)">Start: profile the kernel</text>
+    <text style="font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="333.434483" y="66.93152" transform="rotate(-0 333.434483 66.93152)">Start: profile the kernel</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 12.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="333.434483" y="131.522286" transform="rotate(-0 333.434483 131.522286)">HBM bandwidth &gt; 80% of peak?</text>
+    <text style="font-weight: 650; font-size: 13.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="333.434483" y="131.522286" transform="rotate(-0 333.434483 131.522286)">HBM bandwidth &gt; 80% of peak?</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(554.77806 124.579645)">BANDWIDTH-BOUND</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(551.26110 139.801036)">fuse or reduce bytes</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(549.71306 124.89964)">BANDWIDTH-BOUND</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(546.38610 140.12104)">fuse or reduce bytes</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="512.286207" y="118.996912" transform="rotate(-0 512.286207 118.996912)">YES</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="512.286207" y="118.996912" transform="rotate(-0 512.286207 118.996912)">YES</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 12.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="333.434483" y="213.180332" transform="rotate(-0 333.434483 213.180332)">FLOP rate &gt; 20% of peak?</text>
+    <text style="font-weight: 650; font-size: 13.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="333.434483" y="213.180332" transform="rotate(-0 333.434483 213.180332)">FLOP rate &gt; 20% of peak?</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="343.955172" y="170.713674" transform="rotate(-0 343.955172 170.713674)">NO</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="343.955172" y="170.713674" transform="rotate(-0 343.955172 170.713674)">NO</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 11.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(561.50860 206.75252)">PARTIALLY COMPUTE-BOUND</text>
-    <text style="font-weight: 650; font-size: 11.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(581.67079 219.799426)">raise occupancy or AI</text>
+    <text style="font-weight: 650; font-size: 12.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(554.12860 207.07252)">PARTIALLY COMPUTE-BOUND</text>
+    <text style="font-weight: 650; font-size: 12.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(576.50079 220.11943)">raise occupancy or AI</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a5a00" x="512.286207" y="200.654958" transform="rotate(-0 512.286207 200.654958)">YES</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a5a00" x="512.286207" y="200.654958" transform="rotate(-0 512.286207 200.654958)">YES</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 12.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="333.434483" y="296.010566" transform="rotate(-0 333.434483 296.010566)">SM utilization &gt; 50%?</text>
+    <text style="font-weight: 650; font-size: 13.523px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="333.434483" y="296.010566" transform="rotate(-0 333.434483 296.010566)">SM utilization &gt; 50%?</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="343.955172" y="252.371721" transform="rotate(-0 343.955172 252.371721)">NO</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="343.955172" y="252.371721" transform="rotate(-0 343.955172 252.371721)">NO</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(570.80899 287.981543)">LATENCY-BOUND</text>
-    <text style="font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(535.15551 302.840519)">break dependency chains</text>
+    <text style="font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(566.41899 288.30154)">LATENCY-BOUND</text>
+    <text style="font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(529.05051 303.16052)">break dependency chains</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #4527a0" x="512.286207" y="282.313005" transform="rotate(-0 512.286207 282.313005)">YES</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #4527a0" x="512.286207" y="282.313005" transform="rotate(-0 512.286207 282.313005)">YES</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(268.65386 389.968296)">LOCALITY-BOUND</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(245.35717 405.189687)">improve cache / layout</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(264.19886 390.28830)">LOCALITY-BOUND</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(240.01717 405.50969)">improve cache / layout</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="343.955172" y="334.029767" transform="rotate(-0 343.955172 334.029767)">NO</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="343.955172" y="334.029767" transform="rotate(-0 343.955172 334.029767)">NO</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.827586" y="490.541023" transform="rotate(-0 24.827586 490.541023)">Bandwidth-bound → epilogue/operator fusion, vector loads, smaller dtypes</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.827586" y="490.541023" transform="rotate(-0 24.827586 490.541023)">Bandwidth-bound → epilogue/operator fusion, vector loads, smaller dtypes</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.827586" y="514.357953" transform="rotate(-0 24.827586 514.357953)">Latency-bound → more thread-level parallelism, software prefetch, warp intrinsics</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.827586" y="514.357953" transform="rotate(-0 24.827586 514.357953)">Latency-bound → more thread-level parallelism, software prefetch, warp intrinsics</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.827586" y="538.174884" transform="rotate(-0 24.827586 538.174884)">Locality-bound → reorder/tile data, swizzling, shrink the working set</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.827586" y="538.174884" transform="rotate(-0 24.827586 538.174884)">Locality-bound → reorder/tile data, swizzling, shrink the working set</text>
    </g>
   </g>
  </g>
