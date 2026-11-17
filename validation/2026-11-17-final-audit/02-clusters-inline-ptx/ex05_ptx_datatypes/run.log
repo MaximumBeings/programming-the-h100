@@ -1,0 +1,22 @@
+╔══════════════════════════════════════════════════════╗
+║  ex05: PTX Data Types & Packed Operations             ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: cvt FP32→FP16 (1.5f → 0x3E00)
+  ✓ PASS: 0x3E00
+
+Test 2: FP16 pack/unpack (1.0f=0x3C00, 2.0f=0x4000)
+  ✓ PASS: packed=0x40003C00 lo=0x3C00 hi=0x4000
+
+Test 3: add.bf16x2 (2.0+3.0=5.0 in both slots)
+  ✓ PASS: lo=5.00 hi=5.00
+
+Test 4: add.f64 (1.23456789012345 + 9.87654321098765)
+  ✓ PASS: 11.111111101111101
+
+Test 5: mad hi+lo (0xFFFFFFFF * 0xFFFFFFFF)
+  ✓ PASS: lo=0x00000001 hi=0xFFFFFFFE
+
+╔══════════════════════════════════════════════════════╗
+║  5/5 tests passed   ✓ ALL PASS                    ║
+╚══════════════════════════════════════════════════════╝

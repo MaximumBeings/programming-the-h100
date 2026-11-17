@@ -1,0 +1,2369 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design and multi-GPU NCCL.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/final-audit/">
+      
+      
+        <link rel="prev" href="../getting-started/">
+      
+      
+        <link rel="next" href="../01-h100-architecture/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Validation & Final Audit - Programming the H100 - Under Development</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#final-audit-two-h100-gpus" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100 - Under Development" class="md-header__button md-logo" aria-label="Programming the H100 - Under Development" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100 - Under Development
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Validation & Final Audit
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100 - Under Development" class="md-nav__button md-logo" aria-label="Programming the H100 - Under Development" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100 - Under Development
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#execution-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execution system
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-program-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete program results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete program results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ex01_cluster_inspectcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_cluster_inspect.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_ptx_basicscu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_ptx_basics.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex03_state_spacescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex03_state_spaces.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex04_ptx_pointerscu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex04_ptx_pointers.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex05_ptx_datatypescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex05_ptx_datatypes.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex06_comprehensivecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex06_comprehensive.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_mbarrier_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_mbarrier_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_war_preventioncu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_war_prevention.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_tma_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_tma_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_tma_3dcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_tma_3d.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_bulk_rawcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_bulk_raw.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_reduce_asynccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_reduce_async.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_wgmma_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_wgmma_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_wgmma_pipelinecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_wgmma_pipeline.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_rooflinecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_roofline.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_warp_speccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_warp_spec.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex03_setmaxnregcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex03_setmaxnreg.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex04_circular_buffercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex04_circular_buffer.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex05_mbarriercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex05_mbarrier.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex06_pingpongcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex06_pingpong.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex07_epiloguecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex07_epilogue.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex08_comprehensivecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex08_comprehensive.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex09_streamk_rolescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex09_streamk_roles.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex10_dependent_launchcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex10_dependent_launch.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex11_nvlink_bandwidthcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex11_nvlink_bandwidth.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex12_nccl_allreducecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex12_nccl_allreduce.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex13_hybrid_parallel_trainingcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex13_hybrid_parallel_training.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nonuniform-epilogue-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nonuniform epilogue audit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#online-softmax-numerical-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Online-softmax numerical reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#execution-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Execution system
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-program-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete program results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete program results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ex01_cluster_inspectcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_cluster_inspect.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_ptx_basicscu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_ptx_basics.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex03_state_spacescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex03_state_spaces.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex04_ptx_pointerscu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex04_ptx_pointers.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex05_ptx_datatypescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex05_ptx_datatypes.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex06_comprehensivecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex06_comprehensive.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_mbarrier_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_mbarrier_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_war_preventioncu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_war_prevention.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_tma_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_tma_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_tma_3dcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_tma_3d.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_bulk_rawcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_bulk_raw.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_reduce_asynccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_reduce_async.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_wgmma_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_wgmma_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_wgmma_pipelinecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_wgmma_pipeline.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_rooflinecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_roofline.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_warp_speccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_warp_spec.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex03_setmaxnregcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex03_setmaxnreg.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex04_circular_buffercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex04_circular_buffer.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex05_mbarriercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex05_mbarrier.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex06_pingpongcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex06_pingpong.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex07_epiloguecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex07_epilogue.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex08_comprehensivecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex08_comprehensive.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex09_streamk_rolescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex09_streamk_roles.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex10_dependent_launchcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex10_dependent_launch.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex11_nvlink_bandwidthcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex11_nvlink_bandwidth.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex12_nccl_allreducecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex12_nccl_allreduce.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex13_hybrid_parallel_trainingcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex13_hybrid_parallel_training.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nonuniform-epilogue-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nonuniform epilogue audit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#online-softmax-numerical-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Online-softmax numerical reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/final-audit.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="final-audit-two-h100-gpus">Final audit — two H100 GPUs<a class="headerlink" href="#final-audit-two-h100-gpus" title="Permanent link">&para;</a></h1>
+<p>This fresh audit supplements the <a href="../validation/2026-11-17/results.json">original November 17 evidence</a>. Historical records and chapter transcripts are preserved.</p>
+<p>All <strong>27 complete CUDA programs compiled</strong>. Workload statuses: <strong>26 PASS</strong>, <strong>1 hardware-blocked</strong>. A prerequisite exit is not a successful workload.</p>
+<p><a href="../validation/2026-11-17-final-audit/system-info.log">System and tool information</a> · <a href="../validation/2026-11-17-final-audit/results.json">Raw execution manifest</a> · <a href="../validation/2026-11-17-final-audit/integrity.json">Integrity inventory</a>. The system log records CUDA-visible discovery, GPU names, memory, driver, compiler, OS and topology.</p>
+<p>Each command below is normalized to a local source filename and <code>example</code> executable. The raw manifest preserves the actual host paths, commands, stage exits and UTC timestamps. Run commands belong in the matching extracted source directory.</p>
+<h2 id="execution-system">Execution system<a class="headerlink" href="#execution-system" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>UTC: 2026-11-17T23:33:18.920847+00:00
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>OS: Linux-6.8.0-1064-nvidia-x86_64-with-glibc2.39
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Python: 3.12.3
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>PRETTY_NAME="Ubuntu 24.04.5 LTS"
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>Cuda compilation tools, release 12.8, V12.8.93
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>NVIDIA H100 80GB HBM3, 580.105.08, 81559 MiB
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>NVIDIA H100 80GB HBM3, 580.105.08, 81559 MiB
+</span></code></pre></div>
+<h2 id="complete-program-results">Complete program results<a class="headerlink" href="#complete-program-results" title="Permanent link">&para;</a></h2>
+<h3 id="ex01_cluster_inspectcu">ex01_cluster_inspect.cu<a class="headerlink" href="#ex01_cluster_inspectcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:20.254156+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:20.254398+00:00</code> · Run UTC: <code>2026-11-17T23:33:23.894201+00:00</code> · Finished UTC: <code>2026-11-17T23:33:24.565983+00:00</code>.</p>
+<p>Source SHA-256: <code>ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex01_cluster_inspect/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex01_cluster_inspect/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_cluster_inspect.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex02_ptx_basicscu">ex02_ptx_basics.cu<a class="headerlink" href="#ex02_ptx_basicscu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:24.566141+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:24.566360+00:00</code> · Run UTC: <code>2026-11-17T23:33:25.710906+00:00</code> · Finished UTC: <code>2026-11-17T23:33:26.376286+00:00</code>.</p>
+<p>Source SHA-256: <code>50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex02_ptx_basics/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex02_ptx_basics/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_ptx_basics.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex03_state_spacescu">ex03_state_spaces.cu<a class="headerlink" href="#ex03_state_spacescu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:26.376633+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:26.376875+00:00</code> · Run UTC: <code>2026-11-17T23:33:27.422786+00:00</code> · Finished UTC: <code>2026-11-17T23:33:27.996637+00:00</code>.</p>
+<p>Source SHA-256: <code>1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex03_state_spaces/ex03_state_spaces.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex03_state_spaces/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex03_state_spaces/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex03_state_spaces.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex04_ptx_pointerscu">ex04_ptx_pointers.cu<a class="headerlink" href="#ex04_ptx_pointerscu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:27.996910+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:27.997073+00:00</code> · Run UTC: <code>2026-11-17T23:33:29.313664+00:00</code> · Finished UTC: <code>2026-11-17T23:33:29.874379+00:00</code>.</p>
+<p>Source SHA-256: <code>77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex04_ptx_pointers/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex04_ptx_pointers/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex04_ptx_pointers.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex05_ptx_datatypescu">ex05_ptx_datatypes.cu<a class="headerlink" href="#ex05_ptx_datatypescu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:29.874617+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:29.874824+00:00</code> · Run UTC: <code>2026-11-17T23:33:31.474149+00:00</code> · Finished UTC: <code>2026-11-17T23:33:32.039296+00:00</code>.</p>
+<p>Source SHA-256: <code>711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex05_ptx_datatypes/ex05_ptx_datatypes.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex05_ptx_datatypes/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex05_ptx_datatypes/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex05_ptx_datatypes.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex06_comprehensivecu">ex06_comprehensive.cu<a class="headerlink" href="#ex06_comprehensivecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:32.039572+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:32.039804+00:00</code> · Run UTC: <code>2026-11-17T23:33:35.426680+00:00</code> · Finished UTC: <code>2026-11-17T23:33:36.083902+00:00</code>.</p>
+<p>Source SHA-256: <code>4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex06_comprehensive/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/02-clusters-inline-ptx/ex06_comprehensive/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex06_comprehensive.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex01_mbarrier_basiccu">ex01_mbarrier_basic.cu<a class="headerlink" href="#ex01_mbarrier_basiccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:36.084170+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:36.084382+00:00</code> · Run UTC: <code>2026-11-17T23:33:37.123884+00:00</code> · Finished UTC: <code>2026-11-17T23:33:37.686317+00:00</code>.</p>
+<p>Source SHA-256: <code>075961dac147dd0c2ef4a5a288af51c6cc6f0330364bb8fbf4b62cbf4c5aef92</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex01_mbarrier_basic/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex01_mbarrier_basic/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_mbarrier_basic.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex02_war_preventioncu">ex02_war_prevention.cu<a class="headerlink" href="#ex02_war_preventioncu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:37.686605+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:37.686807+00:00</code> · Run UTC: <code>2026-11-17T23:33:38.711863+00:00</code> · Finished UTC: <code>2026-11-17T23:33:39.490572+00:00</code>.</p>
+<p>Source SHA-256: <code>852967b65c0f83348cffac11df0ed9fbbed40802aa730944f31564efda5eb2d0</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex02_war_prevention/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex02_war_prevention/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_war_prevention.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex01_tma_basiccu">ex01_tma_basic.cu<a class="headerlink" href="#ex01_tma_basiccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:39.490868+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:39.491084+00:00</code> · Run UTC: <code>2026-11-17T23:33:40.566260+00:00</code> · Finished UTC: <code>2026-11-17T23:33:41.213013+00:00</code>.</p>
+<p>Source SHA-256: <code>c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex01_tma_basic/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex01_tma_basic/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_tma_basic.cu<span class="w"> </span>-o<span class="w"> </span>example<span class="w"> </span>-lcuda
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex02_tma_3dcu">ex02_tma_3d.cu<a class="headerlink" href="#ex02_tma_3dcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:41.213313+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:41.213487+00:00</code> · Run UTC: <code>2026-11-17T23:33:42.549323+00:00</code> · Finished UTC: <code>2026-11-17T23:33:43.106113+00:00</code>.</p>
+<p>Source SHA-256: <code>b80719ce45119fa91323bc610a68e7aeb84945ccfa8864fc3f2ee06cc594cab3</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex02_tma_3d/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex02_tma_3d/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_tma_3d.cu<span class="w"> </span>-o<span class="w"> </span>example<span class="w"> </span>-lcuda
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex01_bulk_rawcu">ex01_bulk_raw.cu<a class="headerlink" href="#ex01_bulk_rawcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:43.106426+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:43.106625+00:00</code> · Run UTC: <code>2026-11-17T23:33:44.119713+00:00</code> · Finished UTC: <code>2026-11-17T23:33:44.680974+00:00</code>.</p>
+<p>Source SHA-256: <code>d3205e1cc28e486f95c1923b3d347bc08bb8f9e52ae4324a8171bef168f22fbd</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_bulk_raw.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex02_reduce_asynccu">ex02_reduce_async.cu<a class="headerlink" href="#ex02_reduce_asynccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:44.681325+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:44.681474+00:00</code> · Run UTC: <code>2026-11-17T23:33:45.681496+00:00</code> · Finished UTC: <code>2026-11-17T23:33:46.345168+00:00</code>.</p>
+<p>Source SHA-256: <code>52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex02_reduce_async/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex02_reduce_async/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_reduce_async.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex01_wgmma_basiccu">ex01_wgmma_basic.cu<a class="headerlink" href="#ex01_wgmma_basiccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:46.345505+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:46.345755+00:00</code> · Run UTC: <code>2026-11-17T23:33:48.039121+00:00</code> · Finished UTC: <code>2026-11-17T23:33:48.695511+00:00</code>.</p>
+<p>Source SHA-256: <code>282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/06-wgmma-part-1/ex01_wgmma_basic/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/06-wgmma-part-1/ex01_wgmma_basic/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_wgmma_basic.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex01_wgmma_pipelinecu">ex01_wgmma_pipeline.cu<a class="headerlink" href="#ex01_wgmma_pipelinecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:48.695895+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:48.696129+00:00</code> · Run UTC: <code>2026-11-17T23:33:50.364496+00:00</code> · Finished UTC: <code>2026-11-17T23:33:51.032181+00:00</code>.</p>
+<p>Source SHA-256: <code>76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/07-wgmma-part-2/ex01_wgmma_pipeline/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/07-wgmma-part-2/ex01_wgmma_pipeline/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_wgmma_pipeline.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex01_rooflinecu">ex01_roofline.cu<a class="headerlink" href="#ex01_rooflinecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:51.032534+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:51.032798+00:00</code> · Run UTC: <code>2026-11-17T23:33:52.077059+00:00</code> · Finished UTC: <code>2026-11-17T23:33:52.641842+00:00</code>.</p>
+<p>Source SHA-256: <code>d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex01_roofline/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex01_roofline/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_roofline.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex02_warp_speccu">ex02_warp_spec.cu<a class="headerlink" href="#ex02_warp_speccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:52.642253+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:52.642439+00:00</code> · Run UTC: <code>2026-11-17T23:33:53.647666+00:00</code> · Finished UTC: <code>2026-11-17T23:33:54.296581+00:00</code>.</p>
+<p>Source SHA-256: <code>fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex02_warp_spec/ex02_warp_spec.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex02_warp_spec/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex02_warp_spec/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_warp_spec.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex03_setmaxnregcu">ex03_setmaxnreg.cu<a class="headerlink" href="#ex03_setmaxnregcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:54.297038+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:54.297214+00:00</code> · Run UTC: <code>2026-11-17T23:33:55.301591+00:00</code> · Finished UTC: <code>2026-11-17T23:33:55.863438+00:00</code>.</p>
+<p>Source SHA-256: <code>c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex03_setmaxnreg/ex03_setmaxnreg.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex03_setmaxnreg/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex03_setmaxnreg/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex03_setmaxnreg.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex04_circular_buffercu">ex04_circular_buffer.cu<a class="headerlink" href="#ex04_circular_buffercu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:55.863890+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:55.864082+00:00</code> · Run UTC: <code>2026-11-17T23:33:57.073830+00:00</code> · Finished UTC: <code>2026-11-17T23:33:57.638973+00:00</code>.</p>
+<p>Source SHA-256: <code>3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex04_circular_buffer/ex04_circular_buffer.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex04_circular_buffer/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/08-kernel-design-part-1/ex04_circular_buffer/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex04_circular_buffer.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex05_mbarriercu">ex05_mbarrier.cu<a class="headerlink" href="#ex05_mbarriercu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:57.639389+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:57.639630+00:00</code> · Run UTC: <code>2026-11-17T23:33:58.684751+00:00</code> · Finished UTC: <code>2026-11-17T23:33:59.347429+00:00</code>.</p>
+<p>Source SHA-256: <code>c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex05_mbarrier/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex05_mbarrier/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex05_mbarrier.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex06_pingpongcu">ex06_pingpong.cu<a class="headerlink" href="#ex06_pingpongcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:33:59.347884+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:33:59.348062+00:00</code> · Run UTC: <code>2026-11-17T23:34:00.440175+00:00</code> · Finished UTC: <code>2026-11-17T23:34:00.651516+00:00</code>.</p>
+<p>Source SHA-256: <code>d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex06_pingpong/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex06_pingpong/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex06_pingpong.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex07_epiloguecu">ex07_epilogue.cu<a class="headerlink" href="#ex07_epiloguecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:34:00.651993+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:34:00.652181+00:00</code> · Run UTC: <code>2026-11-17T23:34:01.725195+00:00</code> · Finished UTC: <code>2026-11-17T23:34:02.282790+00:00</code>.</p>
+<p>Source SHA-256: <code>bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex07_epilogue/ex07_epilogue.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex07_epilogue/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex07_epilogue/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex07_epilogue.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex08_comprehensivecu">ex08_comprehensive.cu<a class="headerlink" href="#ex08_comprehensivecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:34:02.283337+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:34:02.283546+00:00</code> · Run UTC: <code>2026-11-17T23:34:03.937963+00:00</code> · Finished UTC: <code>2026-11-17T23:34:04.636912+00:00</code>.</p>
+<p>Source SHA-256: <code>7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex08_comprehensive/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/09-kernel-design-part-2/ex08_comprehensive/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex08_comprehensive.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex09_streamk_rolescu">ex09_streamk_roles.cu<a class="headerlink" href="#ex09_streamk_rolescu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:34:04.637356+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:34:04.637583+00:00</code> · Run UTC: <code>2026-11-17T23:34:08.031768+00:00</code> · Finished UTC: <code>2026-11-17T23:34:08.702461+00:00</code>.</p>
+<p>Source SHA-256: <code>fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/10-stream-k-scheduling/ex09_streamk_roles/ex09_streamk_roles.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/10-stream-k-scheduling/ex09_streamk_roles/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/10-stream-k-scheduling/ex09_streamk_roles/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex09_streamk_roles.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex10_dependent_launchcu">ex10_dependent_launch.cu<a class="headerlink" href="#ex10_dependent_launchcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:34:08.702960+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:34:08.703110+00:00</code> · Run UTC: <code>2026-11-17T23:34:09.717502+00:00</code> · Finished UTC: <code>2026-11-17T23:34:10.381720+00:00</code>.</p>
+<p>Source SHA-256: <code>36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/10-stream-k-scheduling/ex10_dependent_launch/ex10_dependent_launch.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/10-stream-k-scheduling/ex10_dependent_launch/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/10-stream-k-scheduling/ex10_dependent_launch/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex10_dependent_launch.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex11_nvlink_bandwidthcu">ex11_nvlink_bandwidth.cu<a class="headerlink" href="#ex11_nvlink_bandwidthcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:36:22.842493+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:36:22.842759+00:00</code> · Run UTC: <code>2026-11-17T23:36:24.075201+00:00</code> · Finished UTC: <code>2026-11-17T23:36:26.908842+00:00</code>.</p>
+<p>Source SHA-256: <code>67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex11_nvlink_bandwidth.cu<span class="w"> </span>-o<span class="w"> </span>example
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex12_nccl_allreducecu">ex12_nccl_allreduce.cu<a class="headerlink" href="#ex12_nccl_allreducecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · UTC: <code>2026-11-17T23:36:26.909012+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:36:26.909178+00:00</code> · Run UTC: <code>2026-11-17T23:36:28.640907+00:00</code> · Finished UTC: <code>2026-11-17T23:36:30.353034+00:00</code>.</p>
+<p>Source SHA-256: <code>f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex12_nccl_allreduce.cu<span class="w"> </span>-o<span class="w"> </span>example<span class="w"> </span>-lnccl
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>./example
+</span></code></pre></div>
+<h3 id="ex13_hybrid_parallel_trainingcu">ex13_hybrid_parallel_training.cu<a class="headerlink" href="#ex13_hybrid_parallel_trainingcu" title="Permanent link">&para;</a></h3>
+<p><strong>BLOCKED_HARDWARE</strong> · UTC: <code>2026-11-17T23:34:15.805469+00:00</code> · compile exit: <code>0</code> · run exit: <code>unexecuted</code>.</p>
+<p>Compile UTC: <code>2026-11-17T23:34:15.805712+00:00</code> · Run UTC: <code>not executed</code> · Finished UTC: <code>2026-11-17T23:34:17.837357+00:00</code>.</p>
+<p>Source SHA-256: <code>99f1b0a3238b2833c49ed65171cba66cd446991a1be3e807a1645a7f408de9f3</code>.</p>
+<p><a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/run.log">Runtime output</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex13_hybrid_parallel_training.cu<span class="w"> </span>-o<span class="w"> </span>example<span class="w"> </span>-lnccl<span class="w"> </span>-lcublas<span class="w"> </span>-Xcompiler<span class="w"> </span>-pthread
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>./example
+</span></code></pre></div>
+<h2 id="nonuniform-epilogue-audit">Nonuniform epilogue audit<a class="headerlink" href="#nonuniform-epilogue-audit" title="Permanent link">&para;</a></h2>
+<p>Status: <strong>PASSED</strong> · UTC: <code>2026-11-17T23:33:36.701318+00:00</code>. This opt-in variant uses 4,096 unique exactly representable expected outputs and preserves the device implementation. It strengthens layout coverage; it is not a new performance benchmark.</p>
+<p><a href="../validation/2026-11-17-final-audit/nonuniform/manifest.json">Manifest</a> · <a href="../validation/2026-11-17-final-audit/nonuniform/ch07_nonuniform_epilogue.cu">Variant source</a> · <a href="../validation/2026-11-17-final-audit/nonuniform/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/nonuniform/run.log">Runtime output</a>.</p>
+<p>Compute Sanitizer memcheck of this nonuniform variant reports <strong>ERROR SUMMARY: 0 errors</strong>. <a href="../validation/2026-11-17-final-audit/nonuniform/memcheck.log">Captured memcheck log</a>. This is memory-access checking for that execution, not proof of every asynchronous protocol or a performance measurement.</p>
+<h2 id="online-softmax-numerical-reference">Online-softmax numerical reference<a class="headerlink" href="#online-softmax-numerical-reference" title="Permanent link">&para;</a></h2>
+<p>All <strong>12 cases passed</strong> against PyTorch math SDPA, including causal masks and partial final tiles. Execution metadata is retained verbatim in the captured log. <a href="../validation/2026-11-17-final-audit/attention/run.log">Captured output</a> · <a href="../validation/2026-11-17-final-audit/attention/validate_attention.py">Executed reference source</a>. This verifies the recurrence for those cases, not the FA3 skeleton’s synchronization or published throughput.</p>
+<h2 id="verification-scope">Verification scope<a class="headerlink" href="#verification-scope" title="Permanent link">&para;</a></h2>
+<p>CI verifies source and evidence hashes, workload status consistency, captured-log presence and this summary. CI does not rerun CUDA or establish untested numerical coverage. The remaining eight-GPU workload requires the corresponding hardware.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../getting-started/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started &amp; Installation">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Getting Started & Installation
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../01-h100-architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: 1. NVIDIA H100 GPU Architecture">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                1. NVIDIA H100 GPU Architecture
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

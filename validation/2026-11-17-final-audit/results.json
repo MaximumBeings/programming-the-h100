@@ -1,0 +1,710 @@
+[
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 524,
+    "example": "ex01_cluster_inspect.cu",
+    "sha256": "ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3",
+    "timestamp": "2026-11-17T23:33:20.254156+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:20.254398+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:23.894201+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:24.565983+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 1092,
+    "example": "ex02_ptx_basics.cu",
+    "sha256": "50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f",
+    "timestamp": "2026-11-17T23:33:24.566141+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:24.566360+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:25.710906+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:26.376286+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 2404,
+    "example": "ex03_state_spaces.cu",
+    "sha256": "1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8",
+    "timestamp": "2026-11-17T23:33:26.376633+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex03_state_spaces/ex03_state_spaces.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex03_state_spaces/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex03_state_spaces/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:26.376875+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:27.422786+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:27.996637+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 3572,
+    "example": "ex04_ptx_pointers.cu",
+    "sha256": "77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c",
+    "timestamp": "2026-11-17T23:33:27.996910+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:27.997073+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:29.313664+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:29.874379+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 3920,
+    "example": "ex05_ptx_datatypes.cu",
+    "sha256": "711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220",
+    "timestamp": "2026-11-17T23:33:29.874617+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/ex05_ptx_datatypes.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:29.874824+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:31.474149+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:32.039296+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 4386,
+    "example": "ex06_comprehensive.cu",
+    "sha256": "4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d",
+    "timestamp": "2026-11-17T23:33:32.039572+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:32.039804+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:35.426680+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:36.083902+00:00"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 1894,
+    "example": "ex01_mbarrier_basic.cu",
+    "sha256": "075961dac147dd0c2ef4a5a288af51c6cc6f0330364bb8fbf4b62cbf4c5aef92",
+    "timestamp": "2026-11-17T23:33:36.084170+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:36.084382+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:37.123884+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:37.686317+00:00"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 2201,
+    "example": "ex02_war_prevention.cu",
+    "sha256": "852967b65c0f83348cffac11df0ed9fbbed40802aa730944f31564efda5eb2d0",
+    "timestamp": "2026-11-17T23:33:37.686605+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:37.686807+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:38.711863+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:39.490572+00:00"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1560,
+    "example": "ex01_tma_basic.cu",
+    "sha256": "c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa",
+    "timestamp": "2026-11-17T23:33:39.490868+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/example",
+      "-lcuda"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:39.491084+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:40.566260+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:41.213013+00:00"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1906,
+    "example": "ex02_tma_3d.cu",
+    "sha256": "b80719ce45119fa91323bc610a68e7aeb84945ccfa8864fc3f2ee06cc594cab3",
+    "timestamp": "2026-11-17T23:33:41.213313+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/example",
+      "-lcuda"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:41.213487+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:42.549323+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:43.106113+00:00"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1537,
+    "example": "ex01_bulk_raw.cu",
+    "sha256": "d3205e1cc28e486f95c1923b3d347bc08bb8f9e52ae4324a8171bef168f22fbd",
+    "timestamp": "2026-11-17T23:33:43.106426+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:43.106625+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:44.119713+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:44.680974+00:00"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1764,
+    "example": "ex02_reduce_async.cu",
+    "sha256": "52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a",
+    "timestamp": "2026-11-17T23:33:44.681325+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:44.681474+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:45.681496+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:46.345168+00:00"
+  },
+  {
+    "page": "docs/06-wgmma-part-1.md",
+    "line": 1330,
+    "example": "ex01_wgmma_basic.cu",
+    "sha256": "282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04",
+    "timestamp": "2026-11-17T23:33:46.345505+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/06-wgmma-part-1/ex01_wgmma_basic/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/06-wgmma-part-1/ex01_wgmma_basic/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:46.345755+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:48.039121+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:48.695511+00:00"
+  },
+  {
+    "page": "docs/07-wgmma-part-2.md",
+    "line": 1446,
+    "example": "ex01_wgmma_pipeline.cu",
+    "sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790",
+    "timestamp": "2026-11-17T23:33:48.695895+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:48.696129+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:50.364496+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:51.032181+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 265,
+    "example": "ex01_roofline.cu",
+    "sha256": "d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449",
+    "timestamp": "2026-11-17T23:33:51.032534+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex01_roofline/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex01_roofline/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:51.032798+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:52.077059+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:52.641842+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 982,
+    "example": "ex02_warp_spec.cu",
+    "sha256": "fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675",
+    "timestamp": "2026-11-17T23:33:52.642253+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex02_warp_spec/ex02_warp_spec.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex02_warp_spec/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex02_warp_spec/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:52.642439+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:53.647666+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:54.296581+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1385,
+    "example": "ex03_setmaxnreg.cu",
+    "sha256": "c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292",
+    "timestamp": "2026-11-17T23:33:54.297038+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/ex03_setmaxnreg.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:54.297214+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:55.301591+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:55.863438+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1924,
+    "example": "ex04_circular_buffer.cu",
+    "sha256": "3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665",
+    "timestamp": "2026-11-17T23:33:55.863890+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex04_circular_buffer/ex04_circular_buffer.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex04_circular_buffer/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/08-kernel-design-part-1/ex04_circular_buffer/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:55.864082+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:57.073830+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:57.638973+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 199,
+    "example": "ex05_mbarrier.cu",
+    "sha256": "c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046",
+    "timestamp": "2026-11-17T23:33:57.639389+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex05_mbarrier/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex05_mbarrier/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:57.639630+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:33:58.684751+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:33:59.347429+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 983,
+    "example": "ex06_pingpong.cu",
+    "sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd",
+    "timestamp": "2026-11-17T23:33:59.347884+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex06_pingpong/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex06_pingpong/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:33:59.348062+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:34:00.440175+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:34:00.651516+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 1489,
+    "example": "ex07_epilogue.cu",
+    "sha256": "bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff",
+    "timestamp": "2026-11-17T23:34:00.651993+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex07_epilogue/ex07_epilogue.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex07_epilogue/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex07_epilogue/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:34:00.652181+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:34:01.725195+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:34:02.282790+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 2158,
+    "example": "ex08_comprehensive.cu",
+    "sha256": "7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964",
+    "timestamp": "2026-11-17T23:34:02.283337+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex08_comprehensive/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/09-kernel-design-part-2/ex08_comprehensive/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:34:02.283546+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:34:03.937963+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:34:04.636912+00:00"
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 497,
+    "example": "ex09_streamk_roles.cu",
+    "sha256": "fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf",
+    "timestamp": "2026-11-17T23:34:04.637356+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/10-stream-k-scheduling/ex09_streamk_roles/ex09_streamk_roles.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/10-stream-k-scheduling/ex09_streamk_roles/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/10-stream-k-scheduling/ex09_streamk_roles/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:34:04.637583+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:34:08.031768+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:34:08.702461+00:00"
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 1458,
+    "example": "ex10_dependent_launch.cu",
+    "sha256": "36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640",
+    "timestamp": "2026-11-17T23:34:08.702960+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/10-stream-k-scheduling/ex10_dependent_launch/ex10_dependent_launch.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/10-stream-k-scheduling/ex10_dependent_launch/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/10-stream-k-scheduling/ex10_dependent_launch/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:34:08.703110+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:34:09.717502+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:34:10.381720+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 715,
+    "example": "ex11_nvlink_bandwidth.cu",
+    "sha256": "67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305",
+    "timestamp": "2026-11-17T23:36:22.842493+00:00",
+    "required_gpus": 2,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:36:22.842759+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:36:24.075201+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:36:26.908842+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 1423,
+    "example": "ex12_nccl_allreduce.cu",
+    "sha256": "f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889",
+    "timestamp": "2026-11-17T23:36:26.909012+00:00",
+    "required_gpus": 2,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex12_nccl_allreduce/example",
+      "-lnccl"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-corrected-peer-nccl/11-multi-gpu-nccl/ex12_nccl_allreduce/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:36:26.909178+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-17T23:36:28.640907+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-17T23:36:30.353034+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 2579,
+    "example": "ex13_hybrid_parallel_training.cu",
+    "sha256": "99f1b0a3238b2833c49ed65171cba66cd446991a1be3e807a1645a7f408de9f3",
+    "timestamp": "2026-11-17T23:34:15.805469+00:00",
+    "required_gpus": 8,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu",
+      "-o",
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/example",
+      "-lnccl",
+      "-lcublas",
+      "-Xcompiler",
+      "-pthread"
+    ],
+    "run_command": [
+      "/home/ubuntu/codex-h100-audit-20261117-final/h100-final-audit/validation/final-audit-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/example"
+    ],
+    "compile_timestamp": "2026-11-17T23:34:15.805712+00:00",
+    "compile_exit": 0,
+    "run_exit": "unexecuted",
+    "status": "BLOCKED_HARDWARE",
+    "finished_timestamp": "2026-11-17T23:34:17.837357+00:00"
+  }
+]

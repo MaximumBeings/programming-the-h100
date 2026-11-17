@@ -1,0 +1,25 @@
+╔══════════════════════════════════════════════════════╗
+║  Epilogue Fusion Demo                                 ║
+║  D = ReLU( α×acc + β×C + bias[row] )                 ║
+╚══════════════════════════════════════════════════════╝
+
+Input tile: 64×64, alpha=1.0, beta=0.5
+Bias: bias[m] = m * 0.1
+Expected ReLU clamped to 0: 1965/4096 elements
+
+Verification:
+  Total elements: 4096
+  Errors: 0
+  Max absolute error: 0.000000 (threshold: 1e-4)
+
+Sample outputs:
+  D[0][0] = 0.0000 (expected 0.0000)
+  D[2][5] = 0.0000 (expected 0.0000)
+  D[3][2] = 0.0000 (expected 0.0000, should be 0 if pre-ReLU < 0)
+
+FP8 amax reduction result: 44.6000
+  (This is max|D[m][n]| across the tile, used for FP8 scaling)
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL 4096 ELEMENTS CORRECT — epilogue fusion works!   ║
+╚══════════════════════════════════════════════════════╝

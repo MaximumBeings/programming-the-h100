@@ -1,0 +1,17 @@
+========= COMPUTE-SANITIZER
+╔══════════════════════════════════════════════════════════╗
+║  ex01: wgmma commit/wait pipeline + stmatrix epilogue    ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Shape: m64n64k16, FP16 accumulator, 2 tiles pipelined
+AUDIT: 4096 unique exact FP16 outputs per tile; exact coordinate checks.
+
+Threads with non-zero sums in BOTH tiles: 128 / 128
+Sample out_A[0] = 1.000000
+Output verification: 0 errors across both 64×64 tiles
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — commit/wait pipeline + stmatrix working!  ║
+╚══════════════════════════════════════════════════════════╝
+========= ERROR SUMMARY: 0 errors
