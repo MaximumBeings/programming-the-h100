@@ -64,6 +64,8 @@ ncu --set basic --target-processes all ./wgmma_example
 sudo ncu --set basic --target-processes all ./wgmma_example
 ```
 
+The captured build above omits `-lineinfo`; it supports the basic counter report below but does not provide CUDA source-line attribution. For subsequent source-level profiling, add `-lineinfo` as described below. The recorded command is preserved exactly.
+
 Captured excerpts (single CTA, 128 threads; these are correctness-demo measurements, not optimized GEMM throughput):
 
 ```text
@@ -157,6 +159,8 @@ Compile with line info
 
 ## 1 — Why Profile at All
 
+The FA3 comparison below uses the [authors’ published ping-pong example (§3.1)](https://tridao.me/publications/flash3/flash3.pdf): FP16 forward, head dimension 128, sequence length 8192, improving from 570 to 620–640 TFLOP/s. The approximately 63% figure uses the lower endpoint divided by the book’s 989 TFLOP/s nominal dense FP16 roof; it is not a new measurement.
+
 You have just spent twelve chapters learning to reason about GPU performance from
 first principles. This section argues that the reasoning is necessary and not
 sufficient, which is a slightly awkward thing for a book to say about itself.
@@ -179,7 +183,9 @@ What Reasoning Gets Right, and What It Doesn't
 
   Chapter 12 §6.3 is an honest example. A careful cycle model
   predicted ~94% tensor core utilisation for the ping-pong
-  pipeline. Measured: 63% of peak. The model was not wrong about
+  pipeline. Published FA3 result: about 63% of peak at 620 TFLOP/s.
+  This is a paper result, not this book’s validation measurement.
+  The model was not wrong about
   the technique — ping-pong genuinely helps — it was wrong about
   everything else that was also happening.
 

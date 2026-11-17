@@ -33,7 +33,7 @@
 **What this covers:** Why attention is memory-bound in its naive form and how
 tiling fixes it; the online softmax recurrence that makes tiling possible, worked
 by hand; what each generation of FlashAttention fixed; and then the three Hopper
-techniques that take FA3 from FlashAttention-2's 35% utilization to 75% —
+techniques associated with the FlashAttention-3 paper’s reported increase from about 35% to 75% utilisation —
 producer/consumer warp specialization, ping-pong scheduling across two
 warpgroups, and 2-stage pipelining inside a single warpgroup. Then causal masking
 and its load-imbalance problem, and the FP8 path: block quantization, the K-major
@@ -42,13 +42,12 @@ layout constraint that forces an in-kernel transpose of V, and the Hadamard
 
 **How to read this chapter.** Everything up to now has been about primitives in
 isolation — a descriptor here, a barrier there, one `wgmma` issued correctly.
-This chapter is the payoff: a single kernel where all of them run at once, on a
-problem people actually care about.
+This chapter combines those mechanisms in an annotated attention-kernel design. The code skeleton explains the schedule; the separately executed numerical reference verifies the online-softmax recurrence. It is not a complete production FA3 implementation.
 
 It splits in three. Sections 1–3 are algorithmic and hardware-independent —
 what attention is, why the naive form wastes memory bandwidth, and the online
 softmax recurrence that lets you tile it. Sections 4–8 are the Hopper kernel:
-three techniques, applied one at a time, with the measured throughput after each.
+three techniques and the throughput reported by the cited paper. These are published author results, not measurements of this chapter’s skeleton.
 Sections 9–10 cover FP8, which is a separate discipline layered on top.
 
 If you have read Chapters 8 and 9, Sections 5–7 will feel familiar — they are
@@ -102,9 +101,7 @@ Prerequisites Checklist
 
 ### Hardware
 
-Same as Chapters 6–11: Hopper (`sm_90a`) or later. Nothing in this chapter has a
-pre-Hopper equivalent — the entire design exists because of TMA, `wgmma`, and
-`setmaxnreg`.
+The illustrated TMA/WGMMA/`setmaxnreg` kernel path targets Hopper (`sm_90a`). Other architectures need a kernel path matched to their supported instructions; changing only the target flag does not make Hopper WGMMA portable to Blackwell. Attention and online softmax are not Hopper-only algorithms: the numerical recurrence reference is separate from these architecture-specific kernel mechanisms.
 
 ### Reading the Real Implementation
 
@@ -232,59 +229,48 @@ Naive Attention — Where the Bytes Go
 
   And the capacity problem is worse than the bandwidth problem:
     S alone is 134 MB. The H100's entire L2 is 50 MB.
-    S cannot be cached. Every byte written comes back from HBM.
+    The full S matrix does not fit in L2. Individual tiles can still hit;
+    actual HBM traffic depends on the access schedule and cache behaviour.
 
   Scaling: S grows as N². At N = 32k it is 2.1 GB per head.
 ```
 
-[![Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction](images/ch12/01-materialization-traffic.svg)](images/ch12/01-materialization-traffic.svg)
+[![Attention intermediates dominate the simple I/O model](images/ch12/01-materialization-traffic.svg)](images/ch12/01-materialization-traffic.svg)
 
-The whole of FlashAttention rests on one observation: **`S` and `P` never need to
-exist in HBM.** They are intermediates. If you can compute the output tile by
-tile, keeping each `S` tile in shared memory and throwing it away, the traffic
-collapses to the 8.4 MB you actually needed.
+FlashAttention avoids materialising full `S` and `P` matrices in HBM. Their tiles are consumed on chip while online softmax preserves the statistics needed for the final output. The 8.39 MB size of Q, K, V and O is an ideal useful-I/O lower bound for this example, not a guarantee that every tiled kernel reads each input from HBM exactly once.
 
 ### 1.3 Arithmetic Intensity — Why Tiling Wins
 
-Chapter 8 §1 defined arithmetic intensity as FLOPs per byte of HBM traffic, and
-the roofline as the line where that number stops mattering. Apply it here.
+Arithmetic intensity must specify **which traffic is being counted**. Whole-problem useful bytes, CTA-requested operand bytes and measured HBM bytes can differ substantially. Chapter 8’s roofline gives an upper bound for a stated traffic model; it does not identify every kernel’s actual bottleneck.
 
-```
-Arithmetic Intensity — Naive vs Tiled
-══════════════════════════════════════════════════════════════════════
+```text
+Idealised whole-problem model — one head, N=8192, d=128, BF16
 
-  H100 ridge point (Chapter 8 §1):
-    989 TFLOP/s (BF16 tensor) ÷ 3.35 TB/s = ~295 FLOP/byte
-    Below 295 FLOP/byte you are memory-bound. Above it, compute-bound.
+  Leading matrix FLOPs: 4 N² d = 34.36 GFLOP (softmax work excluded).
+  Q, K, V and O:        4 N d × 2 bytes = 8 MiB = 8.39 MB.
+  Full S and P write/read traffic:       512 MiB in the naive model.
 
-  NAIVE (N=8192, d=128):
-    FLOPs  = 4 N² d       = 4 × 8192² × 128  = 34.4 GFLOP
-    Bytes  = 545.2 MB
-    Intensity = 34.4e9 / 545.2e6 = 63 FLOP/byte
+  Naive model: 520 MiB total; arithmetic intensity ≈ 63 FLOP/byte.
+  Useful-I/O-only lower bound: 8 MiB; intensity = 4096 FLOP/byte.
 
-    63 << 295  →  MEMORY BOUND, by a factor of ~4.7
-    Ceiling: 3.35 TB/s × 63 = 211 TFLOP/s ... but you never
-    get close, because the access pattern is also poor.
-
-  FLASH (fused, S never leaves SMEM):
-    FLOPs  = 34.4 GFLOP  (unchanged — same math)
-    Bytes  = 8.4 MB      (Q, K, V read once; O written once)
-    Intensity = 34.4e9 / 8.4e6 = 4095 FLOP/byte
-
-    4095 >> 295  →  COMPUTE BOUND, by a factor of ~14
-
-  ══════════════════════════════════════════════════════════════════
-  Fusing attention moves it across the ridge point.
-  That is the entire contribution of FlashAttention-1.
-  Everything after it is about how well you exploit being
-  compute-bound once you are there.
-  ══════════════════════════════════════════════════════════════════
+  H100 SXM BF16 product-peak ridge: 989 / 3.35 ≈ 295 FLOP/byte.
+  The lower modeled roof changes across those two byte assumptions.
 ```
 
-That last line is worth sitting with. FlashAttention-1 made attention
-compute-bound. FlashAttention-2 and 3 are not about memory at all — they are
-about the fact that being compute-bound is necessary but nowhere near sufficient.
-FA2 on an H100 is compute-bound *and* runs at 35% of peak.
+A tile-level calculation makes the missing traffic explicit. Suppose one CTA processes `B_M=128` query rows, walks key/value tiles of `B_N=128`, and uses `d=128`. In the following noncausal model it loads its Q tile once, writes O once, and visits all 64 K/V tiles:
+
+```text
+Per query-tile CTA, counting requested operand bytes:
+  Q + O: 2 × 128 × 128 × 2                 = 65,536 bytes.
+  K + V: 64 × 2 × 128 × 128 × 2            = 4,194,304 bytes.
+  Total:                                   = 4,259,840 bytes.
+  Matrix FLOPs: 4 × 128 × 8192 × 128        = 536,870,912.
+  CTA-request intensity:                     ≈ 126 FLOP/byte.
+```
+
+Other query-tile CTAs revisit the same K/V tensors. L2 can serve some of those repeated requests, so this requested-byte count is not automatically the HBM count. Causal masking, stage depth, head layout, cache competition and the implementation change the result. This model also excludes softmax state traffic and additional implementation overhead.
+
+The practical gain is **avoiding quadratic intermediate materialisation while scheduling the remaining movement and computation effectively**. FlashAttention-2 and -3 still care about data movement, memory reuse, occupancy, instruction issue and synchronisation. Their bottlenecks depend on workload and hardware. The utilisation and throughput figures later in this chapter are attributed to the [FlashAttention-3 paper](https://arxiv.org/abs/2407.08608); they were not reproduced by the book’s numerical-reference test.
 
 ---
 
@@ -452,7 +438,7 @@ Worked Example — One Row, Two Blocks
   ══════════════════════════════════════════════════════════════════
 ```
 
-[![Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE](images/ch12/02-online-softmax-timeline.svg)](images/ch12/02-online-softmax-timeline.svg)
+[![Online softmax keeps sufficient statistics](images/ch12/02-online-softmax-timeline.svg)](images/ch12/02-online-softmax-timeline.svg)
 
 **The one thing to notice for later:** step 5 rescales `O`, which is the
 accumulator living in tensor core registers. That means every time the row max
@@ -612,7 +598,7 @@ FA3 — Cumulative Throughput (FP16 forward, H100 SXM5)
   ══════════════════════════════════════════════════════════════════
 ```
 
-[![Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path](images/ch12/07-throughput-ladder.svg)](images/ch12/07-throughput-ladder.svg)
+[![FA3 paper results and the ideas behind them](images/ch12/07-throughput-ladder.svg)](images/ch12/07-throughput-ladder.svg)
 
 ### 4.2 Tile Shapes and the Two GEMMs
 
@@ -720,7 +706,7 @@ FA3 Block Layout — Who Does What
     spilling.
 ```
 
-[![FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers](images/ch12/03-warpgroup-roles.svg)](images/ch12/03-warpgroup-roles.svg)
+[![FA3 separates producers and consumers](images/ch12/03-warpgroup-roles.svg)](images/ch12/03-warpgroup-roles.svg)
 
 ### 5.2 The Producer Loop
 
@@ -898,7 +884,7 @@ Ping-Pong — Staggering Two Consumers
   ══════════════════════════════════════════════════════════════════
 ```
 
-[![Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave](images/ch12/04-pingpong-timeline.svg)](images/ch12/04-pingpong-timeline.svg)
+[![Stagger softmax and matrix work](images/ch12/04-pingpong-timeline.svg)](images/ch12/04-pingpong-timeline.svg)
 
 ### 6.2 Forcing the Stagger with Named Barriers
 
@@ -1098,7 +1084,7 @@ iteration j+1".
   ══════════════════════════════════════════════════════════════════
 ```
 
-[![2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath](images/ch12/05-twostage-pipeline-timeline.svg)](images/ch12/05-twostage-pipeline-timeline.svg)
+[![Pipeline matrix work within a consumer](images/ch12/05-twostage-pipeline-timeline.svg)](images/ch12/05-twostage-pipeline-timeline.svg)
 
 ```cuda
 // ─────────────────────────────────────────────────────────────────
@@ -1250,7 +1236,7 @@ Causal Masking — The Block Taxonomy
   ══════════════════════════════════════════════════════════════════
 ```
 
-[![Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it](images/ch12/06-causal-masking-grid.svg)](images/ch12/06-causal-masking-grid.svg)
+[![Causal tiles fall into three categories](images/ch12/06-causal-masking-grid.svg)](images/ch12/06-causal-masking-grid.svg)
 
 ### 8.2 Balancing the Triangle
 

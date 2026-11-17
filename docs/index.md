@@ -23,6 +23,8 @@ read line by line.
 
 ## How to read this
 
+**CUDA prerequisites:** Be comfortable with thread/block indexing, launch dimensions, shared-memory lifetime, block synchronisation and CUDA error checking. If these are new, first work through [NVIDIA’s CUDA programming introduction](https://docs.nvidia.com/cuda/cuda-programming-guide/index.html), then follow this book’s [first verified run](getting-started.md#5-compile-and-execute-your-first-verified-program).
+
 The chapters build on each other. Chapter 1 is pure architecture — no code,
 just the machine. Chapters 2–3 give you the instruction-level vocabulary
 (clusters, inline PTX, state spaces, `mbarrier`). Chapters 4–5 are about
@@ -188,11 +190,10 @@ have a slow kernel in front of you right now, start at Chapter 13.
 
     **[12. FlashAttention-3 on the H100](12-flashattention-3.md)**
 
-    Why attention is memory-bound and how fusing it crosses the ridge point;
+    How tiling avoids quadratic attention intermediates, and how to build a traffic-aware roofline model;
     the online softmax recurrence worked by hand; then the three Hopper
     techniques — producer/consumer warp specialization, ping-pong scheduling,
-    and 2-stage intra-warpgroup pipelining — that take it from 35% to 75% of
-    peak. Causal masking and load balance, and the FP8 path: block
+    and 2-stage intra-warpgroup pipelining — behind the cited FA3 paper’s reported increase from about 35% to 75% of peak. Those paper benchmarks are separate from this book’s executed numerical reference. Causal masking and load balance, and the FP8 path: block
     quantization, the K-major transpose of V, and Hadamard incoherent
     processing.
 

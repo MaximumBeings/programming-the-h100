@@ -48,30 +48,23 @@ actually spend debugging time on.
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
-`cp.async.bulk` is Hopper-only — Ampere's `cp.async` is a different and much
-weaker instruction, as §2 explains at length. No A100 fallback here. Skip ahead
-if you already have an H100 set up.
+The examples in this chapter were validated on Hopper with `sm_90a`.
+Ampere's `cp.async` is a separate instruction family; it cannot execute these
+bulk-copy listings. Individual bulk-copy forms have their own target rules:
+the base family starts at `sm_90`, rather than universally requiring an `a`
+target. This book uses `sm_90a` consistently with its Hopper WGMMA examples.
 
 ### What Hardware Can You Use?
 
-`sm_90a` or later, with the trailing `a`.
+| Architecture | Scope of this chapter |
+| --- | --- |
+| Ampere / A100 | Use a separate `cp.async` implementation; bulk-copy examples are unsupported. |
+| Hopper / H100 | Tested target: `sm_90a`, H100 PCIe. |
+| Blackwell | Check each instruction variant and toolkit target support; these examples were not validated there. |
 
-```
-Hardware Compatibility Matrix
-══════════════════════════════════════════════════════════════════════
-
-  Architecture   Chip     SM Target   Example GPUs           cp.async.bulk?
-  ──────────────────────────────────────────────────────────────────────────
-  Ampere         GA100    sm_80       A100 (AWS p4d, Lambda)  NO (cp.async only)
-  Hopper         GH100    sm_90a      H100 (AWS p5, Lambda)   YES — full support ★
-  Blackwell      GB100    sm_100a     B100/B200               YES + extensions
-
-  KEY:
-    cp.async.bulk, TMA multicast, cp.reduce.async → sm_90a or sm_100a ONLY
-    cp.async (Ampere style) → sm_80 and later (does NOT use TMA)
-    All conceptual sections (§1-3) apply to all architectures.
-    All code sections (§4+) require sm_90a or sm_100a.
-```
+The availability of a copy instruction on a later GPU does not make a complete
+Hopper WGMMA kernel portable. See the [PTX target notes](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk)
+and [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html).
 
 ### Cloud GPU Rental — Lambda Labs
 
@@ -105,29 +98,12 @@ AWS p5 Setup (H100)
 
 ### Hopper vs Blackwell — What Changes
 
-Read once if you are on Blackwell. The instruction family carries over; the
-compile flag changes.
-
-```
-Hopper (sm_90a) vs Blackwell (sm_100a) — cp.async.bulk Differences
-══════════════════════════════════════════════════════════════════════
-
-  WHAT STAYS IDENTICAL:
-    ├── All cp.async.bulk instruction variants and syntax
-    ├── mbarrier completion mechanism semantics
-    ├── bulk_group commit/wait semantics
-    ├── L2 cache hinting flags and createpolicy instruction
-    ├── Multicast instruction and ctaMask semantics
-    ├── cp.reduce.async instruction and all reduction ops
-    └── All code in this guide compiles unchanged on sm_100a
-
-  WHAT IS NEW IN BLACKWELL:
-    ├── cp.async.bulk to tmem (tensor memory) as a destination
-    ├── Larger maximum transfer sizes
-    └── Additional reduction types for cp.reduce.async
-
-  PORTING: Change -arch=sm_90a to -arch=sm_100a. Done.
-```
+Treat Blackwell as a separate port and validation target. Match every copy,
+reduction, cache-policy and multicast form to its documented target requirements,
+then rebuild and rerun correctness checks. This chapter makes no claim that all
+forms carry over unchanged or that changing one architecture flag is sufficient.
+Tensor memory and `tcgen05` introduce additional rules outside these Hopper
+examples; Chapter 6 explains why WGMMA requires a different implementation.
 
 ---
 
@@ -214,9 +190,9 @@ TMA Engine — What It Does Internally
   ALL of steps 1-6 happen in dedicated hardware with ZERO SM involvement.
 ```
 
-[![TMA engine timeline — after cp.async.bulk.tensor is issued](images/ch05/01-tma-engine-timeline.svg)](images/ch05/01-tma-engine-timeline.svg)
+[![After a tensor-copy request is issued](images/ch05/01-tma-engine-timeline.svg)](images/ch05/01-tma-engine-timeline.svg)
 
-*The issuing thread runs one instruction and is immediately free — for compute, for tensor cores, for anything else. The TMA engine then works through its four internal steps (read descriptor, calculate addresses, fetch from HBM, write to SMEM) entirely in the background. As bytes land, the mbarrier's transaction count decrements; when it reaches zero, the phase flips and waiting consumers unblock. None of this touches an SM instruction slot after the initial issue.*
+*A high-level sequence; transfer granularity and timing are not fixed by this drawing.*
 
 ---
 
@@ -244,39 +220,30 @@ Ampere cp.async — Thread Involvement Required
 
   Task: Load 4 KB tile into shared memory.
 
-  Thread-level view:
-  ─────────────────────────────────────────────────────────────────
-  // Every thread computes its own portion of addresses
-  for (int i = tid; i < TILE_ELEMS; i += blockDim.x) {
-      int global_row = block_start_row + i / TILE_COLS;
-      int global_col = block_start_col + i % TILE_COLS;
-      uint64_t src = base + global_row * stride + global_col * sizeof(T);
-      uint32_t dst = smem_offset + i * sizeof(T);
-      asm("cp.async.cg.shared.global [%0], [%1], 16;" : : "r"(dst), "l"(src));
+  Example: 128 participating threads, 16 bytes per thread per iteration.
+  Each iteration covers 128 × 16 = 2048 bytes; two cover 4096 bytes.
+
+  for (int chunk = threadIdx.x; chunk < 4096 / 16; chunk += blockDim.x) {
+      // Each thread supplies distinct aligned 16-byte source/destination ranges.
+      cp_async_16B(smem + 16 * chunk, global + 16 * chunk); // pseudocode
   }
-  cp.async.commit_group();
-  cp.async.wait_group<0>();
+  // Commit and wait with the appropriate cp.async protocol before reading.
 
-  What threads are doing:
-  ├── Computing global_row, global_col: integer multiply/add per element
-  ├── Computing src address: multiply by stride + element offset
-  ├── Computing dst address: multiply by sizeof
-  ├── Issuing cp.async for every 16 bytes: burns instruction bandwidth
-  ├── ALL 128 threads participate in address computation and copy launch
-  └── Total instructions to launch a 4KB copy: 4096/16 = 256 cp.async calls!
+  Across the block: 256 thread-level 16-byte copy operations in total.
+  With four full warps: 2 iterations × 4 warps = 8 warp-issued copies.
+  Address calculations, synchronization and compiler output add other work.
+  Do not multiply the 256 total operations by the thread count again.
 
-  Uses: LSU (Load/Store Unit) — NOT the TMA engine.
-  The copy is "async" only in that the thread can issue multiple inflight
-  copies, but the thread ITSELF is consumed by the management work.
+  Ampere cp.async already supports overlap of copies and independent compute.
 ```
 
-### 2.2 Hopper cp.async.bulk — True Offload
+### 2.2 Hopper cp.async.bulk — Bulk Offload
 
 The Hopper path drawn out. Note how little the issuing thread does compared with
 the Ampere diagram above.
 
 ```
-Hopper cp.async.bulk — One Instruction, Zero Thread Involvement
+Hopper cp.async.bulk — One Elected Issuer
 ══════════════════════════════════════════════════════════════════════
 
   Task: Load the same 4 KB tile into shared memory.
@@ -298,26 +265,20 @@ Hopper cp.async.bulk — One Instruction, Zero Thread Involvement
 
   What threads are doing:
   ├── Thread 0: issues ONE instruction, returns immediately
-  ├── Threads 1-127: completely free — running tensor core math!
+  ├── Other threads may perform independent work if dependencies allow
   └── Total instructions to launch a 4KB copy: EXACTLY 1
 
   Uses: TMA engine — NOT the LSU. NOT warp schedulers (beyond 1 issue).
 ```
 
-[![Ampere cp.async vs Hopper cp.async.bulk — hardware occupancy for a 4 KB tile](images/ch05/02-ampere-vs-hopper-occupancy.svg)](images/ch05/02-ampere-vs-hopper-occupancy.svg)
+[![Per-thread copies versus bulk TMA](images/ch05/02-ampere-vs-hopper-occupancy.svg)](images/ch05/02-ampere-vs-hopper-occupancy.svg)
 
-*Ampere's path keeps the warp schedulers occupied issuing 256 `cp.async` calls and the LSU busy handling every 16-byte chunk, leaving the tensor cores idle because the threads are consumed by copy management. Hopper's path issues one instruction, leaves the warp schedulers free immediately, hands the transfer to the TMA engine running independently, and leaves the tensor cores fully available for math.*
+*Both can be asynchronous. Their issue and addressing responsibilities differ.*
 
-```
-  ─── Quantified Difference ───────────────────────────────────────
-
-  For a 4KB BF16 tile (2048 elements × 2 bytes):
-    Ampere: 256 cp.async calls × 128 threads = ~32768 instruction slots consumed
-    Hopper: 1 cp.async.bulk call × 1 thread  = 1 instruction slot consumed
-
-  Ratio: 32768× reduction in instruction overhead for the same transfer.
-  These freed instruction slots go directly to Tensor Core utilization.
-```
+For a contiguous 4 KiB region, 256 distinct 16-byte chunks cover the data.
+That is a count of thread-level copy operations, not 256 copies per thread or a
+universal instruction-overhead speedup. The TMA request still needs descriptor
+setup, barrier accounting and a completion protocol. Measure the whole pipeline.
 
 ### 2.3 Side-by-Side Comparison Table
 
@@ -331,17 +292,17 @@ cp.async (Ampere) vs cp.async.bulk (Hopper) — Full Comparison
   Feature                    cp.async (A100)       cp.async.bulk (H100)
   ─────────────────────────────────────────────────────────────────────
   Hardware unit              LSU                   TMA engine
-  Per-transfer involvement   All threads           1 thread only
-  Instruction count (4KB)    256 per thread        1 total
+  Per-transfer involvement   Participating threads One elected issuer
+  Copy requests (4 KiB)      256 thread-level      1 bulk request
   Address computation        By threads (runtime)  By TMA (descriptor)
-  Max transfer per call      16 bytes              Entire tile (MB range)
+  Transfer size              4/8/16B per thread    Bulk; variant constraints apply
   Tensor dimensions          1D only               1D to 5D
   Swizzle on write           No                    Yes (in descriptor)
   Multicast to cluster       No                    Yes (ctaMask)
   Completion tracking        commit/wait_group      mbarrier or bulk_group
   OOB boundary fill          No (manual)           Yes (descriptor)
   Stride-aware               No (manual striding)  Yes (descriptor strides)
-  SM compute overlap         Partial               True full overlap
+  SM compute overlap         Supported             Supported; workload-dependent
 ```
 
 ---
@@ -394,9 +355,9 @@ cp.async.bulk — Two Major Forms
 
 ```
 
-[![cp.async.bulk.tensor vs cp.async.bulk — the key visual difference](images/ch05/03-tensor-vs-raw-layout.svg)](images/ch05/03-tensor-vs-raw-layout.svg)
+[![Tensor copy or raw byte copy?](images/ch05/03-tensor-vs-raw-layout.svg)](images/ch05/03-tensor-vs-raw-layout.svg)
 
-*With `.tensor`, TMA is handed a descriptor and derives shape; without it, TMA is handed only a size and an address and performs a blind copy.*
+*The request format determines what the hardware knows about the data.*
 
 ### 3.2 Full Instruction Template — Every Field Explained
 
@@ -607,9 +568,9 @@ The `.tile` mode (the default for most uses) tells TMA to fetch a dense rectangu
             boxDim      → know when to stop
 ```
 
-[![.tile mode — dense rectangular fetch from a global matrix](images/ch05/04-tile-mode-rectangular-fetch.svg)](images/ch05/04-tile-mode-rectangular-fetch.svg)
+[![Request a rectangular tensor tile](images/ch05/04-tile-mode-rectangular-fetch.svg)](images/ch05/04-tile-mode-rectangular-fetch.svg)
 
-*The coordinate `(col=64, row=32)` locates the tile's top-left corner; the descriptor's `boxDim={32,16}` tells TMA how far to extend it — 32 columns by 16 rows, 512 elements. TMA computes `element[r][c] = base + (row+r)·stride + (col+c)·sizeof(T)` for every `r ∈ [0,15]`, `c ∈ [0,31]` as a nested loop run entirely in hardware; thread involvement is zero.*
+*For the example box, 32 columns × 16 rows = 512 elements.*
 
 ### 6.2 im2col — Hardware-Accelerated Convolution
 
@@ -622,9 +583,9 @@ im2col Mode — Hardware Convolution Acceleration
 ══════════════════════════════════════════════════════════════════════
 ```
 
-[![im2col — traditional flow vs TMA hardware convolution](images/ch05/05-im2col-flow-comparison.svg)](images/ch05/05-im2col-flow-comparison.svg)
+[![im2col without a global intermediate](images/ch05/05-im2col-flow-comparison.svg)](images/ch05/05-im2col-flow-comparison.svg)
 
-*Traditionally, a separate im2col kernel reads pixels, computes overlapping-window offsets, and writes a wasteful intermediate "columns" matrix to global memory before the GEMM can run. TMA's im2col mode collapses this to one instruction: it reads pixels using convolution-window logic and unrolls them directly into SMEM as a column layout, so the intermediate HBM buffer and the separate kernel launch never happen.*
+*Compare dataflow, not an assumed format-independent instruction recipe.*
 
 ```
   Benefits:
@@ -652,21 +613,18 @@ im2col Mode — Hardware Convolution Acceleration
 The section to read carefully, because this is where async pipelines actually go
 wrong.
 
-Having issued a copy that returns immediately, you need to know when the data
-has landed. There are two mechanisms and they differ in precision.
-
-`mbarrier::complete_tx::bytes` (§7.1) is the fine-grained one: the TMA
-decrements a barrier's transaction count as bytes arrive, exactly as Chapter 3
-§10.2 described. It is the right choice for production pipelines, and it is what
-Chapters 8 and 9 are built on. `bulk_group` (§7.2) is the lightweight
-alternative — batch-level rather than byte-level, cheaper, and enough when you
-don't need the precision.
+A non-blocking issue does not make the destination safe to read. The instruction
+variant determines the completion mechanism; these are not interchangeable
+quality levels. Global-to-shared loads use `mbarrier::complete_tx::bytes`, while
+shared-to-global bulk stores use bulk async groups. For stores, a `.read` wait
+allows source-buffer reuse after the source has been read; full transfer
+completion is a separate guarantee. See the [PTX bulk-copy contract](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk).
 
 ### 7.1 mbarrier::complete_tx::bytes — Fine-Grained Tracking
 
-The `mbarrier::complete_tx::bytes` completion mechanism ties the async copy directly to an mbarrier object. As TMA delivers bytes to the destination, it automatically decrements the mbarrier's pending transaction count. When all bytes arrive (count hits zero), the barrier phase flips and waiting threads are released.
+The `mbarrier::complete_tx::bytes` completion mechanism ties the async copy directly to an mbarrier object. The transfer contributes transaction completion to the associated mbarrier. A phase completes only when both its pending arrivals and expected transaction count are satisfied; observing zero transaction bytes alone is insufficient.
 
-This is the **recommended mechanism** for production kernels because it provides precise byte-level tracking and integrates perfectly with the mbarrier pipeline from Lesson 3.
+Use the mechanism supported by the selected direction and variant; the load-side pipeline in Chapter 3 is built around transaction-counted mbarriers.
 
 ```
 mbarrier::complete_tx::bytes — How It Works
@@ -787,41 +745,31 @@ L2 Cache Hinting — The Three Policies
 
   evict_normal (default):
   ─────────────────────────────────────────────────────────────────
-  Standard LRU replacement. The hardware decides when to evict.
-  Suitable for most workloads where you have no strong access pattern.
+  Default eviction priority; do not infer an exact replacement algorithm.
 
-  evict_last (persist as long as possible):
+  evict_last:
   ─────────────────────────────────────────────────────────────────
-  Marks the cache line as "high priority" — keep it as long as possible.
-  L2 will evict lower-priority lines first before touching evict_last data.
-  Use for: data that will be accessed MULTIPLE TIMES (weights, look-up tables).
+  Request higher retention priority for data expected to be reused.
+  This does not pin lines or guarantee a later hit.
 
-  Example: Wt in a neural network layer used for every input token.
-    load weight once with evict_last → stays in L2
-    each of 1024 tokens accesses the weight → L2 HIT every time
-    vs. evict_normal: weight might be evicted after the first few tokens.
-
-  evict_first (discard as soon as possible):
+  evict_first:
   ─────────────────────────────────────────────────────────────────
-  Marks the cache line as "low priority" — evict it immediately.
-  The data passes through L2 but is immediately the first candidate for eviction.
-  Use for: data accessed ONCE and never again (streaming input data, outputs).
+  Request earlier eviction priority for data with little expected reuse.
+  This does not force immediate eviction or bypass L2.
 
-  Example: Reading 1GB of image data, each tile processed once then discarded.
-    Using evict_normal: image data fills L2, evicts weights/constants.
-    Using evict_first: image data streams through L2 leaving it clean for other data.
+  Example: a reused weight tile may benefit from evict_last if the working
+  set and competing traffic allow retention. A one-pass input may benefit
+  from evict_first if it would otherwise displace useful data.
 
-  ─── Loads vs Stores — Different Policies ─────────────────────────
-
-  LOADS (global → shared): data ENTERS L2 from HBM
-    evict_last  → keep the loaded data in L2 (good for reused inputs)
-    evict_first → stream through L2 without polluting (one-pass data)
-
-  STORES (shared → global): data EXITS through L2 to HBM
-    evict_first → write result to L2 → immediately evict (don't cache)
-    Best for final outputs: written once, read by next pipeline stage elsewhere.
-    Using evict_last for stores pollutes L2 with output data you won't read again.
+  Loads and stores:
+  ─────────────────────────────────────────────────────────────────
+  Select a hint from the next consumer's reuse pattern, not just whether
+  this is a load or store. An output read soon by another kernel may be
+  worth retaining. Compare measured traffic and end-to-end timing.
 ```
+
+These are performance hints, not memory-ordering or residency guarantees. See
+[PTX cache eviction priority](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#cache-eviction-priority-hints).
 
 ### 8.2 The createpolicy Instruction — Building a Cache Descriptor
 
@@ -880,57 +828,25 @@ createpolicy — Building the Cache Descriptor
   uint64_t write_policy;
   asm("createpolicy.fractional.L2::evict_first.b64 %0, 1.0;"
       : "=l"(write_policy));
-  // Write outputs: they hit L2 (to satisfy write coalescing)
-  // but are immediately evicted → keeps L2 clean for inputs.
+  // Request lower retention priority for outputs with no expected near-term reuse.
+  // This does not guarantee immediate eviction or a cleaner cache.
 ```
 
 ### 8.3 Practical L2 Hinting Strategy
 
-Recipes by workload. If you read nothing else in this section, read this — it
-tells you which hint to use for GEMM, for streaming, and for attention.
+Start with the default policy. Then identify reuse across CTAs and launches,
+not merely reuse inside one CTA's shared memory.
 
-```
-L2 Hinting Strategy for Common Workloads
-══════════════════════════════════════════════════════════════════════
+For GEMM, an A tile can be reused across N tiles and a B tile across M tiles.
+Which benefits from retention depends on traversal, problem shape and the live
+working set. Neither operand is universally a one-pass stream. For attention,
+K/V tiles can be revisited by different query CTAs even when each CTA streams
+them once; Q may already be retained in registers or shared memory.
 
-  GEMM Kernel (C = A × B):
-  ─────────────────────────────────────────────────────────────────
-  Matrix A tiles (one row of tiles, reused for all N blocks):
-    → evict_last: same A tile is multiplied against B[0], B[1], ..., B[N]
-    → Staying in L2 saves N-1 HBM fetches per A tile
-
-  Matrix B tiles (one per block, not reused across blocks):
-    → evict_normal or evict_first: each B tile used once per block
-    → No benefit from persisting; evict_first frees space for A tiles
-
-  Output C tiles (written once, not read back on this SM):
-    → evict_first for the write: result written to L2 then evicted
-    → Keeps L2 free for incoming A and B tiles
-
-  Attention Kernel:
-  ─────────────────────────────────────────────────────────────────
-  Query matrix Q (each Q row used for all K, V tiles):
-    → evict_last: Q is reused across the entire key-value sequence
-
-  Key matrix K tiles (streamed):
-    → evict_first: each K tile accessed once for attention scores
-
-  Value matrix V tiles (streamed):
-    → evict_first: each V tile accessed once for output aggregation
-
-  Output O (written once):
-    → evict_first for stores
-
-  ─── Combined Rules ──────────────────────────────────────────────
-
-  Will this data be reused (multiple passes)?
-    YES → evict_last (maximize L2 persistence)
-    NO  → evict_first (minimize L2 pollution) or evict_normal (default)
-
-  Is this a write to global memory?
-    YES → evict_first (output data you won't read back soon)
-    NO  → see above (load policy)
-```
+Use `evict_last` as a candidate for data with useful cache-level reuse and
+`evict_first` for data with little expected reuse. Profile both traffic and
+ordinary execution time after changing a hint. The policy does not reserve L2,
+ensure a cache hit, or replace the transfer's completion protocol.
 
 ---
 
@@ -948,6 +864,8 @@ overhead and this is the right instruction.
 ### 9.1 cp.async.bulk Without .tensor — Linear Byte Copies
 
 Raw `cp.async.bulk` (without `.tensor`) is essentially a hardware-accelerated `memcpy`. It treats memory as a flat stream of bytes and copies a specified number of bytes from source to destination. No descriptor needed, no dimension knowledge.
+
+For raw bulk copies, both addresses must be 16-byte aligned and the size a multiple of 16 bytes. Tensor-map copies have additional layout and coordinate constraints: their shared-memory address must be 128-byte aligned. The associated mbarrier is independently 8-byte aligned. Neither a descriptor nor a completion wait repairs an invalid address. See [PTX bulk-copy instructions](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor).
 
 ```
 Unstructured Copy Variants — All State Space Combinations
@@ -1152,53 +1070,35 @@ Structured Copy: Shared::CTA → Global (Store / Write-back)
 
 The optimisation Chapter 2 §3 promised, now with the actual mechanism.
 
-The setup: several blocks in a cluster all need the same tile. Fetched
-separately that is N trips to HBM for one tile's worth of data. Multicast makes
-it one fetch that lands in all N blocks' shared memory simultaneously.
-
-The complication is in the bookkeeping, and §11.3 is where the real content is.
-Each participating block has its own mbarrier, and every one of them has to be
-set up correctly before the copy is issued — get this wrong and the kernel
-hangs rather than producing wrong numbers, which is at least an honest failure.
+Several blocks in a cluster may need the same global-memory tile. Multicast
+lets one issued tensor transfer deliver it to the shared-memory destination in
+each selected block. Every destination needs its own initialized completion
+barrier and valid storage before issue.
 
 ### 11.1 The Problem Multicast Solves
 
-In GEMM kernels, multiple thread blocks need the SAME tile of matrix A (one tile of A is multiplied against different tiles of B by different blocks). Without multicast, each block independently fetches that same tile from HBM — redundant bandwidth waste proportional to the cluster size.
-
-TMA multicast solves this by fetching from HBM ONCE and delivering the data to ALL specified blocks simultaneously via the L2 → cluster crossbar path.
-
-```
-TMA Multicast — Bandwidth Analysis
-══════════════════════════════════════════════════════════════════════
-
-  Without multicast (4-block cluster, all need tile A0):
-  ─────────────────────────────────────────────────────────────────
-  Block 0: fetch A0 from HBM → 4 KB read → write to Block 0's SMEM
-  Block 1: fetch A0 from HBM → 4 KB read → write to Block 1's SMEM
-  Block 2: fetch A0 from HBM → 4 KB read → write to Block 2's SMEM
-  Block 3: fetch A0 from HBM → 4 KB read → write to Block 3's SMEM
-  Total HBM reads: 4 × 4 KB = 16 KB for the SAME data. Wasteful!
-
-  With multicast (4-block cluster, all need tile A0):
-  ─────────────────────────────────────────────────────────────────
-  ONE block's thread issues multicast instruction (ctaMask = 0b1111):
-    TMA reads A0 from HBM → 4 KB (ONCE)
-    L2 cache controller recognizes multicast → broadcasts data:
-      → Block 0's SMEM: ✓ receives A0
-      → Block 1's SMEM: ✓ receives A0
-      → Block 2's SMEM: ✓ receives A0
-      → Block 3's SMEM: ✓ receives A0
-  Total HBM reads: 1 × 4 KB = 4 KB. 4× bandwidth savings!
-```
-
-[![TMA multicast — one HBM fetch, delivered to every block's SMEM](images/ch05/06-tma-multicast-fanout.svg)](images/ch05/06-tma-multicast-fanout.svg)
-
-*One HBM read lands in L2, whose controller recognizes the multicast request and broadcasts the tile to every block named in the ctaMask simultaneously — here all four of SM0-SM3's SMEM.*
+Without multicast, four blocks issue four independent requests for the same
+4 KiB tile. With multicast, one request names the four recipients. The delivered
+shared-memory data is still 4 × 4 KiB: multicast reduces redundant source-side
+requests rather than eliminating destination writes.
 
 ```
-  Multicast savings = (cluster_size - 1) × tile_bytes of HBM bandwidth
-  For cluster_size=8: 7 × tile_bytes saved per tile fetch!
+Four independent requests:   A0 → block 0, A0 → block 1,
+                            A0 → block 2, A0 → block 3
+One multicast request:      A0 → {block 0, block 1, block 2, block 3}
+
+Destination payload in both cases: 4 × 4 KiB = 16 KiB
+Source request payload: independent 16 KiB; multicast 4 KiB
 ```
+
+[![Multicast fans a tile out to a cluster](images/ch05/06-tma-multicast-fanout.svg)](images/ch05/06-tma-multicast-fanout.svg)
+
+*Each selected rank receives its own shared-memory copy.*
+
+Actual HBM traffic is not equal to this request count: independent requests can
+hit L2 or share cached data. A fourfold request reduction therefore does not
+promise a fourfold HBM-bandwidth reduction or speedup. Measure the cache and
+memory traffic for the actual workload. See the [PTX tensor-copy multicast contract](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor).
 
 ### 11.2 The ctaMask — Selecting Participant Blocks
 
@@ -1328,14 +1228,15 @@ outgrow 48 KB and you have to switch to `extern __shared__`.
 
 With dynamic shared memory there is no compiler to lay out your variables — you
 get one flat array and place everything by hand. TMA makes that fussier than
-usual, because mbarriers need 8-byte alignment and TMA destinations need 128,
-and getting either wrong is a silent misalignment rather than an error.
+usual: mbarriers need 8-byte alignment and tensor-map copies need a 128-byte
+aligned shared-memory address. Violating the instruction contract is undefined
+behavior; it need not produce a predictable error or a particular corruption.
 
 The template here is worth copying verbatim.
 
 ### 12.1 The Problem with Dynamic SMEM and TMA
 
-When using dynamic shared memory (`extern __shared__ char smem[]`), you must manually lay out the mbarrier object and data tile within the shared memory region. TMA requires the data destination to be 128-byte aligned (for swizzling), and the mbarrier must be 8-byte aligned. Getting the layout wrong causes subtle corruption.
+When using dynamic shared memory (`extern __shared__ char smem[]`), you must manually lay out the mbarrier object and data tile within the shared memory region. Tensor-map copies require the shared-memory data address to be 128-byte aligned, including unswizzled copies; raw bulk copies instead require 16-byte data alignment. The mbarrier must be 8-byte aligned. Align the allocation base as well as each offset.
 
 ```
 Dynamic Shared Memory Layout for TMA — The Right Way
@@ -1370,9 +1271,9 @@ Dynamic Shared Memory Layout for TMA — The Right Way
   // Pass to kernel launch: my_kernel<<<grid, block, 128+TILE_BYTES>>>(...)
 ```
 
-[![Dynamic shared memory layout for TMA — wrong vs correct alignment](images/ch05/07-dynamic-smem-alignment.svg)](images/ch05/07-dynamic-smem-alignment.svg)
+[![Align the tile, not just the allocation base](images/ch05/07-dynamic-smem-alignment.svg)](images/ch05/07-dynamic-smem-alignment.svg)
 
-*Placing data right after the 8-byte mbarrier leaves it at byte offset 8 — not a multiple of 128, which silently corrupts TMA's swizzled writes. Rounding the offset up to the next 128-byte boundary (padding bytes 8-127) gives TMA the alignment its SWIZZLE_128B destination requires.*
+*This layout example uses an eight-byte barrier and a 128-byte-aligned tile start.*
 
 ```
   ─── Template for Multiple Tiles (double buffering) ───────────────
@@ -1409,7 +1310,7 @@ guarantee that data will be there.
 
 ### 13.1 Prefetching — Warming the L2 Cache
 
-`cp.async.bulk.prefetch` is a hint instruction that tells the memory system to start fetching data from HBM into the L2 cache without writing it to shared memory yet. When the actual `cp.async.bulk.tensor` load is issued shortly after, the data is already in L2 — avoiding the full HBM latency.
+`cp.async.bulk.prefetch` is a hint instruction that tells the memory system to start fetching data from HBM into the L2 cache without writing it to shared memory yet. A later `cp.async.bulk.tensor` load may benefit if the data has arrived and remains in L2; a prefetch neither guarantees residency nor establishes data readiness.
 
 ```
 cp.async.bulk.prefetch — How It Works
@@ -1417,15 +1318,15 @@ cp.async.bulk.prefetch — How It Works
 
 ```
 
-[![cp.async.bulk.prefetch — warming L2 ahead of the real load](images/ch05/08-prefetch-timeline.svg)](images/ch05/08-prefetch-timeline.svg)
+[![Prefetch creates an opportunity for reuse](images/ch05/08-prefetch-timeline.svg)](images/ch05/08-prefetch-timeline.svg)
 
-*Without prefetch, the real `cp.async.bulk` is the first thing to touch HBM, so once compute on tile K finishes the threads sit idle for the full ~200 μs HBM round trip. With prefetch issued early, that HBM transfer overlaps with compute on tile K; by the time the real `cp.async.bulk` is issued, L2 is already warm and the transfer is a fast L2 hit instead.*
+*The real load still needs its normal ordering and completion protocol.*
 
 ```
   PTX syntax:
   ─────────────────────────────────────────────────────────────────
-  cp.async.bulk.prefetch.L2.tensor.{nd}.global.{cache}
-      [tensor_map], coord_array;
+  cp.async.bulk.prefetch.tensor.{nd}.L2.global
+      [tensor_map, coord_array];
 
   Operands:
     tensor_map:   Same cuTensorMap descriptor as the main copy
@@ -1433,7 +1334,7 @@ cp.async.bulk.prefetch — How It Works
 
   Example:
     // Early: prefetch tile K+1 into L2
-    asm("cp.async.bulk.prefetch.L2.tensor.2d.global [%0], {%1, %2};"
+    asm("cp.async.bulk.prefetch.tensor.2d.L2.global [%0, {%1, %2}];"
         : : "l"(&tma_desc), "r"(col_K1), "r"(row_K1));
 
     // Later: actual load (L2 likely warm by now)
@@ -1839,6 +1740,9 @@ Checks: 6144 / 6144 passed
 
 
 
+
+
+
 `GPU:` varies with the card the binary runs on; everything else is deterministic. The host seeds `h_src[i] = (float)i`, so for each of the `K_TILES=6` tiles the verify loop checks `tile[i]` against `(float)(k * TILE_ELEMS + i)` — all `6 × 1024 = 6144` elements match. One cosmetic note: unlike the two-glyph PASS banners in earlier chapters, this one carries only a single 3-byte UTF-8 glyph (`✓`, no trailing em dash), so `%-56s`'s byte-counted padding comes up exactly even with the border instead of landing short.
 
 ### 15.2 Full Example: TMA Store + cp.reduce.async
@@ -2023,6 +1927,9 @@ Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
 
 
 
+
+
+
 `GPU:` again varies with the card the binary runs on. Block `bid` fills its SMEM tile with `(float)(bid+1)`, so blocks 0-3 contribute 1.0, 2.0, 3.0, 4.0; each block's `cp.reduce.async.bulk...add.f32` atomically adds its tile into `global_acc`, so every one of the `256` elements ends up at `1+2+3+4 = 10.0` and `errors` stays `0`. This banner carries two 3-byte UTF-8 glyphs (`✓` and the em dash in `— cp.reduce.async`), so `%-56s`'s byte-counted padding lands 2 columns short of the border above it — the same quirk documented for the two-glyph banners in Chapters 3 and 4.
 
 ---
@@ -2046,20 +1953,21 @@ cp.async.bulk.shared::cluster.shared::cta... Cluster copy: SMEM → DSMEM
 cp.async.bulk.tensor.Nd.shared::cta.global...    Tensor load (descriptor)
 cp.async.bulk.tensor.Nd.global.shared::cta...    Tensor store (descriptor)
 cp.async.bulk.tensor.Nd.shared::cluster.global.multicast... Multicast load
-cp.async.bulk.prefetch.L2.tensor.Nd.global...    L2 prefetch hint
+cp.async.bulk.prefetch.tensor.Nd.L2.global...    L2 prefetch hint
 cp.reduce.async.bulk.global.shared::cta...       Atomic tile reduction
 ```
 
 ### Completion Mechanism Comparison
 
-mbarrier versus bulk_group, side by side. The rule of thumb: mbarrier for
-loads you'll pipeline, bulk_group for stores.
+The copy direction and instruction variant determine the mechanism. Use the
+load barrier for destination readiness; use the appropriate store-group wait
+for source reuse or full completion.
 
 ```
-Mechanism                 Granularity   Blocking?  Overhead  Best For
+Mechanism                    Typical direction    Observation
 ──────────────────────────────────────────────────────────────────────────
-mbarrier::complete_tx::bytes  Per byte  Optional   Medium    Production pipelines
-bulk_group / commit+wait      Per group  Yes (wait) Low      Simple load-compute-store
+mbarrier::complete_tx::bytes   Global → shared      Barrier phase completion
+bulk_group / commit+wait      Shared → global      Committed group completion
 ```
 
 ### L2 Cache Hinting Guide

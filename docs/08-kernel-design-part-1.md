@@ -109,20 +109,22 @@ Compile Patterns
 
 ## 1 — The Roofline Model
 
-### 1.1 Why Every Kernel Is Either Compute-Bound or Memory-Bound
+### 1.1 Two Roofline Bounds, Then a Measured Bottleneck
 
-Every GPU kernel has exactly one bottleneck: either the hardware is waiting for data
-to arrive (memory-bound), or the hardware is waiting for arithmetic units to finish
-(compute-bound). The roofline model gives you the mathematical tool to determine
-which one you are — and how far from peak performance you currently sit.
+The roofline model compares two throughput bounds: the rate at which memory can
+supply bytes and the rate at which the selected arithmetic units can execute work.
+The lower bound defines the modeled ceiling. A real kernel can run below both
+because of dependencies, instruction issue, synchronization, or too little parallel
+work. Use arithmetic intensity to predict a ceiling, then profile to identify the
+implementation’s actual bottleneck.
 
 The key quantity is **Arithmetic Intensity (AI)**: how many floating-point operations
 you perform per byte of data you move between the memory hierarchy and the compute
 units.
 
-[![H100 SXM5 roofline: FP16 Tensor Core and FP32 CUDA Core roofs on a log-log plot, with ridge points at AI≈20 and AI≈295 FLOP/Byte and example kernels placed by their arithmetic intensity](images/ch08/01-roofline-chart.svg)](images/ch08/01-roofline-chart.svg)
+[![Two compute roofs, one memory ceiling](images/ch08/01-roofline-chart.svg)](images/ch08/01-roofline-chart.svg)
 
-*The two H100 roofs — FP32 CUDA Core (ridge ≈20 FLOP/Byte) and FP16 Tensor Core (ridge ≈295 FLOP/Byte) — with softmax and two GEMM sizes plotted by their own AI.*
+*H100 SXM product-peak model. Arithmetic intensity uses useful FLOPs divided by transferred bytes.*
 
 ```
 The Roofline Model — Visual and Equations
@@ -159,14 +161,15 @@ The Roofline Model — Visual and Equations
   └─────────────────────────────────────────────────────────────────┘
 
   Reading the chart:
-    • If your kernel's AI < ridge point → memory-bound
-      Performance ∝ AI × bandwidth (more intensity = more throughput)
-    • If your kernel's AI > ridge point → compute-bound
-      Performance ∝ Peak FLOPS (more intensity won't help)
+    • AI < ridge point → the modeled memory ceiling is lower.
+      Throughput ≤ AI × bandwidth.
+    • AI > ridge point → the selected arithmetic ceiling is lower.
+      Throughput ≤ peak FLOPS.
 
-  KEY INSIGHT: The roofline tells you WHERE to focus your optimization.
-    Memory-bound? Reduce bytes moved (tiling, caching, fusion).
-    Compute-bound? Maximize FLOPs per SM cycle (warp specialization, pipelines).
+  KEY INSIGHT: The roofline proposes a limit to investigate.
+    Measured bandwidth limit? Reduce traffic (tiling, caching, fusion).
+    Measured arithmetic limit? Improve use of the relevant execution units.
+    Far below both roofs? Inspect parallelism, dependencies and issue stalls.
 ```
 
 ### 1.2 Computing AI for Real Operations
@@ -597,6 +600,9 @@ KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
 
 
 
+
+
+
 Kernel A's achieved GFLOPS (372.6) is exactly `ai_theoretical × bw_achieved` (0.125 × 2980.0) — that identity is the roofline model itself: in the memory-bound regime, performance is bandwidth times arithmetic intensity, nothing else. Kernel B's 85.3 FLOP/Byte (computed precisely from the exact tile sizes) lands a bit below the "≈89" quoted in the comment above the kernel, which rounds FLOPs to 268M and bytes to 3MB before dividing — the precise 268.4M/3.145728MB ratio the program actually computes is 85.3, a reminder that back-of-envelope rounding and a program's exact arithmetic can disagree by a few percent even when both are "right."
 
 ---
@@ -607,9 +613,9 @@ Kernel A's achieved GFLOPS (372.6) is exactly `ai_theoretical × bw_achieved` (0
 
 When your kernel's AI exceeds the ridge point, arithmetic throughput becomes the bottleneck. But recognizing a compute-bound kernel in practice — before you profile — requires understanding what the hardware tells you.
 
-[![Producer warps idle on repeated WAIT segments while consumer warps run a continuous, uninterrupted block of MMA instructions](images/ch08/02-producer-consumer-imbalance.svg)](images/ch08/02-producer-consumer-imbalance.svg)
+[![A producer can wait on a busy consumer](images/ch08/02-producer-consumer-imbalance.svg)](images/ch08/02-producer-consumer-imbalance.svg)
 
-*Signature 2 in the timeline: producers stall on barriers while consumers stay 100% busy — the most diagnostic sign that math, not memory, is the bottleneck.*
+*One qualitative signature of imbalance; use counters and timings to confirm it.*
 
 ```
 Compute-Bound Signatures — What to Look For
@@ -700,9 +706,9 @@ Compute-Bound Optimization Hierarchy
 
 Memory-bound is not a single condition. The bottleneck can be at three different points in the memory hierarchy, each with different fixes.
 
-[![Decision flowchart: HBM bandwidth over 80% of peak means bandwidth-bound, otherwise FLOP rate over 20% means partially compute-bound, otherwise SM utilization over 50% means latency-bound, otherwise locality-bound](images/ch08/03-diagnosis-flowchart.svg)](images/ch08/03-diagnosis-flowchart.svg)
+[![Diagnose from evidence, then change one cause](images/ch08/03-diagnosis-flowchart.svg)](images/ch08/03-diagnosis-flowchart.svg)
 
-*The diagnosis flowchart from the categories below, walked top to bottom against three profiler metrics until one "yes" lands on a verdict.*
+*Combine timing, traffic, instruction progress and resource constraints.*
 
 ```
 Three Categories of Memory-Bound Kernels
@@ -802,9 +808,9 @@ On any GPU, an SM hosts many active warps, but only a few can issue instructions
 
 Warp Specialization breaks this competition by giving different warps **permanently different jobs** for the entire kernel execution. Some warps become dedicated "producers" that only move data. Other warps become dedicated "consumers" that only perform arithmetic.
 
-[![Four mixed warps each interleaving LOAD, wait, and MMA with staggered idle gaps, versus one dedicated producer warpgroup issuing only TMA and two dedicated consumer warpgroups issuing only MMA back to back](images/ch08/04-warp-specialization-before-after.svg)](images/ch08/04-warp-specialization-before-after.svg)
+[![Warp specialisation separates responsibilities](images/ch08/04-warp-specialization-before-after.svg)](images/ch08/04-warp-specialization-before-after.svg)
 
-*Without specialization every warp idles during its own loads; with specialization the producer's TMA loads and the consumers' WGMMA run back to back, warpgroup by warpgroup, on the same SM.*
+*Dedicated producer and consumer roles can simplify a deep pipeline.*
 
 ```
 Warp Specialization — Before and After
@@ -1261,6 +1267,9 @@ Role assignment: CORRECT
 
 
 
+
+
+
 Every value lands exactly on `6i+14` because this kernel does pure FP32 arithmetic on values that are exact in binary floating point (small integers and products of small integers) — unlike the BF16 accumulation examples in Chapters 6-7, there is no rounding to trace here, so the "Got" and "Expected" columns match bit-for-bit, including at the boundary case `i=127` (776.0), which matches the manual worked example above.
 
 ---
@@ -1624,6 +1633,9 @@ WG1 (CONSUMER, 128 regs after resize):
 
 
 
+
+
+
 [Captured SASS](validation/2026-11-17/setmaxnreg-sass.log) contains both `USETMAXREG.TRY_ALLOC.CTAPOOL` and `USETMAXREG.DEALLOC.CTAPOOL`.
 
 Both warpgroups' arithmetic results are exact for these inputs. The kernel explicitly specifies an 80-register entry budget with `__maxnreg__(80)`: one 128-thread warpgroup releases to 32 and the other increases to 128, preserving the combined budget. Without a known entry register count, `ptxas` can ignore `setmaxnreg` (diagnostic C7508), so successful arithmetic alone would not prove register redistribution occurred. Check the compiler log and the SASS for `USETMAXREG.TRY_ALLOC` and `USETMAXREG.DEALLOC` as well as the runtime output.
@@ -1709,9 +1721,9 @@ The H100's HBM3 has ~500 cycle latency for individual memory accesses. WGMMA exe
 
 Pipelining eliminates this idle time by overlapping the DATA MOVEMENT for tile N+1 with the COMPUTATION of tile N. The consumer is always computing while the producer is always loading.
 
-[![Three stacked timelines: serial load-then-compute at ~9% utilization, 2-stage pipelining overlapping loads and math at >95% utilization, and a 4-stage pipeline where every step runs one Load and one MMA simultaneously](images/ch08/05-pipelining-stages-0-2-4.svg)](images/ch08/05-pipelining-stages-0-2-4.svg)
+[![Pipeline depth creates room for overlap](images/ch08/05-pipelining-stages-0-2-4.svg)](images/ch08/05-pipelining-stages-0-2-4.svg)
 
-*Going from zero to two to four pipeline stages: each added stage overlaps one more load with compute, until every step is doing both at once.*
+*Deeper buffering helps only when its resource cost is affordable.*
 
 ```
 Pipelining — What It Means Concretely
@@ -1769,9 +1781,9 @@ Pipelining — What It Means Concretely
 
 Each "stage" in the pipeline corresponds to a physical allocation of shared memory. With N stages, you allocate N copies of the A-tile and B-tile in shared memory. This allows N tiles to be "in flight" simultaneously: some being loaded by TMA, others being consumed by WGMMA — for 32KB+32KB A/B tiles on H100's 228KB SMEM budget, N tops out at 3 (CORRECTED below: a 4th stage at this tile size would need 256KB and blow the budget).
 
-[![228KB of shared memory divided into three stages, each holding a 32KB A tile, a 32KB B tile, and an mbarrier pair, with 36KB left over as an epilogue buffer](images/ch08/06-pipeline-smem-layout.svg)](images/ch08/06-pipeline-smem-layout.svg)
+[![Stage depth is a shared-memory budget](images/ch08/06-pipeline-smem-layout.svg)](images/ch08/06-pipeline-smem-layout.svg)
 
-*Three stages at 32+32 KB each commit 192 KB of the 228 KB budget — the most this tile size allows, with 36 KB left for the epilogue.*
+*Example allocation: three stages, each with 32 KiB of A and 32 KiB of B.*
 
 ```
 Pipeline Stages — Physical SMEM Layout
@@ -1824,9 +1836,9 @@ Pipeline Stages — Physical SMEM Layout
 
 With N pipeline stages in shared memory, the producer and consumer work through the stages in a circular (ring) fashion. The producer writes to stage `i % N`, the consumer reads from stage `(i - depth) % N`, where `depth` is how many stages ahead the producer stays.
 
-[![Four pipeline stages arranged in a ring, snapshotted at iteration 5: stage 0 and 2 full, stage 1 being loaded by the producer, stage 3 being consumed, write pointer at stage 1 and read pointer at stage 3](images/ch08/07-circular-buffer-ring.svg)](images/ch08/07-circular-buffer-ring.svg)
+[![A circular buffer recycles storage, not time](images/ch08/07-circular-buffer-ring.svg)](images/ch08/07-circular-buffer-ring.svg)
 
-*At iteration 5 the producer (write pointer) is two stages ahead of the consumer (read pointer) — the `depth=2` the kernel maintains all the way through steady state.*
+*Producers and consumers track both stage ownership and generation.*
 
 ```
 Circular Buffer — Ring Operation
@@ -2230,6 +2242,9 @@ Output Verification (element 0 and element 10):
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex04_circular_buffer.cu -->
+
+
+
 
 
 

@@ -114,6 +114,8 @@ ALL TESTS PASSED — Clusters working correctly!
 
 The program's exit status was **0**. GPU `printf` ordering and the device name may differ on another host. Compare the checks and final pass status, not incidental line ordering. [Exact tested source](validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu) · [Full captured output](validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/run.log).
 
+**Learning checkpoint:** For a one-dimensional cluster of two blocks, predict the local rank of global block 3 and its partner block. Check the cluster/rank fields in the program output. The prediction is rank 1 with partner global block 2: global numbering and rank-within-cluster are different quantities. This is a reasoning exercise, not an additional recorded GPU run.
+
 Return to the repository root after this example:
 
 ```bash

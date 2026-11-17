@@ -72,3 +72,25 @@ Start with `docs/getting-started.md`. `python3 tools/h100_preflight.py` checks C
 `python3 tools/verify_validation_records.py` checks that all complete chapter programs and downloadable sources still match their recorded execution hashes. CI runs this before the strict documentation build. It is an evidence-consistency check, not a GPU execution test.
 
 Every chapter includes learning goals, two self-checks with expandable worked answers, and an original SVG opening illustration. `tools/create_chapter_openers.py` regenerates those illustrations.
+
+## Original technical illustrations
+
+All 112 technical SVG figures are generated from original layouts in
+`tools/illustrations/catalog.py`, `drawing.py` and `specialized.py`. The 15
+chapter-opening illustrations keep their separate design and generator.
+
+```bash
+python3 -m pip install -r tools/illustrations/requirements.txt
+python3 tools/illustrations/embed_font.py
+python3 tools/illustrations/catalog.py
+python3 tools/illustrations/sync_captions.py
+python3 tools/verify_svg_readability.py
+mkdocs build --strict
+```
+
+The drawings use a 760-unit reading-column canvas, selectable text and an
+embedded Inter font subset with its SIL Open Font License. Architecture paths,
+barrier handoffs and network topologies have explicit connections; matrix
+layouts and timelines use their own visual forms. Source notes distinguish
+product specifications, illustrative models and published paper results.
+Regenerating figures does not compile or execute any CUDA example.

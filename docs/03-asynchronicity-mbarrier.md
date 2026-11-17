@@ -32,8 +32,8 @@ helpfully reordering things around it.
 The chapter comes in four movements. Sections 1–4 build the case for asynchrony
 from first principles, with no PTX at all. Sections 5–7 introduce the memory
 model you need before you can reason about it: proxies, hazards, and fences.
-Sections 8–13 are the core — `mbarrier`, the Hopper primitive that every
-production pipeline is built on, taken apart instruction by instruction.
+Sections 8–13 explain basic `mbarrier` and its Hopper transaction extensions
+through a representative producer/consumer pipeline.
 Sections 14–16 cover three related primitives you'll meet in real kernels.
 
 If you are impatient, read §5–§7 and then §8–§9. Those four sections contain the
@@ -51,7 +51,7 @@ ahead to the Table of Contents.
 
 ### What Hardware Can You Use?
 
-This guide targets NVIDIA Hopper GPUs (sm_90a). The mbarrier and cp.async.bulk instructions covered here are Hopper-introduced features. Here is a summary of what works where:
+This guide targets Hopper. Basic mbarrier initialization, arrival and test_wait are available on sm_80; Hopper adds transaction-count tracking, try_wait and bulk/TMA operations. The complete examples target sm_90a.
 
 ```
 Hardware Compatibility Matrix
@@ -59,18 +59,20 @@ Hardware Compatibility Matrix
 
   Architecture   Chip     SM Target   Example GPUs          Sections
   ─────────────────────────────────────────────────────────────────────
-  Ampere         GA100    sm_80       A100 (AWS p4d, Lambda) §1-3 only (no mbarrier)
+  Ampere         GA100    sm_80       A100 (AWS p4d, Lambda) Basic mbarrier / cp.async; no TMA
   Hopper         GH100    sm_90a      H100 (AWS p5, Lambda)  ALL sections ★
   Blackwell      GB100    sm_100a     B100/B200              ALL + new instructions
 
   KEY:
-    mbarrier, cp.async.bulk, wgmma → Hopper (sm_90a) or Blackwell (sm_100a) ONLY
+    Basic mbarrier init/arrive/test_wait → sm_80 or later
+    mbarrier tx-count / try_wait / cp.async.bulk → sm_90 or later
+    wgmma → Hopper sm_90a; Blackwell uses a different Tensor Core ISA
     cp.async (non-bulk)            → Ampere (sm_80) and later
     bar.sync / __syncthreads       → All architectures
 
   AMPERE NOTE: A100 has cp.async (tile-based async copies) but NOT
-  cp.async.bulk (TMA) or mbarrier. The conceptual sections (§1-4) apply
-  everywhere. The code sections (§5+) require sm_90a or sm_100a.
+  cp.async.bulk (TMA), transaction-count extensions or try_wait.
+  Basic mbarrier works on Ampere; the complete examples here target Hopper.
 ```
 
 ### Cloud GPU Rental — Lambda Labs
@@ -117,15 +119,15 @@ AWS p5 Setup (H100)
   source activate pytorch          # activates CUDA environment
   nvcc --version && nvidia-smi     # verify
 
-  For A100 (p4d): use -arch=sm_80, skip mbarrier/cp.async.bulk sections.
+  For A100 (p4d): basic mbarrier is supported; do not run Hopper TMA examples.
   For H100 (p5):  use -arch=sm_90a, all sections work.
 ```
 
 ### Hopper vs Blackwell — What Changes for This Lesson
 
 Read this once if you are on a B100 or B200. The short answer is that everything
-in this chapter carries over unchanged — `mbarrier` is not going anywhere — and
-only the compile flag differs.
+basic barrier/TMA concepts carry over. Verify each instruction and resource
+constraint for a Blackwell implementation; this chapter records Hopper execution only.
 
 ```
 Hopper (sm_90a) vs Blackwell (sm_100a) — Async/Barrier Differences
@@ -137,7 +139,7 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — Async/Barrier Differences
     ├── fence.proxy.async semantics
     ├── barrier.cluster semantics
     ├── Named barriers (bar.sync with ID)
-    └── All code in this guide compiles unchanged with sm_100a
+    └── Verify exact target support rather than assuming all guide kernels port
 
   WHAT IS NEW IN BLACKWELL:
     ├── tcgen05 async tensor core ops (new generation, same mbarrier model)
@@ -145,8 +147,8 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — Async/Barrier Differences
     ├── tmem (tensor memory) has its own async/barrier considerations
     └── Some new arrive variants for tmem synchronization
 
-  PORTING: Change -arch=sm_90a to -arch=sm_100a. All examples compile
-  and run correctly on B100/B200 without any code changes.
+  PORTING: Recompile for the actual target and validate its instruction
+  support and resource limits; no Blackwell execution is recorded here.
 ```
 
 ### How to Compile and Run Each Example
@@ -210,9 +212,9 @@ In a synchronous system, doing and fetching are chained together sequentially. Y
 
 Think of cooking a meal synchronously: you put water on to boil, then stand there watching the pot until it boils (fetching complete), then add the pasta (doing), then stand watching again until the pasta is cooked (fetching again), then drain it (doing). You accomplished nothing else for the entire 15 minutes the water and pasta were cooking. You were **blocked**.
 
-[![The synchronous world — blocked execution](images/ch03/01-sync-blocked-execution.svg)](images/ch03/01-sync-blocked-execution.svg)
+[![Serial work leaves gaps](images/ch03/01-sync-blocked-execution.svg)](images/ch03/01-sync-blocked-execution.svg)
 
-*Fetch A blocks the thread completely before Compute A can even start, and the same happens again for Fetch B — only one of {fetching, computing} ever happens at a time, and on the H100 a fetch (HBM3 → SMEM, ~200–500 ns) is 100–500× slower than the compute it's blocking (~1–5 ns per Tensor Core tile multiply).*
+*A deliberately serial dependency chain illustrates the cost of waiting.*
 
 ### 1.2 Latency Hiding — The Async Solution
 
@@ -220,26 +222,24 @@ Asynchronicity solves the blocked-waiting problem by **decoupling the request fr
 
 The cooking analogy: put the water on, go chop vegetables while it heats, come back when you hear the boil. You accomplished two tasks in the time it took to do one. This is **latency hiding** — you didn't make the water boil faster, but you hid its latency behind useful work.
 
-[![Latency hiding — the async solution](images/ch03/02-async-latency-hiding.svg)](images/ch03/02-async-latency-hiding.svg)
+[![Hide latency with independent work](images/ch03/02-async-latency-hiding.svg)](images/ch03/02-async-latency-hiding.svg)
 
-*Fetch A and Fetch B are issued back to back and run concurrently in the background; Compute A and Compute B each start as soon as their own fetch lands. Total time collapses to roughly `max(all fetches)` instead of `sum(all fetches) + sum(all computes)` — a speedup of up to fetch_latency / compute_time, which on this hardware is 100–500×.*
+*The consumer may use a tile only after its required completion has been observed.*
 
 ```
 The key insight:
-  ─────────────────────────────────────────────────────────────────
-  If fetch_cost >> compute_cost, you MUST overlap them.
-  The H100's Tensor Cores can multiply 256×128×64 matrices in ~1ns.
-  Moving that tile from HBM3 takes ~200ns.
-  Synchronous execution: 99.5% of time is wasted waiting.
-  Async execution with pipelining: Tensor Cores run at near 100% utilization.
+  A producer can issue a transfer for tile K+1 while a consumer computes tile K.
+  The overlap is useful only if independent work and buffer capacity exist.
+  Consumers still wait for data readiness; producers still wait for reuse.
 
-  This is why the H100's true genius is not its raw FLOPS count.
-  It is the hardware infrastructure that ensures the Tensor Cores
-  never have to wait. That infrastructure is:
-    ├── TMA (Tensor Memory Accelerator) for async bulk copies
-    ├── mbarrier for tracking completion of async operations
-    ├── wgmma (Warp Group MMA) for non-blocking tensor core ops
-    └── The proxy/fence system for safe cross-unit memory ordering
+  Supporting mechanisms:
+    TMA: descriptor-based asynchronous tensor movement.
+    mbarrier: applicable readiness / handoff tracking.
+    WGMMA: asynchronous warpgroup matrix operations, with commit/wait groups.
+    Proxy ordering and thread synchronisation: safe operand publication.
+
+  Utilisation and latency are measured properties of a particular kernel,
+  shape, schedule and GPU; this sketch does not assign fixed nanosecond costs.
 ```
 
 ---
@@ -288,7 +288,7 @@ The Three-Stage Async Pattern
 
   The tracking mechanism:
     For TMA copies: mbarrier object in shared memory tracks progress
-    For WGMMA:     hardware scoreboard (internal, not directly visible)
+    For WGMMA:     commit_group / wait_group completion protocol
 
   Stage 3: SYNCHRONIZATION — Consume the result
   ─────────────────────────────────────────────────────────────────
@@ -299,7 +299,7 @@ The Three-Stage Async Pattern
     BLOCKING:     thread.wait() — stalls until done (simple but kills latency hiding)
     NON-BLOCKING: if (thread.is_done()) { use_data(); } else { do_other_work(); }
 
-  On H100, non-blocking is: mbarrier.try_wait.parity
+  On H100, non-suspending polling uses mbarrier.test_wait.parity
   This returns true/false without stalling. The thread can spin or yield.
 
   ─── Why Non-Blocking Synchronization Matters ─────────────────────
@@ -334,9 +334,9 @@ A blocking operation pauses the calling thread until the operation finishes. Con
 
 The advantage is simplicity: after a blocking call returns, you know the operation is done. The disadvantage is wasted time — the thread idles while waiting.
 
-[![Blocking vs. non-blocking operations — thread timelines](images/ch03/03-blocking-vs-nonblocking-timelines.svg)](images/ch03/03-blocking-vs-nonblocking-timelines.svg)
+[![Nonblocking issue separates request and use](images/ch03/03-blocking-vs-nonblocking-timelines.svg)](images/ch03/03-blocking-vs-nonblocking-timelines.svg)
 
-*Blocking: the thread issues the op and then sits idle until it completes before it can continue — the gap between issue and continue is pure wasted cycles. Non-blocking (§3.2): the thread issues the op, keeps doing other work, and only checks in with a poll once it actually needs the result.*
+*The issuing thread can do other work before it needs the result.*
 
 ```
 Blocking Operations — Reference
@@ -369,7 +369,7 @@ Non-Blocking Operations — Reference
   ─────────────────────────────────────────────────────────────────
   cp.async.bulk.tensor ...         // starts TMA copy, returns immediately
   wgmma.mma_async ...              // starts tensor core op, returns immediately
-  mbarrier.try_wait.parity ...     // checks completion, returns true/false
+  mbarrier.test_wait.parity ...    // non-suspending completion test
   cudaMemcpyAsync(...)             // host-side: starts copy, returns immediately
 
   The critical invariant:
@@ -399,32 +399,32 @@ SM's threads from doing address arithmetic — which are often conflated.
 In modern computing, arithmetic is incredibly fast and memory access is agonizingly slow by comparison. On the H100:
 
 ```
-Speed Mismatch — H100 Numbers
+A throughput-budget example — H100 SXM product-peak model
 ══════════════════════════════════════════════════════════════════════
 
-  Operation                    Latency         Bandwidth
-  ─────────────────────────────────────────────────────────────────
-  Register read                ~1 cycle        N/A (on-chip)
-  Shared memory read           ~4-10 cycles    ~19 TB/s (per SM)
-  L2 cache read (hit)          ~100 cycles     ~12 TB/s (all SMs, est.)
-  HBM3 read (DRAM)             ~200-500 cycles 3.35 TB/s (all SMs)
+  One GEMM K slice: B_M=128, B_N=128, B_K=64, FP8 input operands.
+  A + B bytes = (128×64 + 64×128) × 1 = 16,384 B = 16 KiB.
+  Matrix work = 2×128×128×64 = 2,097,152 FLOP.
 
-  Tensor Core throughput (FP8):  1,979 TFLOPS dense / 3,958 TFLOPS sparse (H100 SXM5 peak)
-  Time to do 1 GEMM tile (128×128×64, FP8):  < 1 μs
+  Aggregate FP8 dense product peak: 1,979 TFLOP/s over 132 SMs.
+  Uniform-share compute budget: about 15 TFLOP/s per SM.
+  Ideal work / peak throughput: about 0.140 microseconds per K slice.
 
-  Time to load that same tile (128×128×64 FP8 = 1 MB) from HBM3:
-    1 MB ÷ (3.35 TB/s ÷ 132 SMs) ≈ 40 μs  (per SM's share of bandwidth,
-    out of the 132 SMs enabled on the shipping H100 SXM5 die)
+  Aggregate HBM product peak: 3.35 TB/s.
+  Uniform-share bandwidth model: about 25.4 GB/s per SM.
+  16 KiB / that modeled share: about 0.646 microseconds.
 
-  Ratio: memory time / compute time ≈ 40 μs / 1 μs = 40×
-  Without async: Tensor Cores idle 97.5% of the time. Pure waste.
+  These are analytical throughput budgets, not instruction latencies or
+  observed timings. The SM has no guaranteed private HBM bandwidth share.
+  Reuse, cache hits, output stores, scheduling and synchronisation alter
+  the actual balance. This simple operand-load model excludes those costs.
 ```
 
 H100 can overlap instruction issue, Tensor Core math, and asynchronous data movement:
 
-[![H100 SM — three independent async units](images/ch03/04-sm-async-units.svg)](images/ch03/04-sm-async-units.svg)
+[![Three engines, different completion rules](images/ch03/04-sm-async-units.svg)](images/ch03/04-sm-async-units.svg)
 
-*Warp schedulers issue instructions while Tensor Cores and TMA can perform previously launched work. Completion protocols differ: the illustrated global-to-shared TMA load signals an `mbarrier`, while WGMMA operations use `wgmma.commit_group` and `wgmma.wait_group` before their results are accessed. The picture shows possible overlap, not a fixed latency or guaranteed simultaneous execution. See [NVIDIA’s PTX completion rules](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions).*
+*Instruction issue, asynchronous matrix math and tensor movement can overlap. [NVIDIA’s PTX completion rules](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions)*
 
 ### 4.2 The Two Problems Async Solves
 
@@ -493,59 +493,37 @@ exists to bridge that gap.
 
 ### 5.1 What Is a Proxy?
 
-The term "proxy" in CUDA's memory model refers to the **agent** performing a memory operation. This is one of the least-taught but most critical concepts for understanding why memory hazards occur and how fences fix them.
+A **proxy** is a memory-model mechanism through which an operation accesses memory. Ordinary `ld`/`st` instructions normally use the generic proxy; TMA bulk operations and asynchronous WGMMA accesses use the async proxy.
 
-Different proxies have different views of memory. They access memory through different hardware paths, which means they can have inconsistent views of the same memory location at the same point in time. A write done by Proxy A may not be visible to Proxy B unless an explicit ordering instruction (a fence) is used to synchronize the two views.
+When bytes move between these mechanisms, program order alone does not establish every required ordering relationship. Use the specified proxy fence, participating-thread synchronisation and operation-completion protocol for the direction of the handoff.
 
-[![The two proxies](images/ch03/05-two-proxies.svg)](images/ch03/05-two-proxies.svg)
+[![Two proxies, one ordering problem](images/ch03/05-two-proxies.svg)](images/ch03/05-two-proxies.svg)
 
-*The Generic Proxy is the thread itself, issuing ordinary `ld`/`st` and routed through L1 → L2 → HBM3. The Async Proxy is dedicated hardware (the TMA engine, the tensor cores) running `cp.async.bulk` / `wgmma`, routed through L2 → HBM3 with L1 skipped entirely — and running completely independently of any thread. Because they don't share a coherency domain by default, a write from one is not guaranteed visible to the other without an explicit fence (§7).*
+*A proxy identifies the mechanism performing a memory operation.*
 
+```text
+A shared-operand handoff — conceptual sequence, not a complete kernel
+
+  Producers: store the operand bytes in shared memory (generic proxy).
+  Producers: perform the required generic-to-async proxy ordering.
+  Participants: synchronise so the issuing threads observe all producers.
+  Consumer: issue the asynchronous operation that reads those bytes.
+  Consumer: use its required completion protocol before using results.
 ```
-The Two Proxies — PTX Examples
-══════════════════════════════════════════════════════════════════════
 
-  Generic Proxy:
-    ld.global.f32  → generic proxy reads from global memory
-    st.shared.f32  → generic proxy writes to shared memory
-    ld.shared.f32  → generic proxy reads from shared memory
-    Ordered PER THREAD in program order (with some hardware
-    reordering at scope boundaries).
-
-  Async Proxy:
-    cp.async.bulk.tensor ... → TMA engine moves data (async proxy)
-    wgmma.mma_async ...      → tensor cores compute (async proxy)
-    The thread that issued the command has NO IDEA when it finishes
-    and does not automatically see the result.
-```
+See [NVIDIA’s async-proxy memory model](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-memory-operations).
 
 ### 5.2 Why Two Proxies Exist — The Hardware Reality
 
-The previous section described the two proxies as an abstraction. Here is the
-physical reason they are distinct: trace the two paths through the diagram below
-and notice that the generic proxy goes through L1 while the async proxy does
-not.
+A TMA request or WGMMA instruction can remain in flight after its issuing thread proceeds. Correctness therefore requires tracking both **which mechanism accesses the bytes** and **when that access finishes**. Cache-path intuition alone cannot establish these facts.
 
-[![Hardware memory paths — why the proxies differ](images/ch03/06-proxy-hardware-paths.svg)](images/ch03/06-proxy-hardware-paths.svg)
+[![Follow the operation, not a fixed cache cartoon](images/ch03/06-proxy-hardware-paths.svg)](images/ch03/06-proxy-hardware-paths.svg)
 
-*The Generic Proxy's path runs Thread → L1 → L2 → HBM3. The Async Proxy's path has the thread issue a command and return immediately, while the TMA Engine itself moves data HBM3 → SMEM completely independently — bypassing L1 entirely. When TMA writes to shared memory and the Generic Proxy later reads from shared memory through L1, those are genuinely different hardware paths that do not automatically stay in sync.*
+*Different instructions can use different paths and ordering rules.*
 
-```
-The Consequence in Plain English
-══════════════════════════════════════════════════════════════════════
+For example, when threads prepare shared-memory operands for an async reader, `fence.proxy.async.shared::cta` is an applicable proxy-ordering instruction. Every producer’s writes and the consumer’s launch must also be connected through the required thread-synchronisation protocol. A fence by one elected thread does not automatically publish unrelated writes by all other threads.
 
-  Scenario: Thread writes to global memory, then TMA reads same address.
-
-  Thread (Generic Proxy):
-    st.global [addr], val   // stores val to L1, scheduled for L2/HBM
-
-  TMA Engine (Async Proxy) — issued IMMEDIATELY after:
-    cp.async.bulk [addr] → smem  // TMA reads addr directly from L2/HBM
-
-  RACE: The thread's write might still be in L1, not yet in L2.
-  TMA reads the OLD value from L2. Your data pipeline is corrupted.
-  → This is why fence.proxy.async exists (Section 7).
-```
+The distinction is practical: a thread barrier coordinates participants; a proxy fence orders access mechanisms; a completion wait establishes that a particular operation has finished. A correct pipeline uses the combination required by its instructions.
 
 ---
 
@@ -558,75 +536,52 @@ TMA read it before your write has become visible — the TMA fetches stale data.
 A **WAR** hazard (§6.2) is the mirror image: the TMA overwrites a buffer while
 your thread is still reading the old contents out of it.
 
-Both are timing-dependent, which means both will pass your tests on a small
-input and fail in production. Learn to recognise the shapes.
+Both can be timing-dependent. A small test may pass without exposing the race; correctness comes from the dependency protocol, not from a particular observed schedule.
 
 ### 6.1 Read-After-Write (RAW) Hazard
 
-A RAW hazard occurs when the Async Proxy reads from a location that the Generic Proxy has recently written, but the write has not yet propagated to where the Async Proxy can see it. The Async Proxy reads stale data.
+A RAW dependency requires a consumer read to observe the intended producer write. It becomes a hazard if the consumer is allowed to read before the producer’s data is correctly published or before an asynchronous producer has finished.
 
-Intended sequence: (1) Generic Proxy writes value V to address X, (2) Async Proxy reads address X and should see V. Here is what can happen without a fence:
+[![RAW: consume only after production](images/ch03/07-raw-hazard-timeline.svg)](images/ch03/07-raw-hazard-timeline.svg)
 
-[![Read-after-write (RAW) hazard](images/ch03/07-raw-hazard-timeline.svg)](images/ch03/07-raw-hazard-timeline.svg)
+*A read-after-write dependency becomes a hazard when the consumer reads too early.*
 
-*The Generic Proxy's `st.global [X], V` lands in L1 only — not yet propagated to L2/HBM. The Async Proxy's `cp.async.bulk [X]`, issued right after, reads X directly from L2/HBM and gets the OLD value: L1 has `[X] = V` but L2 still has `[X] = OLD`, and the TMA only ever sees L2. The fix is `fence.proxy.async` between the write and the TMA launch, draining the Generic Proxy's pending writes into L2/HBM first.*
+```text
+Generic writes → asynchronous shared-memory reader
 
+  1. Producers finish their assigned shared-memory stores.
+  2. Apply the required proxy fence and participant synchronisation.
+  3. Launch the async reader with the matching operand layout.
+
+Asynchronous TMA writes → consumer shared-memory reads
+
+  1. Set expected transfer accounting and issue the load.
+  2. Wait for this tile generation's data-ready completion.
+  3. Read the destination under the required acquire/sync protocol.
 ```
-Read-After-Write (RAW) Hazard — Concrete Example
-══════════════════════════════════════════════════════════════════════
 
-  Concrete example where this matters:
-  ─────────────────────────────────────────────────────────────────
-  // Host writes scale factor to global memory
-  float* scale_ptr = allocate_global();
-  *scale_ptr = 2.5f;  // host writes (cudaMemcpy under the hood)
-
-  // Kernel thread updates scale, then TMA reads related data
-  st.global [scale_ptr], 3.0f;    // Generic Proxy: scale updated
-  cp.async.bulk [data_ptr] → smem; // Async Proxy: reads data
-
-  // If data depends on scale (e.g., packed together), TMA might
-  // read an old version because the write is still in L1.
-
-  FIX: fence.proxy.async between the write and the TMA launch.
-  This drains the Generic Proxy's pending writes into L2/HBM
-  so TMA sees the updated values.
-```
+These rules follow the access mechanism and dependency. They do not depend on a story that every global store remains only in L1.
 
 ### 6.2 Write-After-Read (WAR) Hazard
 
-A WAR hazard occurs when the Async Proxy writes to a location that the Generic Proxy has recently read and cached locally. The Generic Proxy continues using its stale cached copy even though the true value has been updated.
+A WAR dependency requires the **old read to finish before a new write reuses the same storage**. In a GEMM pipeline, the old reader may be an in-flight WGMMA operation while the new writer is TMA loading another tile into that shared-memory stage.
 
-Intended sequence: (1) Generic Proxy reads value V from address X, possibly caching it, (2) Async Proxy writes new value V' to address X, (3) Generic Proxy should now see V' — but without synchronization, sees stale V instead. Here is what can happen:
+[![WAR: do not overwrite an active reader](images/ch03/08-war-hazard-timeline.svg)](images/ch03/08-war-hazard-timeline.svg)
 
-[![Write-after-read (WAR) hazard](images/ch03/08-war-hazard-timeline.svg)](images/ch03/08-war-hazard-timeline.svg)
+*The producer must not recycle a stage while its consumer still reads it.*
 
-*The Generic Proxy's `ld.global [X]` loads V into L1; a later `ld.global [X]` hits L1 and returns the same cached V, with no idea the Async Proxy has since updated X. In between, the Async Proxy's `cp.async.bulk [src]→[X]` writes V' to X via L2 without invalidating the Generic Proxy's L1 line — so the Generic Proxy keeps reading stale data (§13's two-barrier handshake is the fix).*
+```text
+Unsafe reuse:
+  WGMMA begins reading tile K from stage A.
+  TMA overwrites stage A with tile K+2 before that read completes.
 
+Safe ownership transfer:
+  Consumer observes the required WGMMA completion.
+  Consumer signals the stage's EMPTY / release barrier.
+  Producer observes the release before refilling stage A.
 ```
-Write-After-Read (WAR) Hazard — Failure Modes
-══════════════════════════════════════════════════════════════════════
 
-  Two failure modes:
-  ─────────────────────────────────────────────────────────────────
-  Mode 1: Stale read — Generic Proxy keeps reading old value from L1
-          even though Async Proxy has updated the true value in L2.
-
-  Mode 2: Lost write — Generic Proxy's L1 line gets evicted back to L2
-          overwriting the new value that Async Proxy just wrote.
-          (L1 eviction clobbers the Async Proxy's update)
-
-  The WAR hazard is the most dangerous in GPU kernel pipelines:
-  ─────────────────────────────────────────────────────────────────
-  Classic scenario in a pipelined GEMM:
-    Step 1: wgmma reads tile K from smem[A]  (Generic/Async reads smem)
-    Step 2: TMA loads tile K+1 INTO smem[A]  (Async Proxy writes smem)
-    HAZARD: wgmma is still reading smem[A] while TMA overwrites it!
-    Result: wgmma computes on a mix of tile K and tile K+1 data. Wrong answer.
-
-  FIX: Use mbarrier to make TMA wait until wgmma signals it's done reading.
-  This is covered in Section 13 (WAR hazards and mbarrier.arrive).
-```
+WGMMA does not automatically signal an arbitrary release barrier. The consumer program connects its observed matrix completion to the producer/consumer handoff. Section 13 develops this storage-lifetime protocol.
 
 ---
 
@@ -648,7 +603,7 @@ costs: ordering within a block is cheap, ordering across the whole GPU is not.
 
 A fence is an explicit instruction that constrains the ordering and visibility of memory operations. Without fences, the hardware (and compiler) may reorder or delay memory operations for performance, creating the hazards described in Section 6.
 
-Fences are **scoped**: they apply to a specific level of the memory hierarchy (CTA, cluster, GPU, system). A `.cta` fence makes writes visible to other threads in the same block. A `.gpu` fence makes writes visible to ALL threads on the GPU. Using a wider scope than necessary wastes time.
+Fences are **scoped**: they apply to a specific level of the memory hierarchy (CTA, cluster, GPU, system). The scope identifies which threads can participate in the ordering relation: `.cta` covers a block and `.gpu` covers the GPU. A fence is part of an acquire/release synchronisation pattern; it is not a broadcast notification that every thread has observed a write. Choose a sufficient scope, then measure its cost in the actual protocol.
 
 ```
 Fence Scopes and Their Costs
@@ -756,105 +711,60 @@ Acquire Fence — Visualization
 
 ### 7.4 Cross-Proxy Fence — Synchronizing Generic and Async Proxies
 
-When data must cross proxy boundaries (Generic Proxy writes, Async Proxy reads, or vice versa), a regular fence is not enough. You need `fence.proxy.async` to drain the Generic Proxy's pending writes so the Async Proxy sees them.
+A generic-to-async handoff needs the applicable proxy ordering and thread
+synchronization. A proxy fence orders accesses; it does not drain a fictional
+L1-only store queue or wait for every asynchronous operation.
 
 ```
-Cross-Proxy Fence — When and Why
-══════════════════════════════════════════════════════════════════════
-
-  The Rule: If the same memory location is accessed by BOTH the
-  Generic Proxy AND the Async Proxy, you need fence.proxy.async.
-
-  Scenario 1 (Generic writes, Async reads):
-  ─────────────────────────────────────────────────────────────────
-  // Thread fills a staging buffer in global/shared memory
-  for (int i = 0; i < N; i++)
-      smem[i] = compute_value(i);       // Generic Proxy writes
-
-  __syncthreads();                       // wait for all threads to write
-
-  fence.proxy.async;                     // ← CROSS-PROXY FENCE
-  // Ensures: Generic Proxy's writes are drained to L2/SMEM
-  // so TMA engine (Async Proxy) sees the updated values
-
-  cp.async.bulk.tensor ...;             // Async Proxy reads from smem
-
-  Without fence.proxy.async: TMA might read old SMEM values from
-  before the thread's writes were fully committed.
-
-  Scenario 2 (Async writes, Generic reads):
-  ─────────────────────────────────────────────────────────────────
-  mbarrier.try_wait ...;                 // wait for TMA to finish writing
-
-  fence.proxy.async;                     // ← CROSS-PROXY FENCE
-  // Ensures: TMA's writes (Async Proxy) are visible to
-  // the thread's subsequent load instructions (Generic Proxy)
-
-  float val = smem[i];                  // Generic Proxy reads TMA's data
-
-  NOTE: mbarrier.try_wait.acquire already includes an acquire fence.
-  In practice: if you use .acquire on try_wait, you often don't need
-  an explicit fence.proxy.async. But it's always safe to be explicit.
-
-  Important nuance:
-  ─────────────────────────────────────────────────────────────────
-  fence.proxy.async is NOT a collective operation.
-  It orders memory for the CALLING THREAD only.
-  You still need __syncthreads() (or cluster sync) to ensure
-  ALL threads have issued the fence before proceeding.
+  // Each thread writes its own shared-memory elements.
+  smem[threadIdx.x] = value;
+  asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
+  __syncthreads(); // issuer observes completion of all writers' fenced work
+  if (threadIdx.x == 0) {
+      // Issue a supported shared-to-global TMA store using this source.
+      issue_tma_store(...);
+  }
 ```
+
+Every writer participates in the required ordering before the elected issuer
+launches the async read. The storage must remain live and unchanged until the
+read completes. A thread barrier alone does not replace proxy ordering.
+
+For the opposite direction, bulk-async completion includes an implicit
+async-to-generic proxy fence. A consumer observes the TMA load's mbarrier
+completion with acquire semantics before ordinary shared-memory reads. It does
+not need an extra `fence.proxy.async` after that successful completion wait.
+
+Source: [CUDA 12.8 PTX async proxy and bulk completion](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-copying-and-reduction-instructions).
 
 ---
 
 ## 8 — mbarrier — The Core Primitive
 
-Here is the payoff. Everything from §5 to §7 was setup for this.
-
-An `mbarrier` is a small object you place in shared memory that answers one
-question: *has the thing I'm waiting for happened yet?* What makes it more than
-an ordinary barrier is that hardware can signal it. The TMA, having finished
-depositing a tile, decrements the barrier itself — no thread has to poll, no
-thread has to wait around to be told.
-
-This is the primitive that every H100 GEMM, every FlashAttention kernel, and
-every CUTLASS pipeline is built on. §8.1 covers what it is; §8.2 covers creating
-one, including the arrival count that trips up most first attempts.
+An `mbarrier` is an aligned shared-memory synchronization object. It tracks
+arrivals and, on Hopper, explicitly associated async transactions. Producer
+and consumer threads use its completion to coordinate data readiness.
 
 ### 8.1 What Is mbarrier?
 
-The mbarrier (memory barrier) is the H100's hardware-accelerated synchronization primitive. It lives in **shared memory** (not registers) and tracks the completion of asynchronous memory transactions.
+Basic mbarrier operations were introduced for Ampere. Hopper's transaction
+count lets compatible TMA operations signal completion in byte units. A phase
+completes when its pending arrivals and transaction count are both zero.
 
-Unlike `__syncthreads()` which blocks until a number of threads **arrive**, the mbarrier blocks until a certain amount of **data** arrives. It decouples the "Producer" (who issues the async copy) from the "Consumer" (who waits for the data), enabling pipelines where copies and computes truly overlap.
+An mbarrier does not discover arbitrary outstanding work. TMA completion must
+be linked to that barrier and correctly accounted for; WGMMA uses its own
+commit/wait groups. A consumer can signal a release barrier **after observing
+WGMMA completion**, connecting the two protocols in software.
 
-```
-mbarrier vs __syncthreads — Key Differences
-══════════════════════════════════════════════════════════════════════
+`test_wait` is a non-suspending completion test. `try_wait` can suspend the
+executing thread until completion or a timeout; the caller must inspect its
+predicate and retry when false. Neither wait creates extra residency capacity.
 
-  __syncthreads() (bar.sync):
-  ─────────────────────────────────────────────────────────────────
-  ├── Counts THREADS arriving at a synchronization point
-  ├── Blocks until ALL threads in the block reach the call
-  ├── No concept of "data arriving" — just thread arrival
-  ├── Completely blocking: warp sleeps until done
-  └── Cannot coordinate with TMA or WGMMA async units
+[![An mbarrier tracks a phase of work](images/ch03/09-mbarrier-object-bitfield.svg)](images/ch03/09-mbarrier-object-bitfield.svg)
 
-  mbarrier:
-  ─────────────────────────────────────────────────────────────────
-  ├── Counts BOTH threads arriving AND bytes of data arriving
-  ├── Tracks asynchronous operations (TMA, WGMMA) automatically
-  ├── Can be NON-BLOCKING: try_wait returns true/false immediately
-  ├── Supports reuse via phase flipping (no re-init needed)
-  └── Hardware-accelerated: TMA decrements the byte count directly
+*The object is opaque 64-bit shared-memory state; this is a semantic view, not a physical bitfield.*
 
-  Physical location: mbarrier object lives in SHARED MEMORY (64 bits)
-  Why shared memory: it must be accessible to TMA hardware and threads
-```
-
-The mbarrier object itself is a single 64-bit value in shared memory:
-
-[![mbarrier object — 64 bits in shared memory](images/ch03/09-mbarrier-object-bitfield.svg)](images/ch03/09-mbarrier-object-bitfield.svg)
-
-*A 1-bit phase, a pending thread arrival count that decrements as threads arrive, and a pending transaction byte count that decrements as TMA data arrives. The barrier completes only once both counts reach zero, and on completion the phase bit flips (0→1 or 1→0) automatically.*
+Source: [CUDA 12.8 PTX mbarrier object and lifecycle](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier).
 
 ### 8.2 Initializing mbarrier — mbarrier.init
 
@@ -896,8 +806,9 @@ mbarrier.init — Syntax and Semantics
 
   Rule 4: The scope must match your use case.
     .shared::cta    → only threads in this block can use this barrier
-    .shared::cluster → threads in ANY block of the cluster can use it
-                       (requires mapa for address in other blocks)
+    Remote shared::cluster addresses support arrive/expect_tx/complete_tx;
+    initialize and perform test_wait/try_wait on the owning CTA's local object.
+    Remote accesses require correct mapped addresses and owner lifetime.
 
   ─── Code Pattern ────────────────────────────────────────────────
 
@@ -923,8 +834,7 @@ mbarrier.init — Syntax and Semantics
 
 ## 9 — The mbarrier Pipeline — Step by Step
 
-The five-step sequence that essentially every TMA kernel on this hardware
-follows. If you learn one pattern from this chapter, learn this one.
+A representative six-step sequence for a TMA load with mbarrier completion. If you learn one pattern from this chapter, learn this one.
 
 §9.2 covers the instruction that surprises people: `mbarrier.arrive.expect_tx`
 does two jobs at once — it registers an arrival *and* declares how many bytes
@@ -933,7 +843,7 @@ its own.
 
 ### 9.1 Overview of the Full Pipeline
 
-The complete mbarrier pipeline has five steps. Every high-performance kernel on H100 that uses TMA follows this exact pattern.
+This representative load pipeline separates initialization, accounting, issue, independent work, completion and consumption. Other TMA directions can use different completion mechanisms.
 
 ```
 The mbarrier Pipeline — Complete Flow
@@ -984,9 +894,9 @@ The mbarrier Pipeline — Complete Flow
                Repeat steps 2-6 for the next tile (barrier reused!).
 ```
 
-[![The mbarrier pipeline — one tile, six steps](images/ch03/10-mbarrier-pipeline-timeline.svg)](images/ch03/10-mbarrier-pipeline-timeline.svg)
+[![One tile through the mbarrier protocol](images/ch03/10-mbarrier-pipeline-timeline.svg)](images/ch03/10-mbarrier-pipeline-timeline.svg)
 
-*Steps 1–3 set up the barrier and launch the TMA copy; the TMA then runs in the background while Step 4 computes on the PREVIOUS tile (K−1) — that overlap is the entire reason this pattern exists. Step 5 waits for the TMA to finish and the phase to flip, and only then does Step 6 compute on the tile that just arrived.*
+*The exact instruction variant determines how the transfer is linked to completion.*
 
 ### 9.2 mbarrier.arrive.expect_tx — Setting the Transaction Count
 
@@ -1013,7 +923,7 @@ mbarrier.arrive.expect_tx — Manual Worked Example
     Thread count = 0  ✓ (already)
     TX bytes = 0      ✗ (still waiting for TMA to deliver 1024 bytes)
 
-  As TMA copies data (e.g., 128 bytes at a time):
+  Illustrative accounting (not a guaranteed transfer granularity):
     After 128 bytes:  pending tx = 896
     After 256 bytes:  pending tx = 768
     ...
@@ -1173,15 +1083,13 @@ Transaction Count — Manual Worked Example with Two Copies
 Three ways to ask "is it ready yet", differing in what happens when the answer
 is no.
 
-`try_wait` (§11.1) puts the warp to sleep and lets the scheduler run someone
-else. `test_wait` (§11.2) returns immediately either way, which is what you want
-if you have useful work to do while waiting. And `try_wait.acquire` (§11.3) is
-`try_wait` plus the acquire fence from §7.3 folded in — which, as the subsection
-title says, is the version you should actually be writing in production code.
+`try_wait` (§11.1) can suspend the executing thread. `test_wait` (§11.2) does
+not suspend and is useful for interleaving independent work. Section 11.3
+explains acquire semantics, which are the default when `.sem` is omitted.
 
 ### 11.1 mbarrier.try_wait.parity — Non-Blocking Wait
 
-`try_wait` is the non-blocking completion check. It returns immediately with a boolean result: true if the barrier's current phase matches completion of the requested parity, false if still in progress.
+`try_wait` tests completion and may suspend the executing thread. Its predicate is true after the requested phase completes, and false if it resumes before completion. Track the current or immediately preceding phase; parity alone cannot identify arbitrarily old generations.
 
 ```
 mbarrier.try_wait.parity — How It Works
@@ -1195,7 +1103,7 @@ mbarrier.try_wait.parity — How It Works
     waitComplete:   Destination predicate register (1=done, 0=not done)
     addr:           32-bit shared memory address of mbarrier
     phaseParity:    Integer (0 or 1) — the phase you are waiting to COMPLETE
-    suspendHint:    Optional: how long (cycles) to yield if not done
+    suspendHint:    Optional suspension time-limit hint in nanoseconds
 
   Logic:
   ─────────────────────────────────────────────────────────────────
@@ -1205,7 +1113,7 @@ mbarrier.try_wait.parity — How It Works
   if (internal_phase == expected_phase):
       // Barrier is STILL in the phase you're waiting for → NOT DONE
       waitComplete = false (0)
-      // Thread may suspend for suspendHint cycles, then retry
+      // Thread may suspend; resume on completion or an implementation timeout
 
   if (internal_phase != expected_phase):
       // Barrier has FLIPPED past the phase you waited for → DONE!
@@ -1259,8 +1167,8 @@ try_wait vs test_wait — When to Use Each
   mbarrier.try_wait.parity  (can suspend):
   ─────────────────────────────────────────────────────────────────
   ├── Thread MIGHT be suspended (put to sleep) if barrier is not done
-  ├── suspendHint tells hardware how long to sleep (optional)
-  ├── When asleep: warp slot is freed for other warps to run
+  ├── suspendHint is an optional time-limit hint in nanoseconds
+  ├── Other eligible warps can issue; residency resources remain allocated
   ├── Best when: you have nothing else to do right now
   └── Hardware analogy: "park and wait for a notification"
 
@@ -1301,46 +1209,24 @@ try_wait vs test_wait — When to Use Each
 
 ### 11.3 mbarrier.try_wait with .acquire — The Safe Version
 
-The `.acquire` suffix on `try_wait` is the production-correct version. When it returns true (barrier complete), it also applies an acquire memory fence, ensuring that all data written by the async operation is visible to this thread before it proceeds.
+A successful acquire wait makes the barrier's associated completed writes
+visible according to the PTX synchronization rules. In CUDA 12.8 PTX,
+**omitting `.sem` defaults to `.acquire`**; omitting `.scope` defaults to `.cta`.
+Thus the earlier wait forms without an explicit `.acquire` are not relaxed
+waits. An explicit `.relaxed` wait supplies no ordering/visibility guarantee.
 
 ```
-mbarrier.try_wait.parity.acquire — Why This Is Important
-══════════════════════════════════════════════════════════════════════
-
-  WITHOUT .acquire:
-  ─────────────────────────────────────────────────────────────────
-  try_wait returns true → barrier is done
-  Thread reads smem[0]
-  But: the hardware might speculate and issue the smem[0] read
-  BEFORE the barrier check actually completes in the memory system.
-  Result: reads garbage from before TMA finished writing.
-
-  WITH .acquire:
-  ─────────────────────────────────────────────────────────────────
-  try_wait.acquire returns true → barrier is done AND a full
-  acquire fence has been applied. All TMA writes are guaranteed
-  visible to this thread BEFORE any subsequent reads.
-
-  PTX:
-    mbarrier.try_wait.parity.acquire.cta.shared::cta.b64 done, [addr], parity;
-
-  When does it matter:
-  ─────────────────────────────────────────────────────────────────
-  ├── When threads read SMEM data written by TMA (most common case)
-  ├── When threads read SMEM data written by other threads' stores
-  │   that were release-fenced before the barrier
-  └── Effectively: always use .acquire in production code.
-      The performance difference is negligible (<5 cycles).
-      The correctness guarantee is critical.
-
-  WGMMA special case:
-  ─────────────────────────────────────────────────────────────────
-  Even though wgmma reads SMEM directly (not via Generic Proxy),
-  the wgmma instruction's pipeline requires that its input memory
-  state is fully committed before it starts. The .acquire ensures
-  the dependency chain is properly established in the hardware's
-  out-of-order issue queues.
+  mbarrier.try_wait.parity.acquire.cta.shared::cta.b64 done, [addr], parity;
+  // If done is false, retry; do not consume the tile.
+  // If done is true, acquire completion precedes dependent shared loads.
 ```
+
+The guarantee applies to operations associated with the completed phase and
+matching release/completion protocol. It does not complete unrelated WGMMA
+operations or publish a different thread's uncoordinated stores. Observe
+WGMMA groups separately before releasing an operand stage.
+
+Source: [PTX test_wait/try_wait defaults and ordering](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait).
 
 ---
 
@@ -1451,12 +1337,12 @@ WAR Hazard in Pipeline — Concrete Scenario
     (wgmma from K=0 takes more cycles than we accounted for)
     → TMA corrupts smem[0] mid-computation. Wrong answer!
 
-Fix: TMA must wait until WGMMA signals it's done reading smem[0]. WGMMA signals completion using `mbarrier.arrive` (decrements a barrier), and TMA waits on that barrier before starting the overwrite.
+Fix: the consumer observes WGMMA completion with the appropriate commit/wait protocol, then signals the release mbarrier. The producer acquires that release before issuing TMA into the same storage. WGMMA itself does not execute mbarrier.arrive.
 ```
 
-[![WAR hazard inside a double-buffered pipeline](images/ch03/11-war-pipeline-conflict-timeline.svg)](images/ch03/11-war-pipeline-conflict-timeline.svg)
+[![A buffer can be overwritten too soon](images/ch03/11-war-pipeline-conflict-timeline.svg)](images/ch03/11-war-pipeline-conflict-timeline.svg)
 
-*WGMMA is still reading `smem[0]` when TMA starts overwriting it for the next tile — the overlap between the two bars is the conflict window. §13.2's two-barrier handshake is what closes that window.*
+*Two operations touching the same stage overlap unsafely in this example.*
 
 ### 13.2 mbarrier.arrive — Signaling Completion Without Waiting
 
@@ -1479,7 +1365,10 @@ mbarrier.arrive — The Consumer's Signal to the Producer
          Producer WAITS on this barrier before overwriting the buffer.
 
   Consumer warps (running wgmma):
-    ... [reading smem[tile_K]] ...    // WGMMA reads data
+    ... [reading smem[tile_K]] ...    // WGMMA reads data asynchronously
+    wgmma.commit_group;
+    wgmma.wait_group 0;              // finish relevant readers first
+    // One elected lane per consumer warp arrives for this example count.
     mbarrier.arrive.release [consumer_bar]; // signal: done reading
     // Returns immediately — consumer warp continues other work.
 
@@ -1498,19 +1387,19 @@ mbarrier.arrive — The Consumer's Signal to the Producer
 Barrier A (`data_bar`) answers "has the data arrived from TMA?" — the producer signals it via TMA hardware, and the consumer waits on it. Barrier B (`release_bar`) answers "are consumers done reading the buffer?" — consumer warps signal it via `mbarrier.arrive`, and the producer waits on it before its next overwrite.
 ```
 
-[![Two-barrier WAR prevention — producer/consumer handshake](images/ch03/12-two-barrier-war-prevention.svg)](images/ch03/12-two-barrier-war-prevention.svg)
+[![A full / empty handshake protects a stage](images/ch03/12-two-barrier-war-prevention.svg)](images/ch03/12-two-barrier-war-prevention.svg)
 
-*The consumer waits on `data_bar` before it can compute, and the producer waits on `release_bar` before it can overwrite the buffer for the next tile — each barrier gates the opposite side, which is exactly what closes the WAR hazard window from §13.1.*
+*Data readiness and buffer reusability are separate facts.*
 
 ### 13.3 mbarrier.arrive.release — With Memory Ordering
 
-The `.release` suffix on `arrive` ensures that all memory operations (reads, writes) done by this thread before the arrive are guaranteed to be visible to any thread that subsequently waits on this barrier. This is the correct form for consumer→producer signaling.
+A release arrival publishes the participating thread's preceding ordinary accesses to a matching successful acquire wait at the correct scope. In CUDA 12.8 PTX, .release is the default when the arrival semantic qualifier is omitted; explicit .relaxed does not supply this ordering. Async WGMMA readers still require their separate completion wait before the arrival.
 
 ```
 mbarrier.arrive vs mbarrier.arrive.release
 ══════════════════════════════════════════════════════════════════════
 
-  mbarrier.arrive (relaxed — no ordering):
+  mbarrier.arrive.relaxed (explicitly relaxed — no ordering):
     Use when: The signal itself carries no data dependency.
     Only signals "I've arrived at this point in the program."
     Does NOT guarantee that prior stores are visible.
@@ -1535,7 +1424,7 @@ mbarrier.arrive vs mbarrier.arrive.release
   while (!try_wait.acquire [bar], phase);
   float val = smem[5];                 // guaranteed to see producer's write
 
-  If you used mbarrier.arrive (relaxed) instead:
+  If you used an explicitly .relaxed arrive instead:
   Consumer might see stale smem values even after try_wait returns.
   → Silent data corruption. Use .release whenever you write data
     that the consumer will read.
@@ -1611,16 +1500,17 @@ barrier.cluster vs __syncthreads — Scope Comparison
 
   ─── The Key Use Case: TMA Multicast ─────────────────────────────
 
-  TMA Multicast delivers one HBM3 fetch to MULTIPLE blocks' SMEM
-  simultaneously. But there is a timing issue:
+  TMA multicast delivers a requested tile to selected cluster blocks'
+  shared memory. Its exact HBM-transaction count is not specified here.
 
-  Block 0 might start executing before Block 1 has been scheduled.
-  If Block 0 issues a DSMEM write to Block 1's SMEM before Block 1
-  is physically running on its SM, the write will CRASH.
+  Before Block 0 accesses Block 1's shared memory, Block 1 must have
+  initialized the required storage/barriers. An invalid remote access is
+  undefined behavior; a crash is not guaranteed.
 
   barrier.cluster.arrive + barrier.cluster.wait ensures:
-    All blocks in the cluster are physically present and running
-    BEFORE any cross-block DSMEM operations occur.
+    All blocks have reached the agreed initialization/publication point
+    before subsequent remote shared-memory operations. Synchronize again
+    before any owner exits while peers might still access its storage.
 
   ─── barrier.cluster Flow ────────────────────────────────────────
 
@@ -2266,6 +2156,11 @@ Element checks: 1024 / 1024 passed
 
 
 
+
+
+
+The preserved listing's comments call try_wait nonblocking and mbarrier Hopper-only. Basic mbarrier also exists on Ampere; this program specifically requires Hopper transaction tracking and bulk copies, and try_wait may suspend. Its unqualified wait forms retain default acquire semantics.
+
 `GPU:` and the SM pair come from `cudaGetDeviceProperties` and vary with the hardware the binary runs on — any Hopper or newer card prints `SM 9.0` or higher; the rest of the output is deterministic. The kernel runs `K=4` iterations of the init → `arrive.expect_tx` → poll-`try_wait.parity` → verify → flip-phase pipeline over one `BLOCK_SIZE=64` block, so every one of the `K × TILE_SIZE = 4 × 256 = 1024` elements loaded into `smem` is checked against `(float)(k * TILE_SIZE + i)`, and all 1024 checks pass since the host seeds `h_input[i] = (float)i` to match exactly. One cosmetic note: the closing box's right edge lands two columns short of the border above it. That's not a typo in this guide — it's the real behavior of `printf("║  %-56s  ║\n", ...)` on the actual program: the field width `56` is a *byte* count, and the string being padded contains two multi-byte UTF-8 glyphs (`✓` and the em dash `—`, 3 bytes each instead of 1), so the padding comes up short of the visual width the border uses. The `✗ FAILURES DETECTED` variant (only one multi-byte glyph) happens to land flush by comparison.
 
 ---
@@ -2541,6 +2436,9 @@ Sample: in=7 → out=14 (expected 14)
 
 
 
+
+
+
 `GPU:` again varies with the card the binary runs on; everything else is deterministic. The host seeds `h_in[i] = (float)i` and `h_exp[i] = i * 2.0f`, and the kernel's compute step writes `dst[k*TILE+i] = smem[i] * 2.0f` after `data_bar` confirms the tile has arrived — so all `K_TILES × TILE = 8 × 128 = 1024` elements match and `errors` stays `0`. The `k == 0` priming `arrive.release` on `release_bar` is what lets the very first tile's producer proceed immediately, since otherwise it would spin forever waiting on consumer signals that haven't happened yet; from `k == 1` onward the producer genuinely blocks on `release_bar` until the consumers finish reading the buffer it's about to overwrite — the WAR hazard the two-barrier design exists to prevent. The sample index chosen for the `in=/out=` line is `i = 7`: `in=7 → out=14`. As in the previous example, the closing box's right edge runs two columns short of the border above it, for the same reason: the PASS string carries the same two 3-byte UTF-8 glyphs (`✓`, `—`) against the byte-counted `%-56s` field, so the padding comes up two bytes short of the visual width the border uses — regardless of how much slack is left in the 56-byte field itself.
 
 ---
@@ -2562,7 +2460,7 @@ Instruction                                          Purpose
 mbarrier.init.shared::cta.b64 [addr], count         Create barrier, set thread count
 mbarrier.arrive.expect_tx.release...b64 _, [a], tx  Signal arrival + set tx bytes
 mbarrier.arrive.release.cta.shared::cta.b64 _, [addr]   Signal arrival (no tx bytes)
-mbarrier.try_wait.parity.acquire...b64 p,[a], par   Non-blocking poll (may suspend)
+mbarrier.try_wait.parity.acquire...b64 p,[a], par   Completion test (may suspend)
 mbarrier.test_wait.parity.shared::cta.b64 p,[a],par Non-blocking poll (never suspends)
 mbarrier.inval.shared::cta.b64 [addr]               Invalidate/destroy barrier
 mbarrier.arrive_drop.release...b64 _, [addr]        Arrive + permanently drop count
@@ -2578,7 +2476,7 @@ Rule                                         Notes
 ──────────────────────────────────────────────────────────────────────────
 Phase stored in REGISTERS not SMEM           int phase = 0; (per thread)
 Phase toggles with phase ^= 1               After each barrier completion
-Thread count resets automatically            On each phase flip (to init value)
+Pending arrivals reset automatically         To expected arrivals (adjusted by arrive_drop)
 tx_count MUST equal actual bytes copied      Off by one → deadlock or early fire
 arrive.expect_tx decrements thread count     AND adds tx bytes (two effects!)
 Multiple expect_tx calls ADD their bytes     [addr, 512] + [addr, 256] → 768 total
@@ -2628,7 +2526,7 @@ EACH TILE:
   [thread 0] cp.async.bulk.tensor ... [mbar]    // links TMA to mbar
   ... do independent work (latency hiding) ...
   [all]      loop: try_wait.parity.acquire [mbar], phase → until true
-  [all]      use the data
+  [all]      use the data; finish any async readers before releasing storage
   [all]      phase ^= 1                   // toggle for next iteration
   __syncthreads()
   → repeat (no re-init needed: barrier auto-resets thread count!)
@@ -2636,8 +2534,8 @@ EACH TILE:
 
 ### cp.async.bulk Group Pattern
 
-The §15 equivalent, for pipelines that don't need the full precision of
-`mbarrier`.
+The §15 pattern for operation variants using bulk async-group completion.
+Choose the completion mechanism required by the instruction and direction.
 
 ```
 // Issue copies (uncommitted):

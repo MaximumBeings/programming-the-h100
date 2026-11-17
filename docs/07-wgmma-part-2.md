@@ -21,7 +21,7 @@
     Use the [Chapter 6](06-wgmma-part-1.md) accumulator layout first. The pipeline program here tests both complete output tiles.
 <!-- learning:end -->
 
-**What this covers:** Everything from Lesson 7 — commit/wait group mechanics for overlapping wgmma with data preparation (the pipeline-friendly API), wgmma.fence dual roles (group boundary + register hazard control), stmatrix for cooperative accumulator writeback (address phase, register layout, x1/x2/x4 variants, FP32 vs FP16 accumulator paths), the FP8 paradigm shift (E4M3 vs E5M2 formats, scaling factors, packed types e4m3x2/x4, the cvt.satfinite quantization instruction, K-major layout requirement, precision pitfalls with large K), and Sparse WGMMA (2:4 structured sparsity, sp-meta register, sp-sel thread selector, metadata packing for FP16/BF16/FP8/TF32). Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
+**What this covers:** Everything from Lesson 7 — commit/wait group mechanics for overlapping wgmma with data preparation (the pipeline-friendly API), wgmma.fence register ordering and its distinction from commit/wait completion, stmatrix for cooperative accumulator writeback (address phase, register layout, x1/x2/x4 variants, FP32 vs FP16 accumulator paths), the FP8 paradigm shift (E4M3 vs E5M2 formats, scaling factors, packed types e4m3x2/x4, the cvt.satfinite quantization instruction, K-major layout requirement, precision pitfalls with large K), and Sparse WGMMA (2:4 structured sparsity, sp-meta register, sp-sel thread selector, metadata packing for FP16/BF16/FP8/TF32). Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
 **How to read this chapter.** Chapter 6 got a single `wgmma` instruction to
 issue correctly. This one is about everything that turns that instruction into a
@@ -307,17 +307,19 @@ wgmma.wait_group — The Synchronization Point
   State before wait: Groups 0, 1, 2 all committed and pending.
     wgmma.wait_group.sync.aligned 1;
 
-  After wait: Exactly 1 group remains pending.
-    Which one? The MOST RECENTLY committed group (Group 2).
+  After wait: At most 1 group remains pending.
+    If any remains pending, it is the MOST RECENTLY committed group (Group 2).
     Groups 0 and 1 are DONE.
 
+  Assuming Groups 0/1 use registers disjoint from pending Group 2:
   What you can now safely do:
     ├── Read D registers for Group 0's output — they are final ✓
     ├── Write Group 0's result to global memory via stmatrix ✓
     └── Keep Group 2 running in the background ✓ (it's the 1 permitted)
 
   What you CANNOT do:
-    └── Read D registers for Group 2's output — it's still computing! ✗
+    └── Read registers still used by pending Group 2, even if an older
+        group also wrote them. Wait for every group using those registers.
 
   ─── wait_group Implicit Fence ───────────────────────────────────
 
@@ -327,8 +329,8 @@ wgmma.wait_group — The Synchronization Point
   No separate wgmma.fence is needed after wait_group for register reads
   — wait_group itself acts as the final ordering point.
 
-  (But you DO need wgmma.fence before the NEXT wgmma.mma_async call
-   if you are starting a new sequence in the same warp group.)
+  (Fence again when ordinary instructions prepare or update registers
+   for a subsequent WGMMA sequence; a commit boundary alone is not the trigger.)
 ```
 
 ---
@@ -350,9 +352,9 @@ actually go.
 
 The real power of groups becomes clear when you see the full pipeline. The key insight is that you are not just "commit then wait" — you are interleaving math, data preparation, and synchronization so that tensor cores are never idle.
 
-[![wgmma commit/wait groups: naive wait-after-every-batch vs the pipelined pattern, with tensor-core occupancy underneath each](images/ch07/01-commit-wait-pipeline-timeline.svg)](images/ch07/01-commit-wait-pipeline-timeline.svg)
+[![Commit a batch; wait for the required age](images/ch07/01-commit-wait-pipeline-timeline.svg)](images/ch07/01-commit-wait-pipeline-timeline.svg)
 
-*Naive wait-after-every-batch leaves the tensor cores idle during every wait and store; wait_group<1> keeps the newest batch running while the completed one's epilogue proceeds.*
+*wait_group N allows up to N recent committed groups to remain pending.*
 
 ```
 The Pipelined wgmma Pattern — Complete Timeline
@@ -408,7 +410,7 @@ The Pipelined wgmma Pattern — Complete Timeline
   Step 2: wgmma.commit_group → seal as Group G
   Step 3: Prepare next tile (TMA, pointer math — while G runs!)
   Step 4: wgmma.wait_group N → wait for older groups (keep newest running)
-  Step 5: wgmma.fence + stmatrix + store → epilogue for completed group
+  Step 5: convert / stmatrix / store → epilogue for completed group
   → Repeat from Step 1 with next tile.
 ```
 
@@ -416,87 +418,38 @@ The Pipelined wgmma Pattern — Complete Timeline
 
 ## 5 — wgmma.fence — Dual Role Review
 
-`wgmma.fence` has appeared several times now, in slightly different roles, so
-this section consolidates it.
-
-It does two distinct jobs. It marks a **group boundary** — the point where one
-batch of wgmma instructions ends. And it controls **register hazards** — telling
-the hardware that your threads have finished writing the accumulator registers
-the tensor core is about to claim.
-
-Most misplaced fences come from thinking about only one of those jobs at a time.
-Read this before you go debugging a pipeline that produces intermittently wrong
-results.
+`wgmma.fence` orders prior ordinary accesses to registers that WGMMA
+will use as accumulator or register-A operands. Completion is a separate job
+for `wgmma.commit_group` and `wgmma.wait_group`.
 
 ### 5.1 The Two Things wgmma.fence Controls
 
-At this point in the course you have seen wgmma.fence appear in multiple contexts. It is worth consolidating exactly what it does and does not do, because the confusion between its roles causes hard-to-debug bugs.
+The two register classes covered by this ordering are accumulator registers
+and register-A fragments. Execute the required fence before their first use
+by WGMMA, including after ordinary instructions prepare or update them for a
+new sequence. A fence neither commits a group nor waits for arithmetic to
+finish. Consecutive compatible WGMMA operations can accumulate without a
+fence between every instruction or committed group.
 
-[![wgmma.fence's two roles placed on the same pipeline: group-boundary marker before the K-loop, register-hazard control after wait_group](images/ch07/02-wgmma-fence-placement.svg)](images/ch07/02-wgmma-fence-placement.svg)
-
-*The same instruction, two placements: once before the first wgmma of a new group (Role 1), once after wait_group<0> and before reading d[] (Role 2).*
+[![Ordering is different from completion](images/ch07/02-wgmma-fence-placement.svg)](images/ch07/02-wgmma-fence-placement.svg)
 
 ```
-wgmma.fence.sync.aligned — Complete Role Summary
-══════════════════════════════════════════════════════════════════════
-
-  PTX:  wgmma.fence.sync.aligned;
-
-  ─── ROLE 1: Group Boundary Marker ──────────────────────────────
-
-  wgmma.mma_async operations are issued in groups (see §1-4).
-  The fence establishes the START of a new group's issuance window.
-  Specifically: it tells hardware that any prior wgmma writes to
-  accumulator registers are complete before the NEXT wgmma reads them.
-
-  Placement: Before the FIRST wgmma.mma_async in any sequence.
-  Effect: Ensures the hardware starts the new group with clean register state.
-
-  ─── ROLE 2: Register Hazard Control ─────────────────────────────
-
-  wgmma.mma_async is asynchronous at the register level. The result
-  in accumulator registers d[] is NOT instantly available — the hardware
-  pipeline writes it after some cycles. If you try to read d[] or pass
-  it to another wgmma before the previous wgmma has committed its write,
-  you get stale or wrong values.
-
-  wgmma.fence prevents this hazard:
-    - Ensures prior wgmma writes to accumulator registers are visible
-    - Prevents reordering of wgmma register accesses by the hardware pipeline
-    - Applies to BOTH accumulator registers AND A-fragment registers (if A is in regs)
-
-  Placement: After the LAST wgmma.mma_async, before reading d[].
-  Effect: Makes the completed accumulator values in d[] safe to read.
-
-  ─── What wgmma.fence Does NOT Do ─────────────────────────────────
-
-  Does NOT order SMEM writes for matrix operands:
-    If TMA wrote A/B tiles to SMEM and you want wgmma to see those writes,
-    use mbarrier.try_wait.acquire (from the mbarrier pipeline, Lesson 3).
-    That acquire fence handles the SMEM visibility, not wgmma.fence.
-
-  Does NOT order cross-proxy operations:
-    If threads wrote to SMEM (Generic Proxy) and wgmma reads SMEM (Async Proxy),
-    use fence.proxy.async for proper cross-proxy ordering.
-    wgmma.fence is for register ordering within the warpgroup pipeline only.
-
-  ─── Placement Rules Summary ─────────────────────────────────────
-
-  ┌──────────────────────────────────────────────────────────────┐
-  │                                                              │
-  │  [mbarrier wait + acquire]   ← SMEM visibility              │
-  │  wgmma.fence.sync.aligned    ← REGISTER ordering (before)   │
-  │  wgmma.mma_async ...                                         │
-  │  wgmma.mma_async ...         ← one tile's K-loop            │
-  │  wgmma.mma_async ...                                         │
-  │  wgmma.commit_group                                          │
-  │  ... (prepare next tile) ...                                 │
-  │  wgmma.wait_group<0>         ← wait for all to complete      │
-  │  wgmma.fence.sync.aligned    ← REGISTER ordering (after)     │
-  │  read d[] / stmatrix ...     ← safe to access results        │
-  │                                                              │
-  └──────────────────────────────────────────────────────────────┘
+  Prepare accumulator / register-A operands with ordinary instructions
+  wgmma.fence.sync.aligned;       // register ordering before WGMMA
+  wgmma.mma_async ...;
+  wgmma.mma_async ...;
+  wgmma.commit_group.sync.aligned;
+  ... independent work ...
+  wgmma.wait_group.sync.aligned 0; // complete all committed groups
+  Read / convert / store d[]      // no post-wait fence required
 ```
+
+For shared-memory operands written by ordinary stores, use the required
+`fence.proxy.async.shared::cta` and inter-thread synchronization before
+WGMMA reads them. For TMA-produced operands, observe their mbarrier completion.
+These memory handoffs are separate from register ordering.
+
+Source: [CUDA 12.8 PTX WGMMA fence, commit and wait instructions](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions-wgmma-fence).
 
 ---
 
@@ -563,7 +516,7 @@ stmatrix — The Scatter Operation
   .x1/.x2/.x4: How many 8×8 matrices to store per call.
   .shared:  Destination is always Shared Memory (not global).
   .b16:     16-bit elements (BF16 or FP16 packed as .b32 pairs).
-  .b8:      8-bit elements (for INT8; also Blackwell FP8 output).
+  .b8:      8-bit elements on supported Blackwell targets, not Hopper.
 ```
 
 ---
@@ -585,9 +538,9 @@ address arithmetic.
 
 The address assignment in stmatrix follows the SAME pattern as ldmatrix. This symmetry is intentional — if you read with ldmatrix and write with stmatrix using the same address formula, the data is correctly reconstructed.
 
-[![The 16x16 tile split into four quadrants, each owned by a group of 8 lanes](images/ch07/03-stmatrix-address-quadrants.svg)](images/ch07/03-stmatrix-address-quadrants.svg)
+[![stmatrix: four address-providing quadrants](images/ch07/03-stmatrix-address-quadrants.svg)](images/ch07/03-stmatrix-address-quadrants.svg)
 
-*Lanes 0-7, 8-15, 16-23 and 24-31 each point into one quadrant — the same quadrant-to-lane mapping ldmatrix used to read the tile in.*
+*This is the same four-submatrix address ordering used for a 16 × 16 x4 composition.*
 
 ```
 stmatrix Address Phase — Who Points Where
@@ -651,11 +604,11 @@ stmatrix Address Phase — Who Points Where
 
 ### 7.2 Phase 2: Register Source Layout
 
-The register layout for stmatrix is the "striped" layout — each thread owns non-contiguous elements across the tile. This is the exact layout that wgmma writes to, so you can feed wgmma output registers directly to stmatrix with no shuffling.
+The register layout for stmatrix assigns two adjacent 16-bit values from each submatrix to each lane. A WGMMA epilogue must select matching fragments and perform any required conversion and packing before storing them.
 
-[![Three sample threads' four registers each, and how lanes 0-7 together cover rows 0 and 8 of the destination tile](images/ch07/04-stmatrix-register-scatter.svg)](images/ch07/04-stmatrix-register-scatter.svg)
+[![stmatrix scatters register fragments](images/ch07/04-stmatrix-register-scatter.svg)](images/ch07/04-stmatrix-register-scatter.svg)
 
-*Thread T holds columns [2T, 2T+1] in rows 0 and 8 — the same striped pattern wgmma already wrote its output in, so no shuffle sits between the two instructions.*
+*For each 8 × 8, 16-bit submatrix, four lanes contribute a row’s eight values.*
 
 ```
 stmatrix Register Source — The Striped Layout
@@ -677,36 +630,27 @@ stmatrix Register Source — The Striped Layout
   r2 → Row 0, Cols [10,11]
   r3 → Row 8, Cols [10,11]
 
-  Pattern: Thread T holds columns [2T, 2T+1] in rows 0 and 8.
-  After all 32 threads: rows 0 and 8 are completely covered.
-  Threads 0-31 together cover the entire 16×16 tile.
+  Pattern within each 8×8 submatrix:
+    row = lane / 4; col = 2 * (lane % 4).
+    Each group of four lanes covers one complete row.
+    Add row offset 8 for r1/r3, column offset 8 for r2/r3.
+    All 32 lanes together cover the full 16×16 x4 composition.
 
-  ─── Why This Matches wgmma Output ──────────────────────────────
+  Matching WGMMA output:
+    Wait for completion, select the appropriate per-warp fragments,
+    and convert/pack FP32 results when a 16-bit output is intended.
+    Compatible FP16 accumulator fragments may already be packed correctly;
+    this is a layout-specific property, not a rule for all WGMMA variants.
 
-  wgmma writes its D matrix in exactly this striped pattern.
-  So the registers you get from wgmma are IMMEDIATELY ready for stmatrix.
-  No shuffle or rearrangement needed between wgmma and stmatrix.
+  Serialization for a 64×N output:
+    Each thread owns N/2 result elements: N/2 scalar registers for FP32,
+    or N/4 packed 32-bit registers for FP16 accumulators.
+    Each warp stores its 16×N slice in N/16 stmatrix.x4.b16 calls.
+    Each call consumes four packed registers per lane and writes 16×16 values.
+    For N=128: eight calls per warp; for N=256: sixteen calls per warp.
+    Source register selection and destination addresses must agree with
+    the chosen WGMMA fragment layout and shared-memory layout.
 
-  The pipeline is:
-    wgmma writes {r0,r1,r2,r3} per thread in striped layout
-    stmatrix reads {r0,r1,r2,r3} → writes to SMEM in row-major order
-    Both use the same register layout → no conversion needed ✓
-
-  ─── The Serialization Loop (for large N) ─────────────────────────
-
-  For m64n128k16 (N=128): the accumulator for one output tile requires
-  many more than 4 registers per thread. Specifically: (64×128)/128 = 64 regs.
-  stmatrix.x4 only handles 4 registers per call (16×16 elements).
-  So you need a LOOP over "slices" of the accumulator:
-
-  For i = 0, 1, 2, 3 ... (number of 16×16 slices = N/16):
-      Extract d[slice_start .. slice_start+3] into {r0,r1,r2,r3}
-      stmatrix [smem_ptr_for_this_slice], {r0,r1,r2,r3}
-      Advance smem_ptr by 16 columns × sizeof(BF16) = 32 bytes
-
-  For N=128: 128/16 = 8 stmatrix.x4 calls.
-  For N=256: 256/16 = 16 stmatrix.x4 calls.
-  This loop is the epilogue "serialization loop" mentioned in many CUTLASS kernels.
 ```
 
 ---
@@ -715,7 +659,7 @@ stmatrix Register Source — The Striped Layout
 
 And here is the catch that trips up every first epilogue.
 
-`stmatrix` handles 16-bit and 8-bit elements. It has no 32-bit form. But your
+`stmatrix` on Hopper handles 16-bit elements. The 8-bit form requires a supported Blackwell target. Neither form stores 32-bit elements. But your
 accumulator is FP32, because that is what wgmma accumulates in. So the two do
 not connect directly — you must convert down to BF16 or FP16 first, in
 registers, before `stmatrix` will take your data.
@@ -726,7 +670,7 @@ conversion costs and where to put it.
 
 ### 8.1 The FP32 Problem — stmatrix Only Supports 16-bit
 
-`stmatrix` only supports `.b16` (16-bit) and `.b8` (8-bit) element types. It has no `.b32` (32-bit) variant. This creates a critical divergence in the epilogue path depending on whether your wgmma used FP32 or FP16 accumulators.
+`stmatrix` supports `.b16` on Hopper; `.m16n8.b8` requires a supported Blackwell target. There is no `.b32` variant. This creates a critical divergence in the epilogue path depending on whether your wgmma used FP32 or FP16 accumulators.
 
 ```
 stmatrix and FP32 — The Conversion Requirement
@@ -891,9 +835,9 @@ Floating Point Format Review — Sign, Exponent, Mantissa
 The practical division: E4M3 forward, E5M2 backward. The reason is that
 gradients span a far wider range than activations, and range is what E5M2 buys.
 
-[![E4M3's sign/4-bit-exponent/3-bit-mantissa layout next to E5M2's sign/5-bit-exponent/2-bit-mantissa layout](images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg)](images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg)
+[![Two FP8 formats, different tradeoffs](images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg)](images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg)
 
-*The same 8 bits, split two different ways: E4M3 trades range for precision (forward pass), E5M2 trades precision for range (backward pass).*
+*The stored fraction bits affect resolution; exponent bits affect range.*
 
 ```
 E4M3 vs E5M2 — Why Two Formats Exist
@@ -967,9 +911,9 @@ thirty-one are useful to you.
 
 The GPU memory controller never fetches less than 32 bytes (one "sector") at a time. If you request a single FP8 byte, the GPU fetches 32 bytes, delivers your 1 byte, and wastes the other 31. To fix this, FP8 values must always be accessed in packed groups. NVIDIA defines two packing types: `x2` (two FP8 in 16 bits) and `x4` (four FP8 in 32 bits).
 
-[![Four FP8 values packed into one 32-bit register (x4) versus two FP8 values packed into one 16-bit register (x2)](images/ch07/06-fp8-packed-x4-x2.svg)](images/ch07/06-fp8-packed-x4-x2.svg)
+[![Pack FP8 values with an explicit bit order](images/ch07/06-fp8-packed-x4-x2.svg)](images/ch07/06-fp8-packed-x4-x2.svg)
 
-*x4 fills a whole register for storage/transport; x2 matches FP16 width for feeding WGMMA and for cvt output.*
+*A storage pack and an instruction operand pack are not automatically the same layout.*
 
 ```
 FP8 Packed Types — x2 and x4
@@ -1381,9 +1325,9 @@ Sparse WGMMA is a variant where matrix A is **structured sparse**: for every gro
 
 The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. This information is encoded in a "metadata" register (sp-meta) that accompanies the sparse A matrix.
 
-[![A row of 8 values split into two quartets, compacted down to 4 stored values, with their sp-meta encoding and the 4-thread sp-sel group below](images/ch07/07-sparse-wgmma-2-4-metadata.svg)](images/ch07/07-sparse-wgmma-2-4-metadata.svg)
+[![Two values survive each quartet](images/ch07/07-sparse-wgmma-2-4-metadata.svg)](images/ch07/07-sparse-wgmma-2-4-metadata.svg)
 
-*The full chain previewed here and detailed in §16-17: which elements survive (top), how sp-meta packs their positions (middle), and which thread(s) sp-sel reads that metadata from (bottom).*
+*2:4 structured sparsity stores values plus position metadata.*
 
 ```
 2:4 Structured Sparsity — The Pattern and Its Benefits
@@ -1450,139 +1394,50 @@ rather than trusting your reading of the table.
 
 ### 16.1 What sp-meta Encodes
 
-The sp-meta register tells the hardware WHERE the non-zeros are within each quartet. For 2:4 sparsity (FP16/BF16/FP8/INT8), each quartet needs 2 indices (0,1,2,3), each requiring 2 bits. So 4 bits per quartet encodes which 2 of 4 positions are non-zero.
+For FP16/BF16/FP8/INT8 2:4 sparsity, each quartet uses two 2-bit
+position indices packed into one 4-bit metadata field. Positions 0 and 3
+encode as `(3 << 2) | 0 = 0b1100`; positions 1 and 2 encode as
+`0b1001`. A `.b32` metadata register holds eight such fields. Which
+matrix coordinates those fields describe depends on the instruction's
+fragment layout and the contributing lane.
 
-```
-sp-meta — Packing Sparsity Indices
-══════════════════════════════════════════════════════════════════════
+TF32 uses 1:2 sparsity. Each retained element uses a **4-bit** position
+field: `0b0100` or `0b1110`, with eight fields packed into a `.b32`
+metadata register. These are per-pair position encodings, not alternating
+whole-register constants for successive K iterations.
 
-  For 2:4 sparsity (FP16/BF16/FP8/INT8):
-  ─────────────────────────────────────────────────────────────────
-  Each quartet: 4 possible positions, choose 2 non-zeros.
-  Encoding: two 2-bit indices, each in range [0,3].
-  Storage per quartet: 4 bits (2 bits for index 0, 2 bits for index 1).
+There is no automatic metadata cursor across WGMMA calls. Supply the
+metadata corresponding to each call's A tile. Advancing K requires updating
+the operands and metadata according to the documented matrix layout; the
+ISA does not require a four-call or two-call unroll to cycle metadata.
 
-  Example:
-    Non-zeros at positions 0 and 3: metadata = (3 << 2) | 0 = 0b1100
-    Non-zeros at positions 1 and 2: metadata = (2 << 2) | 1 = 0b1001
-    Non-zeros at positions 0 and 2: metadata = (2 << 2) | 0 = 0b1000
-    Non-zeros at positions 1 and 3: metadata = (3 << 2) | 1 = 0b1101
-
-  A single 32-bit register holds metadata for MULTIPLE quartets.
-  ─────────────────────────────────────────────────────────────────
-  For FP16/BF16 sparse wgmma (k=32 per instruction, 4 bits/quartet):
-    32 bits / 4 bits per quartet = 8 quartets per register.
-    One 32-bit sp-meta register covers 8 quartets = 8×2 = 16 consecutive A elements.
-    For a full K-loop of 4 wgmma calls, you cycle through sp-meta values 0,1,2,3.
-    That covers 4 × 16 = 64 A elements per "sp-meta register load" = K=64 worth.
-
-  ─── sp-meta Values for Standard Precisions ──────────────────────
-
-  FP16/BF16/FP8/INT8 sparse (2:4, m64nNk32):
-  ─────────────────────────────────────────────────────────────────
-  A single sp-meta register holds enough for FOUR consecutive wgmma calls.
-  You must UNROLL the K-loop 4 times and cycle sp-meta through indices 0,1,2,3:
-
-  for (int k_slice = 0; k_slice < K; k_slice += 4) {
-      load_sp_meta(sp_meta, metadata_ptr + k_slice/4);  // load one 32-bit word
-
-      wgmma.mma_async.sp ... sp_meta, sp_sel=0, scale_d=...; // index 0
-      wgmma.commit_group;
-
-      wgmma.mma_async.sp ... sp_meta, sp_sel=1, scale_d=...; // index 1
-      wgmma.commit_group;
-
-      wgmma.mma_async.sp ... sp_meta, sp_sel=2, scale_d=...; // index 2
-      wgmma.commit_group;
-
-      wgmma.mma_async.sp ... sp_meta, sp_sel=3, scale_d=...; // index 3
-      wgmma.commit_group;
-  }
-
-  Wait: sp-meta here is the sp-meta OPERAND (a register) — it stays the same
-  across all 4 calls! The INDEX (sp-meta VALUE passed as operand) advances.
-  Actually: the sp_meta passed to each instruction is a register, and the
-  hardware uses an internal pointer (incremented by sp-sel's semantics) to
-  extract the right 4-bit group for each call. See §17 for sp-sel details.
-
-  ─── sp-meta for TF32 (The Exception) ────────────────────────────
-
-  TF32 uses 1:2 sparsity (1 non-zero per 2 adjacent elements).
-  Metadata: one 1-bit index per element pair.
-  A sp-meta register holds enough for TWO wgmma calls.
-  Must toggle between sp-meta values 14 (0b1110) and 4 (0b0100):
-    First k=16 call:  sp-meta = 14  (bitmask for lower bits of TF32 data)
-    Second k=16 call: sp-meta = 4   (bitmask for upper bits)
-  Using standard indices (0,1) for TF32 gives WRONG results — hardware
-  requires these specific bit patterns due to the 19-bit TF32 data format.
-```
+Source: [CUDA 12.8 PTX sparse WGMMA layouts and metadata](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions-sparse-wgmma-mma-async).
 
 ---
 
 ## 17 — sp-sel — The Thread Selector
 
-The last piece, and the least intuitive.
-
-Metadata is not supplied by every thread — it comes from one designated thread
-per group, and `sp-sel` is the compile-time constant that says which. It is
-essentially a plumbing detail, but a wrong `sp-sel` means the hardware reads
-metadata from a thread that never wrote any, and the result is wrong numbers
-rather than an error.
-
 ### 17.1 What sp-sel Does
 
-`sp-sel` (sparsity selector) is a compile-time constant that tells the hardware which thread(s) within each group of 4 consecutive threads are responsible for providing the metadata register. It exists because not all 128 threads in the warp group need to provide unique metadata — only specific "contributor" threads are read.
+`sp-sel` is an immediate selecting which lanes contribute metadata within
+each consecutive group of four threads. It does not select a nibble or
+advance through the metadata register. For Hopper sparse WGMMA, the CUDA
+12.8 PTX rules are:
 
-**Correction worth flagging up front:** `sp-sel` is not simply binary. For the related warp-level `mma.sp` instruction, NVIDIA engineers have confirmed on the developer forums that the selector is a 32-bit compile-time constant valid over **0–3**, not just 0 or 1 — and which lane(s) it names depends on the shape: for a 16-row-per-op shape, one of four threads in the group holds the metadata and the selector picks which one (0→T0, 1→T1, 2→T2, 3→T3); for a shape with twice the K per op, two of four threads hold it and the selector picks which pair. `wgmma.mma_async.sp` carries the same operand name and almost certainly the same role, but its own PTX ISA entry documents the exact mapping per shape/precision, and that mapping can depend on your CUDA/PTX ISA version — treat the table below as the questions to answer from the current spec, not as hardcoded values to copy into a kernel.
+| Input precision | K per instruction | Valid sp-sel | Contributing lanes in each group of four |
+| --- | --- | --- | --- |
+| FP16 / BF16 | 32 | 0 or 1 | 0 selects T0/T1; 1 selects T2/T3 |
+| TF32 | 16 | 0 or 1 | 0 selects T0/T1; 1 selects T2/T3 |
+| FP8 E4M3 / E5M2 | 64 | 0 only | All four lanes |
+| INT8 / UINT8 | 64 | 0 only | All four lanes |
 
-```
-sp-sel — Thread Metadata Responsibility (confirm exact values against your PTX ISA)
-══════════════════════════════════════════════════════════════════════
+Other values produce undefined behavior. The selector rules for a related
+warp-level `mma.sp` shape cannot be substituted for WGMMA's rules. Populate
+each contributing lane's register with the metadata for its assigned matrix
+coordinates; broadcasting a single register value is only correct when the
+actual sparsity pattern makes those lane-specific fields identical.
 
-  The thread groups for sp-sel:
-  ─────────────────────────────────────────────────────────────────
-  Threads are grouped into consecutive sets of 4: T0,T1,T2,T3 | T4,T5,T6,T7 | ...
-  sp-sel is a compile-time constant over a WIDER range than 0/1 — confirmed
-  0–3 for the related warp-level mma.sp, where it names which of the 4
-  threads (narrower sparsity) or which pair (wider sparsity) supplies
-  metadata. Do not assume a plain 0-vs-1 choice without checking the shape.
-
-  ─── What Varies by Shape/Precision ──────────────────────────────
-
-  TF32 sparse:
-    Narrower per-op K → one thread of the group holds metadata; which one
-    is named by sp-sel. The chapter's worked example above used toggling
-    between two sp-meta bit patterns (14, 4) for two K-groups — treat the
-    sp-sel VALUE that pairs with each as something to read off the current
-    PTX ISA for your CUDA version, not as a fixed 0/1 rule.
-
-  FP16/BF16 sparse:
-    Wider per-op K → typically a pair of threads holds metadata per
-    selector value; the loop still unrolls 4× to cycle through a full
-    sp-meta register's worth of quartets (§16).
-
-  FP8/INT8 sparse:
-    Widest per-op K → ALL threads in the group contribute, so sp-sel is
-    reported as hardware-determined / fixed at 0 in community references.
-    This part of the chapter's original claim holds up; the TF32/FP16/BF16
-    "0 or 1" claims are what needed correcting.
-
-  ─── Practical Recommendation ────────────────────────────────────
-
-  Simplest starting point:
-    Load the same sp-meta value to every thread that could be read,
-    so the exact selector value is less likely to matter while you get a
-    sparse kernel correct for the first time. Then narrow down the real
-    required sp-sel for your target shape from the PTX ISA reference before
-    trusting performance numbers from it.
-
-  Before shipping a sparse wgmma kernel: look up `wgmma.mma_async.sp` in
-  the PTX ISA version matching your CUDA toolkit and copy its sp-sel table
-  directly, rather than this book's — NVIDIA's own HTML page did not
-  render its instruction body through automated tools while fact-checking
-  this chapter, so the exact per-shape mapping could not be fully verified
-  here for the warpgroup-level instruction specifically.
-```
+Source: [PTX sparse WGMMA sparsity selector](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions-sparse-wgmma-mma-async).
 
 ---
 
@@ -1592,9 +1447,7 @@ One complete kernel that uses most of the chapter at once: a pipelined `wgmma`
 loop with commit/wait groups from §1–§5, and an `stmatrix` epilogue from
 §6–§8.
 
-This is the closest thing in the book to the inner loop of a real CUTLASS GEMM.
-Chapters 8 and 9 take it the rest of the way, adding warp specialisation and a
-fused epilogue on top of exactly this structure.
+This checked teaching kernel demonstrates two independent output-tile accumulator sets and an `stmatrix` epilogue. Chapters 8 and 9 explain how warp specialisation and persistent scheduling build on these primitives; their executable teaching references are scoped beside their listings.
 
 ### 18.1 Full Example: Pipelined wgmma with commit/wait and stmatrix Epilogue
 
@@ -1610,9 +1463,9 @@ Scenario: m64n64k16, FP16→FP16 accumulator (to avoid FP32→FP16 conversion in
   Pipeline:
     Issue wgmma for tile A → commit → (prepare tile B's data) → wgmma tile B → commit
     wait_group<1>: tile A is done, tile B may still run
-    stmatrix tile A's accumulators → write to SMEM → TMA store → global
+    stmatrix tile A's accumulators → SMEM → thread-driven global stores
     wait_group<0>: tile B is done
-    stmatrix tile B → write → store
+    stmatrix tile B → SMEM → thread-driven global stores
 ```
 
 ```
@@ -1924,6 +1777,11 @@ Output verification: 0 errors across both 64×64 tiles
 
 
 
+
+
+
+The tested listing retains conservative `wgmma.fence` calls after waits. These calls are unnecessary for reading completed results; the waits provide completion. Its source comments are preserved with the executed artifact.
+
 `GPU:` identifies the tested SKU. This example uses **FP16 inputs and FP16 accumulators**: the PTX WGMMA BF16 input variant requires FP32 accumulators. Inputs are rounded to FP16 before the reference is computed. Both complete 64×64 output tiles are checked, including all four `stmatrix.x4` slices per warp; checking only positive register sums would miss an incomplete epilogue. See the [CUDA 12.8 PTX WGMMA specification](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions-wgmma-mma).
 
 The closing banner repeats Chapter 6's byte-vs-codepoint `%-56s` quirk, with this chapter's own numbers: `✓ ALL PASS — commit/wait pipeline + stmatrix working!` is 53 codepoints but 57 UTF-8 bytes (`✓` and `—` each cost 3 bytes for 1 displayed column, wasting 2 bytes apiece). Since 57 already exceeds the 56-byte field width, `printf` pads with nothing, and the line prints at its raw length. Measured in the columns a terminal actually draws, that puts the whole bordered line — the fixed `"║  "` and `"  ║"` margins plus 53 content columns, 59 in total — exactly 1 column short of the 60-column border above it, the same shortfall Chapter 6 hit with a differently-worded message of the same coincidental 53-codepoint length.
@@ -1946,7 +1804,7 @@ Instruction                              Purpose
 ──────────────────────────────────────────────────────────────────────────
 wgmma.commit_group.sync.aligned          Seal pending wgmma ops into a group
 wgmma.wait_group.sync.aligned N          Wait until ≤ N groups still pending
-wgmma.fence.sync.aligned                 Register ordering (before/after wgmma)
+wgmma.fence.sync.aligned                 Order prior ordinary register accesses before WGMMA
 
 N=0: drain ALL groups → safe to read d[] for epilogue
 N=1: wait for all except 1 → read older groups while newest runs
@@ -2008,26 +1866,16 @@ cvt.rn.satfinite.e4m3x2.f32    fp8, f32, f32  2×f32  e4m3x2   2 FP32 → 2 FP8 
 
 ### Sparse WGMMA sp-sel and sp-meta Rules
 
-Sections 16 and 17 condensed. The encoding table is the part to check against
-rather than recall.
+| Precision | Sparsity | K/op | sp-sel | Metadata per retained position/group |
+| --- | --- | --- | --- | --- |
+| TF32 | 1:2 | 16 | 0 or 1, thread pair | One 4-bit index per pair: 4 or 14 |
+| FP16/BF16 | 2:4 | 32 | 0 or 1, thread pair | Two 2-bit indices per quartet |
+| FP8 E4M3/E5M2 | 2:4 | 64 | 0, all four threads | Two 2-bit indices per quartet |
+| INT8/UINT8 | 2:4 | 64 | 0, all four threads | Two 2-bit indices per quartet |
 
-```
-Precision     Sparsity  K/op  sp-sel          sp-meta cycle       Loop unroll
-──────────────────────────────────────────────────────────────────────────────
-TF32          1:2       k16   narrower range  Alternate: 14, 4    Unroll 2×
-                               than 0/1 — confirm exact values/meaning
-                               against the PTX ISA for your CUDA version
-FP16/BF16     2:4       k32   same caveat     Cycle: 0,1,2,3      Unroll 4×
-FP8 E4M3/E5M2 2:4       k64   0 ONLY          Hardware-managed    Unroll 4×
-INT8/UINT8    2:4       k64   0 ONLY          Hardware-managed    Unroll 4×
-
-CORRECTED: sp-sel is NOT simply 0-or-1. For the related warp-level mma.sp,
-NVIDIA engineers confirm on the developer forums it is a compile-time
-constant valid over 0–3, naming which thread(s) of a 4-thread group supply
-metadata (narrower shapes: 1 of 4 named directly; wider shapes: a pair).
-Only the FP8/INT8 "all threads contribute, sp-sel=0" row is confirmed as
-stated — read the current PTX ISA before hardcoding the others.
-```
+Update metadata for the actual A tile; no mandatory metadata cycling or loop
+unrolling follows from these encodings. See the primary-source layout links
+in §§16–17.
 
 ### wgmma.fence Placement Checklist
 
@@ -2036,9 +1884,9 @@ wrong results.
 
 ```
   □ BEFORE the first wgmma.mma_async in any new warpgroup sequence
-  □ AFTER the last wgmma.mma_async (and after wait_group<0>) before reading d[]
+  □ Wait for all groups using d[] before reading it; no post-wait fence needed
   □ AFTER ldmatrix (if A is loaded to registers) and BEFORE wgmma that uses them
-  □ BETWEEN two wgmma sequences that share the same accumulator registers
+  □ After ordinary register updates, before a new WGMMA uses those registers
 
   Do NOT use wgmma.fence for:
   ✗ Ordering SMEM writes visible to wgmma → use mbarrier.try_wait.acquire
@@ -2055,14 +1903,14 @@ Check here before reaching for a profiler.
 Mistake                                    Symptom              Fix
 ──────────────────────────────────────────────────────────────────────────────
 Missing fence before first wgmma.mma_async Wrong accumulator     Add wgmma.fence before
-Missing fence after wait_group<0>           Stale d[] reads       Add wgmma.fence after
+Fence used instead of completion wait      Pending d[] accesses  Commit and wait for the relevant groups
 Reading d[] while group still pending       Race condition         wait_group<0> first
 stmatrix.b16 with FP32 d[] registers        Type mismatch compile  cvt to FP16 first
 FP8 data in MN-major layout for wgmma      Scrambled results      Stage in K-major SMEM
 Using ldmatrix.b8 on Hopper (sm_90a)       Compile error          Use SS path or ld.shared.b32
 sp-sel nonzero for FP8 sparse wgmma        Wrong/undefined result Use sp-sel=0 for FP8/INT8
-sp-meta not cycled 0→1→2→3 (FP16 sparse)  Reuses first K pattern Unroll loop 4×, advance
-TF32 sparse with sp-meta 0,1 (not 14,4)   Hardware misalignment  Use 14 then 4 for TF32
+Metadata does not match the current A tile Wrong sparse product Supply correct per-lane metadata
+TF32 metadata uses 1-bit indices          Invalid encoding      Pack 4-bit indices 4 or 14
 Large K FP8 without K-slicing             Precision drift        Slice K ≤ 256, reduce partial
 ```
 

@@ -25,9 +25,9 @@
 
 `mbarrier` (memory barrier) is a fine-grained, asynchronous synchronization primitive that fixes this. It allows specific threads (or TMA hardware) to signal a barrier, and specific threads to wait on it, without involving anyone else.
 
-[![Three-lane timeline showing a producer waiting on EMPTY and issuing a TMA load, TMA hardware moving bytes from HBM to shared memory and signaling FULL, and a consumer waiting on FULL, running WGMMA, confirming completion, and signaling EMPTY so the producer can reload the same stage](images/ch09/01-two-barrier-handshake.svg)](images/ch09/01-two-barrier-handshake.svg)
+[![One stage, two ownership handoffs](images/ch09/01-two-barrier-handshake.svg)](images/ch09/01-two-barrier-handshake.svg)
 
-*One stage's full lifecycle, numbered exactly as the text below: the FULL barrier flows producer→TMA→consumer, the EMPTY barrier flows consumer back to producer — two separate signals instead of one block-wide rendezvous.*
+*FULL publishes data readiness; EMPTY publishes storage reusability.*
 
 ```
 mbarrier — The Core Concept
@@ -495,6 +495,9 @@ Handshake Results:
 
 
 
+
+
+
 ---
 
 ## 10 — ABA Ambiguity and Phase Bits
@@ -505,9 +508,9 @@ In a circular buffer with N stages, the same barrier is reused once every N roun
 
 This is the ABA problem: **A** (round 0) looks like **A** (round N) because the barrier counter has wrapped.
 
-[![Nine-step iteration trace over a 4-stage circular buffer, with stage 0's three reuses at iterations 0, 4, and 8 highlighted, each tagged with the phase bit (0, 1, 0) that lets a waiter tell the three passes apart](images/ch09/02-aba-phase-bits.svg)](images/ch09/02-aba-phase-bits.svg)
+[![A stage index needs a generation](images/ch09/02-aba-phase-bits.svg)](images/ch09/02-aba-phase-bits.svg)
 
-*Stage 0 physically fires three times in this trace; only the alternating phase bit (0→1→0) tells `try_wait.parity` which generation it's looking at.*
+*Four physical stages are reused repeatedly. Phase distinguishes successive passes.*
 
 ```
 ABA Problem Illustrated
@@ -685,9 +688,9 @@ The consumer has a more complex state machine than the producer, because WGMMA i
 
 This creates the **read-release lag**: the consumer can start reading stage N (issue WGMMA on it) before it's finished with stage N-1's WGMMA. Only after confirming stage N-1's WGMMA is done can the consumer release stage N-1 back to the producer.
 
-[![Five-iteration grid over 4 stages showing the READ pointer advancing to a new stage each iteration while the RELEASE pointer confirms and frees the stage one step behind it](images/ch09/03-read-release-lag.svg)](images/ch09/03-read-release-lag.svg)
+[![Reading can run ahead of release](images/ch09/03-read-release-lag.svg)](images/ch09/03-read-release-lag.svg)
 
-*The RELEASE pointer (red) always trails the READ pointer (blue) by exactly one stage — the WGMMA pipeline depth — so a stage is never freed while its WGMMA is still in flight.*
+*Example: keep one newest WGMMA group pending while releasing an older stage.*
 
 ```
 Consumer's Read Pointer and Release Pointer
@@ -784,9 +787,9 @@ In the Cooperative pipeline, three warpgroups share the work on ONE output tile:
 
 Both consumer warpgroups read THE SAME A and B tiles from shared memory (they consume the same loaded data). The "cooperation" is not about merging accumulators — each WG accumulates independently in its own registers. The cooperation is about sharing the loaded tile.
 
-[![One 128x128 output tile split by row between two consumer warpgroups each accumulating independently in half the registers, both fed by one producer's TMA loads, with a timeline below showing both consumers running their epilogues at the same time while tensor cores sit idle](images/ch09/04-cooperative-gap.svg)](images/ch09/04-cooperative-gap.svg)
+[![Cooperation can split an output tile](images/ch09/04-cooperative-gap.svg)](images/ch09/04-cooperative-gap.svg)
 
-*WG1 and WG2 split the registers by halving the rows, but because they run in lockstep, both hit their epilogue at the same moment — the "Cooperative Gap" that Ping-Pong (§14) closes.*
+*Two consumer warpgroups share operand delivery while accumulating different output regions.*
 
 ```
 Cooperative Pipeline — Tile Division and Execution
@@ -848,9 +851,9 @@ Cooperative Pipeline — Tile Division and Execution
 
 The Ping-Pong pipeline eliminates idle tensor core time by having Consumer 0 run its epilogue at EXACTLY the same time Consumer 1 runs its WGMMA on the NEXT tile.
 
-[![Two timelines stacked: the Cooperative pipeline where both consumers run MMA and epilogue in lockstep leaving tensor cores idle during every epilogue, versus Ping-Pong where Consumer 1's MMA on the odd tile overlaps Consumer 0's epilogue on the even tile so tensor cores never idle](images/ch09/05-ping-pong-overlap.svg)](images/ch09/05-ping-pong-overlap.svg)
+[![Stagger consumers to cover epilogue work](images/ch09/05-ping-pong-overlap.svg)](images/ch09/05-ping-pong-overlap.svg)
 
-*Staggering C1 by half a tile makes its MMA fill exactly the slot where C0's epilogue would otherwise leave the tensor cores idle — the fix only works if epilogue time and MMA time per tile are close to equal.*
+*Illustrative ping-pong scheduling; the benefit depends on the relative task durations.*
 
 ```
 Ping-Pong Pipeline — The Key Insight
@@ -1218,6 +1221,9 @@ Ping-Pong Behavior Check:
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex06_pingpong.cu -->
+
+
+
 
 
 
@@ -1765,6 +1771,9 @@ FP8 amax reduction result: 44.6000
 
 
 
+
+
+
 [CORRECTED-NOTE: the three printed samples (D[0][0], D[2][5], D[3][2]) all land in the
 clamped region with this fill — pre-ReLU values there are -42.0, -37.05, and -37.6
 respectively, all < 0 — because the fill formula is dominated by the (m-32) term and
@@ -1780,9 +1789,9 @@ earlier worked example for one.]
 
 Non-persistent kernels launch one thread block per output tile. This has three problems: kernel launch overhead, wave quantization (last partial wave wastes SM capacity), and poor cache locality (tiles assigned in a bad order). Persistent scheduling fixes all three.
 
-[![Two SM-grid snapshots for 133 tiles on 132 SMs: wave 1 with every SM busy, and wave 2 with only 1 SM working while 131 sit idle, labeled with the 0.8% last-wave efficiency](images/ch09/06-wave-quantization.svg)](images/ch09/06-wave-quantization.svg)
+[![133 tiles on 132 SMs: the last wave](images/ch09/06-wave-quantization.svg)](images/ch09/06-wave-quantization.svg)
 
-*One tile too many for the SM count turns the second wave into 131 idle SMs babysitting a single busy one — persistent scheduling removes the wave boundary entirely.*
+*Equal-duration tile model with one resident tile per SM. This is a scheduling illustration.*
 
 ```
 Persistent vs Non-Persistent Scheduling
@@ -1862,33 +1871,44 @@ Static Scheduler — Tile Coordinate Calculation
   // Within each block, traverse in column-major order
   tile_block = tile_idx / (S × tiles_n)   // which super-block
   pos_in_block = tile_idx % (S × tiles_n)
-  local_m = pos_in_block / tiles_n         // 0 to S-1
-  local_n = pos_in_block % tiles_n         // 0 to tiles_n-1
+  tiles_m = ceil(M / TILE_M)
+  group_m = min(S, tiles_m - tile_block * S) // final group may be shorter
+  local_m = pos_in_block % group_m         // M varies fastest
+  local_n = pos_in_block / group_m
   tile_m = tile_block * S + local_m
   tile_n = local_n
-  // This sweeps S×tiles_n tiles before moving to the next block.
-  // The S rows of the block share their B tile reads in L2.
+  // Valid tile_idx values sweep group_m×tiles_n tiles in this group.
+  // The group_m rows can reuse each B tile through L2.
 ```
 
-### 17.3 Stream-K Scheduling — Eliminating Wave Quantization
+For `tiles_m=3`, `tiles_n=3`, and `S=2`, the first six coordinates are
+`(0,0), (1,0), (0,1), (1,1), (0,2), (1,2)`. The final group has
+`group_m=1`, so its coordinates are `(2,0), (2,1), (2,2)`: no invalid fourth row.
 
-Stream-K treats the ENTIRE problem as a 1D stream of arithmetic operations, divided exactly evenly among all SMs. This eliminates the "last wave" problem completely.
+### 17.3 Stream-K Scheduling — Reducing Wave Quantization
+
+Stream-K partitions a linear stream of K-tile iterations across worker CTAs,
+reducing the imbalance of a sparsely populated final wave. Integer work units
+leave some imbalance, and split output tiles add reduction and synchronization
+costs. CTAs are scheduled onto SMs; the SM labels below describe a simplified
+one-worker-per-SM model.
 
 ```
 Stream-K — Core Idea and Implementation
 ══════════════════════════════════════════════════════════════════════
 
   Standard scheduling: 133 tiles, 132 SMs → 2 waves (last wave: 1 SM)
-  Stream-K: 133 tiles, 132 SMs → 132 equal chunks of work
+  Stream-K: 133 tiles, 132 workers → nearly equal chunks of K work
 
-  How stream-K avoids the last-wave problem:
+  How Stream-K reduces the last-wave imbalance:
   ─────────────────────────────────────────────────────────────────
   Total math = total_tiles × K_TILES_PER_OUTPUT_TILE
   Work per SM = ceil(total_math / NUM_SMs)
 
   If total_tiles = 133 and K_TILES = 64, each output tile has 64 k-tiles:
     Total k-tile iterations = 133 × 64 = 8512
-    Per SM: ceil(8512 / 132) = 65 k-tile iterations
+    Maximum per worker: ceil(8512 / 132) = 65 k-tile iterations
+    The final range must be clipped at 8512; not every worker gets 65.
 
   SM 0: k-tiles 0..64   (all in tile 0 + first slice of tile 1)
   SM 1: k-tiles 65..129 (rest of tile 1 + first slice of tile 2)
@@ -1939,9 +1959,9 @@ Stream-K — Core Idea and Implementation
 
 Two kernels with identical arithmetic but different tile traversal orders can differ by 2-3× in performance because of L2 cache behavior. The tile that was evicted before it was needed forces an expensive HBM reload.
 
-[![Three 4x4 tile-visit-order grids with numbered arrows: row-major keeping A warm but evicting B every row, column-major keeping B warm but evicting A every column, and swizzle=2 sweeping two M-tiles per column so both A and B stay live in L2](images/ch09/07-rasterization-swizzle.svg)](images/ch09/07-rasterization-swizzle.svg)
+[![Tile order changes the reuse window](images/ch09/07-rasterization-swizzle.svg)](images/ch09/07-rasterization-swizzle.svg)
 
-*Row-major and column-major each keep only one matrix's tiles warm in L2; sweeping a thick 2-tile strip before advancing columns keeps both warm at once.*
+*Numbers show visit order for a 4 × 4 output-tile grid.*
 
 ```
 Rasterization — Why L2 Locality Matters
@@ -2030,8 +2050,9 @@ Production Kernel Design Checklist
 
   STEP 1: Classify the kernel
     □ Compute AI = 2MNK / ((MK+NK+MN)×dtype_bytes)
-    □ AI > 295 FLOP/Byte (FP16 tensor) → compute-bound
-    □ AI < 20 FLOP/Byte (FP32 cores)  → memory-bound → fuse into epilogue
+    □ Select the arithmetic roof matching dtype and instruction family
+    □ Compare AI with that roof’s ridge to predict the lower ceiling
+    □ Profile actual traffic, parallelism and stalls before choosing a fix
 
   STEP 2: Choose tile shape
     □ Large tiles maximize AI (reuse A and B more per byte loaded)
@@ -2073,14 +2094,17 @@ Production Kernel Design Checklist
 
 **Manual Worked Example:**
 
-We implement a complete persistent warp-specialized pipeline:
+We implement a persistent GEMM teaching reference with separate producer and
+consumer roles. Block-wide barriers serialize loading and computation; this
+example demonstrates storage, scheduling and ownership structure rather than
+production TMA/WGMMA overlap. The complete executable below uses scalar float32
+arithmetic.
+
 - M=256, N=256, K=256 matrix multiply (float32)
-  [CORRECTED: the shipped code originally used M=128, N=128, K=64 in
-  main(), which both undersized the demo (4 tiles, not the 16 claimed
-  below) and made it memory-bound (AI=16 FLOP/Byte, below the 20
-  FLOP/Byte FP32 ridge point from §20) — the opposite of what a
-  "compute-bound capstone" is meant to demonstrate. M=N=K=256 restores
-  both the 16-tile count and AI≈43 (compute-bound).]
+- Whole-problem traffic model: AI = 2×256³ / (3×256²×4) ≈ 42.7 FLOP/byte.
+  This exceeds the SXM FP32 ridge used in this chapter, so that model's arithmetic
+  ceiling is lower. It does not establish the teaching kernel's actual bottleneck,
+  particularly with its single-CTA launch and repeated tiled loads.
 - Tile: 64×64 per CTA
 - Pipeline: 3 stages
 - Warp specialization: WG0=producer, WG1=consumer
@@ -2495,6 +2519,9 @@ Design Summary:
 <!-- validation:end:ex08_comprehensive.cu -->
 
 
+
+
+
 Additional boundary tests executed on November 17, 2026 (same binary and system):
 
 ```bash
@@ -2524,8 +2551,9 @@ H100 Ridge Points:
   FP32 CUDA Core:   ~67 TFLOPS / 3.35 TB/s  ≈  20 FLOP/Byte
   BF16 Tensor Core: same as FP16
 
-If AI < ridge point → memory-bound → fuse ops, reduce bytes
-If AI > ridge point → compute-bound → pipeline, warp specialize
+If AI < ridge point → modeled memory ceiling is lower
+If AI > ridge point → modeled arithmetic ceiling is lower
+Use measured traffic and stalls to identify the actual bottleneck.
 ```
 
 ### Warp Specialization Quick Reference
@@ -2631,8 +2659,10 @@ Swizzle (S rows × all_cols): good for BOTH at the cost of working set = S rows
 Swizzle formula:
   block_size = swizzle × tiles_n
   block_id   = tile_idx / block_size
-  local_m    = (tile_idx % block_size) / tiles_n
-  local_n    = (tile_idx % block_size) % tiles_n
+  pos        = tile_idx % block_size
+  group_m    = min(swizzle, tiles_m - block_id * swizzle)
+  local_m    = pos % group_m
+  local_n    = pos / group_m
   tile_m = block_id * swizzle + local_m
   tile_n = local_n
 

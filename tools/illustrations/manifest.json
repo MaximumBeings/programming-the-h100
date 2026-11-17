@@ -1,0 +1,898 @@
+[
+  {
+    "file": "docs/images/ch01/01-die-floorplan.svg",
+    "title": "Inside the Hopper GPU",
+    "lede": "Logical GH100 organisation. Blocks are schematic, not physical die placement.",
+    "height": 935,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/02-sm-internals.svg",
+    "title": "One SM, four processing partitions",
+    "lede": "Each SMSP schedules warps and uses a share of the SM\u2019s execution resources.",
+    "height": 927,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/03-memory-hierarchy.svg",
+    "title": "Memory hierarchy: scope matters",
+    "lede": "Capacity, product peak bandwidth and a bank-throughput model are different quantities.",
+    "height": 832,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/04-dgx-topology.svg",
+    "title": "Eight GPUs, one NVSwitch fabric",
+    "lede": "DGX H100 connects all eight GPUs through a switched NVLink network.",
+    "height": 952,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/05-sync-vs-async-model.svg",
+    "title": "Serial work and pipelined overlap",
+    "lede": "Asynchronous copy is not unique to Hopper; TMA changes how bulk transfers are issued.",
+    "height": 763,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/06-warp-timeline.svg",
+    "title": "A warp can work while data moves",
+    "lede": "Illustrative scheduling, not a measured utilisation trace.",
+    "height": 648,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/07-tma-before-after.svg",
+    "title": "From per-thread copies to a tensor request",
+    "lede": "The transfer request defines the division of work between threads and hardware.",
+    "height": 718,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/08-async-pipeline-phases.svg",
+    "title": "Two buffers, one repeating protocol",
+    "lede": "Never load a new tile over data that a consumer still needs.",
+    "height": 838,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/09-wgmma-register-layout.svg",
+    "title": "Where WGMMA operands live",
+    "lede": "Four warps cooperate on one warpgroup-level matrix operation.",
+    "height": 817,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/10-structured-sparsity.svg",
+    "title": "Two values survive each quartet",
+    "lede": "2:4 structured sparsity stores values plus position metadata.",
+    "height": 914,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/11-gigathread-flow.svg",
+    "title": "How a grid becomes resident work",
+    "lede": "A logical launch path; exact scheduler implementation is not an ISA contract.",
+    "height": 919,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/12-hbm-data-path.svg",
+    "title": "The path from an SM to HBM",
+    "lede": "Cache hits can terminate a request before it reaches external memory.",
+    "height": 572,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/13-l2-sectors.svg",
+    "title": "A 128-byte cache line has four sectors",
+    "lede": "Sector granularity helps explain coalescing and overfetch.",
+    "height": 648,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/14-gpc-internal.svg",
+    "title": "A GPC contains multiple TPCs",
+    "lede": "Full-die schematic: nine texture processing clusters, two SMs per TPC.",
+    "height": 806,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/15-smsp-quadrant-detail.svg",
+    "title": "A processing partition, closer up",
+    "lede": "SMSPs make warp scheduling and register pressure easier to reason about.",
+    "height": 689,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/16-thread-block-distribution.svg",
+    "title": "A block is a collection of warps",
+    "lede": "256 threads make eight warps of 32 threads each.",
+    "height": 930,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/17-warp-scheduler-cycle.svg",
+    "title": "What makes a warp eligible to issue?",
+    "lede": "A conceptual dependency-to-execution loop, not a hardware pipeline timing diagram.",
+    "height": 863,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/18-dispatch-ports.svg",
+    "title": "Issue bandwidth and execution bandwidth",
+    "lede": "An instruction must be issued before an execution unit can do useful work.",
+    "height": 844,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/19-coalescing.svg",
+    "title": "Coalescing: the same payload, different traffic",
+    "lede": "A warp\u2019s lane addresses determine which sectors it touches.",
+    "height": 612,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/20-shared-mem-split.svg",
+    "title": "Shared memory and L1 share a resource",
+    "lede": "H100 has a unified 256 KiB resource; supported carveouts are constrained by the product and kernel.",
+    "height": 664,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/21-shared-mem-banks.svg",
+    "title": "Shared-memory bank mapping",
+    "lede": "For ordinary four-byte words, addresses interleave across 32 banks.",
+    "height": 1029,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch02/13-bank-layout-visual-map.svg",
+    "title": "Shared-memory bank mapping",
+    "lede": "For ordinary four-byte words, addresses interleave across 32 banks.",
+    "height": 1029,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch04/02-shared-memory-banks.svg",
+    "title": "Shared-memory bank mapping",
+    "lede": "For ordinary four-byte words, addresses interleave across 32 banks.",
+    "height": 1029,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch01/22-swizzling.svg",
+    "title": "A swizzle changes the physical bank pattern",
+    "lede": "A small XOR permutation makes column-wise access easier to see.",
+    "height": 898,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/23-cta-to-sm-flow.svg",
+    "title": "From thread block to SM execution",
+    "lede": "Resource requirements constrain residency; synchronisation controls correctness.",
+    "height": 890,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch01/24-gemm-tile-dataflow.svg",
+    "title": "A GEMM tile through the memory system",
+    "lede": "The main loop and epilogue have different dataflow and lifetime requirements.",
+    "height": 1014,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch02/01-cuda-hierarchy-pre-post-hopper.svg",
+    "title": "A cluster adds a cooperation level",
+    "lede": "Grid \u2192 cluster \u2192 block \u2192 thread. A cluster groups blocks, not individual threads.",
+    "height": 693,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/02-communication-with-without-clusters.svg",
+    "title": "Two ways to exchange a partial sum",
+    "lede": "The producer must finish writing before the consumer uses its result.",
+    "height": 806,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/03-cluster-mechanics-gpc-scheduling.svg",
+    "title": "A cluster is a scheduling and lifetime contract",
+    "lede": "Co-scheduling enables cross-block shared-memory access within one GPC.",
+    "height": 733,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/04-dsmem-architecture.svg",
+    "title": "Distributed access, separate ownership",
+    "lede": "A cluster does not merge all shared-memory allocations into one flat physical SRAM.",
+    "height": 758,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/05-dsmem-bandwidth-comparison.svg",
+    "title": "Compare exchange paths with evidence",
+    "lede": "Define the mechanism and measurement conditions before comparing runtimes.",
+    "height": 705,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/06-tma-multicast-bandwidth.svg",
+    "title": "Multicast: one request, several destinations",
+    "lede": "A TMA multicast request delivers an operand tile to selected blocks in a cluster.",
+    "height": 748,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/07-cuda-compilation-pipeline.svg",
+    "title": "CUDA source becomes GPU machine code",
+    "lede": "PTX is a virtual ISA. SASS is the machine-code instruction stream for a target architecture.",
+    "height": 779,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/08-state-space-memory-hierarchy.svg",
+    "title": "State spaces describe access and scope",
+    "lede": "Software state spaces do not map one-to-one to fixed cache capacities or universal latencies.",
+    "height": 919,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/09-shared-memory-tile-compute.svg",
+    "title": "Load a tile, then reuse it",
+    "lede": "A 128-float tile contains 512 bytes; the benefit comes from controlled reuse.",
+    "height": 905,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/10-deep-learning-float-formats.svg",
+    "title": "Floating-point formats: range and resolution",
+    "lede": "E is the exponent field; F is the stored fraction field. Subnormals and special values also matter.",
+    "height": 985,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/11-packed-f16x2-register.svg",
+    "title": "Two FP16 values in a 32-bit word",
+    "lede": "Packed operations interpret both halfwords; bit order must match the instruction.",
+    "height": 976,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/12-byte-addressing.svg",
+    "title": "GPU addresses count bytes",
+    "lede": "Typed C++ pointer arithmetic and raw byte offsets are different views of the same storage.",
+    "height": 652,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch02/14-uva-address-space.svg",
+    "title": "Generic pointers and address-space conversion",
+    "lede": "Treat generic address encoding as implementation-defined; do not invent fixed tag values.",
+    "height": 664,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/01-sync-blocked-execution.svg",
+    "title": "Serial work leaves gaps",
+    "lede": "A deliberately serial dependency chain illustrates the cost of waiting.",
+    "height": 585,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/02-async-latency-hiding.svg",
+    "title": "Hide latency with independent work",
+    "lede": "The consumer may use a tile only after its required completion has been observed.",
+    "height": 673,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/03-blocking-vs-nonblocking-timelines.svg",
+    "title": "Nonblocking issue separates request and use",
+    "lede": "The issuing thread can do other work before it needs the result.",
+    "height": 648,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/04-sm-async-units.svg",
+    "title": "Three engines, different completion rules",
+    "lede": "Instruction issue, asynchronous matrix math and tensor movement can overlap.",
+    "height": 803,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/05-two-proxies.svg",
+    "title": "Two proxies, one ordering problem",
+    "lede": "A proxy identifies the mechanism performing a memory operation.",
+    "height": 758,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/06-proxy-hardware-paths.svg",
+    "title": "Follow the operation, not a fixed cache cartoon",
+    "lede": "Different instructions can use different paths and ordering rules.",
+    "height": 758,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/07-raw-hazard-timeline.svg",
+    "title": "RAW: consume only after production",
+    "lede": "A read-after-write dependency becomes a hazard when the consumer reads too early.",
+    "height": 882,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/08-war-hazard-timeline.svg",
+    "title": "WAR: do not overwrite an active reader",
+    "lede": "The producer must not recycle a stage while its consumer still reads it.",
+    "height": 784,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/09-mbarrier-object-bitfield.svg",
+    "title": "An mbarrier tracks a phase of work",
+    "lede": "The object is opaque 64-bit shared-memory state; this is a semantic view, not a physical bitfield.",
+    "height": 633,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/10-mbarrier-pipeline-timeline.svg",
+    "title": "One tile through the mbarrier protocol",
+    "lede": "The exact instruction variant determines how the transfer is linked to completion.",
+    "height": 967,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/11-war-pipeline-conflict-timeline.svg",
+    "title": "A buffer can be overwritten too soon",
+    "lede": "Two operations touching the same stage overlap unsafely in this example.",
+    "height": 675,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch03/12-two-barrier-war-prevention.svg",
+    "title": "A full / empty handshake protects a stage",
+    "lede": "Data readiness and buffer reusability are separate facts.",
+    "height": 813,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch04/01-h100-tma-async-architecture.svg",
+    "title": "Load the next tile while computing this one",
+    "lede": "Separate stages prevent the copy from overwriting the active operand.",
+    "height": 675,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch04/03-swizzle-128b-grid.svg",
+    "title": "128-byte swizzle: permuting 16-byte cells",
+    "lede": "A simplified aligned-row model shows how the row selects an XOR permutation.",
+    "height": 1134,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch04/04-swizzle-64b-32b-grids.svg",
+    "title": "Narrower swizzles use smaller windows",
+    "lede": "The same XOR idea applies to fewer 16-byte cells per window.",
+    "height": 1258,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch04/05-l2-promotion.svg",
+    "title": "L2 promotion is a fetch-policy choice",
+    "lede": "A promotion mode can request a larger cache granularity for tensor traffic.",
+    "height": 639,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch04/06-oob-fill.svg",
+    "title": "A requested tile can cross the tensor edge",
+    "lede": "The descriptor defines the global tensor bounds; the requested box may extend past them.",
+    "height": 978,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch05/01-tma-engine-timeline.svg",
+    "title": "After a tensor-copy request is issued",
+    "lede": "A high-level sequence; transfer granularity and timing are not fixed by this drawing.",
+    "height": 863,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch05/02-ampere-vs-hopper-occupancy.svg",
+    "title": "Per-thread copies versus bulk TMA",
+    "lede": "Both can be asynchronous. Their issue and addressing responsibilities differ.",
+    "height": 668,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch05/03-tensor-vs-raw-layout.svg",
+    "title": "Tensor copy or raw byte copy?",
+    "lede": "The request format determines what the hardware knows about the data.",
+    "height": 484,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch05/04-tile-mode-rectangular-fetch.svg",
+    "title": "Request a rectangular tensor tile",
+    "lede": "For the example box, 32 columns \u00d7 16 rows = 512 elements.",
+    "height": 911,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch05/05-im2col-flow-comparison.svg",
+    "title": "im2col without a global intermediate",
+    "lede": "Compare dataflow, not an assumed format-independent instruction recipe.",
+    "height": 779,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch05/06-tma-multicast-fanout.svg",
+    "title": "Multicast fans a tile out to a cluster",
+    "lede": "Each selected rank receives its own shared-memory copy.",
+    "height": 748,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch05/07-dynamic-smem-alignment.svg",
+    "title": "Align the tile, not just the allocation base",
+    "lede": "This layout example uses an eight-byte barrier and a 128-byte-aligned tile start.",
+    "height": 801,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch05/08-prefetch-timeline.svg",
+    "title": "Prefetch creates an opportunity for reuse",
+    "lede": "The real load still needs its normal ordering and completion protocol.",
+    "height": 765,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch06/01-four-innovations-ampere-vs-hopper.svg",
+    "title": "What changes with warpgroup MMA?",
+    "lede": "Compare the execution model while keeping precision and sparsity separate.",
+    "height": 886,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch06/02-warp-group-structure.svg",
+    "title": "Four consecutive warps form a warpgroup",
+    "lede": "A WGMMA collective has 128 participating threads, not 128 independent matrix operations.",
+    "height": 1069,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch06/03-wgmma-pipeline-timeline.svg",
+    "title": "Overlap TMA with the WGMMA K-loop",
+    "lede": "The next stage may load while the current stage supplies matrix operands.",
+    "height": 675,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch06/04-ldmatrix-two-phase.svg",
+    "title": "ldmatrix: addresses and register fragments",
+    "lede": "For an x4 load, four 8 \u00d7 8 submatrices are supplied and distributed across a warp.",
+    "height": 809,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch06/05-swizzle-xor-address.svg",
+    "title": "Swizzled addresses combine row and column bits",
+    "lede": "For this aligned 128-byte-row, 16-bit-element example, row bits select a 16-byte-cell permutation.",
+    "height": 884,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch06/06-wgmma-descriptor-bits.svg",
+    "title": "The WGMMA shared-memory descriptor",
+    "lede": "A 64-bit descriptor encodes an address and traversal parameters; reserved bits remain zero.",
+    "height": 857,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch06/07-lbo-sbo-checkerboard.svg",
+    "title": "Descriptors describe jumps through a layout",
+    "lede": "LBO and SBO depend on the operand\u2019s core-matrix ordering and swizzle mode.",
+    "height": 1053,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch07/01-commit-wait-pipeline-timeline.svg",
+    "title": "Commit a batch; wait for the required age",
+    "lede": "wait_group N allows up to N recent committed groups to remain pending.",
+    "height": 792,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch07/02-wgmma-fence-placement.svg",
+    "title": "Ordering is different from completion",
+    "lede": "The correct sequence protects both inputs and outputs of asynchronous matrix math.",
+    "height": 1045,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch07/03-stmatrix-address-quadrants.svg",
+    "title": "stmatrix: four address-providing quadrants",
+    "lede": "This is the same four-submatrix address ordering used for a 16 \u00d7 16 x4 composition.",
+    "height": 761,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch07/04-stmatrix-register-scatter.svg",
+    "title": "stmatrix scatters register fragments",
+    "lede": "For each 8 \u00d7 8, 16-bit submatrix, four lanes contribute a row\u2019s eight values.",
+    "height": 1214,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch07/05-fp8-bit-layout-e4m3-e5m2.svg",
+    "title": "Two FP8 formats, different tradeoffs",
+    "lede": "The stored fraction bits affect resolution; exponent bits affect range.",
+    "height": 1009,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch07/06-fp8-packed-x4-x2.svg",
+    "title": "Pack FP8 values with an explicit bit order",
+    "lede": "A storage pack and an instruction operand pack are not automatically the same layout.",
+    "height": 1083,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch07/07-sparse-wgmma-2-4-metadata.svg",
+    "title": "Two values survive each quartet",
+    "lede": "2:4 structured sparsity stores values plus position metadata.",
+    "height": 914,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch08/01-roofline-chart.svg",
+    "title": "Two compute roofs, one memory ceiling",
+    "lede": "H100 SXM product-peak model. Arithmetic intensity uses useful FLOPs divided by transferred bytes.",
+    "height": 1106,
+    "width": 760,
+    "source": "Source: NVIDIA Hopper Architecture Whitepaper; H100 Tensor Core GPU datasheet."
+  },
+  {
+    "file": "docs/images/ch08/02-producer-consumer-imbalance.svg",
+    "title": "A producer can wait on a busy consumer",
+    "lede": "One qualitative signature of imbalance; use counters and timings to confirm it.",
+    "height": 675,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch08/03-diagnosis-flowchart.svg",
+    "title": "Diagnose from evidence, then change one cause",
+    "lede": "Combine timing, traffic, instruction progress and resource constraints.",
+    "height": 1055,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch08/04-warp-specialization-before-after.svg",
+    "title": "Warp specialisation separates responsibilities",
+    "lede": "Dedicated producer and consumer roles can simplify a deep pipeline.",
+    "height": 639,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch08/05-pipelining-stages-0-2-4.svg",
+    "title": "Pipeline depth creates room for overlap",
+    "lede": "Deeper buffering helps only when its resource cost is affordable.",
+    "height": 675,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch08/06-pipeline-smem-layout.svg",
+    "title": "Stage depth is a shared-memory budget",
+    "lede": "Example allocation: three stages, each with 32 KiB of A and 32 KiB of B.",
+    "height": 858,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch08/07-circular-buffer-ring.svg",
+    "title": "A circular buffer recycles storage, not time",
+    "lede": "Producers and consumers track both stage ownership and generation.",
+    "height": 823,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch09/01-two-barrier-handshake.svg",
+    "title": "One stage, two ownership handoffs",
+    "lede": "FULL publishes data readiness; EMPTY publishes storage reusability.",
+    "height": 813,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch09/02-aba-phase-bits.svg",
+    "title": "A stage index needs a generation",
+    "lede": "Four physical stages are reused repeatedly. Phase distinguishes successive passes.",
+    "height": 979,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch09/03-read-release-lag.svg",
+    "title": "Reading can run ahead of release",
+    "lede": "Example: keep one newest WGMMA group pending while releasing an older stage.",
+    "height": 805,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch09/04-cooperative-gap.svg",
+    "title": "Cooperation can split an output tile",
+    "lede": "Two consumer warpgroups share operand delivery while accumulating different output regions.",
+    "height": 846,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch09/05-ping-pong-overlap.svg",
+    "title": "Stagger consumers to cover epilogue work",
+    "lede": "Illustrative ping-pong scheduling; the benefit depends on the relative task durations.",
+    "height": 700,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch09/06-wave-quantization.svg",
+    "title": "133 tiles on 132 SMs: the last wave",
+    "lede": "Equal-duration tile model with one resident tile per SM. This is a scheduling illustration.",
+    "height": 637,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch10/01-wave-quantization-132-140.svg",
+    "title": "140 tiles on 132 SMs: the last wave",
+    "lede": "Equal-duration tile model with one resident tile per SM. This is a scheduling illustration.",
+    "height": 637,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch09/07-rasterization-swizzle.svg",
+    "title": "Tile order changes the reuse window",
+    "lede": "Numbers show visit order for a 4 \u00d7 4 output-tile grid.",
+    "height": 1640,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch10/02-ktile-range-assignment.svg",
+    "title": "Partition a linear K-work space",
+    "lede": "Three output tiles \u00d7 90 K-iterations = 270 work units, divided among four CTAs.",
+    "height": 704,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch10/03-three-split-roles-timeline.svg",
+    "title": "Three split roles, one final epilogue",
+    "lede": "A sequential workspace-reduction design for one output tile.",
+    "height": 911,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch10/04-lock-workspace-layout.svg",
+    "title": "Workspace separates partials from final output",
+    "lede": "Reduction metadata and numeric accumulators have different roles.",
+    "height": 1070,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch10/05-gdc-overlap-timeline.svg",
+    "title": "Dependent launch can overlap a tail",
+    "lede": "Programmatic dependent launch exposes a dependency point, not a real-time scheduling promise.",
+    "height": 727,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch10/06-l2-prefetch-warp-roles.svg",
+    "title": "Prefetch only dependency-independent inputs",
+    "lede": "A later kernel can prepare reusable weights while waiting on earlier output.",
+    "height": 675,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch10/07-groups-cluster-multicast.svg",
+    "title": "Align grouped work with operand reuse",
+    "lede": "Cluster peers can share a multicast operand only when their requests are compatible.",
+    "height": 664,
+    "width": 760,
+    "source": "Source: NVIDIA CUDA 12.8 PTX ISA 8.7; CUDA C++ Programming Guide."
+  },
+  {
+    "file": "docs/images/ch11/01-bandwidth-hierarchy.svg",
+    "title": "A bandwidth hierarchy needs a direction",
+    "lede": "Representative DGX H100 / H100 SXM product-peak link budgets.",
+    "height": 886,
+    "width": 760,
+    "source": "Source: NVIDIA NCCL user guide; DGX H100 and SuperPOD reference architecture."
+  },
+  {
+    "file": "docs/images/ch11/02-nvswitch-fabric.svg",
+    "title": "NVSwitch gives peer GPUs a switched fabric",
+    "lede": "Logical DGX H100 connectivity; this drawing does not represent physical board routing.",
+    "height": 853,
+    "width": 760,
+    "source": "Source: NVIDIA NCCL user guide; DGX H100 and SuperPOD reference architecture."
+  },
+  {
+    "file": "docs/images/ch11/03-rail-sharp-architecture.svg",
+    "title": "Rails organise the scale-out network",
+    "lede": "A rail groups corresponding GPU / NIC positions across nodes in a reference design.",
+    "height": 901,
+    "width": 760,
+    "source": "Source: NVIDIA NCCL user guide; DGX H100 and SuperPOD reference architecture."
+  },
+  {
+    "file": "docs/images/ch11/04-nccl-big-six.svg",
+    "title": "Six collective dataflow patterns",
+    "lede": "Use rank order and ownership to predict each output before running the collective.",
+    "height": 959,
+    "width": 760,
+    "source": "Source: NVIDIA NCCL user guide; DGX H100 and SuperPOD reference architecture."
+  },
+  {
+    "file": "docs/images/ch11/05-parallelism-comparison.svg",
+    "title": "What gets split across GPUs?",
+    "lede": "Choose a decomposition that matches capacity and communication needs.",
+    "height": 689,
+    "width": 760,
+    "source": "Source: NVIDIA NCCL user guide; DGX H100 and SuperPOD reference architecture."
+  },
+  {
+    "file": "docs/images/ch11/06-pipeline-bubble-timeline.svg",
+    "title": "More microbatches amortise pipeline fill",
+    "lede": "Equal-duration GPipe stage model with N = 4 stages.",
+    "height": 1228,
+    "width": 760,
+    "source": "Source: NVIDIA NCCL user guide; DGX H100 and SuperPOD reference architecture."
+  },
+  {
+    "file": "docs/images/ch12/01-materialization-traffic.svg",
+    "title": "Attention intermediates dominate the simple I/O model",
+    "lede": "One head: N = 8,192, d = 128, BF16. Decimal MB and binary MiB are kept explicit.",
+    "height": 790,
+    "width": 760,
+    "source": "Source: FlashAttention-3 paper (arXiv:2407.08608); NVIDIA PTX ISA."
+  },
+  {
+    "file": "docs/images/ch12/02-online-softmax-timeline.svg",
+    "title": "Online softmax keeps sufficient statistics",
+    "lede": "Scores [1, 3, 5, 2], values [10, 20, 30, 40], processed in two blocks.",
+    "height": 863,
+    "width": 760,
+    "source": "Source: FlashAttention-3 paper (arXiv:2407.08608); NVIDIA PTX ISA."
+  },
+  {
+    "file": "docs/images/ch12/03-warpgroup-roles.svg",
+    "title": "FA3 separates producers and consumers",
+    "lede": "A representative three-warpgroup organisation uses 384 threads.",
+    "height": 877,
+    "width": 760,
+    "source": "Source: FlashAttention-3 paper (arXiv:2407.08608); NVIDIA PTX ISA."
+  },
+  {
+    "file": "docs/images/ch12/04-pingpong-timeline.svg",
+    "title": "Stagger softmax and matrix work",
+    "lede": "A conceptual FA3 ping-pong schedule. Durations and utilisation are workload-dependent.",
+    "height": 700,
+    "width": 760,
+    "source": "Source: FlashAttention-3 paper (arXiv:2407.08608); NVIDIA PTX ISA."
+  },
+  {
+    "file": "docs/images/ch12/05-twostage-pipeline-timeline.svg",
+    "title": "Pipeline matrix work within a consumer",
+    "lede": "Different attention blocks can occupy different dependency stages.",
+    "height": 765,
+    "width": 760,
+    "source": "Source: FlashAttention-3 paper (arXiv:2407.08608); NVIDIA PTX ISA."
+  },
+  {
+    "file": "docs/images/ch12/06-causal-masking-grid.svg",
+    "title": "Causal tiles fall into three categories",
+    "lede": "Rows are query blocks; columns are key blocks. Equal aligned block boundaries are assumed.",
+    "height": 1013,
+    "width": 760,
+    "source": "Source: FlashAttention-3 paper (arXiv:2407.08608); NVIDIA PTX ISA."
+  },
+  {
+    "file": "docs/images/ch12/07-throughput-ladder.svg",
+    "title": "FA3 paper results and the ideas behind them",
+    "lede": "Reported author results on H100; these are not benchmark measurements from this book.",
+    "height": 1114,
+    "width": 760,
+    "source": "Source: FlashAttention-3 paper (arXiv:2407.08608); NVIDIA PTX ISA."
+  }
+]

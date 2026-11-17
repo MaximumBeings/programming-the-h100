@@ -290,9 +290,9 @@ TMA Capabilities Overview
 
 The H100's ability to overlap compute and memory 100% rests on three independent hardware units that can run simultaneously:
 
-[![The H100 async architecture — TMA and Tensor Cores overlap](images/ch04/01-h100-tma-async-architecture.svg)](images/ch04/01-h100-tma-async-architecture.svg)
+[![Load the next tile while computing this one](images/ch04/01-h100-tma-async-architecture.svg)](images/ch04/01-h100-tma-async-architecture.svg)
 
-*While WGMMA multiplies tile K out of SMEM, TMA independently loads tile K+1 from HBM into the other SMEM buffer. This overlap is only possible because TMA runs completely independently: with pre-Hopper thread-driven copies, the same threads that would drive WGMMA for tile K are instead busy computing addresses and issuing copies for tile K+1 — forced serialization. With TMA, one thread fires a single instruction and the rest immediately drive WGMMA; the descriptor handles everything else. For a well-tuned GEMM kernel, the bottleneck shifts from memory bandwidth to pure compute throughput — this is how H100 approaches near-theoretical FLOP utilization.*
+*Separate stages prevent the copy from overwriting the active operand.*
 
 ---
 
@@ -704,8 +704,8 @@ Data Types — All Options with Properties
 
   TF32 uses 8-bit exponent (same range as FP32) + 10-bit mantissa.
   It occupies 32 bits of storage but only 19 bits are meaningful.
-  Tensor Cores on H100 can operate on TF32 data at the same speed
-  as FP16, but with FP32's dynamic range.
+  H100 SXM dense TF32 peaks at about 494.7 TFLOP/s, half its
+  approximately 989.4 TFLOP/s FP16 peak, with FP32's dynamic range.
 
   In practice: use CU_TENSOR_MAP_DATA_TYPE_TFLOAT32 when your data
   is stored as FP32 but you want tensor core acceleration with no
@@ -713,6 +713,8 @@ Data Types — All Options with Properties
 ```
 
 ---
+
+Source for the TF32/FP16 peak ratio: [NVIDIA Hopper architecture whitepaper](https://resources.nvidia.com/en-us-hopper-architecture).
 
 ## 6 — Tensor Rank and Global Address
 
@@ -1081,9 +1083,9 @@ Before explaining swizzling (§10), you need a solid understanding of why bank c
 
 Shared memory is physically divided into 32 banks. Each bank is an independently readable/writable memory array, 4 bytes wide. The 32 banks allow 32 threads (one warp) to perform 32 simultaneous independent accesses — one per bank — with no conflict. This is the ideal case.
 
-[![Shared memory bank structure — conflict-free vs. 32-way-conflict access](images/ch04/02-shared-memory-banks.svg)](images/ch04/02-shared-memory-banks.svg)
+[![Shared-memory bank mapping](images/ch04/02-shared-memory-banks.svg)](images/ch04/02-shared-memory-banks.svg)
 
-*32 banks, each 4 bytes wide; `bank = (byte_address / 4) % 32`, and the assignment repeats every 128 bytes. A stride-1 warp access (`smem[0..31]`) lands one thread per bank — all 32 serviced in a single cycle. A stride-32 access — the shape you get reading a column out of a row-major matrix, exactly the GEMM case in §9 above — puts every thread's address in bank 0, serializing the warp into 32 cycles. Swizzling (§10) rearranges the addresses so that what looks like the same bank lands in different physical banks.*
+*For ordinary four-byte words, addresses interleave across 32 banks.*
 
 Reference card — the two access patterns in the diagram, spelled out:
 
@@ -1221,9 +1223,9 @@ Swizzling — The XOR Formula
 
 128B swizzling is the recommended default for FP16 and BF16 GEMM on H100. It eliminates bank conflicts completely for the most common access patterns.
 
-[![128B swizzle permutation — logical cell (y,x) to physical cell (y, x XOR (y & 7))](images/ch04/03-swizzle-128b-grid.svg)](images/ch04/03-swizzle-128b-grid.svg)
+[![128-byte swizzle: permuting 16-byte cells](images/ch04/03-swizzle-128b-grid.svg)](images/ch04/03-swizzle-128b-grid.svg)
 
-*TMA treats the SMEM destination as a 2D array of 128-byte rows, each split into 8 cells of 16 bytes; the pattern repeats every 8 rows (1024 bytes). The grid is the formula `x' = x ^ (y & 7)` worked out for every (row, column) pair — column 0 is highlighted to show that it lands on a different physical cell in every one of the 8 rows, which is exactly what removes the bank conflict from a stride-128-byte (same logical column) access.*
+*A simplified aligned-row model shows how the row selects an XOR permutation.*
 
 Reference card — the bank-level consequence, spelled out for a column-0 access:
 
@@ -1247,9 +1249,9 @@ adjacent rows.
 The narrower modes. You need these when your tile's row is too short for 128B
 swizzle to be legal — the mode has to divide evenly into the row.
 
-[![64B and 32B swizzle permutation grids, side by side with the 128B grid's logic](images/ch04/04-swizzle-64b-32b-grids.svg)](images/ch04/04-swizzle-64b-32b-grids.svg)
+[![Narrower swizzles use smaller windows](images/ch04/04-swizzle-64b-32b-grids.svg)](images/ch04/04-swizzle-64b-32b-grids.svg)
 
-*The narrower modes follow the exact same XOR rule, just over fewer cells. 64B permutes 4 cells (`x' = x ^ (y & 3)`, period 4 rows = 512 bytes) — both the left half (cells 0–3) and right half (cells 4–7) of each 128-byte row are permuted independently with that formula. 32B permutes pairs of cells (`x' = x ^ (y & 1)`, period 2 rows = 256 bytes).*
+*The same XOR idea applies to fewer 16-byte cells per window.*
 
 ```
 When to use 64B:
@@ -1425,78 +1427,35 @@ The Coupling Requirement — 32B Interleave Must Use 32B Swizzle
 
 ## 12 — L2 Promotion
 
-A free optimisation that most people never enable.
-
-When the TMA pulls a tile out of HBM, it can be told to drag a larger block into
-L2 along with it. If your next tile is adjacent — and in a tiled GEMM it almost
-always is — that next fetch then hits L2 instead of going to HBM.
-
-Costs nothing, requires one descriptor field, and is worth a measurable amount
-on any kernel with a predictable access pattern.
+L2 promotion chooses the granularity at which tensor-map requests fill L2
+from DRAM. Larger fills can help when nearby bytes are reused before eviction,
+and can waste bandwidth and cache capacity otherwise.
 
 ### 12.1 What L2 Promotion Does
 
-When TMA fetches data from HBM, it can optionally pre-fetch a larger block into the L2 cache than strictly required for the current tile. This is called L2 promotion — the fetch is "promoted" to a larger size.
+A tensor map can request 64-, 128- or 256-byte promotion, or no promotion.
+This policy does not imply that every small request physically reads a
+128-byte HBM line and discards the unused bytes. Useful bytes, L2 sectors,
+cache lines and external-memory traffic need separate accounting.
 
-The motivation: HBM is organized in 128-byte cache lines. If you request only 32 bytes, the hardware still reads the entire 128-byte line from DRAM but only caches 32 bytes. You've wasted 75% of the DRAM bandwidth. By promoting to 128B, you ensure the full cache line is used, reducing redundant DRAM accesses for subsequent tiles that touch nearby data.
+[![L2 promotion is a fetch-policy choice](images/ch04/05-l2-promotion.svg)](images/ch04/05-l2-promotion.svg)
 
-[![L2 promotion — fetch-size waste vs. full cache-line utilization](images/ch04/05-l2-promotion.svg)](images/ch04/05-l2-promotion.svg)
-
-*HBM moves data to L2 in fixed 128-byte cache lines no matter how little you ask for. Request 32 bytes with NONE and the hardware still pulls the full 128-byte line from DRAM, caching 32 and discarding 96 — 75% of that DRAM read is wasted. L2_128B keeps the whole line, so bandwidth efficiency is 100% and a later TMA call touching adjacent data gets an L2 hit instead of another DRAM trip. L2_256B goes further and pulls two consecutive 128-byte lines at once, which pays off when the tile is wider than 128B and the next row's data will be needed soon too.*
+*A promotion mode can request a larger cache granularity for tensor traffic.*
 
 ### 12.2 L2 Promotion Options — Complete Reference
 
-The four settings. Larger promotion helps sequential access and hurts random
-access, for the obvious reason.
+| Setting | Candidate use to measure |
+| --- | --- |
+| `CU_TENSOR_MAP_L2_PROMOTION_NONE` | Avoid additional promotion when adjacent bytes have little reuse. |
+| `CU_TENSOR_MAP_L2_PROMOTION_L2_64B` | Test 64-byte fetch granularity for nearby useful data. |
+| `CU_TENSOR_MAP_L2_PROMOTION_L2_128B` | Test 128-byte granularity for spatial locality. |
+| `CU_TENSOR_MAP_L2_PROMOTION_L2_256B` | Test 256-byte granularity when wider regions are reused. |
 
-```
-L2 Promotion Enumeration — All Options
-══════════════════════════════════════════════════════════════════════
+Tile width alone does not select an optimal mode. Compare elapsed kernel time,
+L2 behavior and DRAM traffic for the actual workload; larger promotion may
+cause overfetch or evict other useful data.
 
-  Enum Value                             Fetch Size  Use Case
-  ─────────────────────────────────────────────────────────────────────
-  CU_TENSOR_MAP_L2_PROMOTION_NONE        32 B        Sparse/irregular, avoid over-fetch
-  CU_TENSOR_MAP_L2_PROMOTION_L2_64B     64 B        FP16 narrow tiles (inner dim = 32 elem)
-  CU_TENSOR_MAP_L2_PROMOTION_L2_128B    128 B       Dense GEMM/Conv — standard default ★
-  CU_TENSOR_MAP_L2_PROMOTION_L2_256B    256 B       Very wide tiles, high reuse expected
-
-  ─── Decision Guide ──────────────────────────────────────────────
-
-  Dense GEMM (FP16, BF16) → L2_128B
-    ├── Tile inner dim typically 64-128 elements × 2 bytes = 128-256 bytes
-    ├── Each DRAM fetch should fill at least one L2 line
-    └── 128B aligns with HBM burst width → maximum DRAM efficiency
-
-  Dense GEMM (FP32) → L2_128B
-    ├── 32 elements × 4 bytes = 128 bytes — perfect fit for L2_128B
-    └── Matches vector load width (ld.global.v4 × 32 threads = 512B, 128B chunks)
-
-  Sparse / embedding → NONE (32B)
-    ├── Embedding rows are looked up by random index
-    ├── Adjacent data in DRAM is unlikely to be needed
-    └── Over-fetching wastes L2 space → other useful data evicted
-
-  FP16 with 32-element inner dim → L2_64B
-    ├── 32 elements × 2 bytes = 64 bytes exactly
-    ├── Fetching 128B would over-fetch (next 64B not needed)
-    └── 64B promotion is precisely right
-
-  Very wide tiles (inner dim > 64 elements FP32) → L2_256B
-    ├── Example: 64 elements × 4 bytes = 256 bytes
-    ├── Need 2 L2 cache lines fetched together
-    └── Worth doing if data will be reused within the kernel
-
-  ─── The Risk of L2 Pollution ─────────────────────────────────────
-
-  Larger promotion = more L2 space consumed per TMA call.
-  If the promoted data is NOT reused:
-  ├── Other useful data gets evicted from L2 (cache thrashing)
-  ├── Future accesses miss L2 and go to HBM → bandwidth penalty
-  └── Net result: SLOWER than using no promotion
-
-  Rule: match promotion size to how much contiguous data you WILL USE,
-  not to the theoretical maximum L2 line size.
-```
+Source: [CUDA 12.8 `cuTensorMapEncodeTiled` L2 promotion parameter](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-driver-api/group__CUDA__TENSOR__MEMORY.html).
 
 ---
 
@@ -1517,71 +1476,30 @@ edge-case code path at all.
 
 When a tile extends beyond the boundary of the global tensor, TMA can automatically fill the out-of-bounds regions with a constant value. This eliminates the need for software boundary-check code in kernels — a significant simplification for tiled algorithms where the last tile may be partially out of bounds.
 
-[![OOB fill — the SMEM tile split into valid data and three out-of-bounds fill regions](images/ch04/06-oob-fill.svg)](images/ch04/06-oob-fill.svg)
+[![A requested tile can cross the tensor edge](images/ch04/06-oob-fill.svg)](images/ch04/06-oob-fill.svg)
 
-*Global tensor: 100 columns × 50 rows; tile size (boxDim): 128 × 64. A TMA call at (col=0, row=0) pulls a tile that overhangs both edges of the tensor: columns 0–99 and rows 0–49 are valid data from HBM, columns 100–127 and rows 50–63 are filled by the OOB handler, and the corner where both overhangs overlap is filled too. The fill happens in SMEM — HBM itself is never touched — so the kernel sees a full 128×64 tile with real data in bounds and fill values out of bounds, with no boundary `if` statements needed. This is what makes the last tile in a row, the last tile in a column, and a corner tile all handled by the same code path.*
+*The descriptor defines the global tensor bounds; the requested box may extend past them.*
 
 ### 13.2 OOB Fill Options
 
-Zero-fill or leave-unchanged. Zero is almost always what a GEMM wants, since
-zeros contribute nothing to a dot product.
+`CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE` selects ordinary zero filling for
+out-of-bounds elements. It does not leave destination bytes unchanged. This
+is the usual choice for a GEMM input tile: zero padding contributes nothing
+to the dot product. Output stores still need their own bounds handling.
 
-```
-OOB Fill Enumeration
-══════════════════════════════════════════════════════════════════════
+`CU_TENSOR_MAP_FLOAT_OOB_FILL_NAN_REQUEST_ZERO_FMA` selects a special
+OOB-NaN encoding for supported floating-point types. PTX's explicit `fma.oob`
+variant clamps its result to zero when either input is OOB-NaN. Do not infer
+that ordinary floating-point arithmetic or every Tensor Core MMA treats this
+encoding as zero; select the fill mode for the actual consuming instruction.
 
-  Enum Value                              Fill Value   Use Case
-  ─────────────────────────────────────────────────────────────────
-  CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE       Undefined!  You handle boundaries manually
-  CU_TENSOR_MAP_FLOAT_OOB_FILL_NAN_REQUEST_ZERO_FMA  NaN→0  Debug + safe FMA
+For example, a tile covering K indices [64, 128) of a K=100 input has real
+values at [64, 100) and zeros at [100, 128) with `OOB_FILL_NONE`. Its input
+padding requires no software stores. Integer tensors use ordinary zero fill;
+there is no integer NaN interpretation to apply.
 
-  ─── NONE: Handle Boundaries Yourself ─────────────────────────────
-
-  With NONE: out-of-bounds SMEM locations are filled with UNDEFINED
-  values (could be zero, garbage, previous values — not guaranteed).
-
-  Use when:
-  ├── You guarantee tiles never extend beyond global tensor bounds
-  │   (grid is sized to prevent this)
-  ├── Your kernel explicitly zeros OOB regions before use
-  └── Performance is critical and OOB checking adds overhead
-
-  ─── NAN_REQUEST_ZERO_FMA: Zero Fill for FMA ─────────────────────
-
-  With NAN_REQUEST_ZERO_FMA:
-  ├── OOB regions in SMEM are filled with NaN (Not a Number)
-  ├── But: when these NaN values are fed into FMA (Fused Multiply-Add)
-  │   instructions on the Tensor Cores, the hardware treats them as 0
-  ├── Result: OOB elements contribute 0 to any matrix product
-  └── This enables correct computation WITHOUT software boundary checks
-
-  Mathematical effect:
-    Without OOB handling:  Σ A[i][j] × B[j][k] over all j
-      (includes garbage values for out-of-bounds j)
-    With NAN_REQUEST_ZERO_FMA: Σ A[i][j] × B[j][k] for valid j, 0 for OOB j
-      (OOB elements vanish from the sum ← mathematically correct!)
-
-  This is a significant correctness-without-cost feature:
-  ├── No kernel code for boundary handling
-  ├── No padding of the global tensor to tile-aligned dimensions
-  ├── No mask computation to suppress OOB elements
-  └── The hardware handles it all, for free, at full throughput
-
-  Example:
-    Computing C = A × B where K=100, tile_K=128
-    Last K-tile covers K ∈ [64, 128), but actual data only in [64, 100).
-    K indices 100-127 are out of bounds → NaN in SMEM tile.
-    Tensor Core FMA sees NaN and treats as 0 → contribution = 0.
-    C is computed correctly without software masking!
-
-  ─── A Subtle Point on Integer Operations ─────────────────────────
-
-  NAN_REQUEST_ZERO_FMA applies the zero behavior specifically to
-  FMA (floating-point Fused Multiply-Add) instructions.
-  If you use integer tensor cores or other operations, NaN propagates
-  normally (may produce incorrect results).
-  For integer GEMM with OOB: use NONE and handle boundaries in software.
-```
+Sources: [CUDA 12.8 tensor-map API](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-driver-api/group__CUDA__TENSOR__MEMORY.html),
+[PTX out-of-boundary accesses and `fma.oob`](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#tensor-oob-access).
 
 ---
 
@@ -1616,7 +1534,7 @@ Parameters:
   [8] elementStrides:   {1, 1}  (dense)
   [9] interleave:       NONE
   [10] swizzle:         SWIZZLE_128B
-       Inner dim: 64 × 4 = 256 bytes (within 128B swizzle span × 2 rows)
+       Inner dim: 32 × 4 = 128 bytes (within the 128B swizzle span)
   [11] l2Promotion:     L2_128B  (64×4=256B tile → need 2 cache lines)
   [12] oobFill:         NAN_REQUEST_ZERO_FMA
 
@@ -1952,6 +1870,9 @@ Element checks: 32768 / 32768 passed
 
 
 
+
+
+
 The top banner is a plain hardcoded string, so its border lines up exactly. The pass/fail banner is built with `printf("║  %-56s  ║\n", ...)`, and `%-56s` pads to 56 *bytes* — the same quirk from Chapter 3. `"✓ ALL PASS — TMA loaded all tiles correctly!"` is 44 display characters but 48 bytes (`✓` and `—` are each 3-byte UTF-8 sequences), so the field gets only 8 padding spaces instead of the 12 it would need to fill 56 *columns*. The closing `║` lands 2 columns short of the border above and below it.
 
 ### 14.2 Full Example: Multi-Dimensional TMA (3D Tensor)
@@ -2214,6 +2135,9 @@ Element checks: 32768 / 32768 passed
 
 
 
+
+
+
 Worth noticing: this banner's string is `"✓ ALL PASS"` with no em dash — just the one 3-byte checkmark. That costs the field 2 bytes versus its visual width, so `%-56s` pads it with 2 fewer spaces than a pure-ASCII string of the same length would get — and here that shortfall exactly cancels out the box's own two-space margins, so the right border lands flush with the border above and below it. Contrast with ex01 above, where two multi-byte characters (`✓` and `—`) ate 4 extra bytes and the border came up 2 columns short. Same mechanism, different outcome, depending on how many non-ASCII characters happen to be in the string.
 
 ---
@@ -2302,9 +2226,9 @@ Zero versus no-fill, in one line.
 ```
 Condition                                      Recommendation
 ──────────────────────────────────────────────────────────────────────
-Tiles always within tensor bounds (grid aligned)  NONE (fastest)
-Tiles may extend beyond tensor edge               NAN_REQUEST_ZERO_FMA ★
-Integer tensor core operations                    NONE (handle in SW)
+Ordinary zero padding, including tensor edges     NONE
+Explicit OOB-NaN consuming instruction             NAN_REQUEST_ZERO_FMA
+Integer tensors                                   NONE (zero fill)
 ```
 
 ### Common Mistakes and Fixes

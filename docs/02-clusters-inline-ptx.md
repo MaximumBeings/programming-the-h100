@@ -35,37 +35,19 @@ sections marked ★ are complete runnable programs rather than reference materia
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
-Everything in this chapter compiles and runs, so this preamble settles where you
-are going to run it. The short version: an H100 (`sm_90a`) runs every example;
-an A100 or a consumer card runs everything except the cluster and DSMEM sections
-(§1–3), which need Hopper hardware. If you already have a machine and a working
-`nvcc`, skip to the Table of Contents.
+The six complete programs in this chapter were compiled and run on the recorded H100 PCIe host with `sm_90a`. Short inline PTX fragments are teaching snippets, not independently validated translation units. Use the [Getting Started guide](getting-started.md) for the tested environment and first execution.
 
 ### What Hardware Can You Use?
 
-This guide targets NVIDIA Hopper GPUs (sm_90a), but most examples also run on earlier architectures. Here is a summary of what works where:
+| Feature family | Hardware / compilation requirement | Validation scope |
+| --- | --- | --- |
+| Complete chapter programs | H100; recorded commands use `sm_90a` | Tested on H100 PCIe with CUDA 12.8.93 |
+| Thread block clusters and distributed shared memory | Introduced at compute capability 9.0; the cluster API itself is available with `sm_90` | Cluster examples tested on H100 |
+| Basic inline PTX arithmetic, constraints and address-space operations | Check each instruction’s target notes and operand types | Earlier GPUs may support selected snippets; not a whole-chapter compatibility claim |
+| Architecture-specific instructions elsewhere in the book | Matching architecture target; Hopper WGMMA uses `sm_90a` | Do not infer support from basic PTX or cluster API support |
+| Blackwell | Rebuild for the actual device and audit instruction support | Not executed in this validation pass |
 
-```
-Hardware Compatibility Matrix
-══════════════════════════════════════════════════════════════════════
-
-  Architecture   Chip       SM Target   Example GPUs            Sections
-  ─────────────────────────────────────────────────────────────────────
-  Ampere         GA100      sm_80       A100 (AWS p4d, Lambda)  §1-12 (no clusters)
-  Ampere         GA102      sm_86       A10, A30 (AWS g5)       §1-12 (no clusters)
-  Hopper         GH100      sm_90a      H100 (AWS p5, Lambda)   ALL sections
-  Ada Lovelace   AD102      sm_89       RTX 4090 (local)        §1-12 (no clusters)
-  Blackwell      GB100      sm_100a     B100/B200 (see note)    ALL + new features
-
-  KEY:
-    sm_90a   → All examples in this guide compile as-is
-    sm_80    → Sections 1-3 (clusters/DSMEM) will NOT compile;
-               remove cluster-specific code or add #ifdef guards
-    sm_100a  → Blackwell; backward-compatible but has new instructions
-
-  Cluster API (Sections 1-3, 16) REQUIRES: sm_90a or sm_100a
-  All other sections work on: sm_80 or later
-```
+The `a` suffix enables architecture-specific features; it is not part of the runtime compute-capability number. See NVIDIA’s [cluster documentation](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#thread-block-clusters) and [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html). In particular, `compute_90a` PTX is not supported on Blackwell.
 
 ### Cloud GPU Rental — Lambda Labs
 
@@ -172,50 +154,9 @@ Local CUDA Installation (Ubuntu 22.04)
 
 ### Hopper vs Blackwell — What Changes in the Code?
 
-If you are running on a B100 or B200 rather than an H100, read this once. Almost
-nothing in this chapter changes — the PTX syntax, the constraints, the state
-spaces, and the cluster API are all identical. What changes is the compile flag
-and a handful of instruction names.
+Basic CUDA concepts and many inline PTX operations carry over, but a successful H100 build does not establish Blackwell compatibility. Select the actual device target, check every instruction’s supported targets, and rerun the numerical checks. The cluster API alone does not require the architecture-specific `a` target.
 
-```
-Hopper (sm_90a) vs Blackwell (sm_100a) — Code Differences
-══════════════════════════════════════════════════════════════════════
-
-  WHAT STAYS THE SAME:
-    ├── All inline PTX basics (add, mul, fma, etc.)
-    ├── All constraint syntax ("=r", "f", "l", etc.)
-    ├── All state spaces (.shared, .global, .reg, etc.)
-    ├── Cluster API (num_blocks, block_rank, sync, map_shared_rank)
-    ├── cvta / mapa semantics
-    └── Data types (FP16, BF16, FP8, etc.)
-
-  WHAT CHANGES IN BLACKWELL:
-    ├── Compile flag: -arch=sm_100a (not sm_90a)
-    ├── Max cluster size: 16 blocks (up from 8 portable on Hopper)
-    ├── New instructions:
-    │     └── tcgen05.mma (5th gen tensor cores, new layout)
-    │     └── cp.reduce.async.bulk (new bulk copy variants)
-    ├── FP4 (MX format) support for extreme quantization
-    ├── tmem: new "tensor memory" state space between registers and SMEM
-    └── Larger warp group MMA tiles
-
-  CODE ADAPTATION for Blackwell:
-    // Hopper:
-    nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out
-
-    // Blackwell:
-    nvcc -std=c++17 -arch=sm_100a -O2 file.cu -o out
-
-    // Portable (both):
-    #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 1000
-      // Blackwell-specific code
-    #elif defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 900
-      // Hopper-specific code
-    #endif
-
-  For this guide: use -arch=sm_90a for H100, -arch=sm_100a for B100/B200.
-  Every example in this guide runs unchanged on Blackwell with sm_100a.
-```
+NVIDIA’s [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html) distinguishes ordinary PTX forward compatibility from architecture-specific code: `compute_90a` PTX does not run on Blackwell. Changing a compiler flag does not translate Hopper-specific WGMMA into Blackwell Tensor Core instructions. No Blackwell execution is claimed here.
 
 ### How to Compile and Run Each Example
 
@@ -226,7 +167,7 @@ Throughout this guide, each code block has a compile/run box like this:
   FILE:    examples/ex_NAME.cu
   COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex_NAME.cu -o ex_NAME
            (For A100: replace sm_90a with sm_80, skip cluster sections)
-           (For B100: replace sm_90a with sm_100a)
+           (For Blackwell: audit instruction support and revalidate)
   RUN:     ./ex_NAME
   EXPECT:  [test output with PASS/FAIL per check]
 ═══════════════════════════════════════════════════════
@@ -281,9 +222,9 @@ Why does this matter? Because previously, the only way for two thread blocks to 
 
 Think of it this way: before clusters, each block was an island. If block A needed data computed by block B, it had to write to global memory and block B had to read from global memory. With clusters, blocks within the same cluster can directly read and write each other's shared memory as if it were their own (with some address translation, covered in Section 16).
 
-[![CUDA programming hierarchy — pre-Hopper's three levels vs. Hopper's four](images/ch02/01-cuda-hierarchy-pre-post-hopper.svg)](images/ch02/01-cuda-hierarchy-pre-post-hopper.svg)
+[![A cluster adds a cooperation level](images/ch02/01-cuda-hierarchy-pre-post-hopper.svg)](images/ch02/01-cuda-hierarchy-pre-post-hopper.svg)
 
-*Pre-Hopper, grid and block are the whole story: four blocks, each pinned to its own SM, with no way to talk to each other except a round trip through global memory at ~500 cycles. Hopper inserts a fourth level, the cluster, between block and grid. Blocks 0 and 1 are co-scheduled onto adjacent SMs inside the same cluster and get a direct DSMEM link at ~50-80 cycles — Block 0 can read Block 1's 228 KB of shared memory as if it were an extension of its own, so a cluster of size N exposes N × 228 KB with no global-memory round trip required.*
+*Grid → cluster → block → thread. A cluster groups blocks, not individual threads.*
 
 ### 1.2 Why Clusters Exist — The Problem They Solve
 
@@ -298,9 +239,9 @@ For algorithms like attention (where blocks need to cooperate on softmax normali
 
 Clusters solve this by extending the hardware to allow shared-memory cross-access within a group of co-scheduled blocks. The key hardware enabling this is the SM-to-SM DSMEM interconnect within a GPC (Graphics Processing Cluster). When blocks are placed in the same cluster, the hardware routes their shared-memory accesses through this dedicated interconnect instead of global memory.
 
-[![The communication problem — with and without clusters](images/ch02/02-communication-with-without-clusters.svg)](images/ch02/02-communication-with-without-clusters.svg)
+[![Two ways to exchange a partial sum](images/ch02/02-communication-with-without-clusters.svg)](images/ch02/02-communication-with-without-clusters.svg)
 
-*Without clusters, Block A has one path to Block B: write to global memory, Block B reads it back — ~400-1000 cycles plus whatever HBM bandwidth that round trip consumes. With clusters, the same exchange is a single DSMEM hop at ~50-80 cycles, with no HBM traffic at all — a 5-10× speedup for intra-cluster communication. This is the mechanism behind FlashAttention 3's softmax reduction, GEMM's shared input tiles, top-k filtering's partial-list merges, and any all-reduce within a small group of blocks.*
+*The producer must finish writing before the consumer uses its result.*
 
 ### 1.3 How Clusters Actually Work — Mechanics
 
@@ -330,9 +271,9 @@ Step 4: thread in Block 0 reaching into Block 1's SMEM
   // This load travels via the SM-to-SM DSMEM interconnect
 ```
 
-[![Cluster mechanics — GPC co-scheduling and the cross-block SMEM view](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)
+[![A cluster is a scheduling and lifetime contract](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)
 
-*Step 2: the scheduler places both of a cluster's blocks on SMs within the same GPC — here Cluster 0's Block 0 and Block 1 land on adjacent SMs 3 and 4, Cluster 1's on SMs 7 and 8 — and guarantees they co-run concurrently, which is what makes Step 3's promise hold. That guarantee is what lets Step 4 work: a thread in Block 0 calls `mapa` to retarget a local SMEM address at Block 1 (rank 1), then `ld.shared::cluster` on that address — hardware checks the rank bits and routes to Block 1's shared-memory controller in ~50-80 cycles. The right-hand panel shows what that looks like from inside the cluster: each block still privately owns its own 228 KB, but Block 0's threads can read, write, and atomically operate on Block 1's share via DSMEM, not just their own.*
+*Co-scheduling enables cross-block shared-memory access within one GPC.*
 
 ### 1.4 Cluster Sizes — Practical Considerations
 
@@ -870,6 +811,9 @@ ALL TESTS PASSED — Clusters working correctly!
 
 
 
+
+
+
 With a size-2 cluster, blocks 0–1 form cluster 0 and blocks 2–3 form cluster 1. Each block writes `global_block_id × 100` into its own shared memory, then reads index 0 of its partner's shared memory across the DSMEM interconnect — block 0 reads block 1's value (100), block 1 reads block 0's value (0), and the same pattern repeats for the second cluster. `prop.name` and the exact SM count/clock reported by `cudaGetDeviceProperties` will vary by the specific H100 SKU (SXM5 vs PCIe) and driver version; everything below the GPU line is deterministic given this launch configuration.
 
 ---
@@ -896,9 +840,9 @@ Distributed Shared Memory is the hardware feature that makes clusters useful. It
 
 The key insight is that each SM has 228 KB of SRAM, and this SRAM is used for shared memory. When a thread block runs on SM 0, its `__shared__` allocations live in SM 0's SRAM. When two blocks form a cluster on SMs 0 and 1, the thread block on SM 0 can now issue memory operations that target SM 1's SRAM. The DSMEM interconnect (a dedicated SM-to-SM network within the GPC) routes these operations.
 
-[![DSMEM — distributed shared memory architecture](images/ch02/04-dsmem-architecture.svg)](images/ch02/04-dsmem-architecture.svg)
+[![Distributed access, separate ownership](images/ch02/04-dsmem-architecture.svg)](images/ch02/04-dsmem-architecture.svg)
 
-*DSMEM is not a new memory pool — it's each SM's existing 228 KB of SRAM, plus a dedicated SM-to-SM interconnect within the GPC that lets Block A issue `ld.shared::cluster` / `st.shared::cluster` / `atom.shared::cluster` against Block B's SRAM and have the hardware route it there in ~50-80 cycles round trip. That only works within the same cluster (same GPC) — cross-GPC access still has to go through L2 or global memory. A cluster of 4 blocks therefore exposes 4 × 228 KB = 912 KB of combined shared memory, a 4× increase over the 228 KB a single block sees on its own.*
+*A cluster does not merge all shared-memory allocations into one flat physical SRAM.*
 
 ### 2.2 DSMEM Bandwidth Model
 
@@ -919,9 +863,9 @@ DSMEM Interconnect:
   - Estimated: ~256 GB/s SM-to-SM per cluster (estimated)
 ```
 
-[![Transfer time for 1 MB, Block A to Block B — global memory vs. L2 vs. DSMEM](images/ch02/05-dsmem-bandwidth-comparison.svg)](images/ch02/05-dsmem-bandwidth-comparison.svg)
+[![Compare exchange paths with evidence](images/ch02/05-dsmem-bandwidth-comparison.svg)](images/ch02/05-dsmem-bandwidth-comparison.svg)
 
-*The three routes for Block A to hand 1 MB to Block B. Through global memory: a 1 MB write plus a 1 MB read, each at the ~25 GB/s a single SM gets of the shared 3.35 TB/s HBM3 pool, for ~80 μs total. Through L2, optimistically assuming the write stays resident for Block B's read at ~90 GB/s per-SM L2 share: ~12 μs. Through DSMEM — Block A fills SMEM, `cluster.sync()`, Block B reads it back at an estimated ~256 GB/s SM-to-SM — the transfer itself is ~4 μs, and the `cluster.sync()` overhead (~87 cycles at ~1.5 GHz, ~58 ns) is close enough to zero to ignore. DSMEM helps when blocks exchange large amounts of data across multiple communication rounds and the data fits inside `228 KB × cluster_size`; it does nothing for a kernel that's compute-bound or that rarely communicates.*
+*Define the mechanism and measurement conditions before comparing runtimes.*
 
 ---
 
@@ -943,9 +887,9 @@ TMA (Tensor Memory Accelerator) is the H100's hardware unit for copying large ti
 
 This is especially powerful for GEMM (matrix multiplication) kernels. In a typical GEMM, every block in a cluster needs the same tile of matrix A. Without multicast, each block issues its own TMA fetch, causing N redundant HBM reads for cluster size N. With multicast, a single TMA fetch delivers the data to all N SMs at once.
 
-[![TMA multicast — one HBM fetch delivered to all blocks](images/ch02/06-tma-multicast-bandwidth.svg)](images/ch02/06-tma-multicast-bandwidth.svg)
+[![Multicast: one request, several destinations](images/ch02/06-tma-multicast-bandwidth.svg)](images/ch02/06-tma-multicast-bandwidth.svg)
 
-*GEMM scenario: a cluster of 4 blocks that all need the same Tile A. Without multicast, each block issues its own TMA fetch — 4 separate reads of identical data, 4× bandwidth waste. With multicast, a single elected thread issues one TMA request; the TMA unit fetches Tile A from HBM once and fans the copy out to all 4 SMs' shared memory in hardware, so one HBM read satisfies every block in the cluster.*
+*A TMA multicast request delivers an operand tile to selected blocks in a cluster.*
 
 For a GEMM kernel computing output tiles `C = A × B`, each output tile needs a row-stripe of A (shared by every block in a row of the cluster) and a column-stripe of B (shared by every block in a column). With multicast, all row-blocks share one A fetch and all col-blocks share one B fetch — for a 2×2 cluster, both reads are halved, a 2× bandwidth saving. This is one reason FlashAttention 3 achieves such high throughput on H100.
 
@@ -983,9 +927,9 @@ Think of PTX as analogous to Java bytecode or LLVM IR — it's a stable intermed
 
 As a programmer, PTX is important for two reasons: (1) some H100 features simply have no C++ equivalents and can only be accessed through PTX, and (2) understanding PTX helps you read the assembly output of your kernels and understand what the compiler is actually generating.
 
-[![CUDA compilation pipeline — from source to execution](images/ch02/07-cuda-compilation-pipeline.svg)](images/ch02/07-cuda-compilation-pipeline.svg)
+[![CUDA source becomes GPU machine code](images/ch02/07-cuda-compilation-pipeline.svg)](images/ch02/07-cuda-compilation-pipeline.svg)
 
-*`nvcc` runs in two stages: its frontend parses the CUDA extensions, splits off host code, and compiles device code to `mykernel.ptx` — PTX, a stable virtual ISA. `ptxas` then assembles that PTX into `mykernel.cubin`, hardware-specific SASS for the target architecture, which the GPU driver loads and runs on the SMs. PTX is stable across GPU generations (old PTX gets JIT-recompiled on a new GPU's driver); SASS is not (`sm_90a` SASS will not run on `sm_80`). A shipped binary carries both — SASS as the fast path for the GPU it was built for, PTX as the fallback for whatever comes next.*
+*PTX is a virtual ISA. SASS is the machine-code instruction stream for a target architecture.*
 
 ```
 cuobjdump --dump-ptx mykernel    -> see the PTX from a compiled binary
@@ -1882,6 +1826,9 @@ Test 11: vote.ballot (even lanes → 0x55555555)
 
 
 
+
+
+
 Test 5's `ctaid.x` and `laneid` lines are printed as `INFO`, not `PASS` — only `tid.x == 0` is actually asserted, since which block happens to write first is a scheduling detail, not something the test should depend on. Every other line is deterministic for this launch configuration; `%05X`/`%08X` field widths are why `and`, `or`, `xor` and `shr` print with a leading zero (`0x00F00` not `0xF00`).
 
 ---
@@ -2217,9 +2164,9 @@ State Space Map — Physical Location vs. Software View
   Parameter     .param           Special registers     1-2 cycles
 ```
 
-[![State space memory hierarchy — from on-SM register file down to off-chip HBM3](images/ch02/08-state-space-memory-hierarchy.svg)](images/ch02/08-state-space-memory-hierarchy.svg)
+[![State spaces describe access and scope](images/ch02/08-state-space-memory-hierarchy.svg)](images/ch02/08-state-space-memory-hierarchy.svg)
 
-*Each state space pins to one physical location. The register file and shared memory (228 KB, 32 banks) sit directly on the SM, reachable in roughly 1 and 10 cycles; the constant cache and L1 data cache sit alongside them at similar latency. Below the SM, a 50 MB L2 cache shared across all SMs costs ~100-200 cycles, and HBM3 — where `.global` and `.local` both physically live, at 3.35 TB/s bandwidth but ~500 cycle latency — is the floor. Writing `__shared__` in CUDA C++ compiles to `.shared::cta` automatically; writing `ld.shared` explicitly in `asm()` bypasses that translation and lets you route accesses yourself.*
+*Software state spaces do not map one-to-one to fixed cache capacities or universal latencies.*
 
 ### 7.2 Register State Space (.reg) — The Fastest Storage
 
@@ -2335,9 +2282,9 @@ Shared Memory — How It's Used and Why It Matters
   ─────────────────────────────────────────────────────────────────
 ```
 
-[![Tile-and-compute pattern — cooperative load from global memory into shared memory, then cheap repeated reads](images/ch02/09-shared-memory-tile-compute.svg)](images/ch02/09-shared-memory-tile-compute.svg)
+[![Load a tile, then reuse it](images/ch02/09-shared-memory-tile-compute.svg)](images/ch02/09-shared-memory-tile-compute.svg)
 
-*Step 1: all threads in the block cooperate to load the block's 128-element tile from global memory into shared memory, one element per thread. Step 2: a barrier sync ensures the whole tile has landed in SMEM before anyone reads it. Step 3: each thread now reads several elements back out of SMEM — thread 0 reads `smem[0..3]`, thread 1 reads `smem[4..7]`, and so on — at ~10-cycle SMEM latency instead of paying ~500 cycles per element straight from global memory.*
+*A 128-float tile contains 512 bytes; the benefit comes from controlled reuse.*
 
 ```
   PTX State Space Qualifiers for Shared Memory:
@@ -2840,6 +2787,9 @@ Test 6: Combined — global→SMEM→compute with SCALE_FACTOR[0]=2.0
 
 
 
+
+
+
 Tests are numbered 2, 3, 4 and 6 rather than 1–4 because they follow the file's own "Test N: .state_space" numbering scheme from the comment headers above (Test 1 is `.reg`, shown only as a comment since register values need no device round-trip to verify, and Test 5, `.local`, is a diagnostic spill case covered in prose rather than as a counted pass/fail check).
 
 ---
@@ -2952,9 +2902,9 @@ Deep Learning Float Formats — Complete Bit Layout and Tradeoffs
 ══════════════════════════════════════════════════════════════════════
 ```
 
-[![Deep learning float formats — bit layout for FP32, FP16, BF16, TF32, FP8 E4M3, and FP8 E5M2](images/ch02/10-deep-learning-float-formats.svg)](images/ch02/10-deep-learning-float-formats.svg)
+[![Floating-point formats: range and resolution](images/ch02/10-deep-learning-float-formats.svg)](images/ch02/10-deep-learning-float-formats.svg)
 
-*FP32 spends 8 exponent bits and 23 mantissa bits for ±3.4×10^38 range at ~7 decimal digits of precision; it is the Tensor Core's accumulator format (C, D matrices). FP16 narrows to a 5-bit exponent and 10-bit mantissa — more precision than BF16, but it overflows to `Inf` above 65504, a real risk for training gradients. BF16 keeps FP32's full 8-bit exponent (so it shares FP32's range and never overflows during training) but drops to only 7 mantissa bits, trading precision for safety; it's the dominant input format (A, B matrices) for H100 training. TF32 is stored in the same 32 bits as FP32 but computes with only a ≥10-bit mantissa, applied transparently when Tensor Core ops request TF32 mode. The two FP8 formats split 8 bits between sign, exponent, and mantissa in opposite ways: E4M3 (4-bit exponent, 3-bit mantissa, range ±448) favors precision for the bounded forward pass, while E5M2 (5-bit exponent, 2-bit mantissa, range ±57344) favors range for the wide-swinging backward pass.*
+*E is the exponent field; F is the stored fraction field. Subnormals and special values also matter.*
 
 ```
   Comparison Summary:
@@ -3108,9 +3058,9 @@ Packed Types — Memory Layout and Operations
 ══════════════════════════════════════════════════════════════════════
 ```
 
-[![Packed .f16x2 register layout — two FP16 values in one 32-bit register](images/ch02/11-packed-f16x2-register.svg)](images/ch02/11-packed-f16x2-register.svg)
+[![Two FP16 values in a 32-bit word](images/ch02/11-packed-f16x2-register.svg)](images/ch02/11-packed-f16x2-register.svg)
 
-*A `.f16x2` value occupies one 32-bit register split into two 16-bit halves: FP16 value 0 (its own sign, exponent, and mantissa bits) in bits 15-0, FP16 value 1 in bits 31-16. The low-half/high-half packing order matters when you build or read back a packed register by hand.*
+*Packed operations interpret both halfwords; bit order must match the instruction.*
 
 ```
   Concrete example: Pack 1.0f and 2.0f into one .f16x2:
@@ -3205,9 +3155,9 @@ Byte Addressing — How GPU Memory Works
 ══════════════════════════════════════════════════════════════════════
 ```
 
-[![Byte addressing — GPU memory as a flat byte array, with a float array laid over it](images/ch02/12-byte-addressing.svg)](images/ch02/12-byte-addressing.svg)
+[![GPU addresses count bytes](images/ch02/12-byte-addressing.svg)](images/ch02/12-byte-addressing.svg)
 
-*GPU memory is just a flat array of bytes, addressed 0, 1, 2, 3, .... A `float` is 4 bytes wide, so `array[0]`, `array[1]`, `array[2]` land at byte offsets 0, 4, and 8 — the element index times `sizeof(float)`. C++ hides this: `ptr + 1` silently multiplies by the pointee's size. PTX does not — every address computation in inline `asm()` is a raw byte offset you compute yourself.*
+*Typed C++ pointer arithmetic and raw byte offsets are different views of the same storage.*
 
 ```
   float array at base address 0x1000:
@@ -3295,9 +3245,9 @@ Bank Layout — Visual Map
 ══════════════════════════════════════════════════════════════════════
 ```
 
-[![Bank layout — byte address to bank number strip, 32 banks of 4 bytes wrapping every 128 bytes](images/ch02/13-bank-layout-visual-map.svg)](images/ch02/13-bank-layout-visual-map.svg)
+[![Shared-memory bank mapping](images/ch02/13-bank-layout-visual-map.svg)](images/ch02/13-bank-layout-visual-map.svg)
 
-*Byte addresses 0, 4, 8, ... 124 map one-to-one onto banks 0 through 31; at byte 128 — one past the 32nd bank — the mapping wraps back to bank 0, so `smem[32]` lands in the same bank as `smem[0]`.*
+*For ordinary four-byte words, addresses interleave across 32 banks.*
 
 ```
   4-byte "word" at byte offset B:  word_index = B / 4
@@ -3427,9 +3377,9 @@ Convenient — and, as the next section shows, not free.
 
 UVA maps all GPU memory spaces into a single 64-bit virtual address space. The high bits of any pointer tell the hardware which physical subsystem to route the access to. This is why a single `float*` in CUDA C++ can point to global memory, shared memory, or constant memory — the hardware figures out which one at dereference time by inspecting the address bits.
 
-[![UVA address space — how the high bits of a generic pointer tag its state space](images/ch02/14-uva-address-space.svg)](images/ch02/14-uva-address-space.svg)
+[![Generic pointers and address-space conversion](images/ch02/14-uva-address-space.svg)](images/ch02/14-uva-address-space.svg)
 
-*UVA carves the 64-bit virtual address space into regions by high-bit pattern: roughly `0x0001'0000'xxxx'xxxx` for Global (HBM3), `0x0002'...` for Local, `0x0003'...` for Shared, `0x0004'...` for Constant — approximate and implementation-defined, so always convert with `__cvta_generic_to_shared()` and friends rather than hard-coding a range. Dereferencing `float* ptr = &smem[5]` (address ≈ `0x0003'0000'0000'0014`) costs the hardware 1-2 extra cycles versus an explicit state-space address: it reads the high bits (`0x0003` → route to SRAM) before using the low bits (`0x14`) as the byte offset within SMEM.*
+*Treat generic address encoding as implementation-defined; do not invent fixed tag values.*
 
 ---
 
@@ -3919,6 +3869,9 @@ Test 6: mov.b32 bit reinterpret (float↔uint32)
 
 
 
+
+
+
 The `SMEM offset=0x%X` value in Test 1 is whatever small 32-bit offset `__cvta_generic_to_shared` happens to assign — it is driver/compiler-chosen, not a fixed address, so don't expect `0x0` specifically on your own run; the surrounding PASS depends only on the two loaded values being 42.0 and 99.0, not on that offset. `0x40490FD0` is the exact IEEE-754 single-precision bit pattern for `3.14159f` — that part is architecture-independent and will match on any run.
 
 ---
@@ -4199,6 +4152,9 @@ Test 5: mad hi+lo (0xFFFFFFFF * 0xFFFFFFFF)
 
 
 
+
+
+
 Test 5 is the one worth tracing by hand: `0xFFFFFFFF × 0xFFFFFFFF = 0xFFFFFFFE00000001` as a full 64-bit product (that's `(2³²−1)² = 2⁶⁴ − 2³³ + 1`), so `mad.lo.u32` (the low 32 bits) gives `0x00000001` and `mad.hi.u32` (the high 32 bits) gives `0xFFFFFFFE` — exactly what the two halves need to be to reconstruct the 64-bit result.
 
 ---
@@ -4397,8 +4353,8 @@ After exchange:
 ═══════════════════════════════════════════════════════════════════
   FILE:    ex06_comprehensive.cu
   COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex06_comprehensive.cu -o ex06
-           NOTE: Cluster features require Hopper (sm_90a) or Blackwell (sm_100a).
-           For Blackwell: replace -arch=sm_90a with -arch=sm_100a
+           NOTE: Cluster API requires compute capability 9.0 or later.
+           For Blackwell: select the actual target and revalidate.
            For A100 (no clusters): remove cluster code, use -arch=sm_80
   RUN:     ./ex06
   EXPECT:  All verification checks PASS, summary shows correct sums.
@@ -4407,7 +4363,7 @@ After exchange:
     Lambda H100 PCIe / SXM5: use sm_90a ✓
     AWS p5.48xlarge (H100):   use sm_90a ✓
     AWS p4d.24xlarge (A100):  use sm_80, clusters NOT available
-    B100/B200 (Blackwell):    use sm_100a ✓ (all code works unchanged)
+    B100/B200 (Blackwell):    not tested; audit targets and revalidate
 ═══════════════════════════════════════════════════════════════════
 ```
 
@@ -4744,6 +4700,9 @@ Verification (first 8 and last 4 elements):
 ╚══════════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex06_comprehensive.cu -->
+
+
+
 
 
 

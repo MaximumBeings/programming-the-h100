@@ -137,13 +137,26 @@ consequence of one of them, so it is worth reading before the details start.
 
 ### 1.1 What Changed in Hopper's Tensor Cores
 
-Ampere's tensor cores were good. Hopper's are in a different class — not just because of raw FLOP counts, but because of fundamental architectural changes that allow the compute units to stay busy nearly 100% of the time. There are four specific innovations, and each one removes a bottleneck that existed in Ampere.
+Hopper adds asynchronous warpgroup matrix instructions and shared-memory
+operand paths. These features make more overlap possible; they do not guarantee
+continuous Tensor Core utilization.
 
-[![The four Hopper MMA innovations, Ampere vs Hopper per innovation](images/ch06/01-four-innovations-ampere-vs-hopper.svg)](images/ch06/01-four-innovations-ampere-vs-hopper.svg)
+[![What changes with warpgroup MMA?](images/ch06/01-four-innovations-ampere-vs-hopper.svg)](images/ch06/01-four-innovations-ampere-vs-hopper.svg)
 
-*The four Hopper MMA innovations — what each one fixes relative to Ampere's mma.sync.*
+*Compare the execution model while keeping precision and sparsity separate.*
 
-Each has a consequence worth stating plainly. Async math (1) means multiple `wgmma` operations can be in-flight at once; the tensor cores are never forced to idle between instructions. The warp-group execution unit (2) means a single `wgmma` handles 4× more data per instruction, with the warp scheduler fusing all four warps and dispatching them together — no inter-warp pipelining overhead. The direct SMEM path (3) eliminates register-loading latency from the critical path and frees registers for other uses; the bottleneck shifts to SMEM→tensor-core bandwidth instead. FP8 and structured sparsity (4) are first-class instruction variants, not software emulation — FP8 (E4M3, E5M2) gives 2× throughput over FP16, and 2:4 structured sparsity (2 non-zero elements per 4) gives another 2× on sparse matrices. All four combine to take Ampere's ≈312 TFLOPS (BF16, dense) to Hopper's ≈1,979 TFLOPS (FP8, dense) — more than a 6× jump, and architecture is most of that: H100's own BF16 figure is already ≈989 TFLOPS, so the FP8-specific hardware (innovation 4) accounts for roughly another 2× on top of the architectural gains from innovations 1-3.
+WGMMA coordinates four consecutive warps, supports multiple pending operations,
+and can consume operands directly from shared memory. This removes some explicit
+register staging, while introducing layout and completion requirements. It does
+not imply a physical fusion of schedulers or a fixed fourfold increase in work:
+compare the actual instruction shapes.
+
+FP8 adds a lower-precision arithmetic option. Structured sparsity predates Hopper:
+Ampere already supports sparse Tensor Core instructions (`mma.sp`). Sparse and
+dense peak figures count different work assumptions and require different data
+representations. Neither format support nor a product-peak ratio predicts an
+application speedup. See NVIDIA's [Ampere Tensor Core guidance](https://docs.nvidia.com/cuda/ampere-tuning-guide/index.html#improved-tensor-core-operations)
+and the [PTX sparse MMA contract](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#warp-level-matrix-instructions-mma-sp).
 
 ---
 
@@ -168,9 +181,9 @@ A **warp group** is a set of 4 consecutive warps within a thread block that are 
 
 This is a significant paradigm shift. For a decade, the warp (32 threads) was the unit of SIMT execution on NVIDIA GPUs. Every instruction — loads, math, branches — was issued per-warp. Hopper adds warp group as a higher-level concept specifically for tensor core operations.
 
-[![Warp group structure: four warps fusing into one wgmma issuer](images/ch06/02-warp-group-structure.svg)](images/ch06/02-warp-group-structure.svg)
+[![Four consecutive warps form a warpgroup](images/ch06/02-warp-group-structure.svg)](images/ch06/02-warp-group-structure.svg)
 
-*A warp group is 4 consecutive warps (128 threads) fused by the hardware into a single wgmma issuer; each warp group in a block operates independently on its own tile.*
+*A WGMMA collective has 128 participating threads, not 128 independent matrix operations.*
 
 ```
 Warp Group — Structure and Execution
@@ -243,9 +256,9 @@ The WGMMA Pipeline — Four Stages
         or directly use them for further computation (e.g., softmax in attention).
 ```
 
-[![Double-buffered K-loop timeline: TMA load overlapped with wgmma math](images/ch06/03-wgmma-pipeline-timeline.svg)](images/ch06/03-wgmma-pipeline-timeline.svg)
+[![Overlap TMA with the WGMMA K-loop](images/ch06/03-wgmma-pipeline-timeline.svg)](images/ch06/03-wgmma-pipeline-timeline.svg)
 
-*wgmma on tile K overlaps the TMA load of tile K+1 — possible only because wgmma.mma_async is non-blocking (async).*
+*The next stage may load while the current stage supplies matrix operands.*
 
 ---
 
@@ -366,7 +379,7 @@ wgmma.mma_async — The Computation It Performs
 
   This is like cp.async.bulk for math: fire-and-forget, check later.
   The key consequence: you can overlap wgmma for tile K with TMA loading
-  of tile K+1. The tensor cores never have to wait for data.
+  of tile K+1. This can reduce exposed data waits when the required operand stages are ready.
 ```
 
 ---
@@ -523,13 +536,13 @@ Operand Location Rules — Where Data Must Reside
 
   Matrix A (left operand):
   ─────────────────────────────────────────────────────────────────
-  Option A-1: IN REGISTERS (loaded beforehand via ldmatrix)
+  Option A-1: IN REGISTERS (correct distributed fragment for the variant)
     Instruction variant: wgmma ... d, {ra0,ra1,...,raN}, b_desc, ...
     The A tile is in the warp's registers, already loaded.
     Use when: A is reused across multiple wgmma calls (saves SMEM reads).
     Cost: consumes registers (less available for other uses).
 
-  Option A-2: IN SHARED MEMORY (read directly by TMA/wgmma)
+  Option A-2: IN SHARED MEMORY (read directly by WGMMA)
     Instruction variant: wgmma ... d, a_desc, b_desc, ...
     A is read directly from SMEM using a WGMMA descriptor.
     Use when: A is not reused (single use) or register pressure is high.
@@ -540,8 +553,7 @@ Operand Location Rules — Where Data Must Reside
   ALWAYS IN SHARED MEMORY. No exceptions.
   B is specified via a WGMMA descriptor (64-bit value, see §12).
   There is no variant of wgmma where B comes from registers.
-  Reason: B tiles are typically larger and the hardware's SMEM read
-  path for B is hardwired and optimized.
+  This is an instruction operand constraint, independent of tile-size intuition.
 
   Matrix C/D (accumulator):
   ─────────────────────────────────────────────────────────────────
@@ -769,9 +781,9 @@ do with each other.
 
 `ldmatrix` works in two distinct phases that are important to understand for writing the correct address calculation.
 
-[![ldmatrix.x4 two-phase execution: address phase vs register phase for a 16×16 BF16 tile](images/ch06/04-ldmatrix-two-phase.svg)](images/ch06/04-ldmatrix-two-phase.svg)
+[![ldmatrix: addresses and register fragments](images/ch06/04-ldmatrix-two-phase.svg)](images/ch06/04-ldmatrix-two-phase.svg)
 
-*Context: loading a 16×16 BF16 tile (4 × 8×8 sub-matrices) with .x4. Phase 1 (address phase): the warp splits into left/right vertical strips (lanes 0-15 → cols 0-7, lanes 16-31 → cols 8-15), and within each strip, groups of 8 lanes each point to one row of an 8×8 quadrant. Phase 2 (register phase): after the hardware reads from SMEM, it redistributes the data row-striped across groups of 4 threads — the same pattern for every one of M0..M3. The critical insight: the thread that PROVIDED an address in Phase 1 is not necessarily the thread that RECEIVES the data in Phase 2. Thread 0 may point to row 0's memory, but threads 0-3 all get parts of row 0, and thread 8 (which pointed to row 2's memory) also gets part of row 0 — the hardware reshuffles internally, transparently, as long as you use the correct address calculation formula.*
+*For an x4 load, four 8 × 8 submatrices are supplied and distributed across a warp.*
 
 ---
 
@@ -827,9 +839,9 @@ Swizzle Address Formula — How the XOR Works
   With swizzle:    bank = (base + 384 XOR 48)/4 % 32 = different bank!
 ```
 
-[![128B swizzle: XORing row bits into bank bits, rows 0-3](images/ch06/05-swizzle-xor-address.svg)](images/ch06/05-swizzle-xor-address.svg)
+[![Swizzled addresses combine row and column bits](images/ch06/05-swizzle-xor-address.svg)](images/ch06/05-swizzle-xor-address.svg)
 
-*Every row gets a different mask → a different bank shift for the same column. No two rows collide in the same bank — the XOR is what makes the access conflict-free.*
+*For this aligned 128-byte-row, 16-bit-element example, row bits select a 16-byte-cell permutation.*
 
 ```
   ─── Code Pattern for ldmatrix Address Calculation ───────────────
@@ -886,9 +898,11 @@ The WGMMA descriptor is a **64-bit integer** (stored in a register) that encodes
 
 Both A (when reading from SMEM) and B operands require descriptors. The descriptor encodes: base address, leading byte offset (LBO), stride byte offset (SBO), matrix base offset, and swizzle mode.
 
-[![The 64-bit WGMMA descriptor, field by field](images/ch06/06-wgmma-descriptor-bits.svg)](images/ch06/06-wgmma-descriptor-bits.svg)
+A descriptor describes a supported physical core-matrix layout; it does not transform an arbitrary C array into that layout. Derive offsets from the selected major-ness, type and swizzle, stage the data accordingly, and preserve the operand storage until the consuming WGMMA completes. See [PTX shared-memory layouts and descriptor format](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-shared-memory-layout).
 
-*Base, LBO, and SBO each occupy 14 bits (0-13, 16-29, 32-45) and store stride_bytes / 16; bits 14-15 and 30-31 are unused padding that keeps each field 16-bit-aligned within the word. Matrix base offset is 3 bits (49-51), reserved is 13 bits (46-48 and 52-61), and swizzle mode is 2 bits (62-63).*
+[![The WGMMA shared-memory descriptor](images/ch06/06-wgmma-descriptor-bits.svg)](images/ch06/06-wgmma-descriptor-bits.svg)
+
+*A 64-bit descriptor encodes an address and traversal parameters; reserved bits remain zero.*
 
 ```
 WGMMA Descriptor — 64-Bit Layout
@@ -898,7 +912,7 @@ WGMMA Descriptor — 64-Bit Layout
   ─────────────────────────────────────────────────────────────────
   Bits  0-13:  Base address (14 bits)
                The SMEM byte address of the tile, right-shifted by 4.
-               (All SMEM pointers are 16-byte aligned → low 4 bits always 0)
+               (This operand must be 16-byte aligned; low 4 bits are omitted)
                Value = smem_addr >> 4  (recovers addr by hardware × 16)
 
   Bits 16-29:  Leading Byte Offset (LBO) (14 bits)
@@ -940,33 +954,27 @@ Descriptor Construction — Step by Step
 
   Manual Worked Example:
   ─────────────────────────────────────────────────────────────────
-  SMEM tile B: 128×16 BF16 (N=128, K=16)
-    stored in SMEM starting at smem_B (assumed 16B-aligned)
-    Pitch (bytes per row of K=16 BF16): 16 × 2 = 32 bytes
-    Major dimension: K (K-major layout, so B is K×N stored col-major for wgmma)
+  Use the tested §17 layout: K-major BF16, K=16, no swizzle.
+  Data is explicitly staged as 8×8 core matrices, not plain row-major.
+  An 8×8 BF16 core occupies 8×8×2 = 128 bytes.
+  Two K cores occupy 256 bytes before the next MN core begins.
 
   Step 1: Base address field
-    smem_B_uint32 = __cvta_generic_to_shared(smem_B)  // 32-bit SMEM offset
-    base_field = (smem_B_uint32 >> 4) & 0x3FFF       // take bits [17:4]
-    // Right-shift by 4 because hardware multiplies by 16 on read
+    smem_B_uint32 = __cvta_generic_to_shared(smem_B)
+    base_field = (smem_B_uint32 >> 4) & 0x3FFF
+    // smem_B must be 16-byte aligned.
 
   Step 2: LBO (Leading Byte Offset)
-    For K-major layout: LBO normally encodes the stride between "column
-    panels" — but for 128B swizzle specifically, the hardware ignores LBO
-    for K-major tiles (it derives the stride from the swizzle pattern
-    itself; see §13.1). Just set it to the minimum encoded value.
-    LBO_field = 1 & 0x3FFF   // = 16 bytes / 16; 0 works equally well
+    Next K core starts 128 bytes later: LBO_field = 128 / 16 = 8.
 
   Step 3: SBO (Stride Byte Offset)
-    For K-major: SBO encodes the jump of 8 K-rows = 8 × PITCH
-    = 8 × 32 = 256 bytes → SBO_field = 256 / 16 = 16
+    Next group of 8 MN rows starts 256 bytes later: SBO_field = 256 / 16 = 16.
 
   Step 4: Matrix base offset
-    If smem_B is aligned to a 128B boundary within the swizzle pattern:
-    base_offset = 0
+    base_offset = 0  // unused for no-swizzle
 
   Step 5: Swizzle mode bits
-    Using 128B swizzle: bits 62-63 = 01
+    swizzle_mode = 0  // no swizzle, matching the staged data
 
   Step 6: Assemble the descriptor:
     uint64_t desc = 0;
@@ -999,79 +1007,29 @@ Descriptor Construction — Step by Step
 
 ## 13 — Descriptor Fields — LBO, SBO, Base Offset, Swizzle
 
-The two stride fields inside the descriptor have famously unhelpful names, so
-here is the plain version before you read the details.
-
-**LBO** (§13.1) is how far to jump to reach the next element along the tile's
-leading dimension. **SBO** (§13.2) is how far to jump along the other one. Which
-is which depends on whether your tile is row- or column-major, which is why the
-names are abstract rather than saying "row" and "column".
-
-§13.3 covers the remaining fields, including the swizzle mode bits — which must
-match the swizzle the TMA actually applied when it wrote the tile. A mismatch
-here is not caught by anything.
+LBO and SBO describe core-matrix steps after the element type has been
+normalized into 128-bit units. They are not ordinary C-array row and column
+strides. Their definitions depend on major-ness and swizzle. Follow the
+[PTX canonical layouts](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-shared-memory-layout)
+when changing a layout; the byte offsets below belong to the tested BF16 example.
 
 ### 13.1 LBO — Leading Byte Offset
 
-The stride along the leading dimension — the one that varies fastest in memory.
-
-```
-LBO (Leading Byte Offset) — Navigating the Leading Dimension
-══════════════════════════════════════════════════════════════════════
-
-  The "leading dimension" is the direction in which the matrix is stored
-  most densely. For a matrix stored K-major (columns of K are contiguous):
-  the leading dimension is K.
-
-  LBO = the byte distance between two ADJACENT column panels (for K-major)
-        or two adjacent row panels (for MN-major).
-
-  K-MAJOR layout (B matrix stored as K×N, columns of K contiguous):
-  ─────────────────────────────────────────────────────────────────
-  For 128B swizzle with K-major:
-    The hardware internally assumes LBO = 1 (i.e., 16 bytes).
-    Setting LBO = 0 or LBO = 1 in the descriptor is equivalent.
-    The hardware ignores LBO for K-major 128B swizzle.
-    → Just set LBO_field = 1 (= 16 bytes / 16) or 0.
-
-  MN-MAJOR layout (A or B stored as M×K, rows of M contiguous):
-  ─────────────────────────────────────────────────────────────────
-  LBO = offset from row-group 0 (rows 0-7) to row-group 1 (rows 8-15).
-  For 128B swizzle: each group of 8 rows × pitch_bytes.
-  LBO = 8 × pitch_bytes / 16 (in descriptor encoding units).
-
-  For example: BF16 K=16, pitch = 16 × 2 = 32 bytes.
-    LBO = (8 × 32) / 16 = 16  → LBO_field = 16.
-```
+For the unswizzled K-major BF16 example in §12.2, the next 8-element K
+vector block begins 128 bytes later, so the encoded LBO is 8. For swizzled
+K-major layouts, PTX does not use this field and assumes the normalized leading
+step is 1. MN-major layouts have different definitions; do not reuse a K-major
+formula merely because the source matrix is called A or B.
 
 ### 13.2 SBO — Stride Byte Offset
 
-The stride along the other dimension. The worked example is the fastest way to
-see which of the two you need.
+In the same tested layout, advancing to the next group of eight MN rows skips
+two 128-byte K cores. SBO is therefore 256 bytes and its encoded value is 16.
+This follows the staged core layout, not the global matrix's leading dimension.
 
-```
-SBO (Stride Byte Offset) — Navigating the Non-Leading Dimension
-══════════════════════════════════════════════════════════════════════
+[![Descriptors describe jumps through a layout](images/ch06/07-lbo-sbo-checkerboard.svg)](images/ch06/07-lbo-sbo-checkerboard.svg)
 
-  SBO is the byte distance to jump "one core-matrix block" in the
-  non-leading direction (the dimension NOT encoded by LBO).
-
-  K-MAJOR layout (most common for B):
-  ─────────────────────────────────────────────────────────────────
-  SBO = distance from the first 8 rows to the next 8 rows in K.
-  For K=16, BF16: 8 rows × (16 cols × 2 bytes) = 256 bytes.
-  SBO_field = 256 / 16 = 16.
-
-  MN-MAJOR layout (typical for A when read from SMEM):
-  ─────────────────────────────────────────────────────────────────
-  SBO = distance from first 8 columns to next 8 columns in N/M.
-  For N=128, BF16: 8 cols × 2 bytes = 16 bytes.
-  SBO_field = 16 / 16 = 1.
-```
-
-[![LBO and SBO as jumps across a checkerboard of 8×8 sub-blocks](images/ch06/07-lbo-sbo-checkerboard.svg)](images/ch06/07-lbo-sbo-checkerboard.svg)
-
-*Think of the matrix tile as a checkerboard of 8×8 BF16 sub-blocks. LBO tells the hardware "to go to the next column of sub-blocks, skip X bytes"; SBO tells it "to go to the next row of sub-blocks, skip Y bytes." Together they let wgmma traverse any 2D tile layout in SMEM.*
+*LBO and SBO depend on the operand’s core-matrix ordering and swizzle mode.*
 
 ### 13.3 Matrix Base Offset and Swizzle Mode Bits
 
@@ -1084,8 +1042,8 @@ Matrix Base Offset and Swizzle Mode
 
   Matrix Base Offset (bits 49-51):
   ─────────────────────────────────────────────────────────────────
-  The swizzle permutation repeats every 128B (for 128B swizzle).
-  If your matrix starts exactly at a 128B boundary, base_offset = 0.
+  The 128B swizzle pattern has a 1024B repeating boundary.
+  A pattern starting on that boundary has base_offset = 0.
   If it starts at byte 128 within a 1024B swizzle period, base_offset = 1.
   If it starts at byte 256, base_offset = 2. Etc.
 
@@ -1095,8 +1053,8 @@ Matrix Base Offset and Swizzle Mode
   and the second tile starts mid-pattern.
 
   Computation:
-    smem_offset_from_swizzle_boundary = smem_byte_addr % swizzle_period
-    base_offset = smem_offset_from_swizzle_boundary / 128
+    // For the standard pattern anchored to the allocation boundary:
+    base_offset = (smem_addr / swizzle_bytes) % (swizzle_bytes / 16)
 
     For 128B swizzle, period = 1024B:
     base_offset = (smem_addr % 1024) / 128
@@ -1671,6 +1629,9 @@ Sample d[0] = -0.246094 (expected -0.246094)
 
 
 
+
+
+
 The recorded test uses signed, nonuniform values that are exactly representable in BF16. The host reconstructs every WGMMA register's `(row, column)` position and compares it with a CPU GEMM computed from those BF16 inputs, with a `1e-5` absolute tolerance and an explicit finite-value check. All 4,096 values match with zero measured error in this run. Constant inputs alone would not detect a permuted input layout or accumulator mapping.
 
 ---
@@ -1711,7 +1672,7 @@ Operand    Location Options         Notes
 A          Registers (ldmatrix)     Use when A is reused across N tiles
            OR SMEM (descriptor)     Use when A is single-use (saves registers)
 B          SMEM ONLY (descriptor)   No register option for B
-C/D        Registers ONLY           Always; D written back via stmatrix
+C/D        Registers ONLY           Store via a valid scalar/vector or staged epilogue
 ```
 
 ### wgmma.fence — When to Call It
@@ -1771,7 +1732,7 @@ Bits     Field                  Encoding
 0-13     Base address           smem_addr >> 4   (16B granularity)
 16-29    LBO (leading stride)   stride_bytes / 16
 32-45    SBO (other stride)     stride_bytes / 16
-49-51    Matrix base offset     (smem_addr % swizzle_period) / 128
+49-51    Matrix base offset     Mode-specific pattern offset (see §13.3)
 46-48,52-61 Reserved             0
 62-63    Swizzle mode           00=none, 01=128B★, 10=64B, 11=32B
 ```
@@ -1790,7 +1751,7 @@ Mismatched swizzle in desc vs TMA         Scrambled data       Match descriptor 
 scale_d=0 when meaning to accumulate      K-loop sum is wrong  Use scale_d=1 after first tile
 Wrong D_REGS count in inline asm          Compile error        D_REGS = (M×N)/128
 Threads not in warp group lockstep        Deadlock / wrong     No divergence before wgmma.sync
-Using ld.shared for A instead of ldmatrix Wrong register layout Use ldmatrix for fragmented layout
+Wrong register-A fragment mapping       Wrong results        Follow the selected variant’s lane/register layout
 SBO/LBO encoded in bytes not /16 units    Wrong SMEM navigation Divide by 16 before putting in desc
 ```
 

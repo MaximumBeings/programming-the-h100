@@ -48,6 +48,8 @@ def run():
     changed = 0
     for path in FILES:
         src = path.read_text()
+        if 'original illustration system: h100-editorial-v1' in src:
+            continue
         if MARKER in src:
             src = re.sub(r'<style type="text/css">@font-face.*?</style>', lambda _: css, src, flags=re.S)
             if 'id="font-license"' in src:

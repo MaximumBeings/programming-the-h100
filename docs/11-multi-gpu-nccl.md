@@ -195,7 +195,7 @@ NVLink Gen 4 — H100 Physical Specifications
   NVLink path (direct):
     GPU A → NVLink fabric → GPU B
     Latency: ~1-2 µs for a round trip
-    Bandwidth: 900 GB/s
+    Per-GPU budget: 900 GB/s bidirectional; 450 GB/s per direction
 
   For gradient AllReduce at 1 GB of gradients:
     PCIe path: 1 GB / 128 GB/s ≈ 7.8 ms per transfer
@@ -224,8 +224,7 @@ NVLink Gen 4 — H100 Physical Specifications
 ### 3.1 Full Non-Blocking Fabric
 
 On an 8-GPU HGX board (like in the DGX H100), four NVSwitch chips connect all
-eight GPUs. The key property: fully non-blocking — any GPU can send to any other
-GPU at full 900 GB/s simultaneously, with no contention.
+eight GPUs. Each H100 SXM has a product-peak NVLink budget of **900 GB/s aggregate bidirectional bandwidth**, or **450 GB/s per direction**. That endpoint budget is shared across its peers; each pair does not receive an independent 900 GB/s allocation. A non-blocking fabric supports simultaneous routes within the endpoint and fabric budgets, while achieved throughput depends on the traffic pattern and software. See [NVIDIA’s Hopper architecture description](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/).
 
 ```
 NVSwitch Topology — 8 GPUs via 4 NVSwitch Chips
@@ -239,7 +238,7 @@ NVSwitch Topology — 8 GPUs via 4 NVSwitch Chips
   GPU 0 ─── SW3 ─── GPU 4     Each switch connects to all 8 GPUs
   ...
 
-  Connectivity matrix (✓ = direct NVLink path, all at 900 GB/s):
+  Connectivity matrix (✓ = switched peer path; shared endpoint budget):
   ┌─────┬────┬────┬────┬────┬────┬────┬────┬────┐
   │     │ G0 │ G1 │ G2 │ G3 │ G4 │ G5 │ G6 │ G7 │
   ├─────┼────┼────┼────┼────┼────┼────┼────┼────┤
@@ -283,7 +282,7 @@ NVSwitch Topology — 8 GPUs via 4 NVSwitch Chips
     18 / 4 ≈ 4-5 links per switch per GPU  (some asymmetric)
 ```
 
-[![NVSwitch fabric: all 8 GPUs equidistant via 4 NVSwitches](images/ch11/02-nvswitch-fabric.svg)](images/ch11/02-nvswitch-fabric.svg)
+[![NVSwitch gives peer GPUs a switched fabric](images/ch11/02-nvswitch-fabric.svg)](images/ch11/02-nvswitch-fabric.svg)
 
 ---
 
@@ -354,7 +353,7 @@ DGX H100 Single Node — Complete Hardware Layout
     This is how inter-node AllReduce achieves near-theoretical speed.
 ```
 
-[![DGX H100 node bandwidth hierarchy, from on-package HBM3 down to rack-to-rack InfiniBand](images/ch11/01-bandwidth-hierarchy.svg)](images/ch11/01-bandwidth-hierarchy.svg)
+[![A bandwidth hierarchy needs a direction](images/ch11/01-bandwidth-hierarchy.svg)](images/ch11/01-bandwidth-hierarchy.svg)
 
 ---
 
@@ -362,10 +361,7 @@ DGX H100 Single Node — Complete Hardware Layout
 
 ### 5.1 The 9× Drop — Engineering the Handoff
 
-When two H100 GPUs communicate within the same DGX node, they use NVLink
-at 900 GB/s. When they are in different nodes, every byte must traverse
-ConnectX-7 NICs and InfiniBand switches — a 9× bandwidth reduction. Every
-architectural decision in cluster design is an attempt to minimize this penalty.
+Within a DGX H100 node, each GPU shares an NVLink budget of 450 GB/s per direction across its peers. Across nodes, traffic also traverses ConnectX-7 NICs and InfiniBand switches. Compare budgets with the same direction convention and account for the NICs assigned to each GPU; the difference is a link-budget model, not a fixed application slowdown.
 
 ```
 The Inter-Node Bandwidth Gap
@@ -559,7 +555,7 @@ Rail Architecture — 8 Isolated Communication Planes
     GPU sees: enqueue gradient, receive result. No N-way coordination.
 ```
 
-[![Scalable Unit rail architecture: 8 isolated rails per node feeding leaf switches that perform SHARP in-network reduction](images/ch11/03-rail-sharp-architecture.svg)](images/ch11/03-rail-sharp-architecture.svg)
+[![Rails organise the scale-out network](images/ch11/03-rail-sharp-architecture.svg)](images/ch11/03-rail-sharp-architecture.svg)
 
 ---
 
@@ -1033,7 +1029,10 @@ Need at least 2 GPUs for P2P benchmark. Exiting.
 
 
 
-(No physical GPU was available to capture a real bandwidth transcript — this sandbox has no `nvidia-smi`/`/dev/nvidia*` device at all, so `cudaGetDeviceCount()` itself fails. Unlike the two examples later in this chapter, this failure is handled correctly here: the call is wrapped in `CHECK_CUDA(...)`, so the error is caught and the program exits cleanly with a diagnostic message rather than reading an uninitialized `num_gpus`. This is the genuine, compiled-and-run output of this exact file with real `nvcc` in a zero-GPU environment — not estimated. The bandwidth figures above in "Expected results on H100 DGX" remain labeled as expected because they are physical measurements — GB/s achieved over real NVLink hardware — which, unlike Chapter 10's arithmetic kernels, cannot be derived by CPU-side reproduction of the kernel's logic; there is no substitute for running on the real fabric.)
+
+
+
+The captured one-GPU run verifies the prerequisite diagnostic, not peer bandwidth. The two-GPU workload remains unexecuted; the figures labeled expected are hardware-dependent estimates, not measurements from this validation host.
 
 ---
 
@@ -1419,11 +1418,15 @@ The Six Collective Primitives — Data Flow Diagrams
   Math: recvbuf_k[j] = sendbuf_j[k]  (matrix transpose of data)
   Use in training: Expert Parallelism (route tokens to experts).
   Bandwidth intensive: N×(N-1) point-to-point transfers.
-  NCCL's standard AllToAll is CPU-driven and synchronous; for MoE,
-  prefer NVSHMEM or DeepEP for device-initiated async transfers.
+  Host-issued NCCL calls enqueue communication on a CUDA stream.
+  Device execution is asynchronous; consumers must observe completion.
+  For MoE, compare packing, variable counts and transfer granularity
+  against a specialised communication implementation.
 ```
 
-[![The six NCCL collectives' data-flow patterns: Broadcast, Reduce, AllReduce, AllGather, ReduceScatter, All-to-All](images/ch11/04-nccl-big-six.svg)](images/ch11/04-nccl-big-six.svg)
+[![Six collective dataflow patterns](images/ch11/04-nccl-big-six.svg)](images/ch11/04-nccl-big-six.svg)
+
+NCCL’s [CUDA stream semantics](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/streams.html) distinguish host enqueue from asynchronous device execution. Use stream ordering or CUDA events to establish when received data is ready.
 
 ### 13.2 NCCL API Reference — All Six Primitives
 
@@ -1826,7 +1829,10 @@ Need >= 2 GPUs for NCCL test. Found 1. Exiting.
 
 
 
-(Compiled and run with real `nvcc` against a real, freshly-installed `libnccl2`/`libnccl-dev` in this sandbox — there is no physical GPU here, so the NCCL AllReduce itself never executes, and the real per-rank sum/timing numbers an actual run would print cannot be captured this way: unlike Chapter 10's single-kernel arithmetic, a NCCL collective across real devices is not something CPU-side reproduction of the kernel's logic can stand in for. What this run does confirm is the fix below: `cudaGetDeviceCount(&n_gpus)` is called without checking its return code, and in this environment the call genuinely *fails* outright — it does not simply set `n_gpus = 0` and return success. With `n_gpus` left uninitialized, 5 repeated runs produced `Found 0` four times and a silent indefinite hang once, when the uninitialized stack value happened to read back as something ≥ 2 and the program proceeded into a real `pthread_barrier_wait` that nothing could ever satisfy. Initializing `int n_gpus = 0;` — a one-line fix — made all 10 follow-up runs consistently and correctly print `Found 0` with no hangs. The source below reflects that fix.)
+
+
+
+The dated compiler and execution logs above show a successful build and the one-GPU prerequisite exit. They do not validate a multi-rank AllReduce or its timing. The initialized device count avoids using an indeterminate value if device enumeration fails; CUDA API errors should still be checked explicitly.
 
 ---
 
@@ -2110,7 +2116,7 @@ Pipeline Parallelism — Layer Splitting and Micro-Batches
   Rule: use M >> N to minimize pipeline bubble.
 ```
 
-[![GPipe pipeline schedule timeline for N=4 stages, comparing M=4 and M=8 microbatches, showing the bubble shrink predicted by the corrected formula](images/ch11/06-pipeline-bubble-timeline.svg)](images/ch11/06-pipeline-bubble-timeline.svg)
+[![More microbatches amortise pipeline fill](images/ch11/06-pipeline-bubble-timeline.svg)](images/ch11/06-pipeline-bubble-timeline.svg)
 
 ```
   ─── 1F1B Schedule (One-Forward One-Backward) ────────────────────
@@ -2211,17 +2217,20 @@ Mixture of Experts — Key Concepts
     GPU 0 runs its experts on received tokens.
     Another All-to-All: send results back to origin GPUs.
 
-  ─── Why NCCL AllToAll Is Inadequate for MoE ─────────────────────
+  ─── Communication Choices for MoE ─────────────────────────────
 
-  NCCL ncclAllToAll problems:
-    CPU-driven: CPU issues the call, blocks until complete → latency.
-    Static sizes: NCCL expects equal-sized blocks. MoE routing is
-      dynamic: some GPUs get more tokens than others (load imbalance).
-    Contiguous data: NCCL requires blocks to be contiguous in memory.
-      MoE selected tokens may be scattered.
-    Blocking: next computation can't start until AllToAll finishes.
+  Considerations for NCCL-based All-to-All:
+    Host-issued: calls enqueue work on the supplied CUDA stream.
+      Host return does not imply device transfer completion.
+    Counts: equal-count collective layouts may need padding; grouped
+      point-to-point sends/receives can express per-peer counts.
+    Packing: scattered selected tokens need a suitable communication
+      buffer layout and matching unpacking on receipt.
+    Dependencies: consumers wait for their required received data.
+      Independent work can overlap on other streams when resources
+      and stream/event dependencies permit.
 
-  Solution: DeepEP (used by DeepSeek and others):
+  Specialised alternative: DeepEP (used by DeepSeek and others):
     Device-initiated: GPU launches the transfer itself (NVSHMEM).
     Dynamic sizes: handles variable token counts per expert.
     Asynchronous: inter-node data starts moving before intra-node done.
@@ -2242,13 +2251,16 @@ Mixture of Experts — Key Concepts
     Set capacity_factor > 1 (e.g., 1.25) to absorb routing variance.
 ```
 
+These host-enqueue and completion rules follow [NCCL’s documented CUDA stream semantics](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/streams.html). NCCL’s [grouped point-to-point patterns](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/p2p.html) also support differing per-peer sizes with matching send/receive counts. Compare specialised MoE implementations on the actual routing workload.
+
+
 ---
 
 ## 18 — Putting It All Together — Production Checklist
 
 ### 18.1 Hybrid Parallelism Selection
 
-[![Four parallelism strategies compared: what each splits and what it synchronizes](images/ch11/05-parallelism-comparison.svg)](images/ch11/05-parallelism-comparison.svg)
+[![What gets split across GPUs?](images/ch11/05-parallelism-comparison.svg)](images/ch11/05-parallelism-comparison.svg)
 
 ```
 Choosing Your Parallelism Strategy
@@ -3300,13 +3312,10 @@ ERROR: Need 8 GPUs, found 1. Exiting.
 
 
 
-(This is the genuine, compiled-and-run output of this file with real `nvcc`/NCCL in a zero-GPU sandbox, after fixing the same uninitialized-`n_gpus` bug described under ex12 above. A real 8-GPU run's per-step loss values, DP-divergence numbers, and TP-reconstruction diff cannot be captured this way -- an 8-way NCCL-synchronized training loop is not arithmetic a single CPU thread can stand in for, unlike Chapter 10's single-kernel examples.
 
-What *can* be verified without real hardware is whether this file's own numbers are internally consistent -- so this file's exact weight-init, forward, backward, DP-average, and SGD-clip formulas (HIDDEN=64, BATCH=16, TP=2, PP=2, DP=2, N_STEPS=8, LR=0.01, CLIP=1.0) were reproduced in a plain host-side C++ program (no CUDA/NCCL/cuBLAS) and run with real `g++`. Three things came out of that:
 
-1. TP shard concatenation reconstructs the single-GPU reference exactly, up to float32 rounding (max abs diff ≈ 3 against reference values ≈ 3.7×10^6, i.e. ~8×10^-7 relative -- summation-order rounding, not a bug). The claim in "Expected verification" above is confirmed correct.
-2. DP replica weights come out bit-identical (max diff = 0.0) after all 8 steps -- also confirmed, but see the correction above: this file's own input and weight-init formulas never reference `dp`, so both replicas run the identical computation independently of whether the DP AllReduce does anything at all. The check is real and does pass, but it cannot by itself catch a broken DP collective.
-3. The loss does not decrease monotonically -- it oscillates in the ~5.0-5.8×10^13 range across all 8 steps, for the reasons given in the correction above (large deterministic weight magnitudes + a tight gradient-clip norm). This contradicts what the original text claimed and is the reason that line was corrected rather than reproduced as-is.)
+
+The dated run above stopped at the eight-GPU prerequisite check on a one-GPU host. No distributed training steps, loss trajectory, replica comparison or TP reconstruction were measured in that run. Those checks require an eight-GPU execution; CPU arithmetic alone cannot establish NCCL communication correctness.
 
 ### What Each Part Teaches
 

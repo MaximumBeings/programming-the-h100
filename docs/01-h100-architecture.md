@@ -108,9 +108,9 @@ Key Innovation:      Fully asynchronous execution via TMA
 
 The single most important thing to understand about the H100 is that it represents a **paradigm shift from synchronous to asynchronous execution**. Every previous GPU architecture required the SM's threads to babysit data movement — issuing loads, waiting for them, then computing. The H100 introduces hardware that does the data movement *in the background* while the SM computes on previously loaded data.
 
-[![Synchronous vs. asynchronous execution model](images/ch01/05-sync-vs-async-model.svg)](images/ch01/05-sync-vs-async-model.svg)
+[![Serial work and pipelined overlap](images/ch01/05-sync-vs-async-model.svg)](images/ch01/05-sync-vs-async-model.svg)
 
-*Figure 1.5 — On the A100, a thread issues a load and stalls until it returns before it can compute. On the H100, the thread hands the copy to the TMA unit and computes immediately — the TMA works in the background and the thread only checks a barrier once it actually needs the data. Source: NVIDIA Hopper architecture whitepaper.*
+*Figure 1.5 — Asynchronous copy is not unique to Hopper; TMA changes how bulk transfers are issued.*
 
 This is why pipelined kernels (GEMMs, attention) can approach the theoretical roofline on the H100 — you fetch tile i+1 while computing tile i.
 
@@ -136,24 +136,22 @@ A **synchronous copy** blocks the issuing thread (or warp) until the data arrive
 
 An **asynchronous copy** only *starts* the transfer. The issuing thread can immediately continue doing other work — computing on previously loaded data, managing bookkeeping, etc. The thread later checks a barrier or fence to know when the copy has finished.
 
-[![Per-warp utilization: synchronous vs. pipelined asynchronous copies](images/ch01/06-warp-timeline.svg)](images/ch01/06-warp-timeline.svg)
+[![A warp can work while data moves](images/ch01/06-warp-timeline.svg)](images/ch01/06-warp-timeline.svg)
 
-*Figure 2.1 — A synchronous copy leaves the warp idle for roughly half the timeline waiting on memory. An asynchronous, pipelined copy overlaps each load with the previous tile's compute, pushing utilization from roughly 50% to roughly 95%. Illustrative timeline, not measured cycle counts.*
+*Figure 2.1 — Illustrative scheduling, not a measured utilisation trace.*
 
 ### 2.2 The TMA Unit
 
 Each SM in the H100 has a dedicated **Tensor Memory Accelerator (TMA)** unit. This is a hardware block — it has its own logic, its own connection to the memory hierarchy, and its own understanding of multi-dimensional tensor layouts.
 
-[![Traditional per-thread copy vs. a single TMA descriptor](images/ch01/07-tma-before-after.svg)](images/ch01/07-tma-before-after.svg)
+[![From per-thread copies to a tensor request](images/ch01/07-tma-before-after.svg)](images/ch01/07-tma-before-after.svg)
 
-*Figure 2.2 — Before TMA, every thread in the warp computes its own source and destination addresses and issues its own loads and stores — dozens of instructions per warp. On the H100, one thread hands a descriptor (base pointer, dimensions, strides, box size, element type, bounds) to the TMA unit, which performs all address generation, bounds checking and the transfer itself in the background. Source: NVIDIA Hopper architecture whitepaper.*
+*Figure 2.2 — The transfer request defines the division of work between threads and hardware.*
 
 ### 2.3 TMA Descriptor — Concrete Example
 
 The previous section described the TMA in the abstract. Here is the same copy
-written both ways, with real numbers, so you can watch the instruction count
-collapse. Read the traditional block first and count what each thread has to do;
-then read the TMA block.
+written both ways as conceptual pseudocode. Compare which address-generation and transfer tasks the threads perform; exact instruction counts require inspecting the compiled implementation.
 
 ```
 Scenario: Copy a 64×64 tile of BF16 from a [4096, 4096] matrix
@@ -170,34 +168,37 @@ Traditional approach (per thread, 32 threads in a warp):
   }
   __syncthreads();  // everyone must finish before compute
 
-  Instructions per thread: ~128 loads + 128 stores + ~384 address math
-  Total warp instructions: ~20,000+ instructions
+  Each lane visits 128 elements in this scalar sketch.
+  Thread-level operations are not summed to obtain warp-issued instructions.
+  Actual instruction counts depend on vectorisation and compiler lowering.
 
 
 TMA approach (single thread):
 ──────────────────────────────────────────────────────────
   // Thread 0 issues one instruction:
-  tma_copy_2d(descriptor, /*box_coord=*/{128, 256}, smem_ptr, barrier);
-  // All other threads: skip straight to compute
+  tma_copy_2d(descriptor, /*box_coord=*/{256, 128}, smem_ptr, barrier);
+  // Other threads may do independent work; consumers still wait for readiness.
 
   // The descriptor was set up once at kernel launch:
   //   base_ptr    = &matrix[0][0]
   //   dims        = {4096, 4096}
-  //   strides     = {4096 * 2, 2}   (2 bytes per BF16)
+  //   global_dims = {4096, 4096}   (fastest dimension first)
+  //   global_strides = {4096 * 2} (outer stride; inner BF16 size is implicit)
   //   box_size    = {64, 64}
   //   element_sz  = 2 bytes
 
-  Instructions: 1 (literally one PTX instruction)
-  The TMA hardware generates all 4096 memory transactions internally
+  One tensor-copy request describes 4,096 BF16 elements = 8 KiB.
+  Descriptor setup, issuing-thread election, barriers and waits add instructions.
+  Hardware transaction counts depend on the memory layout and request handling.
 ```
 
 ### 2.4 The Bookkeeping Cost
 
 The tradeoff for async execution is complexity. You need barriers to know when data is ready:
 
-[![Double-buffered async pipeline, phase by phase](images/ch01/08-async-pipeline-phases.svg)](images/ch01/08-async-pipeline-phases.svg)
+[![Two buffers, one repeating protocol](images/ch01/08-async-pipeline-phases.svg)](images/ch01/08-async-pipeline-phases.svg)
 
-*Figure 2.3 — Double-buffering uses two shared-memory slots so the TMA can load the next tile while the SM computes on the current one. Each phase waits on a barrier for its slot, issues the next async load, and computes on the slot that is already full — the loads and the compute overlap by construction. Barriers: `mbarrier`, a hardware-accelerated async barrier using the producer/consumer arrive-wait pattern.*
+*Figure 2.3 — Never load a new tile over data that a consumer still needs.*
 
 ---
 
@@ -250,9 +251,9 @@ Sources: [NVIDIA Hopper architecture](https://developer.nvidia.com/blog/nvidia-h
 
 The H100 introduces **Warp Group** operations, where 4 warps (128 threads) cooperate on a single matrix multiply:
 
-[![WGMMA operand placement: A, B, C and D](images/ch01/09-wgmma-register-layout.svg)](images/ch01/09-wgmma-register-layout.svg)
+[![Where WGMMA operands live](images/ch01/09-wgmma-register-layout.svg)](images/ch01/09-wgmma-register-layout.svg)
 
-*Figure 3.1 — A warp group is 4 warps (128 threads) cooperating on one `D = A × B + C`. Matrix B must live in shared memory; A may be in registers or shared memory; C and D are distributed across the 128 threads' registers, each thread holding a small piece. FP16 operands pack 2 values per 32-bit register, FP8 packs 4 — WGMMA expects packed operands.*
+*Figure 3.1 — Four warps cooperate on one warpgroup-level matrix operation.*
 
 ### 3.3 Structured Sparsity
 
@@ -260,9 +261,9 @@ Sparsity is a way of buying throughput by agreeing not to store some of your
 numbers. The hardware supports exactly one pattern — "2:4" — and the payoff is
 simple: the tensor core reads half as much data, so it runs about twice as fast.
 
-[![2:4 structured sparsity: dense row to compressed storage](images/ch01/10-structured-sparsity.svg)](images/ch01/10-structured-sparsity.svg)
+[![Two values survive each quartet](images/ch01/10-structured-sparsity.svg)](images/ch01/10-structured-sparsity.svg)
 
-*Figure 3.2 — The H100 supports exactly one sparsity pattern: in every group of 4 consecutive elements, exactly 2 must be zero. Storage keeps only the non-zero values plus a small index mask (roughly 50% compression), and the tensor core decompresses on-the-fly during the MMA — throughput roughly doubles because it reads half the data. This is why the datasheet lists FP8 sparse throughput at exactly 2× FP8 dense.*
+*Figure 3.2 — 2:4 structured sparsity stores values plus position metadata.*
 
 ### 3.4 Precision Comparison
 
@@ -312,9 +313,9 @@ the CPU) or already lives at the top (in the HBM3 memory stacks). The SMs in the
 middle are where your code actually runs, and the L2 cache between them is the
 shared staging area that essentially all traffic passes through.
 
-[![NVIDIA H100 SXM5 die floor plan — NVLink hub, five HBM3 stacks, ten memory controllers, eight GPCs, 50 MB L2, the GigaThread Engine, PCIe 5.0 and the Transformer Engine Controller](images/ch01/01-die-floorplan.svg)](images/ch01/01-die-floorplan.svg)
+[![Inside the Hopper GPU](images/ch01/01-die-floorplan.svg)](images/ch01/01-die-floorplan.svg)
 
-*Figure 1.1 — The H100 SXM5 die, top to bottom: the NVLink 4.0 hub (18 links, 900 GB/s GPU-to-GPU), five enabled HBM3 stacks of 16 GB each (a sixth disabled for yield), ten 512-bit memory controllers, eight GPCs of 18 SMs each (144 total, 132 enabled), the 50 MB L2 cache, and the GigaThread Engine alongside the PCIe 5.0 interface and Transformer Engine Controller. Sources: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02); NVIDIA H100 datasheet PB-11773-001.*
+*Figure 1.1 — Logical GH100 organisation. Blocks are schematic, not physical die placement.*
 
 > **On the 132-of-144 figure:** the full GH100 die really does have 8 GPCs
 > of 18 SMs each (144 total) [NVIDIA Hopper Architecture whitepaper, GTC22,
@@ -329,9 +330,9 @@ shared staging area that essentially all traffic passes through.
 
 The GigaThread Engine is the hardware scheduler that sits at the top of the GPU and manages the entire kernel launch lifecycle:
 
-[![GigaThread Engine kernel-launch flow](images/ch01/11-gigathread-flow.svg)](images/ch01/11-gigathread-flow.svg)
+[![How a grid becomes resident work](images/ch01/11-gigathread-flow.svg)](images/ch01/11-gigathread-flow.svg)
 
-*Figure 4.2 — The GigaThread Engine receives the kernel descriptor, builds a CTA work queue, and for each unstarted CTA checks whether any SM has enough free warp slots, registers and shared memory before assigning it — otherwise the CTA waits. It tracks each CTA as NOT_STARTED, RUNNING or COMPLETED, and on Hopper it is cluster-aware: every CTA in a thread block cluster must land on adjacent SMs within the same GPC.*
+*Figure 4.2 — A logical launch path; exact scheduler implementation is not an ISA contract.*
 
 ---
 
@@ -370,9 +371,9 @@ HBM3 — High Bandwidth Memory, 3rd Generation
     └── Address mapping (channels → banks → rows → cols)
 ```
 
-[![SM-to-HBM3 data path with per-stage bandwidth](images/ch01/12-hbm-data-path.svg)](images/ch01/12-hbm-data-path.svg)
+[![The path from an SM to HBM](images/ch01/12-hbm-data-path.svg)](images/ch01/12-hbm-data-path.svg)
 
-*Figure 5.1 — Bandwidth available to the SM drops at every stage further from compute: roughly 33 TB/s GPU-wide modeled scalar shared-memory bandwidth, roughly 12 TB/s aggregate at the L2 crossbar, down to the official 3.35 TB/s aggregate at the memory controllers and HBM3 stacks themselves. This is why the cache hierarchy exists — each level filters how much traffic actually has to reach HBM.*
+*Figure 5.1 — Cache hits can terminate a request before it reaches external memory.*
 
 ### 5.2 Why 5120-bit Bus Width Matters for TMA
 
@@ -460,9 +461,9 @@ L2 Cache — 50 MB Unified
      This is critical for scatter/atomic operations.
 ```
 
-[![One 128-byte L2 cache line as four 32-byte sectors](images/ch01/13-l2-sectors.svg)](images/ch01/13-l2-sectors.svg)
+[![A 128-byte cache line has four sectors](images/ch01/13-l2-sectors.svg)](images/ch01/13-l2-sectors.svg)
 
-*Figure 6.1 — A cache line is 128 bytes made of four 32-byte sectors. The L2 can fill sector-by-sector rather than always loading the full 128 bytes, which is what makes the coalescing math in §6.2 work the way it does.*
+*Figure 6.1 — Sector granularity helps explain coalescing and overfetch.*
 
 ### 6.2 Worked Example — L2 Sector Math
 
@@ -522,9 +523,9 @@ directly — without going out to L2 and back.
 
 One GPC contains 18 Streaming Multiprocessors (SMs), organized into 9 Texture Processing Clusters (TPCs) of 2 SMs each, a connection to its local L2 cache partition, and a Distributed Shared Memory (DSMEM) network.
 
-[![One GPC: 9 TPCs, 18 SMs, and the DSMEM interconnect](images/ch01/14-gpc-internal.svg)](images/ch01/14-gpc-internal.svg)
+[![A GPC contains multiple TPCs](images/ch01/14-gpc-internal.svg)](images/ch01/14-gpc-internal.svg)
 
-*Figure 7.1 — TPCs exist primarily to enable fast SM-to-SM communication for DSMEM — two SMs in the same TPC exchange data with minimal latency. DSMEM only exists within a GPC: cross-GPC communication must go through L2 or global memory, and traffic to HBM also flows through the GPC's local L2 partition.*
+*Figure 7.1 — Full-die schematic: nine texture processing clusters, two SMs per TPC.*
 
 ### 7.2 Why GPCs Matter for Kernel Design
 
@@ -602,9 +603,9 @@ NVLink 4.0 — GPU-to-GPU Interconnect
 Eight GPUs, each able to reach every other at full speed. The bandwidth
 comparison at the bottom is the part to remember.
 
-[![DGX H100 node topology — eight GPUs, each connected to a central NVSwitch fabric, each GPU sharing its 900 GB/s bidirectional NVLink budget across peers](images/ch01/04-dgx-topology.svg)](images/ch01/04-dgx-topology.svg)
+[![Eight GPUs, one NVSwitch fabric](images/ch01/04-dgx-topology.svg)](images/ch01/04-dgx-topology.svg)
 
-*Figure 1.3 — Eight GPUs, each with an aggregate 900 GB/s bidirectional NVLink budget shared across its peers through the NVSwitch fabric (drawn as a star through the switch, not a mesh of direct links). The eight GPU ports sum to 7.2 TB/s bidirectional injection bandwidth; that sum is not bisection bandwidth. A 4-versus-4 partition has a 1.8 TB/s one-way endpoint ceiling (3.6 TB/s counting both directions). For comparison, PCIe 5.0 (GPU ↔ CPU) is 128 GB/s — NVLink is roughly 7× faster. This is why multi-GPU training puts tensor/pipeline parallelism across NVLink and data parallelism across network nodes. Source: [NVIDIA HGX H100 platform comparison](https://developer.nvidia.com/blog/introducing-nvidia-hgx-h100-an-accelerated-server-platform-for-ai-and-high-performance-computing/); bandwidth arithmetic distinguishes aggregate ports from bisection.*
+*Figure 1.3 — DGX H100 connects all eight GPUs through a switched NVLink network. [NVIDIA HGX H100 platform comparison](https://developer.nvidia.com/blog/introducing-nvidia-hgx-h100-an-accelerated-server-platform-for-ai-and-high-performance-computing/)*
 
 ---
 
@@ -623,9 +624,9 @@ them.
 
 The SM is the fundamental execution unit of the GPU. It receives thread blocks from the GigaThread Engine and executes them to completion.
 
-[![NVIDIA H100 Streaming Multiprocessor internal architecture — L1 instruction cache, four quadrants each with a warp scheduler, dispatch unit, FP32/FP64/INT32/Tensor/LSU/SFU units and a register file, the unified shared memory / L1 data cache, and the TMA unit](images/ch01/02-sm-internals.svg)](images/ch01/02-sm-internals.svg)
+[![One SM, four processing partitions](images/ch01/02-sm-internals.svg)](images/ch01/02-sm-internals.svg)
 
-*Figure 1.2 — One SM: a 128 KB L1 instruction cache shared across all 4 quadrants, each quadrant (SMSP) holding a warp scheduler, L0 instruction cache, dispatch unit, 32 FP32/16 FP64/16 INT32/1 Tensor/8 LSU/4 SFU execution units and a 64 KB register file (128/64/64/4/32/16 units and 256 KB registers total per SM), the unified 256 KB shared memory / L1 data cache (228 KB max SMEM, 32 banks × 4 bytes; about 0.25 TB/s per SM in the simple one-access-per-bank-per-cycle model), and the TMA unit. Source: NVIDIA Hopper Architecture whitepaper (GTC22 v1.02).*
+*Figure 1.2 — Each SMSP schedules warps and uses a share of the SM’s execution resources.*
 
 ---
 
@@ -633,25 +634,25 @@ The SM is the fundamental execution unit of the GPU. It receives thread blocks f
 
 An SM is not one processor — it is four, and they schedule independently.
 
-This matters for a reason you can act on immediately: if your block size isn't a
-multiple of 128 threads, some of those four sit idle. §10.2 shows exactly how
-that waste happens.
+Block size affects the available warps, register use and resident blocks. Multiple resident blocks can supply work to the SM’s schedulers, so a block size that is not a multiple of 128 does not by itself imply an idle SMSP. §10.2 uses an illustrative distribution; profile the actual kernel before drawing a utilisation conclusion.
 
 ### 10.1 Quadrant Breakdown
 
 Each SM is divided into 4 identical subdivisions. Each quadrant is an independently scheduling unit:
 
-[![One SMSP/quadrant: warp scheduler, dispatch unit, execution units, L0 I-cache, register file](images/ch01/15-smsp-quadrant-detail.svg)](images/ch01/15-smsp-quadrant-detail.svg)
+[![A processing partition, closer up](images/ch01/15-smsp-quadrant-detail.svg)](images/ch01/15-smsp-quadrant-detail.svg)
 
-*Figure 10.1 — A single SMSP holds a warp scheduler (up to 16 resident warps, one selected per cycle), a dispatch unit, its own execution units (32 FP32 CUDA cores, 1 tensor core, 16 FP64 units, 16 INT32 units, 8 LSUs, 4 SFUs), a private L0 instruction cache, and a 64 KB register file (65,536 × 32-bit registers). Four of these make up one SM: 128 FP32 cores, 64 FP64 units, 64 INT32 units, 4 tensor cores, 32 LSUs, 16 SFUs, 256 KB registers, and 4 independent warp schedulers (up to 64 resident warps per SM).*
+*Figure 10.1 — SMSPs make warp scheduling and register pressure easier to reason about.*
 
 ### 10.2 Why 4 Quadrants?
 
 Here is the practical payoff of knowing the SM is four things rather than one.
 
-[![A 256-thread block's 8 warps distributed round-robin across 4 SMSPs](images/ch01/16-thread-block-distribution.svg)](images/ch01/16-thread-block-distribution.svg)
+[![A block is a collection of warps](images/ch01/16-thread-block-distribution.svg)](images/ch01/16-thread-block-distribution.svg)
 
-*Figure 10.2 — A 256-thread block is 8 warps; the hardware distributes them round-robin, two per quadrant (Q0: warps 0 and 4, Q1: warps 1 and 5, and so on), and all four quadrants schedule and execute in parallel. The practical rule follows directly: size blocks in multiples of 128 threads (4 warps) so every quadrant gets equal work — a 96-thread block (3 warps) leaves one quadrant idle, wasting 25% of the SM.*
+*Figure 10.2 — 256 threads make eight warps of 32 threads each.*
+
+The [Hopper Tuning Guide](https://docs.nvidia.com/cuda/hopper-tuning-guide/index.html#occupancy) specifies the per-SM register and residency limits. Its 64K 32-bit registers are 256 KiB per SM, corresponding to 16,384 registers in each 64 KiB partition shown here.
 
 ---
 
@@ -704,9 +705,9 @@ Warp = 32 Threads
 Five steps, every cycle, in every quadrant. The reason the whole machine is
 built this way is the sentence at the bottom of the block.
 
-[![Warp scheduler's 5-step per-cycle operation](images/ch01/17-warp-scheduler-cycle.svg)](images/ch01/17-warp-scheduler-cycle.svg)
+[![What makes a warp eligible to issue?](images/ch01/17-warp-scheduler-cycle.svg)](images/ch01/17-warp-scheduler-cycle.svg)
 
-*Figure 11.1 — Every cycle, each SMSP's warp scheduler scans up to 16 resident warps against the scoreboard and structural/dependency hazards, selects one ready warp, fetches its instruction (L0 hit or a slower L1 fallback), dispatches it to the Dispatch Unit, and updates the scoreboard once it completes. Rapidly switching among 16 warps is how the scheduler hides memory latency — while one warp waits on a load, the others can be executing compute.*
+*Figure 11.1 — A conceptual dependency-to-execution loop, not a hardware pipeline timing diagram.*
 
 ### 11.3 The Dispatch Unit and Dispatch Ports
 
@@ -714,9 +715,9 @@ This is the one part of the SM that no occupancy calculator will show you, and
 it explains why "the SM has 128 FP32 cores and 64 INT32 units" does not mean a
 single warp can use both in the same cycle.
 
-[![Dispatch unit ports: shared vs. dedicated routing to functional units](images/ch01/18-dispatch-ports.svg)](images/ch01/18-dispatch-ports.svg)
+[![Issue bandwidth and execution bandwidth](images/ch01/18-dispatch-ports.svg)](images/ch01/18-dispatch-ports.svg)
 
-*Figure 11.2 — The dispatch unit has a limited number of physical ports, and Port A is shared between the FP32 CUDA cores and the INT32 units: only one instruction can issue through a shared port per cycle, so a warp can't issue an FP32 and an INT32 instruction in the same cycle even though both unit types exist. Ports B through E (tensor core, LSUs, SFUs, FP64) are dedicated. A port is only occupied for instruction launch, not for the full execution duration — a multi-cycle tensor core MMA frees its port after the first cycle.*
+*Figure 11.2 — An instruction must be issued before an execution unit can do useful work.*
 
 ---
 
@@ -873,9 +874,9 @@ Load/Store Units (LSUs)
   cache-line requests as possible.
 ```
 
-[![Best-case coalesced vs. worst-case scattered warp memory access](images/ch01/19-coalescing.svg)](images/ch01/19-coalescing.svg)
+[![Coalescing: the same payload, different traffic](images/ch01/19-coalescing.svg)](images/ch01/19-coalescing.svg)
 
-*Figure 12.1 — Best case: all 32 threads' addresses fall in one 128-byte cache line, so the LSU issues a single request that serves the whole warp. Worst case: every thread hits a different cache line, so the LSU issues 32 separate requests — 32× the bandwidth consumption for the same amount of data. When the L1 misses, the request cascades to L2 and then HBM, multiplying the waste at every level.*
+*Figure 12.1 — A warp’s lane addresses determine which sectors it touches.*
 
 ---
 
@@ -912,9 +913,9 @@ Unified Shared Memory / L1 Data Cache
     └── L1 data cache (hardware-managed, automatic)
 ```
 
-[![Four configurable shared-memory/L1 splits of the same 256 KB](images/ch01/20-shared-mem-split.svg)](images/ch01/20-shared-mem-split.svg)
+[![Shared memory and L1 share a resource](images/ch01/20-shared-mem-split.svg)](images/ch01/20-shared-mem-split.svg)
 
-*Figure 13.1 — You choose the split of the 256 KB unified pool per kernel: Option A (228 KB shared + 28 KB L1) suits GEMM-style tiled kernels, Option B (164 KB + 92 KB) is a balanced default, Option C (100 KB + 156 KB) favors cache-friendly irregular access, and Option D (32 KB + 224 KB) is for kernels that barely use shared memory at all.*
+*Figure 13.1 — H100 has a unified 256 KiB resource; supported carveouts are constrained by the product and kernel.*
 
 ```
 
@@ -964,9 +965,9 @@ Shared memory is fast because it is split into 32 independent **banks** that can
 all be read in the same cycle. It stops being fast the instant two threads want
 different addresses that happen to live in the same bank.
 
-[![32 shared-memory banks, 4 bytes wide, interleaved and wrapping](images/ch01/21-shared-mem-banks.svg)](images/ch01/21-shared-mem-banks.svg)
+[![Shared-memory bank mapping](images/ch01/21-shared-mem-banks.svg)](images/ch01/21-shared-mem-banks.svg)
 
-*Figure 13.2 — Shared memory is split into 32 banks of 4 bytes each, interleaved across consecutive words and wrapping every 128 bytes (`bank = (byte_address / 4) % 32`). 32 threads hitting 32 different banks — or all hitting the same address, which broadcasts — are served in a single cycle; two or more threads hitting different addresses in the same bank serialize into an N-way conflict costing N cycles.*
+*Figure 13.2 — For ordinary four-byte words, addresses interleave across 32 banks.*
 
 ### 13.4 Worked Example — Bank Conflict
 
@@ -1003,9 +1004,9 @@ The fix is to scramble where each row starts, so that a column no longer lands
 in a single bank. That is swizzling — and the good news at the end is that the
 TMA can apply it for you on the way in.
 
-[![Column-0 bank mapping before and after swizzling](images/ch01/22-swizzling.svg)](images/ch01/22-swizzling.svg)
+[![A swizzle changes the physical bank pattern](images/ch01/22-swizzling.svg)](images/ch01/22-swizzling.svg)
 
-*Figure 13.3 — Without swizzling, column 0 of every row lands in bank 0 — a 32-way conflict. Swizzling XORs the row index into the bank calculation (`swizzled_bank = bank XOR (row % 32)`), so column 0 of row 0 is bank 0, row 1 is bank 1, row 2 is bank 2, and so on — every row lands in a different bank.*
+*Figure 13.3 — A small XOR permutation makes column-wise access easier to see.*
 
 ```
   Swizzle formula (simplified):
@@ -1263,14 +1264,11 @@ number is what people mean when they say *occupancy*.
 
 ### 16.1 How CTAs Land on SMs
 
-Follow one thread block from the scheduler through to execution. The step that
-surprises most people is step 4: the warps of a single block are spread across
-all four quadrants rather than kept together — which is why `__syncthreads()`
-needs real barrier hardware behind it.
+Follow one thread block from placement through warp scheduling. Each block remains assigned to an SM; warps can execute independently, so `__syncthreads()` coordinates all participating threads in that block regardless of the illustrated partition placement.
 
-[![CTA-to-SM assignment: GigaThread Engine through warp-to-SMSP round-robin](images/ch01/23-cta-to-sm-flow.svg)](images/ch01/23-cta-to-sm-flow.svg)
+[![From thread block to SM execution](images/ch01/23-cta-to-sm-flow.svg)](images/ch01/23-cta-to-sm-flow.svg)
 
-*Figure 16.1 — The GigaThread Engine picks an SM with enough free warp slots, registers and shared memory (and, on Hopper, satisfying the cluster constraint), the SM receives the CTA and splits it into warps, and those warps are assigned to the four SMSPs round-robin rather than kept together — a block is spread across all four quadrants unless it's tiny. This is exactly why `__syncthreads()` needs real barrier hardware: it has to put warps in different SMSPs to sleep until every warp in the block has arrived.*
+*Figure 16.1 — Resource requirements constrain residency; synchronisation controls correctness.*
 
 ### 16.2 Multiple CTAs Per SM
 
@@ -1353,9 +1351,9 @@ If the individual sections felt disconnected, this is where they join up.
 Read the five steps in order, then read the note at the bottom — the entire point
 is that steps 2 and 4 are happening at the same time, for different tiles.
 
-[![Five-step GEMM tile data flow: descriptor setup through write-back](images/ch01/24-gemm-tile-dataflow.svg)](images/ch01/24-gemm-tile-dataflow.svg)
+[![A GEMM tile through the memory system](images/ch01/24-gemm-tile-dataflow.svg)](images/ch01/24-gemm-tile-dataflow.svg)
 
-*Figure 18.1 — One GEMM tile end to end: (1) the CPU builds a TMA descriptor and sends it over PCIe 5.0; (2) the TMA asynchronously moves data HBM3 → memory controller → L2 (50 MB) → shared memory (228 KB); (3) a warp loads shared memory into registers, one cycle if bank-conflict-free; (4) the tensor cores compute `D = A × B + C` via WGMMA at 4,096–8,192 FLOPS/cycle/SM dense, depending on precision; (5) results write back registers → shared memory → L2 → HBM3, with L2 coalescing the scattered writes into clean bursts. Steps 2 and 4 overlap for different tiles — that overlap is the H100's core performance trick.*
+*Figure 18.1 — The main loop and epilogue have different dataflow and lifetime requirements.*
 
 ### 18.2 Memory Hierarchy Summary
 
@@ -1389,9 +1387,9 @@ H100 Memory Hierarchy — Bandwidth vs Capacity
   This cascading filtering is what makes the hierarchy work.
 ```
 
-[![H100 memory hierarchy bandwidth ladder — registers, shared memory, L2 cache and HBM3 plotted on a log scale with their capacity and latency annotated](images/ch01/03-memory-hierarchy.svg)](images/ch01/03-memory-hierarchy.svg)
+[![Memory hierarchy: scope matters](images/ch01/03-memory-hierarchy.svg)](images/ch01/03-memory-hierarchy.svg)
 
-*Figure 1.4 — Capacity, scope and bandwidth are shown separately. The shared-memory estimate is 32 banks × 4 bytes × 1.98 GHz ≈ 253 GB/s per SM, or about 33 TB/s across 132 SXM SMs. That is a scalar bank-throughput model, not a measured bandwidth guarantee. L2 throughput and access latency depend on the access pattern and clocks; measure them on the actual GPU. The HBM3 number is the SXM product specification.*
+*Figure 1.4 — Capacity, product peak bandwidth and a bank-throughput model are different quantities.*
 
 ---
 
