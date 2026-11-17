@@ -184,11 +184,11 @@ L 0 3.5
      </g>
      <g id="text_1">
       <!-- $\mathdefault{10^{0}}$ -->
-      <g transform="translate(44.34 429.937656)">
+      <g transform="translate(44.34 430.57766)">
        <text>
-        <tspan x="0" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
-        <tspan x="6.362305" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
-        <tspan x="12.820312" y="-4.804688" style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
+        <tspan x="0" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
+        <tspan x="6.362305" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
+        <tspan x="12.820312" y="-4.804688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
        </text>
       </g>
      </g>
@@ -206,11 +206,11 @@ L 231.465676 28.652344
      </g>
      <g id="text_2">
       <!-- $\mathdefault{10^{1}}$ -->
-      <g transform="translate(222.665676 429.837656)">
+      <g transform="translate(222.665676 430.47766)">
        <text>
-        <tspan x="0" y="-0.762187" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
-        <tspan x="6.362305" y="-0.762187" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
-        <tspan x="12.820312" y="-4.892187" style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
+        <tspan x="0" y="-0.762187" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
+        <tspan x="6.362305" y="-0.762187" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
+        <tspan x="12.820312" y="-4.892187" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
        </text>
       </g>
      </g>
@@ -228,11 +228,11 @@ L 409.791353 28.652344
      </g>
      <g id="text_3">
       <!-- $\mathdefault{10^{2}}$ -->
-      <g transform="translate(400.991353 429.937656)">
+      <g transform="translate(400.991353 430.57766)">
        <text>
-        <tspan x="0" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
-        <tspan x="6.362305" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
-        <tspan x="12.820312" y="-4.804688" style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">2</tspan>
+        <tspan x="0" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
+        <tspan x="6.362305" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
+        <tspan x="12.820312" y="-4.804688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">2</tspan>
        </text>
       </g>
      </g>
@@ -250,11 +250,11 @@ L 588.117029 28.652344
      </g>
      <g id="text_4">
       <!-- $\mathdefault{10^{3}}$ -->
-      <g transform="translate(579.317029 429.937656)">
+      <g transform="translate(579.317029 430.57766)">
        <text>
-        <tspan x="0" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
-        <tspan x="6.362305" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
-        <tspan x="12.820312" y="-4.804688" style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">3</tspan>
+        <tspan x="0" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
+        <tspan x="6.362305" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
+        <tspan x="12.820312" y="-4.804688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">3</tspan>
        </text>
       </g>
      </g>
@@ -577,7 +577,7 @@ L 673.2 28.652344
      </g>
     </g>
     <g id="text_5">
-     <text style="font-weight: 450; font-size: 14.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="363.17" y="446.749859" transform="rotate(-0 363.17 446.749859)">Arithmetic Intensity (FLOP/Byte)</text>
+     <text style="font-weight: 450; font-size: 15.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="363.17" y="446.749859" transform="rotate(-0 363.17 446.749859)">Arithmetic Intensity (FLOP/Byte)</text>
     </g>
    </g>
    <g id="matplotlib.axis_2">
@@ -599,11 +599,11 @@ L -3.5 0
      </g>
      <g id="text_6">
       <!-- $\mathdefault{10^{0}}$ -->
-      <g transform="translate(28.54 368.753766)">
+      <g transform="translate(28.54 369.39377)">
        <text>
-        <tspan x="0" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
-        <tspan x="6.362305" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
-        <tspan x="12.820312" y="-4.804688" style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
+        <tspan x="0" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
+        <tspan x="6.362305" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
+        <tspan x="12.820312" y="-4.804688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
        </text>
       </g>
      </g>
@@ -621,11 +621,11 @@ L 673.2 269.416355
      </g>
      <g id="text_7">
       <!-- $\mathdefault{10^{1}}$ -->
-      <g transform="translate(28.54 274.066355)">
+      <g transform="translate(28.54 274.70635)">
        <text>
-        <tspan x="0" y="-0.762187" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
-        <tspan x="6.362305" y="-0.762187" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
-        <tspan x="12.820312" y="-4.892187" style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
+        <tspan x="0" y="-0.762187" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
+        <tspan x="6.362305" y="-0.762187" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
+        <tspan x="12.820312" y="-4.892187" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
        </text>
       </g>
      </g>
@@ -643,11 +643,11 @@ L 673.2 174.778945
      </g>
      <g id="text_8">
       <!-- $\mathdefault{10^{2}}$ -->
-      <g transform="translate(28.54 179.478945)">
+      <g transform="translate(28.54 180.11895)">
        <text>
-        <tspan x="0" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
-        <tspan x="6.362305" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
-        <tspan x="12.820312" y="-4.804688" style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">2</tspan>
+        <tspan x="0" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
+        <tspan x="6.362305" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
+        <tspan x="12.820312" y="-4.804688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">2</tspan>
        </text>
       </g>
      </g>
@@ -665,11 +665,11 @@ L 673.2 80.141535
      </g>
      <g id="text_9">
       <!-- $\mathdefault{10^{3}}$ -->
-      <g transform="translate(28.54 84.841535)">
+      <g transform="translate(28.54 85.48153)">
        <text>
-        <tspan x="0" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">1</tspan>
-        <tspan x="6.362305" y="-0.674688" style="font-size: 10px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">0</tspan>
-        <tspan x="12.820312" y="-4.804688" style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif">3</tspan>
+        <tspan x="0" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">1</tspan>
+        <tspan x="6.362305" y="-0.674688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">0</tspan>
+        <tspan x="12.820312" y="-4.804688" style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif">3</tspan>
        </text>
       </g>
      </g>
@@ -1076,7 +1076,7 @@ L 673.2 34.988015
      </g>
     </g>
     <g id="text_10">
-     <text style="font-weight: 450; font-size: 14.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="21.248789" y="221.095" transform="rotate(-90 21.248789 221.095)">Achievable Performance (TFLOPS)</text>
+     <text style="font-weight: 450; font-size: 15.179px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="21.248789" y="221.095" transform="rotate(-90 21.248789 221.095)">Achievable Performance (TFLOPS)</text>
     </g>
    </g>
    <g id="line2d_135">
@@ -1120,34 +1120,34 @@ L 673.2 191.238775
 " clip-path="url(#p902f011e67)" style="fill: none; stroke-dasharray: 6.66,2.88; stroke-dashoffset: 0; stroke: #616161; stroke-width: 1.8"/>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(499.42644 51.473684)">ridge ≈ 295</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(501.52643 66.596145)">FLOP/Byte</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(496.69144 51.79368)">ridge ≈ 295</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(499.02643 66.91615)">FLOP/Byte</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(226.22705 162.116314)">ridge ≈ 20</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(228.04205 177.238775)">FLOP/Byte</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(223.79705 162.43631)">ridge ≈ 20</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(225.54205 177.55877)">FLOP/Byte</text>
    </g>
    <g id="text_13">
-    <text style="font-style: normal; font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(86.67897 338.147017)">MEMORY-BOUND</text>
-    <text style="font-style: normal; font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(85.13483 353.270462)">(both roofs)</text>
+    <text style="font-style: normal; font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(82.42897 338.46702)">MEMORY-BOUND</text>
+    <text style="font-style: normal; font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(82.37983 353.59046)">(both roofs)</text>
    </g>
    <g id="text_14">
-    <text style="font-style: normal; font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(482.40130 338.147017)">COMPUTE-BOUND</text>
-    <text style="font-style: normal; font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(501.61192 353.270462)">(both roofs)</text>
+    <text style="font-style: normal; font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(477.88630 338.46702)">COMPUTE-BOUND</text>
+    <text style="font-style: normal; font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(498.85692 353.59046)">(both roofs)</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="76.421544" y="327.193572" transform="rotate(-0 76.421544 327.193572)">softmax</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="76.421544" y="327.193572" transform="rotate(-0 76.421544 327.193572)">softmax</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(376.04154 146.026234)">GEMM</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(353.42284 158.748304)">M=N=K=256</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(374.46154 146.34623)">GEMM</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(350.34784 159.06830)">M=N=K=256</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(593.17846 93.874075)">GEMM</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(566.02211 106.596145)">M=N=K=4096</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(591.59846 94.19407)">GEMM</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(562.59711 106.91615)">M=N=K=4096</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 650; font-size: 16.146px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="363.17" y="22.652344" transform="rotate(-0 363.17 22.652344)">H100 SXM5 Roofline — FP16 Tensor Core vs. FP32 CUDA Core</text>
+    <text style="font-weight: 650; font-size: 17.146px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="363.17" y="22.652344" transform="rotate(-0 363.17 22.652344)">H100 SXM5 Roofline — FP16 Tensor Core vs. FP32 CUDA Core</text>
    </g>
    <g id="line2d_139">
     <path d="M 53.14 314.364885
@@ -1216,7 +1216,7 @@ L 87.65 44.239484
 " style="fill: none; stroke: #00695c; stroke-width: 2.4; stroke-linecap: round"/>
     </g>
     <g id="text_19">
-     <text style="font-weight: 450; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="97.17" y="48.404484" transform="rotate(-0 97.17 48.404484)">FP16 Tensor Core roof — 989 TFLOPS peak</text>
+     <text style="font-weight: 450; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="97.17" y="48.404484" transform="rotate(-0 97.17 48.404484)">FP16 Tensor Core roof — 989 TFLOPS peak</text>
     </g>
     <g id="line2d_144">
      <path d="M 63.85 62.090414
@@ -1225,7 +1225,7 @@ L 87.65 62.090414
 " style="fill: none; stroke-dasharray: 6.66,2.88; stroke-dashoffset: 0; stroke: #616161; stroke-width: 1.8"/>
     </g>
     <g id="text_20">
-     <text style="font-weight: 450; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="97.17" y="66.255414" transform="rotate(-0 97.17 66.255414)">FP32 CUDA Core roof — 67 TFLOPS peak</text>
+     <text style="font-weight: 450; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="97.17" y="66.255414" transform="rotate(-0 97.17 66.255414)">FP32 CUDA Core roof — 67 TFLOPS peak</text>
     </g>
    </g>
    <g id="line2d_145">

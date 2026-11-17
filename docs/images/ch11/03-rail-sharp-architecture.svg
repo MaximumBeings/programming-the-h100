@@ -390,58 +390,58 @@ L 277.924386 326.460311
 " clip-path="url(#pfc60814051)" style="fill: none; stroke: #777777; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-<text transform="translate(60.678633 83.427978)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="#0d47a1">32 × DGX H100 nodes (one Scalable Unit)</text>
+<text transform="translate(50.87363 83.74798)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13" font-weight="700" font-style="normal" fill="#0d47a1">32 × DGX H100 nodes (one Scalable Unit)</text>
 </g>
    <g id="text_2">
-<text transform="translate(60.678633 104.772378)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.8" font-weight="400" font-style="normal" fill="#475569">256 GPUs total — each node contributes 8 GPUs, one per rail</text>
+<text transform="translate(43.27363 105.09238)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">256 GPUs total — each node contributes 8 GPUs, one per rail</text>
 </g>
    <g id="text_3">
-<text transform="translate(86.569945 175.864559)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="700" font-style="normal" fill="#0d47a1">Rail 0</text>
-<text transform="translate(76.838695 186.66702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="700" font-style="normal" fill="#0d47a1">(GPU 0 of</text>
-<text transform="translate(70.472602 197.469481)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="700" font-style="normal" fill="#0d47a1">every node)</text>
+<text transform="translate(83.94995 174.33702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">Rail 0</text>
+<text transform="translate(72.17870 186.98702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">(GPU 0 of</text>
+<text transform="translate(64.75760 199.63702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">every node)</text>
 </g>
    <g id="text_4">
-<text transform="translate(80.952352 263.558747)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#0d47a1">QM9700</text>
-<text transform="translate(74.52318 273.881098)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#0d47a1">leaf switch</text>
-<text transform="translate(66.971977 284.202778)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#0d47a1">(64-port NDR)</text>
+<text transform="translate(75.98735 261.55076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">QM9700</text>
+<text transform="translate(68.38318 274.20076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">leaf switch</text>
+<text transform="translate(58.83698 286.85076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">(64-port NDR)</text>
 </g>
    <g id="text_5">
-<text transform="translate(202.633945 175.864559)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="700" font-style="normal" fill="#8a5a00">Rail 1</text>
-<text transform="translate(192.902695 186.66702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="700" font-style="normal" fill="#8a5a00">(GPU 1 of</text>
-<text transform="translate(186.536602 197.469481)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="700" font-style="normal" fill="#8a5a00">every node)</text>
+<text transform="translate(200.23895 174.33702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">Rail 1</text>
+<text transform="translate(188.46769 186.98702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">(GPU 1 of</text>
+<text transform="translate(180.82160 199.63702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">every node)</text>
 </g>
    <g id="text_6">
-<text transform="translate(197.016352 263.558747)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#8a5a00">QM9700</text>
-<text transform="translate(190.58718 273.881098)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#8a5a00">leaf switch</text>
-<text transform="translate(183.035977 284.202778)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#8a5a00">(64-port NDR)</text>
+<text transform="translate(192.05135 261.55076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">QM9700</text>
+<text transform="translate(184.44718 274.20076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">leaf switch</text>
+<text transform="translate(174.90098 286.85076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#8a5a00">(64-port NDR)</text>
 </g>
    <g id="text_7">
-<text transform="translate(312.631383 186.66702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="700" font-style="normal" fill="#1b5e20">Rail 2 …</text>
+<text transform="translate(308.88138 186.98702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">Rail 2 …</text>
 </g>
    <g id="text_8">
-<text transform="translate(313.080352 263.558747)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#1b5e20">QM9700</text>
-<text transform="translate(306.65118 273.881098)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#1b5e20">leaf switch</text>
-<text transform="translate(299.099977 284.202778)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#1b5e20">(64-port NDR)</text>
+<text transform="translate(308.11535 261.55076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">QM9700</text>
+<text transform="translate(300.51118 274.20076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">leaf switch</text>
+<text transform="translate(290.96498 286.85076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">(64-port NDR)</text>
 </g>
    <g id="text_9">
-<text transform="translate(428.695383 186.66702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="700" font-style="normal" fill="#4527a0">Rail 7 …</text>
+<text transform="translate(424.98538 186.98702)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">Rail 7 …</text>
 </g>
    <g id="text_10">
-<text transform="translate(429.144352 263.558747)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#4527a0">QM9700</text>
-<text transform="translate(422.71518 273.881098)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#4527a0">leaf switch</text>
-<text transform="translate(415.163977 284.202778)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="700" font-style="normal" fill="#4527a0">(64-port NDR)</text>
+<text transform="translate(424.17935 261.55076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">QM9700</text>
+<text transform="translate(416.57518 274.20076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">leaf switch</text>
+<text transform="translate(407.02898 286.85076)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">(64-port NDR)</text>
 </g>
    <g id="text_11">
-<text transform="translate(118.231383 353.757191)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.6" font-weight="700" font-style="normal" fill="#1b5e20">SHARP: in-switch aggregation of AllReduce partial sums</text>
-<text transform="translate(108.215133 365.279816)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.6" font-weight="700" font-style="normal" fill="#1b5e20">(SHARPv3 — 32× more acceleration engines than prior gen)</text>
+<text transform="translate(99.62138 353.51350)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">SHARP: in-switch aggregation of AllReduce partial sums</text>
+<text transform="translate(88.24013 366.16350)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#1b5e20">(SHARPv3 — 32× more acceleration engines than prior gen)</text>
 </g>
    <g id="text_12">
-<text transform="translate(62.746383 388.310328)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.6" font-weight="400" font-style="normal" fill="#172033">Each of the 8 GPUs per node talks over its OWN dedicated rail (own NIC, own leaf switch) —</text>
-<text transform="translate(57.623133 399.832953)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.6" font-weight="400" font-style="normal" fill="#172033">8 isolated communication planes with no cross-rail contention. SHARP performs the AllReduce</text>
-<text transform="translate(53.051883 411.355578)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.6" font-weight="400" font-style="normal" fill="#172033">sum/max/min IN the switch silicon, so gradients are reduced without round-tripping to any GPU.</text>
+<text transform="translate(32.07138 387.50295)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">Each of the 8 GPUs per node talks over its OWN dedicated rail (own NIC, own leaf switch) —</text>
+<text transform="translate(26.31313 400.15295)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">8 isolated communication planes with no cross-rail contention. SHARP performs the AllReduce</text>
+<text transform="translate(21.26188 412.80295)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">sum/max/min IN the switch silicon, so gradients are reduced without round-tripping to any GPU.</text>
 </g>
    <g id="text_13">
-<text transform="translate(7.2 18.977578)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="15.5" font-weight="700" font-style="normal" fill="#172033">Scalable Unit: Rail Architecture + In-Network SHARP Reduction</text>
+<text transform="translate(-7.60500 19.29758)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="16.5" font-weight="700" font-style="normal" fill="#172033">Scalable Unit: Rail Architecture + In-Network SHARP Reduction</text>
 </g>
   </g>
  </g>

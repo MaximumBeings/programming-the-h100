@@ -168,45 +168,45 @@ z
 " clip-path="url(#pef3ac5551b)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">Dynamic Shared Memory Layout for TMA — Wrong vs Correct Alignment</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">Dynamic Shared Memory Layout for TMA — Wrong vs Correct Alignment</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="56.545088" y="87.344" transform="rotate(-0 56.545088 87.344)">WRONG</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="56.545088" y="87.344" transform="rotate(-0 56.545088 87.344)">WRONG</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(187.65117 84.757477)">mbar</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(186.90979 93.879555)">[0..7]</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(184.42617 83.83832)">mbar</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(183.59479 96.48832)">[0..7]</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(395.49849 84.757773)">data starts byte 8</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(404.22308 93.879258)">(8 % 128 ≠ 0)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(384.59849 83.83832)">data starts byte 8</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(395.79308 96.48832)">(8 % 128 ≠ 0)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(634.96396 77.981867)">✗ silent</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(634.02396 87.344)">corruption</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(630.49396 77.11233)">✗ silent</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(628.08396 89.76233)">corruption</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="56.545088" y="200.496" transform="rotate(-0 56.545088 200.496)">CORRECT</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="56.545088" y="200.496" transform="rotate(-0 56.545088 200.496)">CORRECT</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(158.40236 197.909477)">mbar</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(157.66099 207.031555)">[0..7]</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(155.17736 196.99032)">mbar</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(154.34599 209.64032)">[0..7]</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(294.00613 197.909477)">padding [8..127]</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(305.43251 207.031555)">(120 bytes)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(283.90613 196.99032)">padding [8..127]</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(298.46251 209.64032)">(120 bytes)</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(519.01542 197.909477)">tile data [128..N]</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(527.24358 207.031555)">128B-aligned</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(508.81042 196.99032)">tile data [128..N]</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(519.04358 209.64032)">128B-aligned</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(635.26287 191.133867)">✓ TMA</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(634.01896 200.496)">writes here</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(631.13787 190.26433)">✓ TMA</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(627.59396 202.91433)">writes here</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 8.910px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(169.70660 311.482)">data_offset = (sizeof(uint64_t) + 128 − 1) &amp; ~(128 − 1) = (8 + 127) &amp; ~127 = 128</text>
-    <text style="font-weight: 450; font-size: 8.910px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(8.14013 323.632)">TMA's 128-byte SWIZZLE_128B destination requirement is a hardware constraint, not a convention — get the offset wrong and the corruption is silent.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(131.35660 311.90080)">data_offset = (sizeof(uint64_t) + 128 − 1) &amp; ~(128 − 1) = (8 + 127) &amp; ~127 = 128</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(-65.81487 324.55080)"><tspan x="0" y="-7.15">TMA&#x27;s 128-byte SWIZZLE_128B destination requirement is a hardware constraint, not a convention — get the offset wrong and the</tspan><tspan x="0" y="7.15">corruption is silent.</tspan></text>
    </g>
   </g>
  </g>

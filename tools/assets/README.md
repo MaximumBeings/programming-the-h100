@@ -10,3 +10,7 @@ To regenerate illustrations, run the relevant generator, then run
 brotli and Pillow; legacy label alignment currently requires Arial at the
 macOS path documented in the script. The website build needs none of these
 font conversion dependencies. Text stays selectable, searchable and scalable.
+
+The polishing tool also enforces an 11-unit label floor. The site preserves a
+minimum rendered label size of 15.4 CSS pixels; wide figures scroll rather than
+shrinking their text. Run `python3 tools/verify_svg_readability.py` to audit sizes.

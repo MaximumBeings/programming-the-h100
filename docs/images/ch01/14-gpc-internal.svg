@@ -271,49 +271,49 @@ z
 " clip-path="url(#p267e29f444)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.803363" transform="rotate(-0 342 37.803363)">One GPC, Zoomed In -- 9 TPCs / 18 SMs</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.803363" transform="rotate(-0 342 37.803363)">One GPC, Zoomed In -- 9 TPCs / 18 SMs</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="83.872297" transform="rotate(-0 342 83.872297)">DSMEM Interconnect (SM-to-SM, within this GPC only)</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="83.872297" transform="rotate(-0 342 83.872297)">DSMEM Interconnect (SM-to-SM, within this GPC only)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(76.33542 179.754221)">TPC 0</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(68.34878 189.894221)">SM0 SM1</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(72.78042 179.27362)">TPC 0</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(63.00878 191.92362)">SM0 SM1</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(202.80779 179.754221)">TPC 1</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(193.03115 189.894221)">SM2 SM3</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(199.52279 179.27362)">TPC 1</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(187.46615 191.92362)">SM2 SM3</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(327.43516 179.754221)">TPC 2</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(318.49352 189.894221)">SM4 SM5</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(323.91016 179.27362)">TPC 2</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(312.90852 191.92362)">SM4 SM5</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(452.91253 179.754221)">TPC 3</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(444.23089 189.894221)">SM6 SM7</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(449.37253 179.27362)">TPC 3</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(438.70589 191.92362)">SM6 SM7</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(578.29990 179.754221)">TPC 4</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(569.50825 189.894221)">SM8 SM9</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(574.72490 179.27362)">TPC 4</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(563.92325 191.92362)">SM8 SM9</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(76.49542 280.451364)">TPC 5</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(63.77716 290.591364)">SM10 SM11</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(72.98542 279.97076)">TPC 5</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(57.44716 292.62076)">SM10 SM11</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(201.88779 280.451364)">TPC 6</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(188.46406 290.591364)">SM12 SM13</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(198.34279 279.97076)">TPC 6</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(181.90906 292.62076)">SM12 SM13</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(327.63016 280.451364)">TPC 7</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(313.92642 290.591364)">SM14 SM15</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(324.15016 279.97076)">TPC 7</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(307.35142 292.62076)">SM14 SM15</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(452.90753 280.451364)">TPC 8</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(439.66379 290.591364)">SM16 SM17</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(449.36753 279.97076)">TPC 8</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(433.14879 292.62076)">SM16 SM17</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="375.737964" transform="rotate(-0 342 375.737964)">Connection to local L2 partition  --  cross-GPC traffic must go through L2 or global memory</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="375.737964" transform="rotate(-0 342 375.737964)">Connection to local L2 partition  --  cross-GPC traffic must go through L2 or global memory</text>
    </g>
   </g>
  </g>

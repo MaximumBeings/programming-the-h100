@@ -109,37 +109,37 @@ OTHER DEALINGS IN THE FONT SOFTWARE.</metadata>
    </cc:Work>
   </rdf:RDF>
  </metadata>
-<rect width="1100" height="470" fill="#f8fafc"/><g font-family="Arial, Liberation Sans, sans-serif" fill="#172033"><text x="40" y="48" font-size="30" font-weight="700">WGMMA · The 64-bit shared-memory descriptor</text><text x="40" y="84" font-size="18" fill="#475569">Bit positions increase left to right. Reserved fields must remain zero.</text>
+<rect width="1100" height="470" fill="#f8fafc"/><g font-family="Arial, Liberation Sans, sans-serif" fill="#172033"><text x="40" y="48" font-size="31" font-weight="700">WGMMA · The 64-bit shared-memory descriptor</text><text x="40" y="84" font-size="19" fill="#475569">Bit positions increase left to right. Reserved fields must remain zero.</text>
 <rect x="40.0" y="145" width="223.125" height="90" fill="#ccfbf1" stroke="#94a3b8"/>
-<text x="151.5625" y="130" text-anchor="middle" font-size="14">0–13</text>
-<text x="151.5625" y="197" text-anchor="middle" font-size="18" font-weight="700">Address</text>
+<text x="151.5625" y="130" text-anchor="middle" font-size="15">0–13</text>
+<text x="151.5625" y="197" text-anchor="middle" font-size="19" font-weight="700">Address</text>
 <rect x="263.125" y="145" width="31.875" height="90" fill="#e2e8f0" stroke="#94a3b8"/>
-<text x="279.0625" y="130" text-anchor="middle" font-size="14">14–15</text>
-<text x="279.0625" y="197" text-anchor="middle" font-size="13" font-weight="700">R</text>
+<text x="279.0625" y="130" text-anchor="middle" font-size="15">14–15</text>
+<text x="279.0625" y="197" text-anchor="middle" font-size="14" font-weight="700">R</text>
 <rect x="295.0" y="145" width="223.125" height="90" fill="#dbeafe" stroke="#94a3b8"/>
-<text x="406.5625" y="130" text-anchor="middle" font-size="14">16–29</text>
-<text x="406.5625" y="197" text-anchor="middle" font-size="18" font-weight="700">LBO</text>
+<text x="406.5625" y="130" text-anchor="middle" font-size="15">16–29</text>
+<text x="406.5625" y="197" text-anchor="middle" font-size="19" font-weight="700">LBO</text>
 <rect x="518.125" y="145" width="31.875" height="90" fill="#e2e8f0" stroke="#94a3b8"/>
-<text x="534.0625" y="130" text-anchor="middle" font-size="14">30–31</text>
-<text x="534.0625" y="197" text-anchor="middle" font-size="13" font-weight="700">R</text>
+<text x="534.0625" y="130" text-anchor="middle" font-size="15">30–31</text>
+<text x="534.0625" y="197" text-anchor="middle" font-size="14" font-weight="700">R</text>
 <rect x="550.0" y="145" width="223.125" height="90" fill="#fef3c7" stroke="#94a3b8"/>
-<text x="661.5625" y="130" text-anchor="middle" font-size="14">32–45</text>
-<text x="661.5625" y="197" text-anchor="middle" font-size="18" font-weight="700">SBO</text>
+<text x="661.5625" y="130" text-anchor="middle" font-size="15">32–45</text>
+<text x="661.5625" y="197" text-anchor="middle" font-size="19" font-weight="700">SBO</text>
 <rect x="773.125" y="145" width="47.8125" height="90" fill="#e2e8f0" stroke="#94a3b8"/>
-<text x="797.03125" y="130" text-anchor="middle" font-size="14">46–48</text>
-<text x="797.03125" y="197" text-anchor="middle" font-size="13" font-weight="700">R</text>
+<text x="797.03125" y="130" text-anchor="middle" font-size="15">46–48</text>
+<text x="797.03125" y="197" text-anchor="middle" font-size="14" font-weight="700">R</text>
 <rect x="820.9375" y="145" width="47.8125" height="90" fill="#ffedd5" stroke="#94a3b8"/>
-<text x="844.84375" y="130" text-anchor="middle" font-size="14">49–51</text>
-<text x="844.84375" y="197" text-anchor="middle" font-size="13" font-weight="700">BO</text>
+<text x="844.84375" y="130" text-anchor="middle" font-size="15">49–51</text>
+<text x="844.84375" y="197" text-anchor="middle" font-size="14" font-weight="700">BO</text>
 <rect x="868.75" y="145" width="159.375" height="90" fill="#e2e8f0" stroke="#94a3b8"/>
-<text x="948.4375" y="130" text-anchor="middle" font-size="14">52–61</text>
-<text x="948.4375" y="197" text-anchor="middle" font-size="18" font-weight="700">Reserved</text>
+<text x="948.4375" y="130" text-anchor="middle" font-size="15">52–61</text>
+<text x="948.4375" y="197" text-anchor="middle" font-size="19" font-weight="700">Reserved</text>
 <rect x="1028.125" y="145" width="31.875" height="90" fill="#ede9fe" stroke="#94a3b8"/>
-<text x="1044.0625" y="130" text-anchor="middle" font-size="14">62–63</text>
-<text x="1044.0625" y="197" text-anchor="middle" font-size="13" font-weight="700">SW</text>
-<text x="40" y="280" font-size="17" fill="#334155">Address / LBO / SBO: encode bytes as (value &amp; 0x3ffff) &gt;&gt; 4; all are 16-byte aligned.</text>
-<text x="40" y="315" font-size="17" fill="#334155">BO: matrix base offset, bits 49–51. Used with swizzled layouts; zero for the aligned boundary.</text>
-<text x="40" y="350" font-size="17" fill="#334155">SW: 0 = no swizzle · 1 = 128B · 2 = 64B · 3 = 32B.</text>
-<text x="40" y="385" font-size="17" fill="#334155">R / Reserved: bits 14–15, 30–31, 46–48 and 52–61.</text>
-<text x="40" y="420" font-size="17" fill="#334155">Source: NVIDIA CUDA 12.8 PTX ISA §9.7.15.5.1.2.2, Matrix Descriptor Format.</text>
+<text x="1044.0625" y="130" text-anchor="middle" font-size="15">62–63</text>
+<text x="1044.0625" y="197" text-anchor="middle" font-size="14" font-weight="700">SW</text>
+<text x="40" y="280" font-size="18" fill="#334155">Address / LBO / SBO: encode bytes as (value &amp; 0x3ffff) &gt;&gt; 4; all are 16-byte aligned.</text>
+<text x="40" y="315" font-size="18" fill="#334155">BO: matrix base offset, bits 49–51. Used with swizzled layouts; zero for the aligned boundary.</text>
+<text x="40" y="350" font-size="18" fill="#334155">SW: 0 = no swizzle · 1 = 128B · 2 = 64B · 3 = 32B.</text>
+<text x="40" y="385" font-size="18" fill="#334155">R / Reserved: bits 14–15, 30–31, 46–48 and 52–61.</text>
+<text x="40" y="420" font-size="18" fill="#334155">Source: NVIDIA CUDA 12.8 PTX ISA §9.7.15.5.1.2.2, Matrix Descriptor Format.</text>
 </g></svg>

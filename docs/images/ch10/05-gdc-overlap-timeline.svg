@@ -184,20 +184,20 @@ z
 " clip-path="url(#p0e05cec722)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 1.4; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="525.6" y="38.710099" transform="rotate(-0 525.6 38.710099)">Default Stream Serialization vs. GDC Dependent Launch</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="525.6" y="38.710099" transform="rotate(-0 525.6 38.710099)">Default Stream Serialization vs. GDC Dependent Launch</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.956164" y="58.202526" transform="rotate(-0 31.956164 58.202526)">WITHOUT GDC — strict same-stream serialization</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.956164" y="58.202526" transform="rotate(-0 31.956164 58.202526)">WITHOUT GDC — strict same-stream serialization</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 11.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #1b5e20" x="314.038356" y="96.690214" transform="rotate(-0 314.038356 96.690214)">Kernel A (full waves + tail)</text>
+    <text style="font-weight: 650; font-size: 12.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #1b5e20" x="314.038356" y="96.690214" transform="rotate(-0 314.038356 96.690214)">Kernel A (full waves + tail)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="652.536986" y="96.352468" transform="rotate(-0 652.536986 96.352468)">idle gap</text>
+    <text style="font-weight: 650; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="652.536986" y="96.352468" transform="rotate(-0 652.536986 96.352468)">idle gap</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(767.77072 90.283034)">Kernel B</text>
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(728.62668 102.525823)">(cold-start then run)</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(765.77572 90.39943)">Kernel B</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(723.83168 103.04943)">(cold-start then run)</text>
    </g>
    <g id="patch_9">
     <path d="M 652.536986 148.932789
@@ -209,14 +209,14 @@ L 654.596986 126.38997
 " style="fill: none; stroke: #616161; stroke-linecap: round"/>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 10.661px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(552.49432 161.785815)">Kernel B cannot dispatch ANY block</text>
-    <text style="font-weight: 450; font-size: 10.661px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(557.55392 174.148632)">until every CTA of Kernel A retires</text>
+    <text style="font-weight: 450; font-size: 11.661px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(543.97432 161.96222)">Kernel B cannot dispatch ANY block</text>
+    <text style="font-weight: 450; font-size: 11.661px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(549.51392 174.61222)">until every CTA of Kernel A retires</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.956164" y="247.812632" transform="rotate(-0 31.956164 247.812632)">WITH GDC — launch_dependents / .wait overlap</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.956164" y="247.812632" transform="rotate(-0 31.956164 247.812632)">WITH GDC — launch_dependents / .wait overlap</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 11.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #1b5e20" x="289.356164" y="286.300319" transform="rotate(-0 289.356164 286.300319)">Kernel A (full waves + tail)</text>
+    <text style="font-weight: 650; font-size: 12.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #1b5e20" x="289.356164" y="286.300319" transform="rotate(-0 289.356164 286.300319)">Kernel A (full waves + tail)</text>
    </g>
    <g id="line2d_1">
     <path d="M 402.612164 318.916421
@@ -224,11 +224,11 @@ L 402.612164 203.796
 " clip-path="url(#p0e05cec722)" style="fill: none; stroke-dasharray: 6.66,2.88; stroke-dashoffset: 0; stroke: #00695c; stroke-width: 1.8"/>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 10.780px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(342.11390 181.875636)">launch_dependents</text>
-    <text style="font-weight: 650; font-size: 10.780px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(372.14141 193.638316)">fires here</text>
+    <text style="font-weight: 650; font-size: 11.78px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(337.49390 181.75198)">launch_dependents</text>
+    <text style="font-weight: 650; font-size: 11.78px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(369.88141 194.40198)">fires here</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 10.560px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #0d47a1" x="441.398466" y="224.912546" transform="rotate(-0 441.398466 224.912546)">boot + prefetch</text>
+    <text style="font-weight: 450; font-size: 11.56px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #0d47a1" x="441.398466" y="224.912546" transform="rotate(-0 441.398466 224.912546)">boot + prefetch</text>
    </g>
    <g id="line2d_2">
     <path d="M 564.809425 257.970316
@@ -236,23 +236,23 @@ L 564.809425 186.866526
 " clip-path="url(#p0e05cec722)" style="fill: none; stroke-dasharray: 1.4,2.31; stroke-dashoffset: 0; stroke: #8a5a00; stroke-width: 1.4"/>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(572.90945 219.695765)">.wait</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(573.80132 229.297952)">park</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(570.44445 218.87586)">.wait</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(571.48132 231.52586)">park</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #0d47a1" x="652.96011" y="225.06803" transform="rotate(-0 652.96011 225.06803)">run</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #0d47a1" x="652.96011" y="225.06803" transform="rotate(-0 652.96011 225.06803)">run</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 650; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.956164" y="400.177895" transform="rotate(-0 31.956164 400.177895)">RESULT: Kernel B's cold-start (SM reservation, register alloc, weight prefetch) hides inside</text>
+    <text style="font-weight: 650; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.956164" y="400.177895" transform="rotate(-0 31.956164 400.177895)">RESULT: Kernel B's cold-start (SM reservation, register alloc, weight prefetch) hides inside</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 650; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.956164" y="423.879158" transform="rotate(-0 31.956164 423.879158)">Kernel A's own tail. When Kernel A retires, Kernel B is already running — .wait releases immediately.</text>
+    <text style="font-weight: 650; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.956164" y="423.879158" transform="rotate(-0 31.956164 423.879158)">Kernel A's own tail. When Kernel A retires, Kernel B is already running — .wait releases immediately.</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.956164" y="464.509895" transform="rotate(-0 31.956164 464.509895)">NOTE: launch_dependents is a best-effort scheduling hint, not a hard real-time contract —</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.956164" y="464.509895" transform="rotate(-0 31.956164 464.509895)">NOTE: launch_dependents is a best-effort scheduling hint, not a hard real-time contract —</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.956164" y="488.211158" transform="rotate(-0 31.956164 488.211158)">if Kernel A finishes very quickly, Kernel B simply launches normally afterward, same as the top timeline.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.956164" y="488.211158" transform="rotate(-0 31.956164 488.211158)">if Kernel A finishes very quickly, Kernel B simply launches normally afterward, same as the top timeline.</text>
    </g>
   </g>
  </g>

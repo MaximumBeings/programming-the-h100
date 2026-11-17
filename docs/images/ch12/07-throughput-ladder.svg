@@ -196,8 +196,8 @@ L 0 3.5
       </g>
      </g>
      <g id="text_1">
-<text transform="translate(57.402563 345.67865)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">FA2</text>
-<text transform="translate(46.313039 356.841193)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">baseline</text>
+<text transform="translate(55.78756 345.25492)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">FA2</text>
+<text transform="translate(42.94804 357.90492)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">baseline</text>
 </g>
     </g>
     <g id="xtick_2">
@@ -207,8 +207,8 @@ L 0 3.5
       </g>
      </g>
      <g id="text_2">
-<text transform="translate(120.329414 345.67865)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">+ warp spec</text>
-<text transform="translate(134.082516 356.840467)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">+ TMA</text>
+<text transform="translate(115.32941 345.25456)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">+ warp spec</text>
+<text transform="translate(131.36752 357.90456)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">+ TMA</text>
 </g>
     </g>
     <g id="xtick_3">
@@ -218,7 +218,7 @@ L 0 3.5
       </g>
      </g>
      <g id="text_3">
-<text transform="translate(204.298969 344.748469)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">+ ping-pong</text>
+<text transform="translate(199.29397 345.06847)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">+ ping-pong</text>
 </g>
     </g>
     <g id="xtick_4">
@@ -228,8 +228,8 @@ L 0 3.5
       </g>
      </g>
      <g id="text_4">
-<text transform="translate(293.971312 345.67865)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">+ 2-stage</text>
-<text transform="translate(298.441125 356.841193)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">pipeline</text>
+<text transform="translate(290.03631 345.25492)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">+ 2-stage</text>
+<text transform="translate(295.27613 357.90492)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">pipeline</text>
 </g>
     </g>
     <g id="xtick_5">
@@ -239,7 +239,7 @@ L 0 3.5
       </g>
      </g>
      <g id="text_5">
-<text transform="translate(380.308008 344.748469)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">+ tuning</text>
+<text transform="translate(376.99301 345.06847)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">+ tuning</text>
 </g>
     </g>
     <g id="xtick_6">
@@ -249,7 +249,7 @@ L 0 3.5
       </g>
      </g>
      <g id="text_6">
-<text transform="translate(463.803844 344.748469)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="400" font-style="normal" fill="#172033">FP8 path</text>
+<text transform="translate(460.20884 345.06847)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">FP8 path</text>
 </g>
     </g>
    </g>
@@ -260,33 +260,33 @@ L 452.484 85.161922
 " clip-path="url(#p583a1a88f7)" style="fill: none; stroke-dasharray: 4.44,1.92; stroke-dashoffset: 0; stroke: #475569; stroke-width: 1.2"/>
    </g>
    <g id="text_7">
-<text transform="translate(33.491391 238.762505)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#b71c1c">350 TFLOP/s</text>
-<text transform="translate(50.409398 249.924322)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#b71c1c">(35%)</text>
+<text transform="translate(28.17639 238.33841)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#b71c1c">350 TFLOP/s</text>
+<text transform="translate(47.90440 250.98841)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#b71c1c">(35%)</text>
 </g>
    <g id="text_8">
-<text transform="translate(117.191391 193.750505)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">570 TFLOP/s</text>
-<text transform="translate(134.109398 204.912322)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">(58%)</text>
+<text transform="translate(111.92139 193.32641)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">570 TFLOP/s</text>
+<text transform="translate(131.59940 205.97641)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">(58%)</text>
 </g>
    <g id="text_9">
-<text transform="translate(200.891391 183.520505)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">620 TFLOP/s</text>
-<text transform="translate(217.809398 194.682322)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">(63%)</text>
+<text transform="translate(195.56139 183.09641)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">620 TFLOP/s</text>
+<text transform="translate(215.27940 195.74641)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">(63%)</text>
 </g>
    <g id="text_10">
-<text transform="translate(284.591391 175.336505)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">660 TFLOP/s</text>
-<text transform="translate(301.509398 186.498322)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">(67%)</text>
+<text transform="translate(279.24639 174.91241)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">660 TFLOP/s</text>
+<text transform="translate(299.02440 187.56241)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">(67%)</text>
 </g>
    <g id="text_11">
-<text transform="translate(368.291391 158.968505)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">740 TFLOP/s</text>
-<text transform="translate(385.209398 170.130322)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#0d47a1">(75%)</text>
+<text transform="translate(362.98139 158.54441)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">740 TFLOP/s</text>
+<text transform="translate(382.74940 171.19441)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#0d47a1">(75%)</text>
 </g>
    <g id="text_12">
-<text transform="translate(453.224367 76.014322)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.3" font-weight="700" font-style="normal" fill="#4527a0">1.2 PFLOP/s</text>
+<text transform="translate(448.39937 76.33432)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#4527a0">1.2 PFLOP/s</text>
 </g>
    <g id="text_13">
-<text transform="translate(60.878922 47.937922)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.6" font-weight="400" font-style="italic" fill="#475569">Dashed step = separate discipline (block quant + V transpose + Hadamard, §9)</text>
+<text transform="translate(16.01392 48.25792)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="italic" fill="#475569">Dashed step = separate discipline (block quant + V transpose + Hadamard, §9)</text>
 </g>
    <g id="text_14">
-<text transform="translate(29.421211 17.305922)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.3" font-weight="700" font-style="normal" fill="#172033">FA3 on H100 — Cumulative Throughput, FP16 Forward (then FP8)</text>
+<text transform="translate(13.99121 17.62592)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="14.3" font-weight="700" font-style="normal" fill="#172033">FA3 on H100 — Cumulative Throughput, FP16 Forward (then FP8)</text>
 </g>
   </g>
  </g>

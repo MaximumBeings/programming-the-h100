@@ -193,21 +193,21 @@ z
 " clip-path="url(#p12a42cf1b3)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">The Synchronous World — Blocked Execution</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">The Synchronous World — Blocked Execution</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(124.30733 104.817313)">Fetch A</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(96.50248 115.645438)">(blocked, waiting)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(122.29733 104.25838)">Fetch A</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(91.77248 116.90838)">(blocked, waiting)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="272.7" y="109.715984" transform="rotate(-0 272.7 109.715984)">Compute A</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="272.7" y="109.715984" transform="rotate(-0 272.7 109.715984)">Compute A</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(396.86309 104.817313)">Fetch B</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(368.87848 115.645438)">(blocked, waiting)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(394.86309 104.25838)">Fetch B</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(364.14848 116.90838)">(blocked, waiting)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="545.076" y="109.715984" transform="rotate(-0 545.076 109.715984)">Compute B</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="545.076" y="109.715984" transform="rotate(-0 545.076 109.715984)">Compute B</text>
    </g>
    <g id="patch_7">
     <path d="M 581.491567 147.248
@@ -215,16 +215,16 @@ Q 318.09628 147.248 54.700993 147.248
 " style="fill: none; stroke: #475569; stroke-linecap: round"/>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="318.096" y="167.216" transform="rotate(-0 318.096 167.216)">Time →</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="318.096" y="167.216" transform="rotate(-0 318.096 167.216)">Time →</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-style: normal; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="50.736" transform="rotate(-0 360 50.736)">Only ONE of {fetching, computing} happens at any instant</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="50.736" transform="rotate(-0 360 50.736)">Only ONE of {fetching, computing} happens at any instant</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(123.96471 251.152406)">In H100 terms: fetching ≈ moving a tile HBM3 → SMEM (~200–500 ns).</text>
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(172.43159 263.502406)">Computing ≈ one Tensor Core tile multiply (~1–5 ns).</text>
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(129.07850 275.852406)">The fetch is 100–500× slower than the compute — so a synchronous</text>
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(150.07745 288.202406)">kernel leaves the Tensor Cores idle essentially all of the time.</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(107.23971 251.02241)">In H100 terms: fetching ≈ moving a tile HBM3 → SMEM (~200–500 ns).</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(160.07659 263.67241)">Computing ≈ one Tensor Core tile multiply (~1–5 ns).</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(112.88350 276.32241)">The fetch is 100–500× slower than the compute — so a synchronous</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(135.69245 288.97241)">kernel leaves the Tensor Cores idle essentially all of the time.</text>
    </g>
   </g>
  </g>

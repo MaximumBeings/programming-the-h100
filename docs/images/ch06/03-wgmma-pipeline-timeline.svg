@@ -316,57 +316,57 @@ z
 " clip-path="url(#p57a6a8b50c)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.549517" transform="rotate(-0 360 37.549517)">Double-Buffered GEMM K-Loop — TMA Load Overlapped With wgmma Math</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.549517" transform="rotate(-0 360 37.549517)">Double-Buffered GEMM K-Loop — TMA Load Overlapped With wgmma Math</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="34.250344" y="97.935991" transform="rotate(-0 34.250344 97.935991)">TMA load</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="34.250344" y="97.935991" transform="rotate(-0 34.250344 97.935991)">TMA load</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="34.250344" y="164.342145" transform="rotate(-0 34.250344 164.342145)">fence</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="34.250344" y="164.342145" transform="rotate(-0 34.250344 164.342145)">fence</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="34.250344" y="230.748298" transform="rotate(-0 34.250344 230.748298)">wgmma math</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="34.250344" y="230.748298" transform="rotate(-0 34.250344 230.748298)">wgmma math</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(202.12264 93.361221)">load</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(198.25692 102.68844)">A0,B0</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(199.45264 92.54463)">load</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(194.42192 105.19463)">A0,B0</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="169.693622" y="164.607984" transform="rotate(-0 169.693622 164.607984)">F</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="169.693622" y="164.607984" transform="rotate(-0 169.693622 164.607984)">F</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(210.64548 224.648185)">wgmma</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(219.59248 235.986435)">K=0</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(205.68548 224.83711)">wgmma</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(216.99248 237.48711)">K=0</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(346.13827 93.361221)">load</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(344.15256 102.638565)">A1,B1</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(343.46827 92.51969)">load</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(340.90756 105.16969)">A1,B1</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="313.709259" y="164.607984" transform="rotate(-0 313.709259 164.607984)">F</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="313.709259" y="164.607984" transform="rotate(-0 313.709259 164.607984)">F</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(354.66112 224.648185)">wgmma</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(364.54812 235.990591)">K=1</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(349.70112 224.83919)">wgmma</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(362.24312 237.48919)">K=1</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(490.15391 93.361221)">load</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(486.45819 102.68844)">A2,B2</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(487.48391 92.54463)">load</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(482.68319 105.19463)">A2,B2</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="457.724897" y="164.607984" transform="rotate(-0 457.724897 164.607984)">F</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="457.724897" y="164.607984" transform="rotate(-0 457.724897 164.607984)">F</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(498.67676 224.648185)">wgmma</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(507.70876 236.040466)">K=2</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(493.71676 224.86413)">wgmma</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(505.13876 237.51413)">K=2</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(634.16955 93.361221)">load</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(630.40383 102.68844)">A3,B3</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(631.49955 92.54463)">load</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(626.60883 105.19463)">A3,B3</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 650; font-size: 7.920px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(627.71413 159.87825)">wait</text>
-    <text style="font-weight: 650; font-size: 7.920px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(627.67126 169.174688)">&lt;0&gt;</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(624.70913 159.18707)">wait</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(624.66626 171.83707)">&lt;0&gt;</text>
    </g>
    <g id="patch_16">
     <path d="M 294.850069 125.691735
@@ -374,11 +374,11 @@ Q 294.850069 175.98567 294.850069 226.279605
 " style="fill: none; stroke-dasharray: 3.9,2.6; stroke-dashoffset: 0; stroke: #8a1c1c; stroke-width: 1.3; stroke-linecap: round"/>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(283.88542 190.068901) rotate(-90)">overlap</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(279.02542 190.94890) rotate(-90)">overlap</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-size: 9.240px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(224.13007 307.945428)">wgmma on tile K overlaps the TMA load of tile K+1 — possible only because</text>
-    <text style="font-weight: 450; font-size: 9.240px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(298.84562 319.588615)">wgmma.mma_async is non-blocking (async).</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(192.47007 308.00522)">wgmma on tile K overlaps the TMA load of tile K+1 — possible only because</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(280.00562 320.65522)">wgmma.mma_async is non-blocking (async).</text>
    </g>
   </g>
  </g>

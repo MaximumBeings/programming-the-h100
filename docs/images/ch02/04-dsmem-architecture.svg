@@ -227,51 +227,51 @@ z
 " clip-path="url(#p6cd77997c8)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.857909" transform="rotate(-0 360 37.857909)">DSMEM — Distributed Shared Memory</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.857909" transform="rotate(-0 360 37.857909)">DSMEM — Distributed Shared Memory</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="360" y="74.722909" transform="rotate(-0 360 74.722909)">GPC (Graphics Processing Cluster)</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="360" y="74.722909" transform="rotate(-0 360 74.722909)">GPC (Graphics Processing Cluster)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(144.04578 144.365442)">SM 0 (Block A runs here)</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(191.74300 152.056364)"/>
-    <text style="font-size: 7.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(150.337078 164.348676)">Shared Memory (228 KB)</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(165.66011 174.785442)">smem[0] = 1.0</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(165.71511 184.925442)">smem[1] = 3.0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(129.67578 139.99661)">SM 0 (Block A runs here)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(181.94800 152.64661)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(131.10708 165.64292)">Shared Memory (228 KB)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(157.45011 178.29292)">smem[0] = 1.0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(157.52011 190.94292)">smem[1] = 3.0</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(466.43358 144.365442)">SM 1 (Block B runs here)</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(513.00700 152.056364)"/>
-    <text style="font-size: 7.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(471.601078 164.348676)">Shared Memory (228 KB)</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(486.04411 174.785442)">smem[0] = 2.0</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(486.85911 184.925442)">smem[1] = 4.0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(452.36858 139.99661)">SM 1 (Block B runs here)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(503.21200 152.64661)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(452.37108 165.64292)">Shared Memory (228 KB)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(477.59411 178.29292)">smem[0] = 2.0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(478.62911 190.94292)">smem[1] = 4.0</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(321.53067 256.057259)">DSMEM Network</text>
-    <text style="font-weight: 650; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(318.86644 264.811555)">~50-80 cycle RTT</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(309.57567 255.05981)">DSMEM Network</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(306.05144 267.70981)">~50-80 cycle RTT</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(140.05653 312.574974)">Block A can issue: ld.shared::cluster / st.shared::cluster / atom.shared::cluster [addr] → SM 1's SRAM</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(116.29594 323.685818)">RESTRICTION: only within the SAME cluster (same GPC) — cross-GPC access must go through L2/global memory</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(76.79653 312.65020)">Block A can issue: ld.shared::cluster / st.shared::cluster / atom.shared::cluster [addr] → SM 1's SRAM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(44.93594 325.30020)">RESTRICTION: only within the SAME cluster (same GPC) — cross-GPC access must go through L2/global memory</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(130.81975 393.43341)">Block 0</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(131.49794 402.554894)">228 KB</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(126.13975 392.51395)">Block 0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(126.94294 405.16395)">228 KB</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(278.42375 393.43341)">Block 1</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(278.16194 402.554894)">228 KB</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(274.03875 392.51395)">Block 1</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(273.60694 405.16395)">228 KB</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(424.23275 393.43341)">Block 2</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(424.82594 402.554894)">228 KB</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(419.58275 392.51395)">Block 2</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(420.27094 405.16395)">228 KB</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(570.86175 393.43341)">Block 3</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(571.48994 402.554894)">228 KB</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(566.20175 392.51395)">Block 3</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(566.93494 405.16395)">228 KB</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="444.802909" transform="rotate(-0 360 444.802909)">Total for a cluster of 4: 4 × 228 KB = 912 KB accessible (vs. 228 KB without clusters — a 4× increase)</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="444.802909" transform="rotate(-0 360 444.802909)">Total for a cluster of 4: 4 × 228 KB = 912 KB accessible (vs. 228 KB without clusters — a 4× increase)</text>
    </g>
   </g>
  </g>

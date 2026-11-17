@@ -321,66 +321,66 @@ z
 " clip-path="url(#pc23d4d4e62)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="576" y="38.683214" transform="rotate(-0 576 38.683214)">mbarrier — The Two-Barrier Handshake (Stage 0 Lifecycle)</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="576" y="38.683214" transform="rotate(-0 576 38.683214)">mbarrier — The Two-Barrier Handshake (Stage 0 Lifecycle)</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #0d47a1" x="21.3975" y="104.144692" transform="rotate(-0 21.3975 104.144692)">Producer</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #0d47a1" x="21.3975" y="104.144692" transform="rotate(-0 21.3975 104.144692)">Producer</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a5a00" x="21.3975" y="171.785773" transform="rotate(-0 21.3975 171.785773)">TMA hardware</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a5a00" x="21.3975" y="171.785773" transform="rotate(-0 21.3975 171.785773)">TMA hardware</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="21.3975" y="239.426854" transform="rotate(-0 21.3975 239.426854)">Consumer</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="21.3975" y="239.426854" transform="rotate(-0 21.3975 239.426854)">Consumer</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(199.39256 100.26744)">[1] wait</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(194.64769 112.749471)">EMPTY(0)</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(197.71256 100.50346)">[1] wait</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(192.24269 113.15346)">EMPTY(0)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(301.89750 100.267033)">[2] issue</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(300.80267 112.749877)">TMA load</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(299.86250 100.50345)">[2] issue</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(298.54267 113.15345)">TMA load</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(409.57513 167.908521)">[3] HBM</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(412.26612 180.390552)">→SMEM</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(407.63013 168.14454)">[3] HBM</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(410.28112 180.79454)">→SMEM</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(511.43856 167.908521)">[4] signal</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(517.41631 180.390552)">FULL(0)</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(509.22856 168.14454)">[4] signal</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(515.52631 180.79454)">FULL(0)</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(622.28756 235.549602)">[5] wait</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(623.39131 248.031633)">FULL(0)</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(620.51256 235.78562)">[5] wait</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(621.50131 248.43562)">FULL(0)</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(716.91894 235.549602)">[6] WGMMA</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(720.70787 248.031633)">on stage 0</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(713.99394 235.78562)">[6] WGMMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(718.20787 248.43562)">on stage 0</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(821.97169 235.549196)">[7] wgmma.</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(825.65356 248.032039)">wait_group</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(819.15169 235.78562)">[7] wgmma.</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(823.06856 248.43562)">wait_group</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(935.48856 235.549602)">[8] signal</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(936.47269 248.031633)">EMPTY(0)</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(933.28856 235.78562)">[8] signal</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(934.06769 248.43562)">EMPTY(0)</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(1031.64219 100.267033)">[9] prod free</text>
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(1034.94275 112.749877)">to reload(0)</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(1028.63219 100.50345)">[9] prod free</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(1032.17775 113.15345)">to reload(0)</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(183.15752 332.519201)">FULL barrier — "data is ready"</text>
-    <text style="font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(130.55581 348.386201)">arrive: TMA (via expect_tx)   wait: Consumer</text>
+    <text style="font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(175.92252 332.83920)">FULL barrier — "data is ready"</text>
+    <text style="font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(120.08081 348.70620)">arrive: TMA (via expect_tx)   wait: Consumer</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(690.63783 332.519201)">EMPTY barrier — "stage can be rewritten"</text>
-    <text style="font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(721.49655 349.74881)">arrive: Consumer   wait: Producer</text>
+    <text style="font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(680.65283 332.83920)">EMPTY barrier — "stage can be rewritten"</text>
+    <text style="font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(713.56155 350.06881)">arrive: Consumer   wait: Producer</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-style: normal; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.93" y="423.410595" transform="rotate(-0 24.93 423.410595)">Lockstep handshake, no polling: each barrier fires exactly once per stage per pass.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.93" y="423.410595" transform="rotate(-0 24.93 423.410595)">Lockstep handshake, no polling: each barrier fires exactly once per stage per pass.</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-style: normal; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.93" y="450.467027" transform="rotate(-0 24.93 450.467027)">__syncthreads() can't do this — it rendezvouses the whole block, killing the overlap.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="24.93" y="450.467027" transform="rotate(-0 24.93 450.467027)">__syncthreads() can't do this — it rendezvouses the whole block, killing the overlap.</text>
    </g>
   </g>
  </g>

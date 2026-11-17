@@ -258,37 +258,37 @@ z
 " clip-path="url(#pe8ff9fb836)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.576948" transform="rotate(-0 342 37.576948)">WGMMA: Register / Shared-Memory Layout Requirements</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.576948" transform="rotate(-0 342 37.576948)">WGMMA: Register / Shared-Memory Layout Requirements</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="120.031573" transform="rotate(-0 342 120.031573)">4 warps (128 threads) form a warp group -&gt; collectively compute D = A x B + C</text>
+    <text style="font-weight: 650; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="120.031573" transform="rotate(-0 342 120.031573)">4 warps (128 threads) form a warp group -&gt; collectively compute D = A x B + C</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="101.444211" y="175.5667" transform="rotate(-0 101.444211 175.5667)">Matrix A</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="101.444211" y="175.5667" transform="rotate(-0 101.444211 175.5667)">Matrix A</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.212632" y="174.453231" transform="rotate(-0 415.212632 174.453231)">Registers OR Shared Memory</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.212632" y="174.453231" transform="rotate(-0 415.212632 174.453231)">Registers OR Shared Memory</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="101.444211" y="218.781643" transform="rotate(-0 101.444211 218.781643)">Matrix B</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="101.444211" y="218.781643" transform="rotate(-0 101.444211 218.781643)">Matrix B</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.212632" y="217.668175" transform="rotate(-0 415.212632 217.668175)">MUST be in Shared Memory -- never registers</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.212632" y="217.668175" transform="rotate(-0 415.212632 217.668175)">MUST be in Shared Memory -- never registers</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="101.444211" y="261.996587" transform="rotate(-0 101.444211 261.996587)">Matrix C</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="101.444211" y="261.996587" transform="rotate(-0 101.444211 261.996587)">Matrix C</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.212632" y="260.883118" transform="rotate(-0 415.212632 260.883118)">Distributed across 128 threads, in registers</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.212632" y="260.883118" transform="rotate(-0 415.212632 260.883118)">Distributed across 128 threads, in registers</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="101.444211" y="305.21153" transform="rotate(-0 101.444211 305.21153)">Matrix D</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="101.444211" y="305.21153" transform="rotate(-0 101.444211 305.21153)">Matrix D</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.212632" y="304.432874" transform="rotate(-0 415.212632 304.432874)">Same distribution as C (accumulated)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.212632" y="304.432874" transform="rotate(-0 415.212632 304.432874)">Same distribution as C (accumulated)</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="340.664552" transform="rotate(-0 342 340.664552)">Packing: FP16/BF16 2 values per 32-bit register; FP8 4 values per 32-bit register</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="340.664552" transform="rotate(-0 342 340.664552)">Packing: FP16/BF16 2 values per 32-bit register; FP8 4 values per 32-bit register</text>
    </g>
   </g>
  </g>

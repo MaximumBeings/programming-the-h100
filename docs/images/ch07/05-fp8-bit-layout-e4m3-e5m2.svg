@@ -176,50 +176,50 @@ z
 " clip-path="url(#p6ea763e248)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="354.61125" y="38.354836" transform="rotate(-0 354.61125 38.354836)">FP8 Bit Layout — E4M3 vs E5M2</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="354.61125" y="38.354836" transform="rotate(-0 354.61125 38.354836)">FP8 Bit Layout — E4M3 vs E5M2</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 12.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.428675" y="67.497429" transform="rotate(-0 31.428675 67.497429)">FP8 E4M3  (max ±448, no Inf, has NaN — forward pass: weights &amp; activations)</text>
+    <text style="font-weight: 650; font-size: 13.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.428675" y="67.497429" transform="rotate(-0 31.428675 67.497429)">FP8 E4M3  (max ±448, no Inf, has NaN — forward pass: weights &amp; activations)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="45.868748" y="103.27304" transform="rotate(-0 45.868748 103.27304)">S</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="45.868748" y="103.27304" transform="rotate(-0 45.868748 103.27304)">S</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="118.06911" y="103.27304" transform="rotate(-0 118.06911 103.27304)">E E E E</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="118.06911" y="103.27304" transform="rotate(-0 118.06911 103.27304)">E E E E</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="219.149618" y="103.27304" transform="rotate(-0 219.149618 103.27304)">M M M</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="219.149618" y="103.27304" transform="rotate(-0 219.149618 103.27304)">M M M</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 10.780px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="45.868748" y="134.200286" transform="rotate(-0 45.868748 134.200286)">1 bit</text>
+    <text style="font-weight: 450; font-size: 11.78px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="45.868748" y="134.200286" transform="rotate(-0 45.868748 134.200286)">1 bit</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="118.06911" y="134.200286" transform="rotate(-0 118.06911 134.200286)">4-bit exponent (bias 7)</text>
+    <text style="font-weight: 450; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="118.06911" y="134.200286" transform="rotate(-0 118.06911 134.200286)">4-bit exponent (bias 7)</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="219.149618" y="134.200286" transform="rotate(-0 219.149618 134.200286)">3-bit mantissa</text>
+    <text style="font-weight: 450; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="219.149618" y="134.200286" transform="rotate(-0 219.149618 134.200286)">3-bit mantissa</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 12.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #4527a0" x="31.428675" y="187.562571" transform="rotate(-0 31.428675 187.562571)">FP8 E5M2  (max ±57344, has Inf and NaN — backward pass: gradients)</text>
+    <text style="font-weight: 650; font-size: 13.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #4527a0" x="31.428675" y="187.562571" transform="rotate(-0 31.428675 187.562571)">FP8 E5M2  (max ±57344, has Inf and NaN — backward pass: gradients)</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="45.868748" y="223.338182" transform="rotate(-0 45.868748 223.338182)">S</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="45.868748" y="223.338182" transform="rotate(-0 45.868748 223.338182)">S</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="132.509183" y="223.338182" transform="rotate(-0 132.509183 223.338182)">E E E E E</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="132.509183" y="223.338182" transform="rotate(-0 132.509183 223.338182)">E E E E E</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="233.58969" y="223.338182" transform="rotate(-0 233.58969 223.338182)">M M</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="233.58969" y="223.338182" transform="rotate(-0 233.58969 223.338182)">M M</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 10.780px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="45.868748" y="254.265429" transform="rotate(-0 45.868748 254.265429)">1 bit</text>
+    <text style="font-weight: 450; font-size: 11.78px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="45.868748" y="254.265429" transform="rotate(-0 45.868748 254.265429)">1 bit</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="132.509183" y="254.265429" transform="rotate(-0 132.509183 254.265429)">5-bit exponent (bias 15)</text>
+    <text style="font-weight: 450; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="132.509183" y="254.265429" transform="rotate(-0 132.509183 254.265429)">5-bit exponent (bias 15)</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 10.780px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(219.70127 242.502749)">2-bit</text>
-    <text style="font-weight: 450; font-size: 10.780px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(208.20842 254.265429)">mantissa</text>
+    <text style="font-weight: 450; font-size: 11.78px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(218.58127 242.37909)">2-bit</text>
+    <text style="font-weight: 450; font-size: 11.78px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(206.08342 255.02909)">mantissa</text>
    </g>
    <g id="text_16">
     <g id="patch_8">
@@ -235,8 +235,8 @@ Q 27.228675 310.846179 31.428675 310.846179
 z
 " style="fill: #e8f5e9; stroke: #1b5e20; stroke-linejoin: miter"/>
     </g>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(7.99367 282.957429)">More exponent bits → wider range (E5M2 reaches 57344). More mantissa bits → finer</text>
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(8.38367 300.957429)">resolution within that range (E4M3's extra bit tells 100.5 from 100.0; E5M2 can't).</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(-12.45133 282.957429)">More exponent bits → wider range (E5M2 reaches 57344). More mantissa bits → finer</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(-10.85633 300.957429)">resolution within that range (E4M3's extra bit tells 100.5 from 100.0; E5M2 can't).</text>
    </g>
   </g>
  </g>

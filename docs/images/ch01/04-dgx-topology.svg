@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg role="img" xmlns:xlink="http://www.w3.org/1999/xlink" width="612pt" height="612pt" viewBox="0 0 612 612" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg role="img" xmlns:xlink="http://www.w3.org/1999/xlink" width="612pt" height="615.176pt" viewBox="0 0 612 615.176" xmlns="http://www.w3.org/2000/svg" version="1.1">
 <!-- typography: inter-v1 -->
 <metadata id="font-license">Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
 
@@ -285,41 +285,41 @@ z
 " clip-path="url(#p900506524d)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.6; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 450; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="306" y="576.438047" transform="rotate(-0 306 576.438047)">Per GPU: 450 GB/s each direction, shared across its peers</text>
+    <text style="font-weight: 450; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="306" y="576.438047" transform="rotate(-0 306 576.438047)">Per GPU: 450 GB/s each direction, shared across its peers</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="40.699863" transform="rotate(-0 306 40.699863)">DGX H100 Node — 8 GPUs, full NVSwitch connectivity</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="40.699863" transform="rotate(-0 306 40.699863)">DGX H100 Node — 8 GPUs, full NVSwitch connectivity</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="306" y="599.326477" transform="rotate(-0 306 599.326477)">Bidirectional: NVLink 900 GB/s/GPU   •   PCIe 5.0 128 GB/s   •   Source: NVIDIA Hopper whitepaper (GTC22 v1.02)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="306" y="599.326477" transform="rotate(-0 306 599.326477)"><tspan x="306" y="599.326">Bidirectional: NVLink 900 GB/s/GPU • PCIe 5.0 128 GB/s • Source: NVIDIA Hopper whitepaper (GTC22 v1.02)</tspan></text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(275.36977 300.476514)">NVSwitch</text>
-    <text style="font-weight: 650; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(286.92555 313.079385)">fabric</text>
+    <text style="font-weight: 650; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(273.06477 300.77295)">NVSwitch</text>
+    <text style="font-weight: 650; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(285.56555 313.42295)">fabric</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="501.067924" y="225.717994" transform="rotate(-0 501.067924 225.717994)">GPU 0</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="501.067924" y="225.717994" transform="rotate(-0 501.067924 225.717994)">GPU 0</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="386.79978" y="111.449849" transform="rotate(-0 386.79978 111.449849)">GPU 1</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="386.79978" y="111.449849" transform="rotate(-0 386.79978 111.449849)">GPU 1</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="225.20022" y="111.449849" transform="rotate(-0 225.20022 111.449849)">GPU 2</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="225.20022" y="111.449849" transform="rotate(-0 225.20022 111.449849)">GPU 2</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="110.932076" y="225.717994" transform="rotate(-0 110.932076 225.717994)">GPU 3</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="110.932076" y="225.717994" transform="rotate(-0 110.932076 225.717994)">GPU 3</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="110.932076" y="387.317553" transform="rotate(-0 110.932076 387.317553)">GPU 4</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="110.932076" y="387.317553" transform="rotate(-0 110.932076 387.317553)">GPU 4</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="225.20022" y="501.585698" transform="rotate(-0 225.20022 501.585698)">GPU 5</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="225.20022" y="501.585698" transform="rotate(-0 225.20022 501.585698)">GPU 5</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="386.79978" y="501.585698" transform="rotate(-0 386.79978 501.585698)">GPU 6</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="386.79978" y="501.585698" transform="rotate(-0 386.79978 501.585698)">GPU 6</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="501.067924" y="387.317553" transform="rotate(-0 501.067924 387.317553)">GPU 7</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="501.067924" y="387.317553" transform="rotate(-0 501.067924 387.317553)">GPU 7</text>
    </g>
   </g>
  </g>

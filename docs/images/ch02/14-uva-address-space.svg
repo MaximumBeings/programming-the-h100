@@ -160,43 +160,43 @@ z
 " clip-path="url(#pa8d01b2cfb)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="36.903363" transform="rotate(-0 342 36.903363)">UVA — One Virtual Address Space, Tagged by High Bits</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="36.903363" transform="rotate(-0 342 36.903363)">UVA — One Virtual Address Space, Tagged by High Bits</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(102.31193 114.499568)">Global</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(99.08393 124.461189)">(HBM3)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(99.46693 113.75378)">Global</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(95.64893 126.40378)">(HBM3)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 7.480px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="118.875789" y="159.288" transform="rotate(-0 118.875789 159.288)">0x0001'....</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="118.875789" y="159.288" transform="rotate(-0 118.875789 159.288)">0x0001'....</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(244.49447 114.499244)">Local</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(242.90666 124.461514)">(spill)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(242.09947 113.75378)">Local</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(240.45166 126.40378)">(spill)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 7.480px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="258.328421" y="159.288" transform="rotate(-0 258.328421 159.288)">0x0002'....</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="258.328421" y="159.288" transform="rotate(-0 258.328421 159.288)">0x0002'....</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(379.24069 114.499568)">Shared</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(378.76193 124.461189)">(SRAM)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(376.07069 113.75378)">Shared</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(375.37193 126.40378)">(SRAM)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 7.480px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="397.781053" y="159.288" transform="rotate(-0 397.781053 159.288)">0x0003'....</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="397.781053" y="159.288" transform="rotate(-0 397.781053 159.288)">0x0003'....</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="537.233684" y="119.480055" transform="rotate(-0 537.233684 119.480055)">Constant</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="537.233684" y="119.480055" transform="rotate(-0 537.233684 119.480055)">Constant</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 7.480px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="537.233684" y="159.288" transform="rotate(-0 537.233684 159.288)">0x0004'....</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="537.233684" y="159.288" transform="rotate(-0 537.233684 159.288)">0x0004'....</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="52.635789" y="75.36" transform="rotate(-0 52.635789 75.36)">64-bit generic pointer, partitioned by the high bits:</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="52.635789" y="75.36" transform="rotate(-0 52.635789 75.36)">64-bit generic pointer, partitioned by the high bits:</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="342" y="194.796" transform="rotate(-0 342 194.796)">float* ptr = &amp;smem[5]  →  hardware reads the high bits (0x0003) to route to SRAM, then uses the low bits as the byte offset</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="342" y="194.796" transform="rotate(-0 342 194.796)">float* ptr = &amp;smem[5]  →  hardware reads the high bits (0x0003) to route to SRAM, then uses the low bits as the byte offset</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.140px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="342" y="220.62" transform="rotate(-0 342 220.62)">Exact ranges are implementation-defined — never hard-code them; use __cvta_generic_to_shared() etc.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="342" y="220.62" transform="rotate(-0 342 220.62)">Exact ranges are implementation-defined — never hard-code them; use __cvta_generic_to_shared() etc.</text>
    </g>
   </g>
  </g>

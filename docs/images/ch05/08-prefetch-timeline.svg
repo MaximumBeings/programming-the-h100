@@ -224,49 +224,49 @@ Q 156.865331 156.528567 156.865331 112.161999
 " clip-path="url(#pbf916de518)" style="fill: none; stroke: #475569; stroke-width: 1.1; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.491363" transform="rotate(-0 360 37.491363)">cp.async.bulk.prefetch — Warming L2 Ahead of the Real Load</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.491363" transform="rotate(-0 360 37.491363)">cp.async.bulk.prefetch — Warming L2 Ahead of the Real Load</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(49.18663 77.186549)">WITHOUT</text>
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(48.27663 88.349092)">prefetch</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(46.77163 76.76282)">WITHOUT</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(46.27663 89.41282)">prefetch</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(187.26963 77.209453)">compute</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(177.39679 87.570047)">tile K (~1 μs)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(182.22963 76.83915)">compute</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(170.33179 89.48915)">tile K (~1 μs)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(295.91458 77.479438)">issue bulk copy</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(306.44395 88.125375)">for tile K+1</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(286.14458 77.32221)">issue bulk copy</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(299.75895 89.97221)">for tile K+1</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="513.989184" y="82.500047" transform="rotate(-0 513.989184 82.500047)">TMA fetches from HBM — threads idle (~200 μs)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="513.989184" y="82.500047" transform="rotate(-0 513.989184 82.500047)">TMA fetches from HBM — threads idle (~200 μs)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(50.38663 209.666549)">WITH</text>
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(48.27663 220.829092)">prefetch</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(49.05663 209.24282)">WITH</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(46.27663 221.89282)">prefetch</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(185.11611 210.725375)">issue PREFETCH</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(195.04752 220.605375)">for tile K+1</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(174.58611 210.18518)">issue PREFETCH</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(188.36252 222.83518)">for tile K+1</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(324.87699 209.689453)">compute</text>
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(315.00415 220.050047)">tile K (~1 μs)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(319.83699 209.31915)">compute</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(307.93915 221.96915)">tile K (~1 μs)</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(433.52193 209.959438)">issue bulk copy</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(451.39996 220.592312)">→ L2 HIT</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(423.75193 209.79567)">issue bulk copy</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(445.64496 222.44567)">→ L2 HIT</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(573.14758 210.725375)">fast</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(562.86446 219.839438)">delivery</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(570.79758 209.80221)">fast</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(557.86946 222.45221)">delivery</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(79.74630 147.766574)">overlaps</text>
-    <text style="font-weight: 450; font-size: 8.030px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(79.07298 156.528)">compute</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(73.71130 146.77269)">overlaps</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(72.89798 159.42269)">compute</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.020px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="308.88" transform="rotate(-0 360 308.88)">Prefetch is advisory only — if it hasn't finished when the real cp.async.bulk is issued, TMA fetches from HBM anyway with no error, just no benefit.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="308.88" transform="rotate(-0 360 308.88)"><tspan x="360" y="301.73">Prefetch is advisory only — if it hasn&#x27;t finished when the real cp.async.bulk is issued, TMA fetches from HBM anyway with no</tspan><tspan x="360" y="316.03">error, just no benefit.</tspan></text>
    </g>
   </g>
  </g>

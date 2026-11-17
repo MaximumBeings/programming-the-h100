@@ -95,3 +95,5 @@ def run():
 
 if __name__ == '__main__':
     run()
+    from enforce_svg_readability import enforce
+    enforce()

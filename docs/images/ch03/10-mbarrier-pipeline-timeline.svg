@@ -232,42 +232,42 @@ z
 " clip-path="url(#p8127e11dda)" style="fill: #c8e6c9; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="368.895938" y="37.359885" transform="rotate(-0 368.895938 37.359885)">The mbarrier Pipeline — One Tile, Six Steps</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="368.895938" y="37.359885" transform="rotate(-0 368.895938 37.359885)">The mbarrier Pipeline — One Tile, Six Steps</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(91.19827 104.076648)">1</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(86.05216 114.336695)">init</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(90.70327 103.65607)">1</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(84.34716 116.30607)">init</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(175.39429 104.127836)">2</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(156.50973 113.192289)">expect_tx</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(174.65929 103.10946)">2</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(151.01473 115.75946)">expect_tx</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(274.05247 104.072382)">3</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(256.83314 112.746226)">cp.async</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(273.30247 102.85870)">3</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(251.64314 115.50870)">cp.async</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(376.02368 99.006648)">4</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(359.01436 108.230757)">compute</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(358.36479 118.892382)">(tile K−1)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(375.23868 97.07391)">4</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(353.97436 109.72391)">compute</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(353.33479 122.37391)">(tile K−1)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(491.95207 104.021195)">5</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(485.18661 114.281242)">wait</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(491.23207 103.60062)">5</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(482.82661 116.25062)">wait</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(573.51004 99.002382)">6</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(556.39071 108.230757)">compute</text>
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(561.62060 118.892382)">(tile K)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(572.75504 97.07178)">6</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(551.35071 109.72178)">compute</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(557.88560 122.37178)">(tile K)</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #ffffff" x="259.998638" y="231.896082" transform="rotate(-0 259.998638 231.896082)">TMA transferring in background →</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #ffffff" x="259.998638" y="231.896082" transform="rotate(-0 259.998638 231.896082)">TMA transferring in background →</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="539.047969" y="232.967863" transform="rotate(-0 539.047969 232.967863)">done</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="539.047969" y="232.967863" transform="rotate(-0 539.047969 232.967863)">done</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="334.865531" y="277.550609" transform="rotate(-0 334.865531 277.550609)">Step 4 (compute on the PREVIOUS tile) runs while the TMA copy for THIS tile is still in flight — that overlap is the entire point</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="334.865531" y="277.550609" transform="rotate(-0 334.865531 277.550609)">Step 4 (compute on the PREVIOUS tile) runs while the TMA copy for THIS tile is still in flight — that overlap is the entire point</text>
    </g>
   </g>
  </g>

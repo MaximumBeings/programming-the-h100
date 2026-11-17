@@ -420,23 +420,23 @@ z
 " clip-path="url(#pea430a1c4c)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="324" y="37.359885" transform="rotate(-0 324 37.359885)">The Classic "Tile and Compute" Pattern</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="324" y="37.359885" transform="rotate(-0 324 37.359885)">The Classic "Tile and Compute" Pattern</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="69.96" y="96.423652" transform="rotate(-0 69.96 96.423652)">Global Memory [input array, size N]</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start" x="69.96" y="96.423652" transform="rotate(-0 69.96 96.423652)">Global Memory [input array, size N]</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #00695c" x="275.28" y="142.528696" transform="rotate(-0 275.28 142.528696)">Thread block's tile (128 elements)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #00695c" x="275.28" y="142.528696" transform="rotate(-0 275.28 142.528696)">Thread block's tile (128 elements)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(372.80000 160.09545)">each thread loads 1 element,</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(371.95000 168.874435)">then all threads barrier sync</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(350.46000 159.21594)">each thread loads 1 element,</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(350.07500 171.86594)">then all threads barrier sync</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="69.96" y="208.393043" transform="rotate(-0 69.96 208.393043)">Shared Memory [smem, 128 × 4 bytes = 512 bytes]</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="69.96" y="208.393043" transform="rotate(-0 69.96 208.393043)">Shared Memory [smem, 128 × 4 bytes = 512 bytes]</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-style: normal; font-size: 8.140px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="324" y="277.550609" transform="rotate(-0 324 277.550609)">entire tile is here, fast to read — each thread then reads several SMEM elements instead of hitting global memory directly</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="324" y="277.550609" transform="rotate(-0 324 277.550609)"><tspan x="324" y="270.401">entire tile is here, fast to read — each thread then reads several SMEM elements instead of hitting global memory</tspan><tspan x="324" y="284.701">directly</tspan></text>
    </g>
   </g>
  </g>

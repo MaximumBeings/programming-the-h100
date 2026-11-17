@@ -144,21 +144,21 @@ z
 " clip-path="url(#p82903d857a)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 1.6; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="439.38625" y="38.609184" transform="rotate(-0 439.38625 38.609184)">Global Memory Layout for Stream-K Workspace + Lock Array</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="439.38625" y="38.609184" transform="rotate(-0 439.38625 38.609184)">Global Memory Layout for Stream-K Workspace + Lock Array</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #0d47a1" x="335.696028" y="135.544696" transform="rotate(-0 335.696028 135.544696)">workspace[0 .. num_tiles-1]</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #0d47a1" x="335.696028" y="135.544696" transform="rotate(-0 335.696028 135.544696)">workspace[0 .. num_tiles-1]</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 11.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(257.39397 163.039482)">num_tiles × tile_size_bytes</text>
-    <text style="font-weight: 450; font-size: 11.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(211.83237 176.002435)">(one full output-tile accumulator per slot)</text>
+    <text style="font-weight: 450; font-size: 12.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(251.15397 163.35948)">num_tiles × tile_size_bytes</text>
+    <text style="font-weight: 450; font-size: 12.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(202.07737 176.32244)">(one full output-tile accumulator per slot)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 12.627px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a5a00" x="681.330101" y="135.544696" transform="rotate(-0 681.330101 135.544696)">lock[0 .. num_tiles-1]</text>
+    <text style="font-weight: 650; font-size: 13.627px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a5a00" x="681.330101" y="135.544696" transform="rotate(-0 681.330101 135.544696)">lock[0 .. num_tiles-1]</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(618.49762 163.760443)">num_tiles × sizeof(int)</text>
-    <text style="font-weight: 450; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(630.48337 176.002435)">progress counters</text>
+    <text style="font-weight: 450; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(613.26262 163.87644)">num_tiles × sizeof(int)</text>
+    <text style="font-weight: 450; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(626.13337 176.52644)">progress counters</text>
    </g>
    <g id="patch_4">
     <path d="M 751.746561 83.439614
@@ -166,23 +166,23 @@ Q 717.464524 97.317056 683.182487 111.194498
 " style="fill: none; stroke: #616161; stroke-linecap: round"/>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 11.385px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(731.38510 63.74134)">single contiguous</text>
-    <text style="font-weight: 650; font-size: 11.385px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(732.61010 76.944348)">cudaMalloc()</text>
+    <text style="font-weight: 650; font-size: 12.385px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(727.20010 64.06134)">single contiguous</text>
+    <text style="font-weight: 650; font-size: 12.385px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(729.51010 77.26435)">cudaMalloc()</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="93.752177" y="307.490087" transform="rotate(-0 93.752177 307.490087)">First split on tile T:   atomicAdd(&amp;lock[T], k_tile_count)  →  lock[T] = k_tile_count</text>
+    <text style="font-weight: 650; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="93.752177" y="307.490087" transform="rotate(-0 93.752177 307.490087)">First split on tile T:   atomicAdd(&amp;lock[T], k_tile_count)  →  lock[T] = k_tile_count</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a5a00" x="93.752177" y="335.810504" transform="rotate(-0 93.752177 335.810504)">Middle split on tile T:  spin while lock[T] &lt; K_idx,  then atomicAdd(&amp;lock[T], k_tile_count)</text>
+    <text style="font-weight: 650; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a5a00" x="93.752177" y="335.810504" transform="rotate(-0 93.752177 335.810504)">Middle split on tile T:  spin while lock[T] &lt; K_idx,  then atomicAdd(&amp;lock[T], k_tile_count)</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="93.752177" y="364.130922" transform="rotate(-0 93.752177 364.130922)">Final split on tile T:   spin while lock[T] &lt; K_idx,  no further write — epilogue owns the tile</text>
+    <text style="font-weight: 650; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="93.752177" y="364.130922" transform="rotate(-0 93.752177 364.130922)">Final split on tile T:   spin while lock[T] &lt; K_idx,  no further write — epilogue owns the tile</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-style: normal; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="93.752177" y="415.377391" transform="rotate(-0 93.752177 415.377391)">Lock values ONLY INCREASE across the kernel's lifetime — once lock[T] == K_TILES_PER_OUTPUT,</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="93.752177" y="415.377391" transform="rotate(-0 93.752177 415.377391)">Lock values ONLY INCREASE across the kernel's lifetime — once lock[T] == K_TILES_PER_OUTPUT,</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-style: normal; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="93.752177" y="441.000626" transform="rotate(-0 93.752177 441.000626)">that tile's reduction is permanently done; there is no unlock and no decrement.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="93.752177" y="441.000626" transform="rotate(-0 93.752177 441.000626)">that tile's reduction is permanently done; there is no unlock and no decrement.</text>
    </g>
   </g>
  </g>

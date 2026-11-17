@@ -94,6 +94,7 @@ markdown_extensions:
 
 hooks:
   - hooks/fix_anchors.py
+  - hooks/diagram_readability.py
 
 plugins:
   - search:

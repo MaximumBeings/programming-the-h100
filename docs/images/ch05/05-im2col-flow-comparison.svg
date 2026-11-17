@@ -338,57 +338,57 @@ z
 " clip-path="url(#p5de10fc5d0)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="38.181624" transform="rotate(-0 360 38.181624)">im2col — Traditional Flow vs TMA Hardware Convolution</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="38.181624" transform="rotate(-0 360 38.181624)">im2col — Traditional Flow vs TMA Hardware Convolution</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="171.432" y="72.190957" transform="rotate(-0 171.432 72.190957)">Traditional flow (pre-TMA)</text>
+    <text style="font-weight: 650; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="171.432" y="72.190957" transform="rotate(-0 171.432 72.190957)">Traditional flow (pre-TMA)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(139.63766 133.855381)">Input image</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(134.97051 145.481865)">NCHW in HBM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(134.42266 133.94203)">Input image</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(128.48051 146.59203)">NCHW in HBM</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(135.42229 226.7783)">im2col kernel</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(118.19978 237.080027)">(wastes bandwidth)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(129.43729 226.20256)">im2col kernel</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(109.42978 238.85256)">(wastes bandwidth)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(134.83417 318.864735)">im2col matrix</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(121.69310 329.166462)">in HBM (wasteful!)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(128.85417 318.28900)">im2col matrix</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(113.48310 330.93900)">in HBM (wasteful!)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(155.45099 410.877896)">GEMM</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(120.87802 420.904685)">(weights × im2col)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(152.49099 410.16469)">GEMM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(112.61302 422.81469)">(weights × im2col)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(152.85766 502.160269)">Output</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(135.90695 513.023542)">feature maps</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(149.84266 501.86531)">Output</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(130.04195 514.51531)">feature maps</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #0d47a1" x="548.568" y="72.190957" transform="rotate(-0 548.568 72.190957)">TMA im2col flow</text>
+    <text style="font-weight: 650; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #0d47a1" x="548.568" y="72.190957" transform="rotate(-0 548.568 72.190957)">TMA im2col flow</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(516.77366 133.855381)">Input image</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(512.10651 145.481865)">NCHW in HBM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(511.55866 133.94203)">Input image</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(505.61651 146.59203)">NCHW in HBM</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(473.84340 225.941816)">cp.async.bulk.tensor.im2col</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(461.20948 237.037878)">ONE instruction, no intermediate</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(461.31340 225.76325)">cp.async.bulk.tensor.im2col</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(446.78448 238.41325)">ONE instruction, no intermediate</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(494.85214 318.864735)">Column tile in SMEM</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(504.14416 328.818251)">ready for GEMM!</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(485.67714 318.11489)">Column tile in SMEM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(496.58416 330.76489)">ready for GEMM!</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(523.06357 410.551732)">WGMMA /</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(532.58699 421.667896)">GEMM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(518.49857 410.38321)">WGMMA /</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(529.62699 423.03321)">GEMM</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(529.99366 502.160269)">Output</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(513.04295 513.023542)">feature maps</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(526.97866 501.86531)">Output</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(507.17795 514.51531)">feature maps</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(101.01314 557.689826)">TMA reads pixels using convolution-window logic and unrolls them directly into SMEM as a column layout —</text>
-    <text style="font-weight: 450; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(155.46894 570.139826)">eliminating both the intermediate HBM buffer and the separate im2col kernel launch.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(52.77814 558.18823)">TMA reads pixels using convolution-window logic and unrolls them directly into SMEM as a column layout —</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(117.98894 570.83823)">eliminating both the intermediate HBM buffer and the separate im2col kernel launch.</text>
    </g>
   </g>
  </g>

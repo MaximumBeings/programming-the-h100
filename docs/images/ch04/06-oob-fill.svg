@@ -168,30 +168,30 @@ z
 " clip-path="url(#pa205cf19cf)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">Out-of-Bounds Fill — 128×64 Tile Requested From a 100×50 Tensor</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.603363" transform="rotate(-0 360 37.603363)">Out-of-Bounds Fill — 128×64 Tile Requested From a 100×50 Tensor</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(256.65089 167.55668)">valid data</text>
-    <text style="font-weight: 650; font-size: 11.000px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(251.28136 179.559414)">(from HBM)</text>
+    <text style="font-weight: 650; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(254.37589 167.55305)">valid data</text>
+    <text style="font-weight: 650; font-size: 12px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(248.53136 180.20305)">(from HBM)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(527.87464 168.066846)">OOB</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(525.14128 178.26917)">filled</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(526.05964 167.37101)">OOB</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(523.23628 180.02101)">filled</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(277.23870 287.874846)">OOB</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(274.50534 298.07717)">filled</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(275.42370 287.17901)">OOB</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(272.60034 299.82901)">filled</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(529.18589 283.714484)">OOB</text>
-    <text style="font-weight: 650; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(526.76675 292.716535)">filled</text>
-    <text style="font-weight: 650; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(519.30159 301.718)">(corner)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(526.17589 280.94624)">OOB</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(523.61675 293.59624)">filled</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(514.03159 306.24624)">(corner)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="343.290937" y="57.392" transform="rotate(-0 343.290937 57.392)">128 columns requested × 64 rows requested (boxDim)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="343.290937" y="57.392" transform="rotate(-0 343.290937 57.392)">128 columns requested × 64 rows requested (boxDim)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="353.584" transform="rotate(-0 360 353.584)">Global tensor is only 100 cols × 50 rows — TMA fills everything past that edge with zero (or NaN→0 under FMA) at zero software cost</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="353.584" transform="rotate(-0 360 353.584)"><tspan x="360" y="346.434">Global tensor is only 100 cols × 50 rows — TMA fills everything past that edge with zero (or NaN→0 under FMA) at zero software</tspan><tspan x="360" y="360.734">cost</tspan></text>
    </g>
   </g>
  </g>

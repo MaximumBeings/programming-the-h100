@@ -276,69 +276,69 @@ L 575.693122 271.171835
 " clip-path="url(#p82516e14c4)" style="fill: none; stroke: #616161; stroke-width: 1.3; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="525.6" y="38.559381" transform="rotate(-0 525.6 38.559381)">The Three Split Roles — One Output Tile, 90 K-Tiles, 3 CTAs</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="525.6" y="38.559381" transform="rotate(-0 525.6 38.559381)">The Three Split Roles — One Output Tile, 90 K-Tiles, 3 CTAs</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(23.74763 93.013442)">CTA A</text>
-    <text style="font-weight: 650; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(22.38411 106.816586)">[0,30)</text>
+    <text style="font-weight: 650; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(22.22763 93.33344)">CTA A</text>
+    <text style="font-weight: 650; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(20.93411 107.13659)">[0,30)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(23.96755 200.673078)">CTA B</text>
-    <text style="font-weight: 650; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(21.89411 214.476222)">[30,60)</text>
+    <text style="font-weight: 650; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(22.46755 200.99308)">CTA B</text>
+    <text style="font-weight: 650; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a5a00" transform="translate(20.13411 214.79622)">[30,60)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(23.82755 308.332714)">CTA C</text>
-    <text style="font-weight: 650; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(21.87911 322.135859)">[60,90)</text>
+    <text style="font-weight: 650; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(22.28755 308.65271)">CTA C</text>
+    <text style="font-weight: 650; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(20.11911 322.45586)">[60,90)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(182.94388 92.401773)">compute [0,30)</text>
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(212.79300 107.381773)">(FIRST)</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(179.27388 92.72177)">compute [0,30)</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(211.02300 107.70177)">(FIRST)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 11.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(396.36158 92.551398)">write workspace</text>
-    <text style="font-weight: 650; font-size: 11.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(381.80167 107.637648)">atomicAdd lock+=30</text>
+    <text style="font-weight: 650; font-size: 12.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(392.44158 92.87140)">write workspace</text>
+    <text style="font-weight: 650; font-size: 12.178px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(376.84167 107.95765)">atomicAdd lock+=30</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-style: normal; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(572.32438 92.983753)">DONE — no wait,</text>
-    <text style="font-weight: 450; font-style: normal; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(567.47938 105.706652)">nobody wrote before you</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(568.26438 93.30375)">DONE — no wait,</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #00695c" transform="translate(561.51438 106.02665)">nobody wrote before you</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(178.56750 200.061409)">compute [30,60)</text>
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(205.75425 215.041409)">(MIDDLE)</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(174.58750 200.38141)">compute [30,60)</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(203.47925 215.36141)">(MIDDLE)</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(393.98721 200.435472)">spin:</text>
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(380.65464 214.683597)">lock&lt;30?</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(392.84221 200.75547)">spin:</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(378.46964 215.00360)">lock&lt;30?</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(517.66232 200.771753)">read+add,</text>
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(498.15240 213.695472)">write workspace</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(515.22232 201.09175)">read+add,</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(494.22240 214.01547)">write workspace</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(671.92026 201.423597)">atomicAdd</text>
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(674.87610 214.683597)">lock+=30</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(669.37026 201.74360)">atomicAdd</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(672.61610 215.00360)">lock+=30</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(178.55250 307.721045)">compute [60,90)</text>
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(211.61450 322.701045)">(FINAL)</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(174.57250 308.04104)">compute [60,90)</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(209.79950 323.02105)">(FINAL)</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(393.98721 308.095108)">spin:</text>
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(380.64464 322.343233)">lock&lt;60?</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(392.84221 308.41511)">spin:</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(378.44964 322.66323)">lock&lt;60?</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(519.70452 309.083233)">read+add</text>
-    <text style="font-weight: 650; font-size: 10.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(507.84625 321.743186)">(final reduce)</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(517.40952 309.40323)">read+add</text>
+    <text style="font-weight: 650; font-size: 11.557px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(504.66125 322.06319)">(final reduce)</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(676.42349 307.798077)">run_epilogue()</text>
-    <text style="font-weight: 650; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(680.82924 321.578077)">→ write C_tile</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(673.03849 308.11808)">run_epilogue()</text>
+    <text style="font-weight: 650; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(677.60924 321.89808)">→ write C_tile</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.956164" y="417.888" transform="rotate(-0 31.956164 417.888)">KEY INSIGHT: epilogue ownership (alpha, beta, bias, activation) is ALWAYS and ONLY the final split.</text>
+    <text style="font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.956164" y="417.888" transform="rotate(-0 31.956164 417.888)">KEY INSIGHT: epilogue ownership (alpha, beta, bias, activation) is ALWAYS and ONLY the final split.</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-style: normal; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.956164" y="440.0928" transform="rotate(-0 31.956164 440.0928)">First and middle splits never touch the output tensor — only workspace and the lock counter.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.956164" y="440.0928" transform="rotate(-0 31.956164 440.0928)">First and middle splits never touch the output tensor — only workspace and the lock counter.</text>
    </g>
   </g>
  </g>

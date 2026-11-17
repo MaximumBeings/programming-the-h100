@@ -36,6 +36,9 @@ jobs:
       - name: Verify published execution records
         run: python3 tools/verify_validation_records.py
 
+      - name: Verify SVG readability
+        run: python3 tools/verify_svg_readability.py
+
       - name: Build strictly
         run: mkdocs build --strict
 

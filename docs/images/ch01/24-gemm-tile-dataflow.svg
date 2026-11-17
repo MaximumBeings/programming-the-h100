@@ -246,30 +246,30 @@ z
 " clip-path="url(#p807d9ce715)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="378" y="37.891599" transform="rotate(-0 378 37.891599)">One GEMM Tile, Start to Finish</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="378" y="37.891599" transform="rotate(-0 378 37.891599)">One GEMM Tile, Start to Finish</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(319.18169 100.235415)">1. TMA descriptor setup</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(221.93014 111.415415)">CPU builds descriptor (base ptr, dims, strides, box) -&gt; PCIe 5.0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(310.48669 99.99321)">1. TMA descriptor setup</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(198.86514 112.64321)">CPU builds descriptor (base ptr, dims, strides, box) -&gt; PCIe 5.0</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(295.64475 177.726474)">2. Global -&gt; Shared (TMA, async)</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(199.41844 188.906474)">HBM3 -&gt; Memory Controller -&gt; L2 (50 MB) -&gt; Shared Memory (228 KB)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(283.41975 177.48427)">2. Global -&gt; Shared (TMA, async)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(173.12844 190.13427)">HBM3 -&gt; Memory Controller -&gt; L2 (50 MB) -&gt; Shared Memory (228 KB)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(322.26483 255.217533)">3. Shared -&gt; Registers</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(278.10489 266.397533)">Warp loads, 1 cycle if bank-conflict-free</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(314.03483 254.97533)">3. Shared -&gt; Registers</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(263.45989 267.62533)">Warp loads, 1 cycle if bank-conflict-free</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(311.72800 332.703889)">4. Compute (Tensor Cores)</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(187.77948 343.888592)">WGMMA: operands in, D = A x B + C out, 4,096-8,192 FLOPS/cycle/SM dense</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(301.68800 332.46404)">4. Compute (Tensor Cores)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(159.26948 345.11404)">WGMMA: operands in, D = A x B + C out, 4,096-8,192 FLOPS/cycle/SM dense</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(282.93752 410.199651)">5. Registers -&gt; Shared -&gt; L2 -&gt; HBM3</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(217.56833 421.774041)">Write-back, L2 coalesces scattered writes into clean HBM bursts</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(268.99252 410.15465)">5. Registers -&gt; Shared -&gt; L2 -&gt; HBM3</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(193.89833 422.80464)">Write-back, L2 coalesces scattered writes into clean HBM bursts</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="378" y="446.112239" transform="rotate(-0 378 446.112239)">Steps 2 and 4 overlap for different tiles -- that overlap is the H100's core performance trick.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="378" y="446.112239" transform="rotate(-0 378 446.112239)">Steps 2 and 4 overlap for different tiles -- that overlap is the H100's core performance trick.</text>
    </g>
   </g>
  </g>

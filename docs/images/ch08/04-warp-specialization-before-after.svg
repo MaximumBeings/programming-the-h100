@@ -544,196 +544,196 @@ z
 " clip-path="url(#p745e87c6c4)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="449.001562" y="38.710099" transform="rotate(-0 449.001562 38.710099)">Warp Specialization — Before and After</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="449.001562" y="38.710099" transform="rotate(-0 449.001562 38.710099)">Warp Specialization — Before and After</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 13.765px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="65.013047" y="54.816632" transform="rotate(-0 65.013047 54.816632)">WITHOUT specialization — every warp does both load and math</text>
+    <text style="font-weight: 650; font-size: 14.765px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="65.013047" y="54.816632" transform="rotate(-0 65.013047 54.816632)">WITHOUT specialization — every warp does both load and math</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #475569" x="51.539766" y="98.156084" transform="rotate(-0 51.539766 98.156084)">Warp 0</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #475569" x="51.539766" y="98.156084" transform="rotate(-0 51.539766 98.156084)">Warp 0</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="108.801211" y="99.946679" transform="rotate(-0 108.801211 99.946679)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="108.801211" y="99.946679" transform="rotate(-0 108.801211 99.946679)">LOAD</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="149.221055" y="99.946679" transform="rotate(-0 149.221055 99.946679)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="149.221055" y="99.946679" transform="rotate(-0 149.221055 99.946679)">LOAD</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="203.11418" y="99.94705" transform="rotate(-0 203.11418 99.94705)">wait</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="203.11418" y="99.94705" transform="rotate(-0 203.11418 99.94705)">wait</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="257.007305" y="99.946679" transform="rotate(-0 257.007305 99.946679)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="257.007305" y="99.946679" transform="rotate(-0 257.007305 99.946679)">MMA</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="297.427148" y="99.946679" transform="rotate(-0 297.427148 99.946679)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="297.427148" y="99.946679" transform="rotate(-0 297.427148 99.946679)">MMA</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="337.846992" y="99.946679" transform="rotate(-0 337.846992 99.946679)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="337.846992" y="99.946679" transform="rotate(-0 337.846992 99.946679)">LOAD</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="391.740117" y="99.94705" transform="rotate(-0 391.740117 99.94705)">wait</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="391.740117" y="99.94705" transform="rotate(-0 391.740117 99.94705)">wait</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #475569" x="51.539766" y="137.432463" transform="rotate(-0 51.539766 137.432463)">Warp 1</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #475569" x="51.539766" y="137.432463" transform="rotate(-0 51.539766 137.432463)">Warp 1</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="142.484414" y="139.223058" transform="rotate(-0 142.484414 139.223058)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="142.484414" y="139.223058" transform="rotate(-0 142.484414 139.223058)">LOAD</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="182.904258" y="139.223058" transform="rotate(-0 182.904258 139.223058)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="182.904258" y="139.223058" transform="rotate(-0 182.904258 139.223058)">LOAD</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="236.797383" y="139.223429" transform="rotate(-0 236.797383 139.223429)">wait</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="236.797383" y="139.223429" transform="rotate(-0 236.797383 139.223429)">wait</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="290.690508" y="139.223058" transform="rotate(-0 290.690508 139.223058)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="290.690508" y="139.223058" transform="rotate(-0 290.690508 139.223058)">MMA</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="331.110352" y="139.223058" transform="rotate(-0 331.110352 139.223058)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="331.110352" y="139.223058" transform="rotate(-0 331.110352 139.223058)">MMA</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="371.530195" y="139.223058" transform="rotate(-0 371.530195 139.223058)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="371.530195" y="139.223058" transform="rotate(-0 371.530195 139.223058)">LOAD</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="411.950039" y="139.223429" transform="rotate(-0 411.950039 139.223429)">wait</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="411.950039" y="139.223429" transform="rotate(-0 411.950039 139.223429)">wait</text>
    </g>
    <g id="text_19">
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #475569" x="51.539766" y="176.708842" transform="rotate(-0 51.539766 176.708842)">Warp 2</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #475569" x="51.539766" y="176.708842" transform="rotate(-0 51.539766 176.708842)">Warp 2</text>
    </g>
    <g id="text_20">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="176.167617" y="178.499437" transform="rotate(-0 176.167617 178.499437)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="176.167617" y="178.499437" transform="rotate(-0 176.167617 178.499437)">LOAD</text>
    </g>
    <g id="text_21">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="216.587461" y="178.499437" transform="rotate(-0 216.587461 178.499437)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="216.587461" y="178.499437" transform="rotate(-0 216.587461 178.499437)">LOAD</text>
    </g>
    <g id="text_22">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="270.480586" y="178.499808" transform="rotate(-0 270.480586 178.499808)">wait</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="270.480586" y="178.499808" transform="rotate(-0 270.480586 178.499808)">wait</text>
    </g>
    <g id="text_23">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="324.373711" y="178.499437" transform="rotate(-0 324.373711 178.499437)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="324.373711" y="178.499437" transform="rotate(-0 324.373711 178.499437)">MMA</text>
    </g>
    <g id="text_24">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="364.793555" y="178.499437" transform="rotate(-0 364.793555 178.499437)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="364.793555" y="178.499437" transform="rotate(-0 364.793555 178.499437)">MMA</text>
    </g>
    <g id="text_25">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="398.476758" y="178.499437" transform="rotate(-0 398.476758 178.499437)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="398.476758" y="178.499437" transform="rotate(-0 398.476758 178.499437)">LOAD</text>
    </g>
    <g id="text_26">
-    <text style="font-weight: 450; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #475569" x="51.539766" y="215.985221" transform="rotate(-0 51.539766 215.985221)">Warp 3</text>
+    <text style="font-weight: 450; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #475569" x="51.539766" y="215.985221" transform="rotate(-0 51.539766 215.985221)">Warp 3</text>
    </g>
    <g id="text_27">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="216.587461" y="217.775816" transform="rotate(-0 216.587461 217.775816)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="216.587461" y="217.775816" transform="rotate(-0 216.587461 217.775816)">LOAD</text>
    </g>
    <g id="text_28">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="257.007305" y="217.775816" transform="rotate(-0 257.007305 217.775816)">LOAD</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="257.007305" y="217.775816" transform="rotate(-0 257.007305 217.775816)">LOAD</text>
    </g>
    <g id="text_29">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="310.90043" y="217.776187" transform="rotate(-0 310.90043 217.776187)">wait</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="310.90043" y="217.776187" transform="rotate(-0 310.90043 217.776187)">wait</text>
    </g>
    <g id="text_30">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="364.793555" y="217.775816" transform="rotate(-0 364.793555 217.775816)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="364.793555" y="217.775816" transform="rotate(-0 364.793555 217.775816)">MMA</text>
    </g>
    <g id="text_31">
-    <text style="font-weight: 450; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="405.213398" y="217.775816" transform="rotate(-0 405.213398 217.775816)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="405.213398" y="217.775816" transform="rotate(-0 405.213398 217.775816)">MMA</text>
    </g>
    <g id="text_32">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="65.013047" y="298.601053" transform="rotate(-0 65.013047 298.601053)">Problems: wait cycles block math issue · registers split between load state</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="65.013047" y="298.601053" transform="rotate(-0 65.013047 298.601053)">Problems: wait cycles block math issue · registers split between load state</text>
    </g>
    <g id="text_33">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="65.013047" y="318.916421" transform="rotate(-0 65.013047 318.916421)">and accumulators → spilling · compiler can't schedule around mixed roles</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="65.013047" y="318.916421" transform="rotate(-0 65.013047 318.916421)">and accumulators → spilling · compiler can't schedule around mixed roles</text>
    </g>
    <g id="text_34">
-    <text style="font-weight: 650; font-size: 13.765px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="65.013047" y="359.547158" transform="rotate(-0 65.013047 359.547158)">WITH specialization — permanent roles, same SM, overlapped</text>
+    <text style="font-weight: 650; font-size: 14.765px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="65.013047" y="359.547158" transform="rotate(-0 65.013047 359.547158)">WITH specialization — permanent roles, same SM, overlapped</text>
    </g>
    <g id="text_35">
-    <text style="font-weight: 650; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #0d47a1" x="203.11418" y="385.957137" transform="rotate(-0 203.11418 385.957137)">WG0 (Producer)</text>
+    <text style="font-weight: 650; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #0d47a1" x="203.11418" y="385.957137" transform="rotate(-0 203.11418 385.957137)">WG0 (Producer)</text>
    </g>
    <g id="text_36">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="242.186695" y="387.98152" transform="rotate(-0 242.186695 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="242.186695" y="387.98152" transform="rotate(-0 242.186695 387.98152)">TMA</text>
    </g>
    <g id="text_37">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="300.121805" y="387.98152" transform="rotate(-0 300.121805 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="300.121805" y="387.98152" transform="rotate(-0 300.121805 387.98152)">TMA</text>
    </g>
    <g id="text_38">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="358.056914" y="387.98152" transform="rotate(-0 358.056914 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="358.056914" y="387.98152" transform="rotate(-0 358.056914 387.98152)">TMA</text>
    </g>
    <g id="text_39">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.992023" y="387.98152" transform="rotate(-0 415.992023 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.992023" y="387.98152" transform="rotate(-0 415.992023 387.98152)">TMA</text>
    </g>
    <g id="text_40">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="473.927133" y="387.98152" transform="rotate(-0 473.927133 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="473.927133" y="387.98152" transform="rotate(-0 473.927133 387.98152)">TMA</text>
    </g>
    <g id="text_41">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="531.862242" y="387.98152" transform="rotate(-0 531.862242 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="531.862242" y="387.98152" transform="rotate(-0 531.862242 387.98152)">TMA</text>
    </g>
    <g id="text_42">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="589.797352" y="387.98152" transform="rotate(-0 589.797352 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="589.797352" y="387.98152" transform="rotate(-0 589.797352 387.98152)">TMA</text>
    </g>
    <g id="text_43">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="647.732461" y="387.98152" transform="rotate(-0 647.732461 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="647.732461" y="387.98152" transform="rotate(-0 647.732461 387.98152)">TMA</text>
    </g>
    <g id="text_44">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="705.66757" y="387.98152" transform="rotate(-0 705.66757 387.98152)">TMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="705.66757" y="387.98152" transform="rotate(-0 705.66757 387.98152)">TMA</text>
    </g>
    <g id="text_45">
-    <text style="font-weight: 650; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #1b5e20" x="203.11418" y="425.233516" transform="rotate(-0 203.11418 425.233516)">WG1 (Consumer)</text>
+    <text style="font-weight: 650; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #1b5e20" x="203.11418" y="425.233516" transform="rotate(-0 203.11418 425.233516)">WG1 (Consumer)</text>
    </g>
    <g id="text_46">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="242.186695" y="427.257899" transform="rotate(-0 242.186695 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="242.186695" y="427.257899" transform="rotate(-0 242.186695 427.257899)">MMA</text>
    </g>
    <g id="text_47">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="300.121805" y="427.257899" transform="rotate(-0 300.121805 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="300.121805" y="427.257899" transform="rotate(-0 300.121805 427.257899)">MMA</text>
    </g>
    <g id="text_48">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="358.056914" y="427.257899" transform="rotate(-0 358.056914 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="358.056914" y="427.257899" transform="rotate(-0 358.056914 427.257899)">MMA</text>
    </g>
    <g id="text_49">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.992023" y="427.257899" transform="rotate(-0 415.992023 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.992023" y="427.257899" transform="rotate(-0 415.992023 427.257899)">MMA</text>
    </g>
    <g id="text_50">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="473.927133" y="427.257899" transform="rotate(-0 473.927133 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="473.927133" y="427.257899" transform="rotate(-0 473.927133 427.257899)">MMA</text>
    </g>
    <g id="text_51">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="531.862242" y="427.257899" transform="rotate(-0 531.862242 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="531.862242" y="427.257899" transform="rotate(-0 531.862242 427.257899)">MMA</text>
    </g>
    <g id="text_52">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="589.797352" y="427.257899" transform="rotate(-0 589.797352 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="589.797352" y="427.257899" transform="rotate(-0 589.797352 427.257899)">MMA</text>
    </g>
    <g id="text_53">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="647.732461" y="427.257899" transform="rotate(-0 647.732461 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="647.732461" y="427.257899" transform="rotate(-0 647.732461 427.257899)">MMA</text>
    </g>
    <g id="text_54">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="705.66757" y="427.257899" transform="rotate(-0 705.66757 427.257899)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="705.66757" y="427.257899" transform="rotate(-0 705.66757 427.257899)">MMA</text>
    </g>
    <g id="text_55">
-    <text style="font-weight: 650; font-size: 12.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #1b5e20" x="203.11418" y="464.509895" transform="rotate(-0 203.11418 464.509895)">WG2 (Consumer)</text>
+    <text style="font-weight: 650; font-size: 13.006px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: end; fill: #1b5e20" x="203.11418" y="464.509895" transform="rotate(-0 203.11418 464.509895)">WG2 (Consumer)</text>
    </g>
    <g id="text_56">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="242.186695" y="466.534278" transform="rotate(-0 242.186695 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="242.186695" y="466.534278" transform="rotate(-0 242.186695 466.534278)">MMA</text>
    </g>
    <g id="text_57">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="300.121805" y="466.534278" transform="rotate(-0 300.121805 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="300.121805" y="466.534278" transform="rotate(-0 300.121805 466.534278)">MMA</text>
    </g>
    <g id="text_58">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="358.056914" y="466.534278" transform="rotate(-0 358.056914 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="358.056914" y="466.534278" transform="rotate(-0 358.056914 466.534278)">MMA</text>
    </g>
    <g id="text_59">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.992023" y="466.534278" transform="rotate(-0 415.992023 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.992023" y="466.534278" transform="rotate(-0 415.992023 466.534278)">MMA</text>
    </g>
    <g id="text_60">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="473.927133" y="466.534278" transform="rotate(-0 473.927133 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="473.927133" y="466.534278" transform="rotate(-0 473.927133 466.534278)">MMA</text>
    </g>
    <g id="text_61">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="531.862242" y="466.534278" transform="rotate(-0 531.862242 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="531.862242" y="466.534278" transform="rotate(-0 531.862242 466.534278)">MMA</text>
    </g>
    <g id="text_62">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="589.797352" y="466.534278" transform="rotate(-0 589.797352 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="589.797352" y="466.534278" transform="rotate(-0 589.797352 466.534278)">MMA</text>
    </g>
    <g id="text_63">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="647.732461" y="466.534278" transform="rotate(-0 647.732461 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="647.732461" y="466.534278" transform="rotate(-0 647.732461 466.534278)">MMA</text>
    </g>
    <g id="text_64">
-    <text style="font-weight: 450; font-size: 10.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="705.66757" y="466.534278" transform="rotate(-0 705.66757 466.534278)">MMA</text>
+    <text style="font-weight: 450; font-size: 11.764px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="705.66757" y="466.534278" transform="rotate(-0 705.66757 466.534278)">MMA</text>
    </g>
   </g>
  </g>

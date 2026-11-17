@@ -813,19 +813,19 @@ z
 " clip-path="url(#p24bfcd939e)" style="fill: #fafafa; stroke: #d8d8d8; stroke-width: 0.6; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.653363" transform="rotate(-0 342 37.653363)">.tile Mode — Dense Rectangular Fetch</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.653363" transform="rotate(-0 342 37.653363)">.tile Mode — Dense Rectangular Fetch</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.450px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="342" y="54.156857" transform="rotate(-0 342 54.156857)">Global Matrix [MAT_ROWS × MAT_COLS]</text>
+    <text style="font-weight: 650; font-size: 11.45px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="342" y="54.156857" transform="rotate(-0 342 54.156857)">Global Matrix [MAT_ROWS × MAT_COLS]</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="191.631849" y="350.984571" transform="rotate(-0 191.631849 350.984571)">columns 0–63</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="191.631849" y="350.984571" transform="rotate(-0 191.631849 350.984571)">columns 0–63</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.580px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="511.16417" y="350.984571" transform="rotate(-0 511.16417 350.984571)">columns 96+</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="511.16417" y="350.984571" transform="rotate(-0 511.16417 350.984571)">columns 96+</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 8.910px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="367.660286" transform="rotate(-0 342 367.660286)">TMA computes element[r][c] = base + (row+r)·stride + (col+c)·sizeof(T), for r∈[0,15], c∈[0,31] — a nested loop run entirely by hardware; thread involvement is zero.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="367.660286" transform="rotate(-0 342 367.660286)"><tspan x="342" y="360.51">TMA computes element[r][c] = base + (row+r)·stride + (col+c)·sizeof(T), for r∈[0,15], c∈[0,31] — a nested loop run entirely</tspan><tspan x="342" y="374.81">by hardware; thread involvement is zero.</tspan></text>
    </g>
    <g id="patch_87">
     <path d="M 266.815924 293.810694
@@ -837,10 +837,10 @@ z
 " clip-path="url(#p24bfcd939e)" style="fill: none; stroke: #1b5e20; stroke-width: 2.4; stroke-linejoin: miter"/>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(314.76422 206.697628)">tile at (col=64, row=32)</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(334.12891 216.659897)">boxDim={32,16}</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(332.92494 226.622167)">32 cols × 16 rows</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(338.85810 236.584436)">= 512 elements</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(304.26422 203.26443)">tile at (col=64, row=32)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(326.92891 215.91443)">boxDim={32,16}</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(325.12994 228.56443)">32 cols × 16 rows</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #1b5e20" transform="translate(332.15310 241.21443)">= 512 elements</text>
    </g>
   </g>
  </g>

@@ -2240,16 +2240,16 @@ z
 " clip-path="url(#pf281d3ee47)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.4; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.1475" y="38.559381" transform="rotate(-0 415.1475 38.559381)">Wave Quantization — 133 Tiles on 132 SMs, Non-Persistent Launch</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="415.1475" y="38.559381" transform="rotate(-0 415.1475 38.559381)">Wave Quantization — 133 Tiles on 132 SMs, Non-Persistent Launch</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.360042" y="71.358545" transform="rotate(-0 31.360042 71.358545)">Wave 1 — all 132 SMs busy</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.360042" y="71.358545" transform="rotate(-0 31.360042 71.358545)">Wave 1 — all 132 SMs busy</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.360042" y="234.193745" transform="rotate(-0 31.360042 234.193745)">132 SMs × 1 tile each → finishes quickly, 100% utilized</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.360042" y="234.193745" transform="rotate(-0 31.360042 234.193745)">132 SMs × 1 tile each → finishes quickly, 100% utilized</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.360042" y="256.398545" transform="rotate(-0 31.360042 256.398545)">Wave 2 — only 1 SM has work</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.360042" y="256.398545" transform="rotate(-0 31.360042 256.398545)">Wave 2 — only 1 SM has work</text>
    </g>
    <g id="patch_266">
     <path d="M 62.283348 339.090554
@@ -2261,16 +2261,16 @@ L 52.100263 290.025325
 " style="fill: none; stroke: #616161; stroke-linecap: round"/>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="33.150744" y="351.313455" transform="rotate(-0 33.150744 351.313455)">1 SM busy</text>
+    <text style="font-weight: 650; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #1b5e20" x="33.150744" y="351.313455" transform="rotate(-0 33.150744 351.313455)">1 SM busy</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="236.960466" y="372.132655" transform="rotate(-0 236.960466 372.132655)">131 SMs IDLE — wave efficiency = 1/132 = 0.8%</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="236.960466" y="372.132655" transform="rotate(-0 236.960466 372.132655)">131 SMs IDLE — wave efficiency = 1/132 = 0.8%</text>
    </g>
    <g id="text_7">
-    <text style="font-style: normal; font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.360042" y="404.430545" transform="rotate(-0 31.360042 404.430545)">Persistent scheduling (grid_size = num_SMs, each CTA loops over tile_idx, tile_idx+N, ...)</text>
+    <text style="font-style: normal; font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.360042" y="404.430545" transform="rotate(-0 31.360042 404.430545)">Persistent scheduling (grid_size = num_SMs, each CTA loops over tile_idx, tile_idx+N, ...)</text>
    </g>
    <g id="text_8">
-    <text style="font-style: normal; font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.360042" y="426.635345" transform="rotate(-0 31.360042 426.635345)">removes the "last wave" entirely: every SM does ⌈133/132⌉ or ⌊133/132⌋ tiles — no SM sits idle.</text>
+    <text style="font-style: normal; font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.360042" y="426.635345" transform="rotate(-0 31.360042 426.635345)">removes the "last wave" entirely: every SM does ⌈133/132⌉ or ⌊133/132⌋ tiles — no SM sits idle.</text>
    </g>
   </g>
  </g>

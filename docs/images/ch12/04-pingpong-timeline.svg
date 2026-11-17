@@ -293,7 +293,7 @@ L -3.5 0
       </g>
      </g>
      <g id="text_1">
-<text transform="translate(7.2 119.885449)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="#172033">WG1</text>
+<text transform="translate(5.60000 120.20545)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">WG1</text>
 </g>
     </g>
     <g id="ytick_2">
@@ -303,17 +303,17 @@ L -3.5 0
       </g>
      </g>
      <g id="text_2">
-<text transform="translate(7.2 185.089074)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="#172033">WG2</text>
+<text transform="translate(5.44000 185.40907)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">WG2</text>
 </g>
     </g>
    </g>
    <g id="text_3">
-<text transform="translate(576.967107 140.60225)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.8" font-weight="400" font-style="normal" fill="#475569">holes</text>
-<text transform="translate(576.967107 151.164656)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.8" font-weight="400" font-style="normal" fill="#475569">coincide</text>
-<text transform="translate(576.967107 161.727062)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.8" font-weight="400" font-style="normal" fill="#475569">~66% busy</text>
+<text transform="translate(574.16711 138.83466)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">holes</text>
+<text transform="translate(572.55211 151.48466)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">coincide</text>
+<text transform="translate(570.95211 164.13466)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">~66% busy</text>
 </g>
    <g id="text_4">
-<text transform="translate(36.998516 77.67475)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#172033">WITHOUT ping-pong — both warpgroups in lockstep</text>
+<text transform="translate(24.46352 77.99475)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="#172033">WITHOUT ping-pong — both warpgroups in lockstep</text>
 </g>
   </g>
   <g id="axes_2">
@@ -470,7 +470,7 @@ z
       </g>
      </g>
      <g id="text_5">
-<text transform="translate(7.2 275.451449)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="#172033">WG1</text>
+<text transform="translate(5.60000 275.77145)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">WG1</text>
 </g>
     </g>
     <g id="ytick_4">
@@ -480,21 +480,21 @@ z
       </g>
      </g>
      <g id="text_6">
-<text transform="translate(7.2 340.655074)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9.5" font-weight="400" font-style="normal" fill="#172033">WG2</text>
+<text transform="translate(5.44000 340.97507)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">WG2</text>
 </g>
     </g>
    </g>
    <g id="text_7">
-<text transform="translate(576.967107 296.16825)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.8" font-weight="400" font-style="normal" fill="#475569">holes</text>
-<text transform="translate(576.967107 306.730656)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.8" font-weight="400" font-style="normal" fill="#475569">interleave</text>
-<text transform="translate(576.967107 317.293062)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="8.8" font-weight="400" font-style="normal" fill="#475569">~85% busy</text>
+<text transform="translate(574.16711 294.40066)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">holes</text>
+<text transform="translate(571.84211 307.05066)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">interleave</text>
+<text transform="translate(570.99211 319.70066)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#475569">~85% busy</text>
 </g>
    <g id="text_8">
-<text transform="translate(36.998516 233.24075)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="700" font-style="normal" fill="#172033">WITH ping-pong — WG2 offset by half a phase</text>
+<text transform="translate(25.81852 233.56075)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="12" font-weight="700" font-style="normal" fill="#172033">WITH ping-pong — WG2 offset by half a phase</text>
 </g>
   </g>
   <g id="text_9">
-<text transform="translate(57.09868 17.305922)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="13.3" font-weight="700" font-style="normal" fill="#172033">Ping-Pong Scheduling — Two Consumer Warpgroups, With and Without the Stagger</text>
+<text transform="translate(37.30868 17.62592)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="14.3" font-weight="700" font-style="normal" fill="#172033">Ping-Pong Scheduling — Two Consumer Warpgroups, With and Without the Stagger</text>
 </g>
   <g id="legend_1">
    <g id="patch_39">
@@ -506,7 +506,7 @@ z
 " style="fill: #e3f2fd; stroke: #0d47a1; stroke-linejoin: miter"/>
    </g>
    <g id="text_10">
-<text transform="translate(137.936781 405.177891)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="#172033">GEMM (tensor cores busy)</text>
+<text transform="translate(125.23678 405.49789)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">GEMM (tensor cores busy)</text>
 </g>
    <g id="patch_40">
     <path d="M 274.012563 405.177891
@@ -517,7 +517,7 @@ z
 " style="fill: #fff3e0; stroke: #8a5a00; stroke-linejoin: miter"/>
    </g>
    <g id="text_11">
-<text transform="translate(299.212562 405.177891)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="9" font-weight="400" font-style="normal" fill="#172033">softmax (SFU; tensor cores idle unless hidden)</text>
+<text transform="translate(277.00256 405.49789)" font-family="BookDiagram, Inter, Arial, sans-serif" font-size="11" font-weight="400" font-style="normal" fill="#172033">softmax (SFU; tensor cores idle unless hidden)</text>
 </g>
   </g>
  </g>

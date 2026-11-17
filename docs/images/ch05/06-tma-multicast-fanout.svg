@@ -256,38 +256,38 @@ z
 " clip-path="url(#p7c9902d06e)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.653363" transform="rotate(-0 342 37.653363)">TMA Multicast — One HBM Fetch, Delivered to Every Block's SMEM</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="342" y="37.653363" transform="rotate(-0 342 37.653363)">TMA Multicast — One HBM Fetch, Delivered to Every Block's SMEM</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a5a00" x="342" y="75.326002" transform="rotate(-0 342 75.326002)">HBM3 — Tile A0 (4 KB) — ONE read</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a5a00" x="342" y="75.326002" transform="rotate(-0 342 75.326002)">HBM3 — Tile A0 (4 KB) — ONE read</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(290.69012 168.586201)">L2 cache controller</text>
-    <text style="font-weight: 650; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(250.06770 178.539717)">recognizes multicast → broadcasts</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(282.10512 167.83636)">L2 cache controller</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #0d47a1" transform="translate(234.46770 180.48636)">recognizes multicast → broadcasts</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(99.74773 292.176138)">SM0 SMEM</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(104.03873 301.676138)">(Block 0)</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(91.90992 312.003232)">✓ receives A0</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(92.45773 290.28449)">SM0 SMEM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(98.39373 302.93449)">(Block 0)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(82.90492 315.58449)">✓ receives A0</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(243.62668 292.176138)">SM1 SMEM</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(247.91768 301.676138)">(Block 1)</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(234.84887 312.003232)">✓ receives A0</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(236.63168 290.28449)">SM1 SMEM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(242.56768 302.93449)">(Block 1)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(225.84387 315.58449)">✓ receives A0</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(385.71063 292.176138)">SM2 SMEM</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(390.00163 301.676138)">(Block 2)</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(377.78782 312.003232)">✓ receives A0</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(378.45063 290.28449)">SM2 SMEM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(384.38663 302.93449)">(Block 2)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(368.78282 315.58449)">✓ receives A0</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(528.61458 292.176138)">SM3 SMEM</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(532.90558 301.676138)">(Block 3)</text>
-    <text style="font-weight: 650; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(520.72676 312.003232)">✓ receives A0</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(521.34458 290.28449)">SM3 SMEM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(527.28058 302.93449)">(Block 3)</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(511.72176 315.58449)">✓ receives A0</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 8.910px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(166.71386 356.407614)">Without multicast: 4 blocks × 4 KB = 16 KB of HBM reads for the same tile.</text>
-    <text style="font-weight: 450; font-size: 8.910px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(54.45373 367.660286)">With multicast (ctaMask=0b1111): 1 × 4 KB — a 4× bandwidth saving; for cluster_size=8 it's 7× tile_bytes saved per fetch.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(129.96386 356.37775)">Without multicast: 4 blocks × 4 KB = 16 KB of HBM reads for the same tile.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(-5.19127 369.02775)">With multicast (ctaMask=0b1111): 1 × 4 KB — a 4× bandwidth saving; for cluster_size=8 it's 7× tile_bytes saved per fetch.</text>
    </g>
   </g>
  </g>

@@ -311,115 +311,115 @@ z
 " clip-path="url(#pd3b0b21a0a)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.743363" transform="rotate(-0 360 37.743363)">Cluster Mechanics — GPC Co-Scheduling and the Cross-Block SMEM View</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.743363" transform="rotate(-0 360 37.743363)">Cluster Mechanics — GPC Co-Scheduling and the Cross-Block SMEM View</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="188.892" y="77.76" transform="rotate(-0 188.892 77.76)">GPC 0 (SMs 0–17)</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="188.892" y="77.76" transform="rotate(-0 188.892 77.76)">GPC 0 (SMs 0–17)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(71.80538 123.157508)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(74.70881 130.718739)">0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(68.66038 121.91552)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(73.42381 134.56552)">0</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(118.59818 123.157508)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(122.28161 130.718739)">1</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(115.45318 121.91552)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(121.45161 134.56552)">1</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(165.39098 123.157508)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(168.36941 130.718739)">2</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(162.24598 121.91552)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(167.12441 134.56552)">2</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(212.18378 123.157508)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(215.13721 130.718739)">3</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(209.03878 121.91552)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(213.87221 134.56552)">3</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.97658 123.157508)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(261.82501 130.718739)">4</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(255.83158 121.91552)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(260.51001 134.56552)">4</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(305.76938 123.157508)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(308.80281 130.718739)">5</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(302.62438 121.91552)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(307.59281 134.56552)">5</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(71.80538 204.848708)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(74.74881 212.409939)">6</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(68.66038 203.60672)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(73.47881 216.25672)">6</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(118.59818 204.848708)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(121.72661 212.409939)">7</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(115.45318 203.60672)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(120.57161 216.25672)">7</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(165.39098 204.848708)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(168.33941 212.409939)">8</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(162.24598 203.60672)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(167.07441 216.25672)">8</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(212.18378 204.848708)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(215.12721 212.409939)">9</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(209.03878 203.60672)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(213.85721 216.25672)">9</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.97658 204.848708)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(260.22083 212.409939)">10</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(255.83158 203.60672)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.10583 216.25672)">10</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(305.76938 204.848708)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(307.78995 212.409939)">11</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(302.62438 203.60672)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(306.12995 216.25672)">11</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(71.80538 286.539908)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(73.12462 294.101139)">12</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(68.66038 285.29792)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(71.04962 297.94792)">12</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(118.59818 286.539908)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(119.89242 294.101139)">13</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(115.45318 285.29792)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(117.79742 297.94792)">13</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(165.39098 286.539908)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(166.58022 294.101139)">14</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(162.24598 285.29792)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(164.43522 297.94792)">14</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(212.18378 286.539908)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(213.55802 294.101139)">15</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(209.03878 285.29792)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(211.51802 297.94792)">15</text>
    </g>
    <g id="text_19">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.97658 286.539908)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(260.26083 294.101139)">16</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(255.83158 285.29792)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.16083 297.94792)">16</text>
    </g>
    <g id="text_20">
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(305.76938 286.539908)">SM</text>
-    <text style="font-weight: 450; font-size: 6.930px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(307.23863 294.101139)">17</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(302.62438 285.29792)">SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(305.25363 297.94792)">17</text>
    </g>
    <g id="text_21">
-    <text style="font-weight: 450; font-size: 7.920px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(85.84288 331.841812)">Cluster 0: Block 0→SM 3, Block 1→SM 4 (adjacent)</text>
-    <text style="font-weight: 450; font-size: 7.920px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(108.86631 342.252)">Cluster 1: Block 2→SM 7, Block 3→SM 8</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(48.63788 331.70751)">Cluster 0: Block 0→SM 3, Block 1→SM 4 (adjacent)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(79.63631 344.35751)">Cluster 1: Block 2→SM 7, Block 3→SM 8</text>
    </g>
    <g id="text_22">
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="534.6" y="77.76" transform="rotate(-0 534.6 77.76)">What SMEM looks like from inside the cluster</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle" x="534.6" y="77.76" transform="rotate(-0 534.6 77.76)">What SMEM looks like from inside the cluster</text>
    </g>
    <g id="text_23">
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(422.93083 141.319688)">Block 0 SMEM</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(433.29638 150.004063)">(228 KB)</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(437.25325 159.519688)">Rank 0</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(445.95700 166.01)"/>
-    <text style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(422.399344 177.719688)">Block 0 threads:</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(416.57934 186.141563)">read/write freely</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(411.62083 133.18911)">Block 0 SMEM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(426.41138 145.83911)">(228 KB)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(431.87825 158.48911)">Rank 0</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(435.08200 171.13911)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(407.06434 183.80880)">Block 0 threads:</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(403.61434 196.45880)">read/write freely</text>
    </g>
    <g id="text_24">
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(577.44383 136.769688)">Block 1 SMEM</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(586.94438 145.454063)">(228 KB)</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(591.76625 154.969688)">Rank 1</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(599.60500 161.46)"/>
-    <text style="font-size: 7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(576.047344 173.169688)">Block 0 threads:</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(567.82102 181.994609)">read/write/atomic</text>
-    <text style="font-weight: 450; font-size: 7.700px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(582.57570 191.369688)">via DSMEM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(566.50383 127.19784)">Block 1 SMEM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(580.05938 139.84784)">(228 KB)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(586.76125 152.49784)">Rank 1</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(588.73000 165.14784)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(560.71234 177.81753)">Block 0 threads:</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(553.96102 190.46753)">read/write/atomic</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(573.64070 203.11753)">via DSMEM</text>
    </g>
    <g id="text_25">
-    <text style="font-weight: 450; font-size: 7.920px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(398.21456 232.005938)">ld.shared::cluster [addr] → hardware checks rank bits → routes to</text>
-    <text style="font-weight: 450; font-size: 7.920px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(413.28525 241.812)">the right SM's shared memory controller → ~50-80 cycles</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(350.23956 231.56957)">ld.shared::cluster [addr] → hardware checks rank bits → routes to</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(370.86525 244.21957)">the right SM's shared memory controller → ~50-80 cycles</text>
    </g>
    <g id="text_26">
-    <text style="font-weight: 450; font-size: 8.140px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(383.66059 282.507125)">The scheduler GUARANTEES Block 0 and Block 1 co-run concurrently —</text>
-    <text style="font-weight: 450; font-size: 8.140px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(376.16347 293.607125)">neither is pre-empted while the other runs, so DSMEM accesses stay valid</text>
-    <text style="font-weight: 450; font-size: 8.140px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(490.08944 305.424)">for the whole kernel.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(334.66559 282.23076)"><tspan x="0" y="-7.15">The scheduler GUARANTEES Block 0 and Block 1 co-run concurrently</tspan><tspan x="0" y="7.15">—</tspan></text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(325.88847 294.88076)"><tspan x="0" y="-7.15">neither is pre-empted while the other runs, so DSMEM accesses stay</tspan><tspan x="0" y="7.15">valid</tspan></text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(476.14944 307.53076)">for the whole kernel.</text>
    </g>
   </g>
  </g>

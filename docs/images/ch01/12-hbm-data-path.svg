@@ -233,41 +233,41 @@ z
 " clip-path="url(#p2c6b816c7b)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="36.903363" transform="rotate(-0 360 36.903363)">Data Path: SM to HBM3</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="36.903363" transform="rotate(-0 360 36.903363)">Data Path: SM to HBM3</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="73.656" y="120.599859" transform="rotate(-0 73.656 120.599859)">SM</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="73.656" y="120.599859" transform="rotate(-0 73.656 120.599859)">SM</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(51.57963 156.622516)">~0.25 TB/s/SM</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(55.02928 165.744)">(per SM)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(42.10463 155.70306)">~0.25 TB/s/SM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(49.55928 168.35306)">(per SM)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(203.08847 114.337125)">L1D /</text>
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(191.41894 126.529313)">Coalesce</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(201.79847 114.46021)">L1D /</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(188.96894 127.11021)">Coalesce</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(334.21234 114.829313)">L2 Cache</text>
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(334.49844 126.529313)">Crossbar</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(331.72234 114.70631)">L2 Cache</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(332.08844 127.35631)">Crossbar</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(340.57363 156.622516)">~12 TB/s</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(333.90069 165.744)">(aggregate)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(335.08363 155.70306)">~12 TB/s</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(326.54069 168.35306)">(aggregate)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(479.67325 113.783766)">Memory</text>
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(474.19614 126.529313)">Controller</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(477.50325 114.13577)">Memory</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(471.57614 126.88131)">Controller</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(629.59900 114.749859)">HBM3</text>
-    <text style="font-weight: 650; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(630.40048 126.529313)">Stack</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(627.98400 114.66658)">HBM3</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(628.93548 127.31658)">Stack</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(621.85719 156.622516)">~3.35 TB/s</text>
-    <text style="font-weight: 450; font-size: 8.360px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(620.24469 165.744)">(aggregate)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(614.91219 155.70306)">~3.35 TB/s</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(612.88469 168.35306)">(aggregate)</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-style: normal; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="210.936" transform="rotate(-0 360 210.936)">Bandwidth drops at each stage further from the SM -- why the hierarchy exists: each level filters traffic.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="360" y="210.936" transform="rotate(-0 360 210.936)">Bandwidth drops at each stage further from the SM -- why the hierarchy exists: each level filters traffic.</text>
    </g>
   </g>
  </g>

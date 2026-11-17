@@ -203,36 +203,36 @@ z
 " clip-path="url(#p980a690091)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.743363" transform="rotate(-0 360 37.743363)">Copying a 64x64 Tile: Before and After TMA</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.743363" transform="rotate(-0 360 37.743363)">Copying a 64x64 Tile: Before and After TMA</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(113.47347 87.778664)">Before TMA (A100 and earlier)</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(180.12700 96.357)"/>
-    <text style="font-size: 8.7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(133.398234 110.067656)">Every thread in the warp:</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(98.97604 121.377656)">1. computes its own source address</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(86.70352 132.687656)">2. computes its own destination address</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(150.36105 144.840469)">3. issues a load</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(148.05640 156.150469)">4. issues a store</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(126.58607 166.617656)">5. repeats across the tile</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(103.17847 82.67723)">Before TMA (A100 and earlier)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(177.21200 95.32724)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(119.72823 109.45388)">Every thread in the warp:</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(86.88104 122.10388)">1. computes its own source address</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(73.05852 134.75388)">2. computes its own destination address</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(145.12105 147.40389)">3. issues a load</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(142.52140 160.05388)">4. issues a store</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(118.26607 172.70389)">5. repeats across the tile</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(487.98235 93.433664)">After TMA (H100)</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(520.03800 102.012)"/>
-    <text style="font-size: 8.7px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(456.388594 116.565469)">One thread issues ONE instruction</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(447.06773 127.032656)">with a descriptor (base ptr, dims,</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(452.06416 138.342656)">strides, box size, element type,</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(447.83992 149.983664)">bounds). TMA hardware does the</text>
-    <text style="font-weight: 450; font-size: 9.570px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(472.21967 160.962656)">rest in the background.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(482.02735 88.58579)">After TMA (H100)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(516.17800 101.23579)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(437.66859 116.20526)">One thread issues ONE instruction</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(435.92273 128.85526)">with a descriptor (base ptr, dims,</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(441.56416 141.50526)">strides, box size, element type,</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(436.48492 154.15526)">bounds). TMA hardware does the</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(464.37467 166.80526)">rest in the background.</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="188.892" y="261.449344" transform="rotate(-0 188.892 261.449344)">~20,000+ warp instructions</text>
+    <text style="font-weight: 650; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="188.892" y="261.449344" transform="rotate(-0 188.892 261.449344)">~20,000+ warp instructions</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 11.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="531.108" y="262.652938" transform="rotate(-0 531.108 262.652938)">1 instruction</text>
+    <text style="font-weight: 650; font-size: 12.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="531.108" y="262.652938" transform="rotate(-0 531.108 262.652938)">1 instruction</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(179.35828 339.227859)">Same 64x64 BF16 tile from a [4096,4096] matrix, row=128 col=256.</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(145.43141 350.585438)">The TMA hardware generates all 4,096 underlying memory transactions internally.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(161.42828 338.93365)">Same 64x64 BF16 tile from a [4096,4096] matrix, row=128 col=256.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(123.68641 351.58365)">The TMA hardware generates all 4,096 underlying memory transactions internally.</text>
    </g>
   </g>
  </g>

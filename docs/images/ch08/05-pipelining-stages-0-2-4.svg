@@ -256,40 +256,40 @@ z
 " clip-path="url(#p968b261a1e)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="432" y="38.891933" transform="rotate(-0 432 38.891933)">Pipelining — Hiding Load Latency Behind Compute</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="432" y="38.891933" transform="rotate(-0 432 38.891933)">Pipelining — Hiding Load Latency Behind Compute</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.86" y="61.978065" transform="rotate(-0 31.86 61.978065)">WITHOUT pipelining — serialized, ~9% utilization</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.86" y="61.978065" transform="rotate(-0 31.86 61.978065)">WITHOUT pipelining — serialized, ~9% utilization</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="182.79" y="90.684753" transform="rotate(-0 182.79 90.684753)">Load T0  (~500 cycles)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="182.79" y="90.684753" transform="rotate(-0 182.79 90.684753)">Load T0  (~500 cycles)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360.045" y="90.554401" transform="rotate(-0 360.045 90.554401)">MMA T0</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360.045" y="90.554401" transform="rotate(-0 360.045 90.554401)">MMA T0</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="537.3" y="90.684753" transform="rotate(-0 537.3 90.684753)">Load T1  (~500 cycles)</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="537.3" y="90.684753" transform="rotate(-0 537.3 90.684753)">Load T1  (~500 cycles)</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="386.37" y="128.168361" transform="rotate(-0 386.37 128.168361)">tensor cores idle the whole time Load T1 runs</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="386.37" y="128.168361" transform="rotate(-0 386.37 128.168361)">tensor cores idle the whole time Load T1 runs</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.86" y="184.805419" transform="rotate(-0 31.86 184.805419)">WITH 2-stage pipelining — loads and math overlap, &gt;95% utilization</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.86" y="184.805419" transform="rotate(-0 31.86 184.805419)">WITH 2-stage pipelining — loads and math overlap, &gt;95% utilization</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="144.18" y="225.401695" transform="rotate(-0 144.18 225.401695)">Load T0</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="144.18" y="225.401695" transform="rotate(-0 144.18 225.401695)">Load T0</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="368.82" y="266.344147" transform="rotate(-0 368.82 266.344147)">Load T1</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="368.82" y="266.344147" transform="rotate(-0 368.82 266.344147)">Load T1</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="593.46" y="307.286599" transform="rotate(-0 593.46 307.286599)">Load T2</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="593.46" y="307.286599" transform="rotate(-0 593.46 307.286599)">Load T2</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="289.845" y="225.323305" transform="rotate(-0 289.845 225.323305)">MMA T0</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="289.845" y="225.323305" transform="rotate(-0 289.845 225.323305)">MMA T0</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="514.485" y="266.265756" transform="rotate(-0 514.485 266.265756)">MMA T1</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="514.485" y="266.265756" transform="rotate(-0 514.485 266.265756)">MMA T1</text>
    </g>
    <g id="patch_18">
     <path d="M 589.479475 204.121782
@@ -301,53 +301,53 @@ L 298.848816 239.667519
 " style="fill: none; stroke: #475569; stroke-width: 1.1; stroke-linecap: round"/>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(588.79375 193.462579)">MMA T0 overlaps</text>
-    <text style="font-weight: 450; font-style: normal; font-size: 11.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(591.19844 208.688516)">with Load T1</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(584.58375 193.78258)">MMA T0 overlaps</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.281px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(588.22844 209.00852)">with Load T1</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 650; font-size: 13.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.86" y="375.870194" transform="rotate(-0 31.86 375.870194)">WITH 4-stage pipelining — up to 4× the load latency hidden</text>
+    <text style="font-weight: 650; font-size: 14.455px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.86" y="375.870194" transform="rotate(-0 31.86 375.870194)">WITH 4-stage pipelining — up to 4× the load latency hidden</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="407.259406" transform="rotate(-0 31.86 407.259406)">Stage 0</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="407.259406" transform="rotate(-0 31.86 407.259406)">Stage 0</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="410.013336" transform="rotate(-0 189.81 410.013336)">Load T0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="410.013336" transform="rotate(-0 189.81 410.013336)">Load T0</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="442.742865" transform="rotate(-0 31.86 442.742865)">Stage 1</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="442.742865" transform="rotate(-0 31.86 442.742865)">Stage 1</text>
    </g>
    <g id="text_18">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="445.496794" transform="rotate(-0 189.81 445.496794)">Load T1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="445.496794" transform="rotate(-0 189.81 445.496794)">Load T1</text>
    </g>
    <g id="text_19">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="309.15" y="445.49638" transform="rotate(-0 309.15 445.49638)">MMA T0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="309.15" y="445.49638" transform="rotate(-0 309.15 445.49638)">MMA T0</text>
    </g>
    <g id="text_20">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="478.226323" transform="rotate(-0 31.86 478.226323)">Stage 2</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="478.226323" transform="rotate(-0 31.86 478.226323)">Stage 2</text>
    </g>
    <g id="text_21">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="480.980252" transform="rotate(-0 189.81 480.980252)">Load T2</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="480.980252" transform="rotate(-0 189.81 480.980252)">Load T2</text>
    </g>
    <g id="text_22">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="309.15" y="480.979838" transform="rotate(-0 309.15 480.979838)">MMA T1</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="309.15" y="480.979838" transform="rotate(-0 309.15 480.979838)">MMA T1</text>
    </g>
    <g id="text_23">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="513.709781" transform="rotate(-0 31.86 513.709781)">Stage 3</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="513.709781" transform="rotate(-0 31.86 513.709781)">Stage 3</text>
    </g>
    <g id="text_24">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="168.75" y="516.46371" transform="rotate(-0 168.75 516.46371)">Load T3</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="168.75" y="516.46371" transform="rotate(-0 168.75 516.46371)">Load T3</text>
    </g>
    <g id="text_25">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="267.03" y="516.463296" transform="rotate(-0 267.03 516.463296)">MMA T2</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="267.03" y="516.463296" transform="rotate(-0 267.03 516.463296)">MMA T2</text>
    </g>
    <g id="text_26">
-    <text style="font-weight: 450; font-size: 11.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="549.193239" transform="rotate(-0 31.86 549.193239)">Stage 4</text>
+    <text style="font-weight: 450; font-size: 12.902px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="549.193239" transform="rotate(-0 31.86 549.193239)">Stage 4</text>
    </g>
    <g id="text_27">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="207.36" y="551.947168" transform="rotate(-0 207.36 551.947168)">MMA T3 (drain)</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="207.36" y="551.947168" transform="rotate(-0 207.36 551.947168)">MMA T3 (drain)</text>
    </g>
    <g id="text_28">
-    <text style="font-weight: 450; font-style: normal; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="621.524903" transform="rotate(-0 31.86 621.524903)">Steady state: one Load and one MMA always in flight together, every step.</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.86" y="621.524903" transform="rotate(-0 31.86 621.524903)">Steady state: one Load and one MMA always in flight together, every step.</text>
    </g>
   </g>
  </g>

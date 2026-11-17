@@ -176,47 +176,47 @@ z
 " clip-path="url(#p6b27b0d96b)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="440.746875" y="38.304836" transform="rotate(-0 440.746875 38.304836)">FP8 Packed Types — Filling the Register, Not Wasting the Sector</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="440.746875" y="38.304836" transform="rotate(-0 440.746875 38.304836)">FP8 Packed Types — Filling the Register, Not Wasting the Sector</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 12.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.43745" y="67.376" transform="rotate(-0 31.43745 67.376)">x4 pack — one 32-bit register, four FP8 values (.e4m3x4 / .e5m2x4)</text>
+    <text style="font-weight: 650; font-size: 13.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.43745" y="67.376" transform="rotate(-0 31.43745 67.376)">x4 pack — one 32-bit register, four FP8 values (.e4m3x4 / .e5m2x4)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(40.36698 104.926514)">Elem 3</text>
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(42.75862 119.208838)">(MSB)</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(38.75698 105.24651)">Elem 3</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(41.28862 119.52884)">(MSB)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="129.465338" y="112.067676" transform="rotate(-0 129.465338 112.067676)">Elem 2</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="129.465338" y="112.067676" transform="rotate(-0 129.465338 112.067676)">Elem 2</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="194.817263" y="112.067676" transform="rotate(-0 194.817263 112.067676)">Elem 1</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="194.817263" y="112.067676" transform="rotate(-0 194.817263 112.067676)">Elem 1</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(236.34276 104.926514)">Elem 0</text>
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(241.38430 119.208838)">(LSB)</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(234.72276 105.24651)">Elem 0</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(240.07930 119.52884)">(LSB)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.43745" y="150.576" transform="rotate(-0 31.43745 150.576)">bits 31–24        bits 23–16        bits 15–8        bits 7–0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.43745" y="150.576" transform="rotate(-0 31.43745 150.576)">bits 31–24        bits 23–16        bits 15–8        bits 7–0</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="306.60345" y="177.2" transform="rotate(-0 306.60345 177.2)">use: storage / transport, max-reduction for scale search — one load fills the register</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="306.60345" y="177.2" transform="rotate(-0 306.60345 177.2)">use: storage / transport, max-reduction for scale search — one load fills the register</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 12.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #4527a0" x="31.43745" y="220.464" transform="rotate(-0 31.43745 220.464)">x2 pack — one 16-bit register, two FP8 values (.e4m3x2 / .e5m2x2) — matches FP16 width</text>
+    <text style="font-weight: 650; font-size: 13.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #4527a0" x="31.43745" y="220.464" transform="rotate(-0 31.43745 220.464)">x2 pack — one 16-bit register, two FP8 values (.e4m3x2 / .e5m2x2) — matches FP16 width</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(74.33794 258.014049)">Elem 1</text>
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(65.28173 272.297303)">(hi byte)</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(72.83294 258.33405)">Elem 1</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(63.30173 272.61730)">(hi byte)</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(203.66680 258.014049)">Elem 0</text>
-    <text style="font-weight: 650; font-size: 12.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(196.08340 272.297303)">(lo byte)</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(202.04680 258.33405)">Elem 0</text>
+    <text style="font-weight: 650; font-size: 13.316px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(194.09840 272.61730)">(lo byte)</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.43745" y="303.664" transform="rotate(-0 31.43745 303.664)">bits 15–8                          bits 7–0</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.43745" y="303.664" transform="rotate(-0 31.43745 303.664)">bits 15–8                          bits 7–0</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-style: normal; font-size: 11.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="306.60345" y="330.288" transform="rotate(-0 306.60345 330.288)">use: feeding WGMMA (tensor core ingests 16-bit chunks) and cvt output</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 12.695px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="306.60345" y="330.288" transform="rotate(-0 306.60345 330.288)">use: feeding WGMMA (tensor core ingests 16-bit chunks) and cvt output</text>
    </g>
   </g>
  </g>

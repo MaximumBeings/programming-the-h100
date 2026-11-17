@@ -235,20 +235,20 @@ z
 " clip-path="url(#p48f7c5c3cf)" style="fill: #e8f5e9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 16.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="417.6" y="38.782885" transform="rotate(-0 417.6 38.782885)">Cooperative Pipeline — Tile Division and the Cooperative Gap</text>
+    <text style="font-weight: 650; font-size: 17.767px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="417.6" y="38.782885" transform="rotate(-0 417.6 38.782885)">Cooperative Pipeline — Tile Division and the Cooperative Gap</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 12.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.841379" y="58.348098" transform="rotate(-0 31.841379 58.348098)">One M=128×N=128 output tile, split by ROW between two consumer warpgroups:</text>
+    <text style="font-weight: 650; font-size: 13.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="31.841379" y="58.348098" transform="rotate(-0 31.841379 58.348098)">One M=128×N=128 output tile, split by ROW between two consumer warpgroups:</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(260.62778 93.253325)">WG1 — Consumer 0</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(279.49092 109.633325)">rows m=0..63</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(275.48740 124.854716)">64 regs/thread</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(255.93278 93.57333)">WG1 — Consumer 0</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(276.22092 109.95333)">rows m=0..63</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(271.98740 125.17472)">64 regs/thread</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(260.77278 152.688447)">WG2 — Consumer 1</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(271.35408 169.068447)">rows m=64..127</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(275.48740 184.289838)">64 regs/thread</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(256.07778 153.00845)">WG2 — Consumer 1</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(267.59408 169.38845)">rows m=64..127</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(271.98740 184.60984)">64 regs/thread</text>
    </g>
    <g id="patch_13">
     <path d="M 186.144828 77.328386
@@ -256,40 +256,40 @@ Q 186.144828 134.763655 186.144828 192.198924
 " style="fill: none; stroke: #616161; stroke-width: 1.2; stroke-linecap: round"/>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-style: normal; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(68.05562 124.795714)">both WGs read the</text>
-    <text style="font-weight: 450; font-style: normal; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(92.77705 137.518613)">SAME A/B tiles</text>
-    <text style="font-weight: 450; font-style: normal; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(73.66815 150.241511)">from WG0's loads</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(63.64062 125.11571)">both WGs read the</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(89.28205 137.83861)">SAME A/B tiles</text>
+    <text style="font-weight: 450; font-style: normal; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #475569" transform="translate(69.42315 150.56151)">from WG0's loads</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(557.39408 131.27212)">WG0 — Producer</text>
-    <text style="font-weight: 650; font-size: 13.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(562.65220 146.382277)">TMA loads only</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(553.30408 131.59212)">WG0 — Producer</text>
+    <text style="font-weight: 650; font-size: 14.041px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(559.02220 146.70228)">TMA loads only</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.841379" y="231.559024" transform="rotate(-0 31.841379 231.559024)">Without cooperation: 1 WG needs 128 regs/thread for accumulators (barely fits).</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.841379" y="231.559024" transform="rotate(-0 31.841379 231.559024)">Without cooperation: 1 WG needs 128 regs/thread for accumulators (barely fits).</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 12.420px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.841379" y="251.93678" transform="rotate(-0 31.841379 251.93678)">With cooperation: each WG needs only 64 — frees registers for a deeper pipeline.</text>
+    <text style="font-weight: 450; font-size: 13.42px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="31.841379" y="251.93678" transform="rotate(-0 31.841379 251.93678)">With cooperation: each WG needs only 64 — frees registers for a deeper pipeline.</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 12.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.841379" y="296.088585" transform="rotate(-0 31.841379 296.088585)">Timeline — the Cooperative Gap:</text>
+    <text style="font-weight: 650; font-size: 13.937px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #8a1c1c" x="31.841379" y="296.088585" transform="rotate(-0 31.841379 296.088585)">Timeline — the Cooperative Gap:</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="151.075862" y="339.909332" transform="rotate(-0 151.075862 339.909332)">WG1: K_TILES × MMA</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="151.075862" y="339.909332" transform="rotate(-0 151.075862 339.909332)">WG1: K_TILES × MMA</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="310.639655" y="339.598027" transform="rotate(-0 310.639655 339.598027)">Epilogue</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="310.639655" y="339.598027" transform="rotate(-0 310.639655 339.598027)">Epilogue</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="470.203448" y="339.909793" transform="rotate(-0 470.203448 339.909793)">Next tile × MMA</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="470.203448" y="339.909793" transform="rotate(-0 470.203448 339.909793)">Next tile × MMA</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="151.075862" y="387.457429" transform="rotate(-0 151.075862 387.457429)">WG2: K_TILES × MMA</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="151.075862" y="387.457429" transform="rotate(-0 151.075862 387.457429)">WG2: K_TILES × MMA</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 10.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="310.639655" y="387.146125" transform="rotate(-0 310.639655 387.146125)">Epilogue</text>
+    <text style="font-weight: 450; font-size: 11.971px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="310.639655" y="387.146125" transform="rotate(-0 310.639655 387.146125)">Epilogue</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 12.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="470.203448" y="387.45789" transform="rotate(-0 470.203448 387.45789)">Next tile × MMA</text>
+    <text style="font-weight: 450; font-size: 13.213px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="470.203448" y="387.45789" transform="rotate(-0 470.203448 387.45789)">Next tile × MMA</text>
    </g>
    <g id="patch_14">
     <path d="M 269.451349 448.982707
@@ -301,12 +301,12 @@ L 307.215001 408.755841
 " style="fill: none; stroke: #8a1c1c; stroke-width: 1.2; stroke-linecap: round"/>
    </g>
    <g id="text_16">
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(164.03883 463.953561)">Tensor cores idle here —</text>
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(167.09389 477.384811)">BOTH WGs run epilogue</text>
-    <text style="font-weight: 650; font-size: 11.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(189.90389 493.073561)">at the same time</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(158.12383 464.27356)">Tensor cores idle here —</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(161.33389 477.70481)">BOTH WGs run epilogue</text>
+    <text style="font-weight: 650; font-size: 12.592px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(186.01889 493.39356)">at the same time</text>
    </g>
    <g id="text_17">
-    <text style="font-style: normal; font-weight: 650; font-size: 12.730px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.841379" y="537.225366" transform="rotate(-0 31.841379 537.225366)">Fix: Ping-Pong (§14) staggers C0/C1 so one's epilogue overlaps the other's MMA.</text>
+    <text style="font-style: normal; font-weight: 650; font-size: 13.73px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #00695c" x="31.841379" y="537.225366" transform="rotate(-0 31.841379 537.225366)">Fix: Ping-Pong (§14) staggers C0/C1 so one's epilogue overlaps the other's MMA.</text>
    </g>
   </g>
  </g>

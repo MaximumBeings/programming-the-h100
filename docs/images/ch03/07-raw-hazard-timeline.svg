@@ -167,15 +167,15 @@ z
 " clip-path="url(#p3fecac3edf)" style="fill: #fafafa; stroke: #999999; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.491363" transform="rotate(-0 360 37.491363)">Read-After-Write (RAW) Hazard</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.491363" transform="rotate(-0 360 37.491363)">Read-After-Write (RAW) Hazard</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(137.14524 103.743281)">Generic Proxy:</text>
-    <text style="font-weight: 450; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(91.31204 114.533281)">st.global [X], V  → lands in L1 only</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(130.57524 103.41168)">Generic Proxy:</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(76.31704 116.06168)">st.global [X], V  → lands in L1 only</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(418.88989 103.743281)">Async Proxy (TMA, right after):</text>
-    <text style="font-weight: 450; font-size: 9.130px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(393.29816 114.533281)">cp.async.bulk [X] → reads X from L2/HBM</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(405.06989 103.41168)">Async Proxy (TMA, right after):</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(374.48816 116.06168)">cp.async.bulk [X] → reads X from L2/HBM</text>
    </g>
    <g id="patch_5">
     <path d="M 658.309812 149.904
@@ -183,14 +183,14 @@ Q 353.012739 149.904 47.715665 149.904
 " style="fill: none; stroke: #475569; stroke-linecap: round"/>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="353.016" y="169.776" transform="rotate(-0 353.016 169.776)">Time →</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #475569" x="353.016" y="169.776" transform="rotate(-0 353.016 169.776)">Time →</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(217.98050 225.50025)">L1 cache:  [X] = V (new)      ← Generic Proxy sees this</text>
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(185.79998 236.94025)">L2 cache:  [X] = OLD          ← Async Proxy (TMA) sees THIS instead</text>
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(327.30584 245.952)"/>
-    <text style="font-size: 8.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(192.747375 259.82025)">Fix: fence.proxy.async between the write and the TMA launch — it drains</text>
-    <text style="font-weight: 450; font-size: 9.680px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(167.56392 271.26025)">the Generic Proxy's pending writes into L2/HBM so TMA sees the update.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(201.18550 222.75784)">L1 cache:  [X] = V (new)      ← Generic Proxy sees this</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(164.68998 235.40784)">L2 cache:  [X] = OLD          ← Async Proxy (TMA) sees THIS instead</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(321.51084 248.05784)"/>
+    <text style="font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(154.67238 262.31009)">Fix: fence.proxy.async between the write and the TMA launch — it drains</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(144.53392 274.96009)">the Generic Proxy's pending writes into L2/HBM so TMA sees the update.</text>
    </g>
   </g>
  </g>

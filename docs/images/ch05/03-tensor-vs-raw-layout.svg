@@ -200,43 +200,43 @@ z
 " clip-path="url(#p724969f068)" style="fill: #f0f0f0; stroke: #616161; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.359885" transform="rotate(-0 360 37.359885)">cp.async.bulk.tensor vs cp.async.bulk — The Key Visual Difference</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.359885" transform="rotate(-0 360 37.359885)">cp.async.bulk.tensor vs cp.async.bulk — The Key Visual Difference</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #0d47a1" x="185.4" y="73.37113" transform="rotate(-0 185.4 73.37113)">Tensor layout (with descriptor)</text>
+    <text style="font-weight: 650; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #0d47a1" x="185.4" y="73.37113" transform="rotate(-0 185.4 73.37113)">Tensor layout (with descriptor)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(81.12773 131.354385)">Global</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(79.99957 142.273564)">Tensor</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(64.66027 152.597744)">[any layout]</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(78.62273 129.85406)">Global</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(77.24457 142.50406)">Tensor</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(60.01527 155.15406)">[any layout]</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="192.384" y="119.476174" transform="rotate(-0 192.384 119.476174)">descriptor</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="192.384" y="119.476174" transform="rotate(-0 192.384 119.476174)">descriptor</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(264.27419 131.283994)">TMA</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.59438 142.404385)">knows</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(259.97927 152.630947)">shape</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(262.42419 129.83547)">TMA</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(256.04438 142.48547)">knows</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(257.60927 155.13547)">shape</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 650; font-size: 10.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #616161" x="534.6" y="73.37113" transform="rotate(-0 534.6 73.37113)">Raw layout (no descriptor)</text>
+    <text style="font-weight: 650; font-size: 11.867px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #616161" x="534.6" y="73.37113" transform="rotate(-0 534.6 73.37113)">Raw layout (no descriptor)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(430.32773 131.354385)">Global</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(425.09312 141.416924)">Memory</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(416.04492 152.597744)">[flat bytes]</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(427.82273 129.85406)">Global</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(421.85812 142.50406)">Memory</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(411.81492 155.15406)">[flat bytes]</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 8.250px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="541.584" y="119.476174" transform="rotate(-0 541.584 119.476174)">size + addr</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #475569" x="541.584" y="119.476174" transform="rotate(-0 541.584 119.476174)">size + addr</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(613.47419 131.283994)">TMA</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(611.60848 142.404385)">blind</text>
-    <text style="font-weight: 650; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(612.16512 151.748408)">copy</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(611.62419 129.39420)">TMA</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(609.69348 142.04420)">blind</text>
+    <text style="font-weight: 650; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(610.22512 154.69420)">copy</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(76.59406 228.575217)">With .tensor, TMA is handed a 128-byte descriptor and a coordinate — it derives strides, bounds, and swizzle itself.</text>
-    <text style="font-weight: 450; font-size: 9.350px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(67.14367 241.325217)">Without it, TMA is handed only an address and a byte count: a hardware-accelerated memcpy with no notion of shape.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(31.48906 229.10322)">With .tensor, TMA is handed a 128-byte descriptor and a coordinate — it derives strides, bounds, and swizzle itself.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(20.66367 241.85322)">Without it, TMA is handed only an address and a byte count: a hardware-accelerated memcpy with no notion of shape.</text>
    </g>
   </g>
  </g>

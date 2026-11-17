@@ -232,60 +232,60 @@ z
 " clip-path="url(#pe7aba99c52)" style="fill: #475569; stroke: #475569; stroke-width: 1.3; stroke-linecap: round"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.743363" transform="rotate(-0 360 37.743363)">The Four Hopper MMA Innovations — What Each One Fixes</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="360" y="37.743363" transform="rotate(-0 360 37.743363)">The Four Hopper MMA Innovations — What Each One Fixes</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 650; font-size: 11.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="293.652" y="67.716" transform="rotate(-0 293.652 67.716)">Ampere (mma.sync)</text>
+    <text style="font-weight: 650; font-size: 12.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="293.652" y="67.716" transform="rotate(-0 293.652 67.716)">Ampere (mma.sync)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 650; font-size: 11.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #1b5e20" x="566.028" y="67.716" transform="rotate(-0 566.028 67.716)">Hopper (wgmma.mma_async)</text>
+    <text style="font-weight: 650; font-size: 12.385px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #1b5e20" x="566.028" y="67.716" transform="rotate(-0 566.028 67.716)">Hopper (wgmma.mma_async)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="28.26" y="118.678184" transform="rotate(-0 28.26 118.678184)">1. Async math</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="28.26" y="118.678184" transform="rotate(-0 28.26 118.678184)">1. Async math</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(223.51325 113.539344)">BLOCKING — thread stalls until</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(239.28637 123.141531)">result lands in registers</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(207.24825 112.71944)">BLOCKING — thread stalls until</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(227.15137 125.36944)">result lands in registers</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(484.36300 113.539344)">NON-BLOCKING — issue &amp; move on;</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(503.53363 123.141531)">hardware queues the math</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(465.08300 112.71944)">NON-BLOCKING — issue &amp; move on;</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(489.59363 125.36944)">hardware queues the math</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="28.26" y="183.629384" transform="rotate(-0 28.26 183.629384)">2. Execution unit</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="28.26" y="183.629384" transform="rotate(-0 28.26 183.629384)">2. Execution unit</text>
    </g>
    <g id="text_8">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="293.652" y="183.291637" transform="rotate(-0 293.652 183.291637)">1 warp (32 threads) per mma.sync</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #8a1c1c" x="293.652" y="183.291637" transform="rotate(-0 293.652 183.291637)">1 warp (32 threads) per mma.sync</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(501.99253 178.490544)">1 warp GROUP (128 threads)</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(491.00612 188.092731)">per wgmma — 4× the data/instr</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(487.23753 177.67064)">1 warp GROUP (128 threads)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(474.48112 190.32064)">per wgmma — 4× the data/instr</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="28.26" y="248.580584" transform="rotate(-0 28.26 248.580584)">3. Data path</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="28.26" y="248.580584" transform="rotate(-0 28.26 248.580584)">3. Data path</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(232.93950 243.441744)">global → SMEM → registers</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(223.09575 253.043931)">→ mma.sync (register staging)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(218.50450 242.62184)">global → SMEM → registers</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(207.16075 255.27184)">→ mma.sync (register staging)</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(493.05237 243.441744)">global → SMEM → wgmma reads</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(504.05363 253.043931)">SMEM directly (no staging)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(475.83737 242.62184)">global → SMEM → wgmma reads</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(489.96363 255.27184)">SMEM directly (no staging)</text>
    </g>
    <g id="text_13">
-    <text style="font-weight: 650; font-size: 10.230px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="28.26" y="313.531784" transform="rotate(-0 28.26 313.531784)">4. Precision/sparsity</text>
+    <text style="font-weight: 650; font-size: 11.23px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: start; fill: #172033" x="28.26" y="313.531784" transform="rotate(-0 28.26 313.531784)">4. Precision/sparsity</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(227.53950 308.392944)">No native FP8; no structured</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(251.86137 317.995131)">sparsity hardware</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(212.60450 307.57304)">No native FP8; no structured</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #8a1c1c" transform="translate(242.49137 320.22304)">sparsity hardware</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(485.55425 308.392944)">FP8 (E4M3/E5M2) + 2:4 structured</text>
-    <text style="font-weight: 450; font-size: 8.800px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(492.70464 317.995131)">sparsity, first-class instructions</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(467.24425 307.57304)">FP8 (E4M3/E5M2) + 2:4 structured</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(476.36964 320.22304)">sparsity, first-class instructions</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(146.23712 357.992803)">Combined effect: ≈312 TFLOPS BF16 dense (A100) → ≈1,979 TFLOPS FP8 dense (H100).</text>
-    <text style="font-weight: 450; font-size: 9.460px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(137.08244 369.7056)">H100's own BF16 figure is already ≈989 TFLOPS — architecture alone is most of the jump.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(113.84212 358.01700)">Combined effect: ≈312 TFLOPS BF16 dense (A100) → ≈1,979 TFLOPS FP8 dense (H100).</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(104.14744 370.66700)">H100's own BF16 figure is already ≈989 TFLOPS — architecture alone is most of the jump.</text>
    </g>
   </g>
  </g>

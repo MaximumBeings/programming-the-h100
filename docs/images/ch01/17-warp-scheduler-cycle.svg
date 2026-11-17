@@ -246,30 +246,30 @@ z
 " clip-path="url(#pd240662e34)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 1.3; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 650; font-size: 13.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="37.891599" transform="rotate(-0 306 37.891599)">Warp Scheduler -- Per-Cycle Operation</text>
+    <text style="font-weight: 650; font-size: 14.972px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="37.891599" transform="rotate(-0 306 37.891599)">Warp Scheduler -- Per-Cycle Operation</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(254.34922 96.716614)">1. SCAN all 16 warps</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(192.31117 108.759036)">(scoreboard, structural hazards, RAW/WAW)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(249.02422 96.76482)">1. SCAN all 16 warps</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(180.54617 109.41482)">(scoreboard, structural hazards, RAW/WAW)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(246.24281 174.207673)">2. SELECT 1 ready warp</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(258.40992 185.907673)">(priority heuristic)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(239.98781 174.08467)">2. SELECT 1 ready warp</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(253.70492 186.73467)">(priority heuristic)</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(253.87742 252.570607)">3. FETCH instruction</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(213.83859 263.741153)">(L0 hit = immediate; L0 miss -&gt; L1)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(248.43742 252.18288)">3. FETCH instruction</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(204.75359 264.83288)">(L0 hit = immediate; L0 miss -&gt; L1)</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(275.05094 329.982212)">4. DISPATCH</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(224.87414 340.88979)">to the matching functional unit</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(271.56594 329.46300)">4. DISPATCH</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(216.85914 342.11300)">to the matching functional unit</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(249.13484 407.552724)">5. UPDATE scoreboard</text>
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(203.84242 418.380849)">(destination marked pending -&gt; ready)</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(243.06484 406.99379)">5. UPDATE scoreboard</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; fill: #172033" transform="translate(193.66242 419.64379)">(destination marked pending -&gt; ready)</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 450; font-size: 9.900px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="439.484261" transform="rotate(-0 306 439.484261)">Rapidly switching between warps hides memory latency.</text>
+    <text style="font-weight: 450; font-size: 11px; font-family: BookDiagram, Inter, Arial, sans-serif; text-anchor: middle; fill: #172033" x="306" y="439.484261" transform="rotate(-0 306 439.484261)">Rapidly switching between warps hides memory latency.</text>
    </g>
   </g>
  </g>
