@@ -22,6 +22,9 @@ def on_post_page(output, page, config, **kwargs):
         if not p.is_file():return m[0]
         source=p.read_text()
         versions[url]=url+'?v='+hashlib.sha256(source.encode()).hexdigest()[:12]
+        # Opening illustrations retain their original responsive banner size.
+        if relative.startswith('images/chapter-openers/'):
+            return m[0]
         vb=re.search(r'viewBox="[\d.-]+ [\d.-]+ ([\d.]+) [\d.]+"',source)
         sizes=[float(s) for s in SIZE.findall(source) if float(s)>0]
         if not vb or not sizes:return m[0]
