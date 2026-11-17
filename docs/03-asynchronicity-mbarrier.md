@@ -420,11 +420,11 @@ Speed Mismatch — H100 Numbers
   Without async: Tensor Cores idle 97.5% of the time. Pure waste.
 ```
 
-H100 has dedicated hardware units that run **completely independently** of each other:
+H100 can overlap instruction issue, Tensor Core math, and asynchronous data movement:
 
 [![H100 SM — three independent async units](images/ch03/04-sm-async-units.svg)](images/ch03/04-sm-async-units.svg)
 
-*The warp scheduler issues instructions in a few nanoseconds, Tensor Cores crunch on previously fetched tiles in a few nanoseconds, and the TMA Engine moves data from HBM3 to SMEM in the hundreds of nanoseconds it actually takes — all three run simultaneously, and mbarrier is the mechanism that tells each of them when the others' work is ready.*
+*Warp schedulers issue instructions while Tensor Cores and TMA can perform previously launched work. Completion protocols differ: the illustrated global-to-shared TMA load signals an `mbarrier`, while WGMMA operations use `wgmma.commit_group` and `wgmma.wait_group` before their results are accessed. The picture shows possible overlap, not a fixed latency or guaranteed simultaneous execution. See [NVIDIA’s PTX completion rules](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-instructions).*
 
 ### 4.2 The Two Problems Async Solves
 

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Enforce a 11-unit SVG label floor and space multiline labels for it.
 
-Requires Pillow for Inter glyph metrics. SVG units are kept at >= 1 CSS pixel
-by hooks/diagram_readability.py, including on narrow screens (scroll to pan).
+Requires Pillow for Inter glyph metrics. Figures fit the reading column; compact layouts and wrapping preserve readability.
 """
 from pathlib import Path
 import re

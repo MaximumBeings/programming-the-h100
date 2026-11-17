@@ -117,7 +117,9 @@
 /* Keep technical figures crisp, with the same quiet framing in both themes. */
 .md-typeset img[src*=".svg"] {
   display: block;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   height: auto;
   margin: 1.5rem auto 0.75rem;
   border: 1px solid #cbd5e1;
@@ -129,11 +131,10 @@
   line-height: 1.7;
 }
 
-/* Preserve the SVG label floor instead of shrinking dense figures to fit. */
+/* Fit complete diagrams to the reading column without horizontal scrolling. */
 .md-typeset a:has(> img[src*=".svg"]) {
   display: block;
   max-width: 100%;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
+  min-width: 0;
   border-radius: 0.5rem;
 }
