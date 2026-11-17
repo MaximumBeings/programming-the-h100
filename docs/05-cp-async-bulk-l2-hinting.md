@@ -1,13 +1,25 @@
 # cp.async.bulk, TMA Transfers & L2 Cache Hinting
 ## Lesson 5 Companion Guide — Programming the H100
 
+[![CHAPTER 05: Move bytes. Keep computing.](images/chapter-openers/05-tma.svg)](images/chapter-openers/05-tma.svg)
+
+
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
 
-> **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
-> **Run with:** `./<out>` on any H100 or B200 instance.
+> **Baseline compiler flags — use each example’s full command below:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
+> **Run with:** `./<out>` on Hopper hardware matching the compiled target. `sm_90a` binaries are not a portable Blackwell build.
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Choose a raw bulk copy versus a tensor-map copy, compute the bytes associated with a completion barrier, and keep load completion distinct from bulk-store completion.
+
+    Build a valid descriptor in [Chapter 4](04-cutensormap-tma-swizzling.md) before adding transfer instructions. Use [Chapter 3](03-asynchronicity-mbarrier.md) for phase and ownership reasoning.
+<!-- learning:end -->
 
 **What this covers:** Everything from Lesson 5 — the cp.async.bulk instruction family and how it differs from Ampere's cp.async, tensor-aware vs raw (linear) bulk copies, all instruction variants and state space combinations, completion mechanisms (mbarrier vs bulk_group), L2 cache hinting (evict_first/last/normal) for both loads and stores, the createpolicy descriptor, unstructured and structured copy operands, TMA multicast across a cluster, the ctaMask, shared memory layout for dynamic SMEM with TMA, prefetching with cp.async.bulk.prefetch, and cp.reduce.async for hardware-accelerated atomic tile reductions. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
@@ -1826,6 +1838,7 @@ Checks: 6144 / 6144 passed
 
 
 
+
 `GPU:` varies with the card the binary runs on; everything else is deterministic. The host seeds `h_src[i] = (float)i`, so for each of the `K_TILES=6` tiles the verify loop checks `tile[i]` against `(float)(k * TILE_ELEMS + i)` — all `6 × 1024 = 6144` elements match. One cosmetic note: unlike the two-glyph PASS banners in earlier chapters, this one carries only a single 3-byte UTF-8 glyph (`✓`, no trailing em dash), so `%-56s`'s byte-counted padding comes up exactly even with the border instead of landing short.
 
 ### 15.2 Full Example: TMA Store + cp.reduce.async
@@ -2009,6 +2022,7 @@ Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
 
 
 
+
 `GPU:` again varies with the card the binary runs on. Block `bid` fills its SMEM tile with `(float)(bid+1)`, so blocks 0-3 contribute 1.0, 2.0, 3.0, 4.0; each block's `cp.reduce.async.bulk...add.f32` atomically adds its tile into `global_acc`, so every one of the `256` elements ends up at `1+2+3+4 = 10.0` and `errors` stays `0`. This banner carries two 3-byte UTF-8 glyphs (`✓` and the em dash in `— cp.reduce.async`), so `%-56s`'s byte-counted padding lands 2 columns short of the border above it — the same quirk documented for the two-glyph banners in Chapters 3 and 4.
 
 ---
@@ -2135,6 +2149,24 @@ Using "r" for 64-bit global ptr         Wrong address        Use "l" for all glo
 Missing barrier.cluster before DSMEM    Crash               Always arrive+wait first
 cp.async.bulk.prefetch with barrier     API error           Prefetch has no barrier; it's a hint
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 5.1.** Two BF16 tiles, A[64][16] and B[16][64], share a data-ready barrier. How many transaction bytes arrive if both complete through that barrier?
+
+??? success "Worked answer — 5.1"
+
+    Each tile has 1,024 two-byte elements, or 2,048 bytes. The combined expected transaction count is 4,096 bytes. Count transferred data, not descriptor size or the number of copy instructions.
+
+**Self-check 5.2.** Should a dense strided 2D tensor tile always be flattened into one raw copy?
+
+??? success "Worked answer — 5.2"
+
+    Only if its source region really is contiguous in the required layout. Otherwise a single flat copy can include unwanted gaps or miss rows. A tensor-map load expresses multidimensional coordinates and strides. Choose from the source layout, then verify against nonuniform data.
+
+<!-- practice:end -->
+
 
 ---
 

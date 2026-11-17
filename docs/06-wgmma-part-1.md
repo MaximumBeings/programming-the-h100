@@ -1,13 +1,25 @@
 # WGMMA — Warp Group Matrix Multiply-Accumulate
 ## Lesson 6 Companion Guide — Programming the H100
 
+[![CHAPTER 06: Meet the Tensor Cores](images/chapter-openers/06-wgmma.svg)](images/chapter-openers/06-wgmma.svg)
+
+
 > **Validation — November 17, 2026.** 1 complete CUDA program compiled and executed successfully.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
 
-> **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
+> **Baseline compiler flags — use each example’s full command below:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
 > **Run with:** `./<out>` on a Hopper H100/H200 instance.
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Relate a WGMMA shape to its per-thread accumulator storage and distinguish a register-ordering fence from arithmetic completion.
+
+    [Chapters 3–5](03-asynchronicity-mbarrier.md) explain the data’s lifetime and layout. The tested program below checks a complete nonuniform BF16 tile.
+<!-- learning:end -->
 
 **What this covers:** Everything from Lesson 6 — the four key innovations in Hopper's tensor core model, the paradigm shift from warp to warp group as the unit of execution, how wgmma.mma_async works and why it is non-blocking, the WGMMA pipeline (fence → load → compute → collect), the full instruction syntax and all qualifier meanings (.sync, .aligned, scale_d, imm-scale, imm-trans), operand location rules (A in registers vs SMEM, B always in SMEM, D always in registers), ldmatrix for loading A tiles (address phase, register phase, swizzle addressing, x1/x2/x4 vectorization), the 64-bit WGMMA descriptor (base address, LBO, SBO, matrix base offset, swizzle mode bits), all supported tile shapes for BF16/FP16/TF32/FP8/INT8, register layout and output accumulator structure, and stmatrix for writing results back. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
@@ -1658,6 +1670,7 @@ Sample d[0] = -0.246094 (expected -0.246094)
 
 
 
+
 The recorded test uses signed, nonuniform values that are exactly representable in BF16. The host reconstructs every WGMMA register's `(row, column)` position and compares it with a CPU GEMM computed from those BF16 inputs, with a `1e-5` absolute tolerance and an explicit finite-value check. All 4,096 values match with zero measured error in this run. Constant inputs alone would not detect a permuted input layout or accumulator mapping.
 
 ---
@@ -1780,6 +1793,24 @@ Threads not in warp group lockstep        Deadlock / wrong     No divergence bef
 Using ld.shared for A instead of ldmatrix Wrong register layout Use ldmatrix for fragmented layout
 SBO/LBO encoded in bytes not /16 units    Wrong SMEM navigation Divide by 16 before putting in desc
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 6.1.** How many FP32 accumulator registers does each thread need for m64n64 across a 128-thread warpgroup?
+
+??? success "Worked answer — 6.1"
+
+    64 × 64 / 128 = 32 FP32 registers per thread, or 128 bytes of accumulator values. Across the warpgroup that is 16 KiB. This counts the accumulator values, not the kernel’s total compiler-allocated registers.
+
+**Self-check 6.2.** Can wgmma.fence replace a wait before a scalar epilogue reads pending accumulators?
+
+??? success "Worked answer — 6.2"
+
+    No. The register fence orders appropriate accesses before subsequent WGMMA operations. Commit the relevant group and wait for completion before ordinary code reads its results. Shared-memory publication is a separate proxy-ordering issue.
+
+<!-- practice:end -->
+
 
 ---
 

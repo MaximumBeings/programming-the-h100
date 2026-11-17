@@ -1,13 +1,25 @@
 # cuTensorMap, TMA & Swizzling
 ## Lesson 4 Companion Guide — Programming the H100
 
+[![CHAPTER 04: Describe a tile. Choose its layout.](images/chapter-openers/04-descriptors.svg)](images/chapter-openers/04-descriptors.svg)
+
+
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
 
-> **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
-> **Run with:** `./<out>` on any H100 or B200 instance.
+> **Baseline compiler flags — use each example’s full command below:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
+> **Run with:** `./<out>` on Hopper hardware matching the compiled target. `sm_90a` binaries are not a portable Blackwell build.
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Write tensor dimensions and byte strides with the innermost coordinate first; explain the difference between logical coordinates and swizzled shared-memory addresses.
+
+    [Chapter 3](03-asynchronicity-mbarrier.md) supplies the completion protocol; [Chapter 5](05-cp-async-bulk-l2-hinting.md) issues the transfer described here.
+<!-- learning:end -->
 
 **What this covers:** Everything from Lesson 4 — what TMA is and why it exists, how descriptors replace manual address calculation, the full `cuTensorMapEncodeTiled()` API (all 12 parameters explained with worked examples), data types, tensor rank and global dimensions, stride semantics, box dimensions, swizzling (32B/64B/128B) and bank-conflict elimination with the XOR formula, interleaving for non-linear layouts (16B and 32B modes), L2 promotion policies for prefetching, and out-of-bounds fill behavior. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
@@ -19,8 +31,9 @@ how to lay it out in shared memory once it arrives.
 
 Almost everything here happens *before* the kernel runs. The next chapter covers
 the instruction that uses the descriptor; this one covers getting the descriptor
-right — which is where the real difficulty lives, because a malformed descriptor
-does not raise an error. It copies the wrong bytes.
+right — which is where the real difficulty lives, because invalid descriptor parameters may be rejected by the API, while a valid descriptor
+with the wrong layout can copy plausible but incorrect bytes. Check the return code
+and verify the full output.
 
 The chapter runs in four movements. Sections 1–3 explain what a descriptor is
 and why it replaces address arithmetic. Sections 4–8 walk the twelve parameters
@@ -1938,6 +1951,7 @@ Element checks: 32768 / 32768 passed
 
 
 
+
 The top banner is a plain hardcoded string, so its border lines up exactly. The pass/fail banner is built with `printf("║  %-56s  ║\n", ...)`, and `%-56s` pads to 56 *bytes* — the same quirk from Chapter 3. `"✓ ALL PASS — TMA loaded all tiles correctly!"` is 44 display characters but 48 bytes (`✓` and `—` are each 3-byte UTF-8 sequences), so the field gets only 8 padding spaces instead of the 12 it would need to fill 56 *columns*. The closing `║` lands 2 columns short of the border above and below it.
 
 ### 14.2 Full Example: Multi-Dimensional TMA (3D Tensor)
@@ -2199,6 +2213,7 @@ Element checks: 32768 / 32768 passed
 
 
 
+
 Worth noticing: this banner's string is `"✓ ALL PASS"` with no em dash — just the one 3-byte checkmark. That costs the field 2 bytes versus its visual width, so `%-56s` pads it with 2 fewer spaces than a pure-ASCII string of the same length would get — and here that shortfall exactly cancels out the box's own two-space margins, so the right border lands flush with the border above and below it. Contrast with ex01 above, where two multi-byte characters (`✓` and `—`) ate 4 extra bytes and the border came up 2 columns short. Same mechanism, different outcome, depending on how many non-ASCII characters happen to be in the string.
 
 ---
@@ -2308,6 +2323,24 @@ boxDim × sizeof > smem allocation   SMEM overflow          Reduce boxDim or sme
 tensorRank < 3 with interleaving    API error              Use rank ≥ 3 for interleave
 CUtensorMap not 128B aligned        Silent corruption      Use alignas(128)
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 4.1.** A row-major FP32 matrix has 128 rows and 256 columns. What are its 2D tensor-map dimensions and row stride?
+
+??? success "Worked answer — 4.1"
+
+    Dimensions are {256, 128}, innermost first. Advancing one row skips 256 × 4 = 1,024 bytes, so the rank-minus-one stride array is {1024}. A 32-column × 32-row tile contains 4,096 bytes.
+
+**Self-check 4.2.** Why did the tested 64-column FP32 tile fail when configured with a 128-byte swizzle?
+
+??? success "Worked answer — 4.2"
+
+    Its contiguous width was 64 × 4 = 256 bytes. The example’s selected swizzle required an inner tile extent no larger than 128 bytes. The repaired program uses 32 FP32 columns and explicitly undoes the swizzle when verifying logical elements. Check the actual descriptor combination, not just alignment.
+
+<!-- practice:end -->
+
 
 ---
 

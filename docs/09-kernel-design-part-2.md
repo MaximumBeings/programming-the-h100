@@ -1,9 +1,21 @@
 ---
 
+[![CHAPTER 09: The art of safe reuse](images/chapter-openers/09-pipelines.svg)](images/chapter-openers/09-pipelines.svg)
+
+
 > **Validation — November 17, 2026.** 4 complete CUDA programs compiled and executed successfully.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Prove buffer ownership across reuse, cover every output element, and handle partial tiles without dropping work.
+
+    Revisit [Chapter 3](03-asynchronicity-mbarrier.md) for barrier semantics and [Chapter 8](08-kernel-design-part-1.md) for producer/consumer roles.
+<!-- learning:end -->
 
 ## 9 — mbarrier — The Two-Barrier Handshake
 
@@ -479,6 +491,7 @@ Handshake Results:
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex05_mbarrier.cu -->
+
 
 
 
@@ -1208,6 +1221,7 @@ Ping-Pong Behavior Check:
 
 
 
+
 ---
 
 ## 15 — Epilogue Fundamentals
@@ -1747,6 +1761,7 @@ FP8 amax reduction result: 44.6000
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex07_epilogue.cu -->
+
 
 
 
@@ -2479,6 +2494,7 @@ Design Summary:
 ```
 <!-- validation:end:ex08_comprehensive.cu -->
 
+
 Additional boundary tests executed on November 17, 2026 (same binary and system):
 
 ```bash
@@ -2647,6 +2663,24 @@ Recommended swizzle: 2-4 for most GEMMs on H100 (L2=50MB)
    As a separate kernel, it costs 2× HBM bandwidth.
    Never launch a pointwise kernel after a GEMM if you can avoid it.
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 9.1.** A 64×64 output tile has 128 consumer threads. How many elements must each consumer own on average?
+
+??? success "Worked answer — 9.1"
+
+    4,096 / 128 = 32. One element per consumer covers only 128 outputs. The repaired persistent GEMM uses a 32-value accumulator array per consumer and checks the full matrix.
+
+**Self-check 9.2.** With K=257 and TILE_K=16, how many K steps are needed and what must happen in the final step?
+
+??? success "Worked answer — 9.2"
+
+    ceil(257/16) = 17 steps. The last step has one valid K entry and 15 out-of-bounds entries that must not be read; the teaching kernel supplies zeros for those positions. The published 225×197×257 test exercises this tail and reports zero errors.
+
+<!-- practice:end -->
+
 
 ---
 

@@ -1,13 +1,25 @@
 # Asynchronicity, Barriers & the mbarrier Pipeline
 ## Lesson 3 Companion Guide — Programming the H100
 
+[![CHAPTER 03: When is the data ready?](images/chapter-openers/03-barriers.svg)](images/chapter-openers/03-barriers.svg)
+
+
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
 
-> **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
-> **Run with:** `./<out>` on any H100 or B200 instance.
+> **Baseline compiler flags — use each example’s full command below:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
+> **Run with:** `./<out>` on Hopper hardware matching the compiled target. `sm_90a` binaries are not a portable Blackwell build.
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Track thread arrivals separately from transaction bytes, and explain why data readiness does not grant permission to overwrite a buffer.
+
+    Use [Chapter 2](02-clusters-inline-ptx.md) for shared-address conversion and inline PTX. Revisit this chapter before attempting [persistent pipelines](09-kernel-design-part-2.md).
+<!-- learning:end -->
 
 **What this covers:** Everything from Lesson 3 — the philosophy of asynchronicity and latency hiding, blocking vs non-blocking operations, the Generic vs Async proxy memory model, read-after-write and write-after-read hazards, memory fences (acquire/release/cross-proxy), the mbarrier primitive (init, arrive, expect_tx, try_wait, test_wait, arrive_drop), barrier reuse with phase flipping, WAR hazard prevention, barrier.cluster for cross-block synchronization, cp.async.bulk commit/wait groups, and named barriers. Each section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
@@ -2253,6 +2265,7 @@ Element checks: 1024 / 1024 passed
 
 
 
+
 `GPU:` and the SM pair come from `cudaGetDeviceProperties` and vary with the hardware the binary runs on — any Hopper or newer card prints `SM 9.0` or higher; the rest of the output is deterministic. The kernel runs `K=4` iterations of the init → `arrive.expect_tx` → poll-`try_wait.parity` → verify → flip-phase pipeline over one `BLOCK_SIZE=64` block, so every one of the `K × TILE_SIZE = 4 × 256 = 1024` elements loaded into `smem` is checked against `(float)(k * TILE_SIZE + i)`, and all 1024 checks pass since the host seeds `h_input[i] = (float)i` to match exactly. One cosmetic note: the closing box's right edge lands two columns short of the border above it. That's not a typo in this guide — it's the real behavior of `printf("║  %-56s  ║\n", ...)` on the actual program: the field width `56` is a *byte* count, and the string being padded contains two multi-byte UTF-8 glyphs (`✓` and the em dash `—`, 3 bytes each instead of 1), so the padding comes up short of the visual width the border uses. The `✗ FAILURES DETECTED` variant (only one multi-byte glyph) happens to land flush by comparison.
 
 ---
@@ -2527,6 +2540,7 @@ Sample: in=7 → out=14 (expected 14)
 
 
 
+
 `GPU:` again varies with the card the binary runs on; everything else is deterministic. The host seeds `h_in[i] = (float)i` and `h_exp[i] = i * 2.0f`, and the kernel's compute step writes `dst[k*TILE+i] = smem[i] * 2.0f` after `data_bar` confirms the tile has arrived — so all `K_TILES × TILE = 8 × 128 = 1024` elements match and `errors` stays `0`. The `k == 0` priming `arrive.release` on `release_bar` is what lets the very first tile's producer proceed immediately, since otherwise it would spin forever waiting on consumer signals that haven't happened yet; from `k == 1` onward the producer genuinely blocks on `release_bar` until the consumers finish reading the buffer it's about to overwrite — the WAR hazard the two-barrier design exists to prevent. The sample index chosen for the `in=/out=` line is `i = 7`: `in=7 → out=14`. As in the previous example, the closing box's right edge runs two columns short of the border above it, for the same reason: the PASS string carries the same two 3-byte UTF-8 glyphs (`✓`, `—`) against the byte-counted `%-56s` field, so the padding comes up two bytes short of the visual width the border uses — regardless of how much slack is left in the 56-byte field itself.
 
 ---
@@ -2637,6 +2651,24 @@ cp.async.bulk.commit_group;   // → Group N
 cp.async.bulk.wait_group 1;   // all groups except the 1 most recent are done
 // → Groups 0..N-1 are complete; Group N may still be in flight
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 3.1.** A barrier expects one producer arrival and a 512-float transfer. Is producer arrival alone enough to release consumers?
+
+??? success "Worked answer — 3.1"
+
+    No. For FP32, the expected transaction count is 512 × 4 = 2,048 bytes. The phase completes only after both the required arrival and the associated transaction completion conditions are satisfied.
+
+**Self-check 3.2.** The data-ready wait completed. May the producer immediately load the next tile into the same buffer?
+
+??? success "Worked answer — 3.2"
+
+    No. Readiness establishes that the current data arrived, not that readers are finished. The producer also needs the consumer-to-producer release/empty handshake. Track these two ownership transitions separately.
+
+<!-- practice:end -->
+
 
 ---
 

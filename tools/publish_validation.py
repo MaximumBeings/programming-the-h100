@@ -73,4 +73,22 @@ Save the [tested source]({url}/{name}) as `{name}`, then run:
         text = re.sub(r'^> \*\*Verified on:\*\*[^\n]*\n', '', text, flags=re.M)
     page.write_text(text)
 shutil.copy2(RECORDS / 'results.json', PUBLIC / 'results.json')
+inventory = []
+for page in sorted((ROOT / 'docs').glob('*.md')):
+    text = page.read_text()
+    for index, match in enumerate(re.finditer(r'^```([^\n]*)\n(.*?)^```', text, re.M | re.S), 1):
+        body = match[2]
+        if body.lstrip().startswith('//') and re.search(r'\bint\s+main\s*\(', body):
+            kind = 'complete CUDA program'
+        elif 'REFERENCE' in body:
+            kind = 'reference skeleton or fragment'
+        elif '__device__' in body or '__global__' in body:
+            kind = 'code fragment; context required'
+        elif match[1] == 'bash':
+            kind = 'shell commands'
+        else:
+            kind = 'reference text, diagram, output, or code fragment'
+        inventory.append(dict(page=page.name, block=index, line=text[:match.start()].count('\n')+1,
+                              kind=kind, sha256=hashlib.sha256(body.encode()).hexdigest()))
+(PUBLIC / 'fenced-material-inventory.json').write_text(json.dumps(inventory, indent=2) + '\n')
 print(f'Published {len(rows)} dated compilation/execution records.')

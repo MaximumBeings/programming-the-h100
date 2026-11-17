@@ -1,4 +1,16 @@
 # Kernel Design, Warp Specialization & Pipelining
+
+[![CHAPTER 08: Give each warp a useful role.](images/chapter-openers/08-design.svg)](images/chapter-openers/08-design.svg)
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Define the memory level and bytes used in arithmetic intensity, budget shared memory, and connect warp roles to a measured bottleneck.
+
+    [Chapter 6](06-wgmma-part-1.md) explains Tensor Core arithmetic; [Chapter 13](13-nsight-compute.md) checks whether the proposed bottleneck is real.
+<!-- learning:end -->
+
 ## Lesson 3 Companion Guide — High-Performance CUDA Kernels on the H100
 
 > **Validation — November 17, 2026.** 4 complete CUDA programs compiled and executed successfully.
@@ -581,6 +593,7 @@ KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex01_roofline.cu -->
+
 
 
 
@@ -1247,6 +1260,7 @@ Role assignment: CORRECT
 
 
 
+
 Every value lands exactly on `6i+14` because this kernel does pure FP32 arithmetic on values that are exact in binary floating point (small integers and products of small integers) — unlike the BF16 accumulation examples in Chapters 6-7, there is no rounding to trace here, so the "Got" and "Expected" columns match bit-for-bit, including at the boundary case `i=127` (776.0), which matches the manual worked example above.
 
 ---
@@ -1606,6 +1620,7 @@ WG1 (CONSUMER, 128 regs after resize):
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex03_setmaxnreg.cu -->
+
 
 
 
@@ -2218,7 +2233,26 @@ Output Verification (element 0 and element 10):
 
 
 
+
 Every physical stage gets read exactly once between the writes that would otherwise clobber it: `depth=2` guarantees a tile is consumed two iterations after it's produced, and the next write to that same physical slot doesn't land until two iterations after *that* (`N_STAGES − depth = 2` more steps), so the 8 writes at k=0..7 and the 8 reads (6 in steady state, 2 in drain) pair up one-to-one in order, giving the simple closed-form sum `280 + 0.08×j` — no stage is ever read stale or dropped.
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 8.1.** For one isolated 64×64×16 BF16 multiply with FP32 output, compare input-only intensity with intensity including the output store. Assume no prior C read.
+
+??? success "Worked answer — 8.1"
+
+    The work is 131,072 FLOPs. A and B total 4,096 bytes, giving 32 FLOP/byte if output traffic is excluded. Adding the 16,384-byte FP32 output gives 131,072 / 20,480 = 6.4 FLOP/byte. Both calculations are defined models; only the one matching the measured traffic answers the performance question.
+
+**Self-check 8.2.** Three stages each store two 64×64 BF16 tiles. An FP16 epilogue tile adds another 64×64 elements. What is the storage before barriers and padding?
+
+??? success "Worked answer — 8.2"
+
+    Each stage uses 16 KiB. Three use 48 KiB; the epilogue adds 8 KiB, totaling 56 KiB. Add barriers, alignment padding and other shared objects, then compare against the actual per-block limit and occupancy. Do not assume the whole per-SM capacity belongs to every resident block.
+
+<!-- practice:end -->
+
 
 ---
 

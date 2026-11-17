@@ -1,6 +1,11 @@
 # NVIDIA H100 GPU Architecture
 ## Lesson 1 Companion Guide — A Deep Dive into Hopper
 
+[![CHAPTER 01: Inside the Hopper machine](images/chapter-openers/01-architecture.svg)](images/chapter-openers/01-architecture.svg)
+
+*Architecture introduction years: [Volta (2017)](https://nvidianews.nvidia.com/news/nvidia-launches-revolutionary-volta-gpu-platform-fueling-next-era-of-ai-and-high-performance-computing), [Ampere (2020)](https://developer.nvidia.com/blog/nvidia-ampere-architecture-in-depth/), [Hopper (2022)](https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/), [Blackwell (2024)](https://nvidianews.nvidia.com/news/nvidia-blackwell-platform-arrives-to-power-a-new-era-of-computing/). Package drawings are conceptual, not die photographs or scale comparisons.*
+
+
 > **Validation — November 17, 2026.** Architecture reference. SXM product specifications and models are distinguished from the PCIe execution host.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
@@ -8,6 +13,15 @@
 
 > **Target audience:** GPU programmers who want to understand the H100 at the hardware level before writing CUDA/PTX kernels.
 > **Prerequisites:** Basic understanding of parallel computing concepts (threads, memory hierarchy).
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Separate product specifications from a throughput model; identify whether a number is per SM, per GPU, or bidirectional.
+
+    No prior Hopper knowledge. Read the [installation guide](getting-started.md) if you want to check the execution host.
+<!-- learning:end -->
 
 **What this covers:** Every architectural concept in Lesson 1 — the TMA unit, asynchronous execution, Tensor Cores, the memory hierarchy from HBM3 through L2/L1 to registers, the SM microarchitecture (quadrants, warp schedulers, dispatch units, SFUs, LSUs), NVLink 4.0, shared memory banking, swizzling, and how thread blocks are distributed across SMs. Each section includes ASCII diagrams, worked examples with concrete numbers, and practical implications for kernel design.
 
@@ -1457,6 +1471,24 @@ Tensor Core throughput (SXM5, derived from published full-GPU totals):
    Every access to a lower level is 10-1000× more expensive.
    Design your data layout to maximize hits at each level.
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 1.1.** A GPU link is advertised as 900 GB/s bidirectional. What one-way budget may you use in a simple symmetric model?
+
+??? success "Worked answer — 1.1"
+
+    450 GB/s in each direction. Do not compare the 900 GB/s bidirectional sum with a one-way network rate. An eight-port aggregate is also a different quantity from a four-versus-four bisection.
+
+**Self-check 1.2.** Assume 32 shared-memory banks, four bytes per bank per cycle and a 1.98 GHz clock. Compute the modeled per-SM rate.
+
+??? success "Worked answer — 1.2"
+
+    32 × 4 × 1.98×10⁹ = 253.44×10⁹ bytes/s, or 253.44 GB/s per SM. Multiplying by 132 SMs gives about 33.45 TB/s GPU-wide. This is an assumed bank-throughput model, not a measured bandwidth guarantee.
+
+<!-- practice:end -->
+
 
 ---
 

@@ -1,4 +1,16 @@
 # Multi-GPU Systems, NCCL, and Distributed Training
+
+[![CHAPTER 11: One workload. Many GPUs.](images/chapter-openers/11-multigpu.svg)](images/chapter-openers/11-multigpu.svg)
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Separate topology from GPU count, match a collective to the required mathematical result, and state the hardware coverage of a distributed test.
+
+    Understand the [Chapter 1](01-h100-architecture.md) bandwidth scopes first. A successful single-GPU run does not validate a multi-GPU communication path.
+<!-- learning:end -->
+
 ## Lesson 5 Companion Guide — Hardware Topology to Collective Primitives
 
 > **Validation — November 17, 2026.** All 3 complete CUDA programs compiled. Multi-GPU workloads were not run: the tests require 2 or 8 GPUs and this host has 1.
@@ -1020,6 +1032,7 @@ Need at least 2 GPUs for P2P benchmark. Exiting.
 
 
 
+
 (No physical GPU was available to capture a real bandwidth transcript — this sandbox has no `nvidia-smi`/`/dev/nvidia*` device at all, so `cudaGetDeviceCount()` itself fails. Unlike the two examples later in this chapter, this failure is handled correctly here: the call is wrapped in `CHECK_CUDA(...)`, so the error is caught and the program exits cleanly with a diagnostic message rather than reading an uninitialized `num_gpus`. This is the genuine, compiled-and-run output of this exact file with real `nvcc` in a zero-GPU environment — not estimated. The bandwidth figures above in "Expected results on H100 DGX" remain labeled as expected because they are physical measurements — GB/s achieved over real NVLink hardware — which, unlike Chapter 10's arithmetic kernels, cannot be derived by CPU-side reproduction of the kernel's logic; there is no substitute for running on the real fabric.)
 
 ---
@@ -1809,6 +1822,7 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex12_nccl_allreduce.cu -o ex12_nccl_allreduce -
 Need >= 2 GPUs for NCCL test. Found 1. Exiting.
 ```
 <!-- validation:end:ex12_nccl_allreduce.cu -->
+
 
 
 
@@ -3285,6 +3299,7 @@ ERROR: Need 8 GPUs, found 1. Exiting.
 
 
 
+
 (This is the genuine, compiled-and-run output of this file with real `nvcc`/NCCL in a zero-GPU sandbox, after fixing the same uninitialized-`n_gpus` bug described under ex12 above. A real 8-GPU run's per-step loss values, DP-divergence numbers, and TP-reconstruction diff cannot be captured this way -- an 8-way NCCL-synchronized training loop is not arithmetic a single CPU thread can stand in for, unlike Chapter 10's single-kernel examples.
 
 What *can* be verified without real hardware is whether this file's own numbers are internally consistent -- so this file's exact weight-init, forward, backward, DP-average, and SGD-clip formulas (HIDDEN=64, BATCH=16, TP=2, PP=2, DP=2, N_STEPS=8, LR=0.01, CLIP=1.0) were reproduced in a plain host-side C++ program (no CUDA/NCCL/cuBLAS) and run with real `g++`. Three things came out of that:
@@ -3353,6 +3368,24 @@ Code Component → Concept It Demonstrates
       backward formulas), learning rate is too large (reduce LR),
       or DP AllReduce is broken (all replicas have different gradients).
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 11.1.** An AllReduce sums rank-local vectors filled with 1, 2, 3 and 4 on four ranks. What should every rank receive?
+
+??? success "Worked answer — 11.1"
+
+    A vector filled with 10. If the application needs the mean, divide by four exactly once. This is a paper exercise, not a claim that the four-rank test was executed on the one-GPU validation host.
+
+**Self-check 11.2.** A design uses TP=2, PP=2 and DP=2. What is the minimum GPU count, and is that count enough to predict performance?
+
+??? success "Worked answer — 11.2"
+
+    2 × 2 × 2 = 8 GPUs. Count alone does not specify NVLink connectivity, PCIe peer access, network bandwidth or collective behavior. Record topology and placement as well. The eight-GPU training workload remains hardware-blocked in the published validation record.
+
+<!-- practice:end -->
+
 
 ---
 

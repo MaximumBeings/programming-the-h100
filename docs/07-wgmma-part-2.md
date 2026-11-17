@@ -1,13 +1,25 @@
 # WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
 ## Lesson 7 Companion Guide — Programming the H100
 
+[![CHAPTER 07: Queue the math. Collect the result.](images/chapter-openers/07-groups.svg)](images/chapter-openers/07-groups.svg)
+
+
 > **Validation — November 17, 2026.** 1 complete CUDA program compiled and executed successfully.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
 
-> **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
+> **Baseline compiler flags — use each example’s full command below:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
 > **Run with:** `./<out>` on a Hopper H100/H200 instance.
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Drain the correct WGMMA groups, choose a supported accumulator type, and prove that the epilogue stores every output element.
+
+    Use the [Chapter 6](06-wgmma-part-1.md) accumulator layout first. The pipeline program here tests both complete output tiles.
+<!-- learning:end -->
 
 **What this covers:** Everything from Lesson 7 — commit/wait group mechanics for overlapping wgmma with data preparation (the pipeline-friendly API), wgmma.fence dual roles (group boundary + register hazard control), stmatrix for cooperative accumulator writeback (address phase, register layout, x1/x2/x4 variants, FP32 vs FP16 accumulator paths), the FP8 paradigm shift (E4M3 vs E5M2 formats, scaling factors, packed types e4m3x2/x4, the cvt.satfinite quantization instruction, K-major layout requirement, precision pitfalls with large K), and Sparse WGMMA (2:4 structured sparsity, sp-meta register, sp-sel thread selector, metadata packing for FP16/BF16/FP8/TF32). Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
@@ -1911,6 +1923,7 @@ Output verification: 0 errors across both 64×64 tiles
 
 
 
+
 `GPU:` identifies the tested SKU. This example uses **FP16 inputs and FP16 accumulators**: the PTX WGMMA BF16 input variant requires FP32 accumulators. Inputs are rounded to FP16 before the reference is computed. Both complete 64×64 output tiles are checked, including all four `stmatrix.x4` slices per warp; checking only positive register sums would miss an incomplete epilogue. See the [CUDA 12.8 PTX WGMMA specification](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions-wgmma-mma).
 
 The closing banner repeats Chapter 6's byte-vs-codepoint `%-56s` quirk, with this chapter's own numbers: `✓ ALL PASS — commit/wait pipeline + stmatrix working!` is 53 codepoints but 57 UTF-8 bytes (`✓` and `—` each cost 3 bytes for 1 displayed column, wasting 2 bytes apiece). Since 57 already exceeds the 56-byte field width, `printf` pads with nothing, and the line prints at its raw length. Measured in the columns a terminal actually draws, that puts the whole bordered line — the fixed `"║  "` and `"  ║"` margins plus 53 content columns, 59 in total — exactly 1 column short of the 60-column border above it, the same shortfall Chapter 6 hit with a differently-worded message of the same coincidental 53-codepoint length.
@@ -2052,6 +2065,24 @@ sp-meta not cycled 0→1→2→3 (FP16 sparse)  Reuses first K pattern Unroll lo
 TF32 sparse with sp-meta 0,1 (not 14,4)   Hardware misalignment  Use 14 then 4 for TF32
 Large K FP8 without K-slicing             Precision drift        Slice K ≤ 256, reduce partial
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 7.1.** How many collective stmatrix.x4.b16 stores cover one 64×64 FP16 result?
+
+??? success "Worked answer — 7.1"
+
+    The output contains 64 × 64 × 2 = 8,192 bytes. One warp-collective x4 store writes 512 bytes, so the warpgroup needs 16 such collective stores in total: four calls per warp across four warps. A single call per warp leaves most of the tile unstored.
+
+**Self-check 7.2.** Why is “all accumulator sums are positive” a weak correctness check?
+
+??? success "Worked answer — 7.2"
+
+    It can pass with permuted values, missing stores, or a partly written output. Check every output against a reference, reject nonfinite values, and use position-dependent inputs to expose layout permutations. The tested pipeline also checks both full stored tiles.
+
+<!-- practice:end -->
+
 
 ---
 

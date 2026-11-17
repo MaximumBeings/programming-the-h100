@@ -1,0 +1,9 @@
+H100 book preflight: BLOCKED
+Visible GPUs: 1; nvcc: 12.8.93
+  NVIDIA H100 PCIe; CC 9.0; 81079.1 MiB
+BLOCKED: Requires 8 visible GPU(s); found 1.
+NOTE: Single-GPU chapters are available; Chapter 11 workloads require 2 or 8 GPUs.
+NOTE: Device discovery uses the CUDA Driver API and respects CUDA_VISIBLE_DEVICES.
+NOTE: Driver compatibility, compiler version and the compiled architecture target are separate checks.
+NOTE: This checks prerequisites, not kernel correctness, GPU interconnects or profiler permissions.
+Tools: ncu=found, compute-sanitizer=found, cuobjdump=found, nvdisasm=found

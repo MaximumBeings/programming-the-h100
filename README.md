@@ -64,3 +64,11 @@ time by matching each anchor against the page's real heading slugs. It also:
 `mkdocs build --strict` passes with zero broken links.
 
 Built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
+
+## Reader tools
+
+Start with `docs/getting-started.md`. `python3 tools/h100_preflight.py` checks CUDA-visible Hopper devices and the installed compiler without PyTorch; `--minimum-gpus 8` checks the prerequisite for the eight-GPU teaching workload. The recorded preflight ran on the H100 PCIe host on November 17, 2026.
+
+`python3 tools/verify_validation_records.py` checks that all complete chapter programs and downloadable sources still match their recorded execution hashes. CI runs this before the strict documentation build. It is an evidence-consistency check, not a GPU execution test.
+
+Every chapter includes learning goals, two self-checks with expandable worked answers, and an original SVG opening illustration. `tools/create_chapter_openers.py` regenerates those illustrations.

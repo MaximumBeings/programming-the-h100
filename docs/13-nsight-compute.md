@@ -1,6 +1,9 @@
 # Profiling with Nsight Compute
 ## Chapter 13 Companion Guide — Measuring What the Rest of This Book Claims
 
+[![CHAPTER 13: Turn intuition into evidence.](images/chapter-openers/13-profiling.svg)](images/chapter-openers/13-profiling.svg)
+
+
 > **Validation — November 17, 2026.** Nsight Compute 2025.1.1 profiled the tested Chapter 6 WGMMA program; ordinary-user and successful elevated-permission logs are linked below.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
@@ -12,6 +15,15 @@
 > changed, the text says which `--list-*` command will tell you the truth on your
 > install rather than asserting a version-specific answer.
 > **Docs:** [Nsight Compute Profiling Guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Measure the intended scope, separate profiler replay from ordinary timing, and connect each optimization to both correctness and evidence.
+
+    Bring a passing reference from any executable chapter. Use the [Getting Started guide](getting-started.md) to verify hardware and tool availability before profiling.
+<!-- learning:end -->
 
 **What this covers:** Getting `ncu` to run at all, including the permission error
 that stops most people on their first attempt; what replay is and why your kernel
@@ -1642,6 +1654,27 @@ achieved occupancy (pipelined)  15-30%         and that is FINE
 spill stores / loads            0              --ptxas-options=-v
 ```
 
+!!! tip "A measurement worksheet you can actually reproduce"
+
+    Keep one row per experiment: commit/source hash; GPU SKU and visible GPU count; driver/toolkit; shape and dtype; layout; warmup and repetition counts; output-check tolerance and maximum error; whether allocation/transfers are included; unprofiled kernel timing; profiler version/settings; and the single change being tested. Report a distribution across repeated measurements rather than selecting the fastest run. A ratio between two runs is useful only when the scopes match.
+
+    Use nonuniform inputs, reject NaN/Inf explicitly, and include partial tiles and an odd reduction length. For reduced precision, compare against a reference using the actual rounded input values. The dated source hashes and execution logs in this book supply a starting point for this worksheet.
+
+??? example "Optional correctness tools before performance tuning"
+
+    These are **follow-up commands**, not additional captured test results. First check that the tools are installed. Build the selected complete program using its full recorded command, optionally adding `-lineinfo` for source attribution, then run:
+
+    ```bash
+    compute-sanitizer --tool memcheck ./your_example
+    compute-sanitizer --tool racecheck ./your_example
+    compute-sanitizer --tool initcheck ./your_example
+    compute-sanitizer --tool synccheck ./your_example
+    ```
+
+    The tools check different classes of memory and synchronization problems. Their support and limitations depend on the installed version and instruction family; consult [NVIDIA’s Compute Sanitizer guide](https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/). A clean report does not replace a numerical reference or prove every asynchronous protocol correct. Sanitizer/profiler runs are not ordinary performance measurements.
+
+    For event-based timing and completion scope, use [NVIDIA’s CUDA Best Practices timing guidance](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-best-practices-guide/index.html#timing). Run correctness checks after changing stage count, layout, accumulator type, tile size or scheduling—not just after changing the arithmetic.
+
 ### The Checklist
 
 ```
@@ -1656,6 +1689,24 @@ spill stores / loads            0              --ptxas-options=-v
 □ Re-measure after every single change, one at a time
 ```
 
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 13.1.** A CPU timer around a whole process takes seconds, while the profiler reports a tiny kernel in microseconds. Which should you report?
+
+??? success "Worked answer — 13.1"
+
+    Report the metric matching the question, with its scope. Process time includes startup and setup; a kernel metric covers a selected launch and can be affected by profiling. For steady-state kernel timing, use an appropriate repeated CUDA-event measurement with warmup and explicit completion. Do not divide a replayed process wall time by the number of displayed launches.
+
+**Self-check 13.2.** A one-CTA kernel on 114 SMs has low achieved utilization. Should you immediately lower registers to maximize occupancy?
+
+??? success "Worked answer — 13.2"
+
+    First check whether there is enough independent work to occupy the GPU. A one-CTA correctness demonstration is intentionally small. Increasing occupancy cannot invent additional CTAs. Then investigate actual limiting resources and recheck both output correctness and unprofiled timing after a change.
+
+<!-- practice:end -->
+
+
 ---
 
 > **The end of the book.**
@@ -1663,8 +1714,8 @@ spill stores / loads            0              --ptxas-options=-v
 > Thirteen chapters, from a single H100 die to a multi-node SuperPOD and back
 > down to the individual instruction that stalled. You have the architecture, the
 > instruction set, the data movement machinery, the tensor cores, the kernel
-> designs that combine them, the distributed systems layer above, a complete
-> production kernel that uses all of it, and now the tool that tells you when
+> designs that combine them, the distributed systems layer above, an annotated
+> production-kernel design and a tested numerical reference, and now the tool that tells you when
 > your reasoning was wrong.
 >
 > One place left to go: [CUTLASS](https://github.com/NVIDIA/cutlass) is the

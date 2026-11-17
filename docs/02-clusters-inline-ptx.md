@@ -1,10 +1,22 @@
 # Clusters, Inline PTX, Data Types & Pointers
 ## Lesson 2 Companion Guide — Programming the H100 & Beyond
 
+[![CHAPTER 02: Blocks that work together](images/chapter-openers/02-clusters.svg)](images/chapter-openers/02-clusters.svg)
+
+
 > **Validation — November 17, 2026.** 6 complete CUDA programs compiled and executed successfully.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Explain a cluster lifetime, distinguish generic from shared addresses, and map a byte address to a shared-memory bank.
+
+    Start with [Chapter 1](01-h100-architecture.md). The first complete program in this chapter is also the [installation guide’s first GPU run](getting-started.md).
+<!-- learning:end -->
 
 **How to read this chapter.** It is long, and it is really three chapters
 stacked together. Sections 1–3 are about *clusters* — the new level of the CUDA
@@ -854,6 +866,7 @@ ALL TESTS PASSED — Clusters working correctly!
 ════════════════════════════════════════════════
 ```
 <!-- validation:end:ex01_cluster_inspect.cu -->
+
 
 
 
@@ -1868,6 +1881,7 @@ Test 11: vote.ballot (even lanes → 0x55555555)
 
 
 
+
 Test 5's `ctaid.x` and `laneid` lines are printed as `INFO`, not `PASS` — only `tid.x == 0` is actually asserted, since which block happens to write first is a scheduling detail, not something the test should depend on. Every other line is deterministic for this launch configuration; `%05X`/`%08X` field widths are why `and`, `or`, `xor` and `shr` print with a leading zero (`0x00F00` not `0xF00`).
 
 ---
@@ -2822,6 +2836,7 @@ Test 6: Combined — global→SMEM→compute with SCALE_FACTOR[0]=2.0
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex03_state_spaces.cu -->
+
 
 
 
@@ -3903,6 +3918,7 @@ Test 6: mov.b32 bit reinterpret (float↔uint32)
 
 
 
+
 The `SMEM offset=0x%X` value in Test 1 is whatever small 32-bit offset `__cvta_generic_to_shared` happens to assign — it is driver/compiler-chosen, not a fixed address, so don't expect `0x0` specifically on your own run; the surrounding PASS depends only on the two loaded values being 42.0 and 99.0, not on that offset. `0x40490FD0` is the exact IEEE-754 single-precision bit pattern for `3.14159f` — that part is architecture-independent and will match on any run.
 
 ---
@@ -4179,6 +4195,7 @@ Test 5: mad hi+lo (0xFFFFFFFF * 0xFFFFFFFF)
 ╚══════════════════════════════════════════════════════╝
 ```
 <!-- validation:end:ex05_ptx_datatypes.cu -->
+
 
 
 
@@ -4730,7 +4747,26 @@ Verification (first 8 and last 4 elements):
 
 
 
+
 Index 0 and index 64 both land on "Expected 64.0" because they're DSMEM partners: thread 0 of Block 0 reads `input[0]=0` plus Block 1's partner value `input[64]=64`, while thread 0 of Block 1 reads `input[64]=64` plus Block 0's partner value `input[0]=0` — same pair, same sum, read through the DSMEM interconnect in opposite directions. `prop.name` will reflect whatever H100 SKU (or B100/B200) you actually run this on; everything from "Launch config" down is deterministic for N=128.
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 2.1.** For 32 four-byte banks, which bank contains byte address 0x180? What happens when lane i reads float index 32×i?
+
+??? success "Worked answer — 2.1"
+
+    0x180 is 384 bytes: (384/4) mod 32 = bank 0. Float index 32×i also maps every lane to bank 0, but to distinct addresses, creating a bank conflict. All lanes reading exactly the same address is the separate broadcast case.
+
+**Self-check 2.2.** Why must a cluster block wait before exiting if another block may still read its shared memory?
+
+??? success "Worked answer — 2.2"
+
+    The remote shared-memory storage belongs to that block’s lifetime. A pointer or mapped rank does not extend it. Coordinate the final remote reads with cluster synchronization before any participating block destroys the storage by exiting.
+
+<!-- practice:end -->
+
 
 ---
 

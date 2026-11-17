@@ -1,6 +1,9 @@
 # FlashAttention-3 on the H100
 ## Chapter 12 Companion Guide — Every Primitive in This Book, Working at Once
 
+[![CHAPTER 12: Attention, one tile at a time.](images/chapter-openers/12-attention.svg)](images/chapter-openers/12-attention.svg)
+
+
 > **Validation — November 17, 2026.** 12 online-softmax numerical reference cases passed on CUDA; the FA3 scheduling listings remain explicitly labeled skeletons.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
@@ -17,6 +20,15 @@
 > **Canonical source:** Shah, Bikshandi, Zhang, Thakkar, Ramani, Dao —
 > *FlashAttention-3: Fast and Accurate Attention with Asynchrony and
 > Low-precision*, NeurIPS 2024 ([arXiv:2407.08608](https://arxiv.org/abs/2407.08608)).
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Maintain the online-softmax invariants, distinguish algorithm validation from a complete FA3 implementation, and test masks and partial tiles.
+
+    Read [Chapters 3–7](03-asynchronicity-mbarrier.md) for the primitives and [Chapter 9](09-kernel-design-part-2.md) for pipeline ownership. The executable recurrence reference is separate from the kernel skeleton.
+<!-- learning:end -->
 
 **What this covers:** Why attention is memory-bound in its naive form and how
 tiling fixes it; the online softmax recurrence that makes tiling possible, worked
@@ -1862,6 +1874,24 @@ V not transposed for FP8 GEMM1           Silently wrong     In-kernel
 Both warpgroups sync on the same         Ping-pong does     Two barrier
 barrier                                  nothing            IDs (§6.2)
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 12.1.** The old running maximum is 2, old normalizer is 3 and old numerator is 6. A block with maximum 3 has normalizer 2 and numerator 5. How do you combine them?
+
+??? success "Worked answer — 12.1"
+
+    Rescale the old state by a=exp(2−3). The new normalizer is 3a+2 and numerator is 6a+5; the result is (6a+5)/(3a+2). Rescaling only the normalizer or only the numerator changes the answer. The exact expression is more useful than rounding intermediate values.
+
+**Self-check 12.2.** Does agreement of the Python recurrence with SDPA prove that a handwritten FA3 CUDA skeleton is correct?
+
+??? success "Worked answer — 12.2"
+
+    No. It checks the recurrence for the tested shapes and masks. The skeleton still needs valid layouts, complete wrappers, an epilogue, launch code and correct synchronization. Unequal query/key lengths and fully masked rows also need explicit API contracts and additional tests before claiming support.
+
+<!-- practice:end -->
+
 
 ---
 

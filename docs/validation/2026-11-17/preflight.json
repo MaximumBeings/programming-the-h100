@@ -1,0 +1,29 @@
+{
+  "timestamp_utc": "2026-11-17T22:05:59.011425+00:00",
+  "os": "Linux",
+  "python": "3.12.3",
+  "gpu_count": 1,
+  "devices": [
+    {
+      "name": "NVIDIA H100 PCIe",
+      "compute_capability": "9.0",
+      "memory_mib": 81079.125
+    }
+  ],
+  "driver": "580.105.08",
+  "nvcc": "12.8.93",
+  "tools": {
+    "ncu": true,
+    "compute-sanitizer": true,
+    "cuobjdump": true,
+    "nvdisasm": true
+  },
+  "status": "PASS",
+  "errors": [],
+  "notes": [
+    "Single-GPU chapters are available; Chapter 11 workloads require 2 or 8 GPUs.",
+    "Device discovery uses the CUDA Driver API and respects CUDA_VISIBLE_DEVICES.",
+    "Driver compatibility, compiler version and the compiled architecture target are separate checks.",
+    "This checks prerequisites, not kernel correctness, GPU interconnects or profiler permissions."
+  ]
+}

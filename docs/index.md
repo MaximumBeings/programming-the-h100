@@ -1,5 +1,8 @@
 # Programming the H100
 
+[![FIELD GUIDE: Programming the H100](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
+
+
 > **Validation — November 17, 2026.** 27 complete CUDA programs compiled; 24 single-GPU workloads passed. Three multi-GPU workloads require additional hardware.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
@@ -16,7 +19,7 @@ read line by line.
 </p>
 
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
-> **Run with:** `./<out>` on any H100 or B200 instance.
+> **Run with:** `./<out>` on Hopper hardware matching the compiled target. Use the complete per-example command, including any driver, NCCL or cuBLAS linker flags.
 
 ## How to read this
 
@@ -25,12 +28,53 @@ just the machine. Chapters 2–3 give you the instruction-level vocabulary
 (clusters, inline PTX, state spaces, `mbarrier`). Chapters 4–5 are about
 getting bytes into shared memory efficiently. Chapters 6–7 are the tensor
 cores. Chapters 8–10 put it together into real warp-specialized kernels.
-Chapter 11 leaves the single GPU behind. Chapters 12–13 are the payoff: one
-production kernel that uses everything at once, and the tool that measures it.
+Chapter 11 leaves the single GPU behind. Chapters 12–13 are the payoff: an
+annotated FA3 design with a tested numerical reference, and the tool that measures real kernels.
 
 If you already write CUDA and want the Hopper-specific parts, start at
 Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order. If you
 have a slow kernel in front of you right now, start at Chapter 13.
+
+**Start here:** [Getting Started & Installation](getting-started.md) takes you from choosing a machine to a real verified CUDA result. You can read the book and build its website on a computer without an NVIDIA GPU; the hardware-facing examples require a compatible execution host.
+
+| Your goal | Suggested route | Finish by producing |
+| --- | --- | --- |
+| First successful GPU run | Getting Started → 1 → 2 | A passing output and a saved preflight report |
+| Understand Hopper data movement | 2 → 3 → 4 → 5 | A valid descriptor, a byte count and a completion/ownership explanation |
+| Write and diagnose GEMM kernels | 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 13 | Full-output reference checks and a profile tied to the right roofline |
+| Understand fast attention | 3 → 4 → 6 → 7 → 9 → 12 → 13 | A recurrence check and a clear account of what the skeleton still omits |
+| Study distributed GPU workloads | 1 → 2 → 11 → 13 | A topology record and a collective result checked on the required hardware |
+
+**Read an example in three passes.** First trace where each value lives and which thread owns it. Then identify what makes it safe to read and safe to overwrite. Finally predict the reference output before looking at the captured result. Performance tuning comes after those three agree.
+
+??? info "What the evidence labels mean"
+
+    **Compiled** means the complete listed translation unit built with the recorded command. **Executed and passed** means its actual workload ran and passed its stated checks. **Hardware-blocked** means only prerequisite/error handling was exercised; it is not a successful distributed test. **Reference/skeleton** means surrounding implementation is missing. A passing recurrence test does not validate a different handwritten kernel or reproduce a paper benchmark.
+
+    Every chapter includes learning goals and two self-checks with expandable worked answers. These exercises are reasoning aids, not extra claims of measured hardware behavior.
+
+??? info "A compact glossary — use it while reading"
+
+    | Term | Meaning in this book | Read more |
+    | --- | --- | --- |
+    | SM | Streaming multiprocessor: a block of GPU execution resources | [1](01-h100-architecture.md) |
+    | CTA / thread block | Cooperating CUDA threads with a block-local shared-memory lifetime | [2](02-clusters-inline-ptx.md) |
+    | Warp / warpgroup | 32 threads / four consecutive warps participating in Hopper WGMMA | [2](02-clusters-inline-ptx.md), [6](06-wgmma-part-1.md) |
+    | Cluster / DSMEM | Co-scheduled blocks and their distributed shared-memory access | [2](02-clusters-inline-ptx.md) |
+    | Generic / async proxy | Distinct memory-access mechanisms that need the right ordering protocol | [3](03-asynchronicity-mbarrier.md) |
+    | RAW / WAR | Read-after-write readiness / write-after-read reuse hazards | [3](03-asynchronicity-mbarrier.md) |
+    | mbarrier / phase | Completion state and the generation being waited on | [3](03-asynchronicity-mbarrier.md), [9](09-kernel-design-part-2.md) |
+    | Tensor map / TMA | A multidimensional transfer description / Hopper transfer machinery | [4](04-cutensormap-tma-swizzling.md), [5](05-cp-async-bulk-l2-hinting.md) |
+    | Swizzle | A mapping between logical element coordinates and shared-memory byte locations | [4](04-cutensormap-tma-swizzling.md) |
+    | WGMMA / descriptor | Hopper warpgroup matrix arithmetic / its shared-memory operand description | [6](06-wgmma-part-1.md) |
+    | Commit / wait group | Submission of asynchronous arithmetic and waiting for its completion | [7](07-wgmma-part-2.md) |
+    | Epilogue | Processing after the reduction: conversion, scaling, activation and output storage | [7](07-wgmma-part-2.md), [9](09-kernel-design-part-2.md) |
+    | Stage / empty / full | A reusable storage slot and the two directions of its ownership handshake | [8](08-kernel-design-part-1.md), [9](09-kernel-design-part-2.md) |
+    | Arithmetic intensity | Defined work divided by defined traffic at a stated memory level | [8](08-kernel-design-part-1.md) |
+    | Stream-K | Scheduling based on reduction work, potentially combining partial output tiles | [10](10-stream-k-scheduling.md) |
+    | TP / PP / DP | Tensor, pipeline and data parallelism | [11](11-multi-gpu-nccl.md) |
+    | Online softmax | Combining tiles using a running maximum, normalizer and output numerator | [12](12-flashattention-3.md) |
+    | Replay / occupancy | Profiler re-execution / resident execution-resource use; neither alone proves speed | [13](13-nsight-compute.md) |
 
 ## Contents
 

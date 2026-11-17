@@ -1,4 +1,16 @@
 # Stream-K Scheduling & Multi-Kernel Launch Protocols
+
+[![CHAPTER 10: Distribute work, not idle time.](images/chapter-openers/10-streamk.svg)](images/chapter-openers/10-streamk.svg)
+
+
+<!-- learning:start -->
+!!! tip "Your goal in this chapter"
+
+    Partition a reduction without gaps or overlap, apply final-only operations once, and distinguish scheduling balance from a performance guarantee.
+
+    [Chapter 9](09-kernel-design-part-2.md) covers persistent work assignment; [Chapter 13](13-nsight-compute.md) distinguishes improved scheduling from improved measured time.
+<!-- learning:end -->
+
 ## Lesson 4 Companion Guide — Advanced Scheduling and Dependent Grid Execution
 
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
@@ -775,6 +787,7 @@ Verification:
 ALL PASS ✓
 ```
 <!-- validation:end:ex09_streamk_roles.cu -->
+
 
 
 
@@ -1630,6 +1643,7 @@ ALL PASS ✓
 
 
 
+
 (No physical GPU was available to capture this transcript — this sandbox has no `nvidia-smi`/`/dev/nvidia*` device, and `griddepcontrol` additionally requires real sm_90+ hardware the emulator can't fake. The values above are `output[i] = 3*i + 1` and `result[i] = output[i] + 1000`, computed directly from this file's own producer/consumer arithmetic for `i = 0..7` — not estimated or invented. Since `kernel_consumer` only runs after `griddepcontrol.wait` unblocks, and `kernel_producer` only signals `launch_dependents` after every thread's store is fenced, the dependent-launch protocol guarantees this exact sequential result regardless of how much the two kernels overlap in hardware; there is no race to simulate here, unlike `ex09`'s lock-based reduction.)
 
 ---
@@ -2133,6 +2147,24 @@ GDC Instruction Summary
     griddepcontrol requires sm_90+ (H100, B100)
     sm_80 (A100): strict serialization only
 ```
+
+<!-- practice:start -->
+**Pause and explain it.** These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.
+
+**Self-check 10.1.** Divide 90 numbered K tiles among four CTAs using boundaries floor(i×90/4). What are the ranges?
+
+??? success "Worked answer — 10.1"
+
+    The boundaries are 0, 22, 45, 67, 90, giving half-open ranges [0,22), [22,45), [45,67), [67,90). Their lengths are 22, 23, 22, 23 and total 90. Check both coverage and overlap before benchmarking.
+
+**Self-check 10.2.** Can each split apply ReLU before partial results are combined? Test partial sums −2 and 3.
+
+??? success "Worked answer — 10.2"
+
+    No: ReLU(−2+3)=1, while ReLU(−2)+ReLU(3)=3. Combine partial sums first, then apply nonlinear activation. Bias and other final-only epilogue operations must also follow the intended full-output formula, not be duplicated per split.
+
+<!-- practice:end -->
+
 
 ---
 
