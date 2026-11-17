@@ -1,0 +1,12 @@
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu(32): warning #177-D: variable "N_STAGES" was declared but never referenced
+  constexpr int N_STAGES = 3;
+                ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu(32): warning #177-D: variable "N_STAGES" was declared but never referenced
+  constexpr int N_STAGES = 3;
+                ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+

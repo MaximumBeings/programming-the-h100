@@ -1,0 +1,20 @@
+═══════════════════════════════════════════════════════
+  ex10_dependent_launch — GDC Dependent Grid Protocol
+  N=256 elements
+═══════════════════════════════════════════════════════
+
+Launching Kernel A (producer)...
+Launching Kernel B (consumer) with programmatic serialization...
+
+Verification (first 8 elements):
+  [  0] A wrote    1 (exp    1) ✓  B result 1001 (exp 1001) ✓
+  [  1] A wrote    4 (exp    4) ✓  B result 1004 (exp 1004) ✓
+  [  2] A wrote    7 (exp    7) ✓  B result 1007 (exp 1007) ✓
+  [  3] A wrote   10 (exp   10) ✓  B result 1010 (exp 1010) ✓
+  [  4] A wrote   13 (exp   13) ✓  B result 1013 (exp 1013) ✓
+  [  5] A wrote   16 (exp   16) ✓  B result 1016 (exp 1016) ✓
+  [  6] A wrote   19 (exp   19) ✓  B result 1019 (exp 1019) ✓
+  [  7] A wrote   22 (exp   22) ✓  B result 1022 (exp 1022) ✓
+  ... (248 more elements)
+
+ALL PASS ✓

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="403.2pt" viewBox="0 0 720 403.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg role="img" xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="403.2pt" viewBox="0 0 720 403.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title>E4M3&#x27;s sign/4-bit-exponent/3-bit-mantissa layout next to E5M2&#x27;s sign/5-bit-exponent/2-bit-mantissa layout</title>
+ <desc>Technical diagram for Programming the H100; see the adjacent chapter text for the full explanation.</desc>
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
@@ -21,124 +23,124 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 403.2 
-L 720 403.2 
-L 720 0 
-L 0 0 
+   <path d="M 0 403.2
+L 720 403.2
+L 720 0
+L 0 0
 z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 31.428675 120.859714 
-L 60.30882 120.859714 
-L 60.30882 79.503943 
-L 31.428675 79.503943 
+    <path d="M 31.428675 120.859714
+L 60.30882 120.859714
+L 60.30882 79.503943
+L 31.428675 79.503943
 z
 " clip-path="url(#p6ea763e248)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
-    <path d="M 60.30882 120.859714 
-L 175.8294 120.859714 
-L 175.8294 79.503943 
-L 60.30882 79.503943 
+    <path d="M 60.30882 120.859714
+L 175.8294 120.859714
+L 175.8294 79.503943
+L 60.30882 79.503943
 z
 " clip-path="url(#p6ea763e248)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
-    <path d="M 175.8294 120.859714 
-L 262.469835 120.859714 
-L 262.469835 79.503943 
-L 175.8294 79.503943 
+    <path d="M 175.8294 120.859714
+L 262.469835 120.859714
+L 262.469835 79.503943
+L 175.8294 79.503943
 z
 " clip-path="url(#p6ea763e248)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
-    <path d="M 31.428675 240.924857 
-L 60.30882 240.924857 
-L 60.30882 199.569086 
-L 31.428675 199.569086 
+    <path d="M 31.428675 240.924857
+L 60.30882 240.924857
+L 60.30882 199.569086
+L 31.428675 199.569086
 z
 " clip-path="url(#p6ea763e248)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
-    <path d="M 60.30882 240.924857 
-L 204.709545 240.924857 
-L 204.709545 199.569086 
-L 60.30882 199.569086 
+    <path d="M 60.30882 240.924857
+L 204.709545 240.924857
+L 204.709545 199.569086
+L 60.30882 199.569086
 z
 " clip-path="url(#p6ea763e248)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_7">
-    <path d="M 204.709545 240.924857 
-L 262.469835 240.924857 
-L 262.469835 199.569086 
-L 204.709545 199.569086 
+    <path d="M 204.709545 240.924857
+L 262.469835 240.924857
+L 262.469835 199.569086
+L 204.709545 199.569086
 z
 " clip-path="url(#p6ea763e248)" style="fill: #e0f2f1; stroke: #00695c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 700; font-size: 16.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="354.61125" y="38.354836" transform="rotate(-0 354.61125 38.354836)">FP8 Bit Layout — E4M3 vs E5M2</text>
+    <text style="font-weight: 700; font-size: 16.2px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="354.61125" y="38.354836" transform="rotate(-0 354.61125 38.354836)">FP8 Bit Layout — E4M3 vs E5M2</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 700; font-size: 12.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #00695c" x="31.428675" y="67.497429" transform="rotate(-0 31.428675 67.497429)">FP8 E4M3  (max ±448, no Inf, has NaN — forward pass: weights &amp; activations)</text>
+    <text style="font-weight: 700; font-size: 12.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #00695c" x="31.428675" y="67.497429" transform="rotate(-0 31.428675 67.497429)">FP8 E4M3  (max ±448, no Inf, has NaN — forward pass: weights &amp; activations)</text>
    </g>
    <g id="text_3">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="45.868748" y="103.27304" transform="rotate(-0 45.868748 103.27304)">S</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="45.868748" y="103.27304" transform="rotate(-0 45.868748 103.27304)">S</text>
    </g>
    <g id="text_4">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="118.06911" y="103.27304" transform="rotate(-0 118.06911 103.27304)">E E E E</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="118.06911" y="103.27304" transform="rotate(-0 118.06911 103.27304)">E E E E</text>
    </g>
    <g id="text_5">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="219.149618" y="103.27304" transform="rotate(-0 219.149618 103.27304)">M M M</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="219.149618" y="103.27304" transform="rotate(-0 219.149618 103.27304)">M M M</text>
    </g>
    <g id="text_6">
-    <text style="font-size: 9.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="45.868748" y="134.200286" transform="rotate(-0 45.868748 134.200286)">1 bit</text>
+    <text style="font-size: 9.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #555555" x="45.868748" y="134.200286" transform="rotate(-0 45.868748 134.200286)">1 bit</text>
    </g>
    <g id="text_7">
-    <text style="font-size: 10.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="118.06911" y="134.200286" transform="rotate(-0 118.06911 134.200286)">4-bit exponent (bias 7)</text>
+    <text style="font-size: 10.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #555555" x="118.06911" y="134.200286" transform="rotate(-0 118.06911 134.200286)">4-bit exponent (bias 7)</text>
    </g>
    <g id="text_8">
-    <text style="font-size: 10.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="219.149618" y="134.200286" transform="rotate(-0 219.149618 134.200286)">3-bit mantissa</text>
+    <text style="font-size: 10.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #555555" x="219.149618" y="134.200286" transform="rotate(-0 219.149618 134.200286)">3-bit mantissa</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 700; font-size: 12.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #4527a0" x="31.428675" y="187.562571" transform="rotate(-0 31.428675 187.562571)">FP8 E5M2  (max ±57344, has Inf and NaN — backward pass: gradients)</text>
+    <text style="font-weight: 700; font-size: 12.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #4527a0" x="31.428675" y="187.562571" transform="rotate(-0 31.428675 187.562571)">FP8 E5M2  (max ±57344, has Inf and NaN — backward pass: gradients)</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="45.868748" y="223.338182" transform="rotate(-0 45.868748 223.338182)">S</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="45.868748" y="223.338182" transform="rotate(-0 45.868748 223.338182)">S</text>
    </g>
    <g id="text_11">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="132.509183" y="223.338182" transform="rotate(-0 132.509183 223.338182)">E E E E E</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="132.509183" y="223.338182" transform="rotate(-0 132.509183 223.338182)">E E E E E</text>
    </g>
    <g id="text_12">
-    <text style="font-weight: 700; font-size: 11.9px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="233.58969" y="223.338182" transform="rotate(-0 233.58969 223.338182)">M M</text>
+    <text style="font-weight: 700; font-size: 11.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="233.58969" y="223.338182" transform="rotate(-0 233.58969 223.338182)">M M</text>
    </g>
    <g id="text_13">
-    <text style="font-size: 9.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="45.868748" y="254.265429" transform="rotate(-0 45.868748 254.265429)">1 bit</text>
+    <text style="font-size: 9.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #555555" x="45.868748" y="254.265429" transform="rotate(-0 45.868748 254.265429)">1 bit</text>
    </g>
    <g id="text_14">
-    <text style="font-size: 10.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #555555" x="132.509183" y="254.265429" transform="rotate(-0 132.509183 254.265429)">5-bit exponent (bias 15)</text>
+    <text style="font-size: 10.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #555555" x="132.509183" y="254.265429" transform="rotate(-0 132.509183 254.265429)">5-bit exponent (bias 15)</text>
    </g>
    <g id="text_15">
-    <text style="font-size: 9.8px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(222.311268 242.502749)">2-bit</text>
-    <text style="font-size: 9.8px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(211.318424 254.265429)">mantissa</text>
+    <text style="font-size: 9.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #555555" transform="translate(222.311268 242.502749)">2-bit</text>
+    <text style="font-size: 9.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #555555" transform="translate(211.318424 254.265429)">mantissa</text>
    </g>
    <g id="text_16">
     <g id="patch_8">
-     <path d="M 31.428675 310.846179 
-L 542.767425 310.846179 
-Q 546.967425 310.846179 546.967425 306.646179 
-L 546.967425 270.646179 
-Q 546.967425 266.446179 542.767425 266.446179 
-L 31.428675 266.446179 
-Q 27.228675 266.446179 27.228675 270.646179 
-L 27.228675 306.646179 
-Q 27.228675 310.846179 31.428675 310.846179 
+     <path d="M 31.428675 310.846179
+L 542.767425 310.846179
+Q 546.967425 310.846179 546.967425 306.646179
+L 546.967425 270.646179
+Q 546.967425 266.446179 542.767425 266.446179
+L 31.428675 266.446179
+Q 27.228675 266.446179 27.228675 270.646179
+L 27.228675 306.646179
+Q 27.228675 310.846179 31.428675 310.846179
 z
 " style="fill: #e8f5e9; stroke: #1b5e20; stroke-linejoin: miter"/>
     </g>
-    <text style="font-size: 12px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(31.428675 282.957429)">More exponent bits → wider range (E5M2 reaches 57344). More mantissa bits → finer</text>
-    <text style="font-size: 12px; font-family: 'DejaVu Sans'; fill: #1a1a1a" transform="translate(31.428675 300.957429)">resolution within that range (E4M3's extra bit tells 100.5 from 100.0; E5M2 can't).</text>
+    <text style="font-size: 12px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(31.428675 282.957429)">More exponent bits → wider range (E5M2 reaches 57344). More mantissa bits → finer</text>
+    <text style="font-size: 12px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(31.428675 300.957429)">resolution within that range (E4M3's extra bit tells 100.5 from 100.0; E5M2 can't).</text>
    </g>
   </g>
  </g>

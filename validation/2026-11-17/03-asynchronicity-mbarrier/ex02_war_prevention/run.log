@@ -1,0 +1,12 @@
+╔══════════════════════════════════════════════════════════╗
+║  ex02: WAR Prevention — Two-Barrier Pipeline             ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 PCIe (SM 9.0)
+Config: 8 tiles × 128 elements = 1024 total
+Element errors: 0 / 1024
+Sample: in=7 → out=14 (expected 14)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — WAR hazard correctly prevented!          ║
+╚══════════════════════════════════════════════════════════╝

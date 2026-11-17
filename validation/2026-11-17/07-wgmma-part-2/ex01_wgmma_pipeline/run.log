@@ -1,0 +1,15 @@
+╔══════════════════════════════════════════════════════════╗
+║  ex01: wgmma commit/wait pipeline + stmatrix epilogue    ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 PCIe (SM 9.0)
+Shape: m64n64k16, FP16 accumulator, 2 tiles pipelined
+Expected: all acc values = K×0.01² = 0.001600
+
+Threads with non-zero sums in BOTH tiles: 128 / 128
+Sample out_A[0] = 0.001600
+Output verification: 0 errors across both 64×64 tiles
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — commit/wait pipeline + stmatrix working!  ║
+╚══════════════════════════════════════════════════════════╝

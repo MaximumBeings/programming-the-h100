@@ -1,0 +1,4076 @@
+[
+  {
+    "page": "01-h100-architecture.md",
+    "block": 1,
+    "line": 64,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c836b4b17bc8708e7eb806cd52ff29acbb7e4fe5925fdaf848d9ff76cd1441a8"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 2,
+    "line": 144,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1caa19bbe5cd38a340f5ebac18636e8af7378e8fc3ee51edad63766d96494b8d"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 3,
+    "line": 205,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b403957e0623573154be46de8d375b58928005bd1fb39a24cd213517175c2a89"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 4,
+    "line": 260,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "65e735e20d98d167561918b470c0807e378295985781f25e46ff873267ba9aca"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 5,
+    "line": 342,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "dd005c7d165bd58aed2d563ca107c1ffdd5147568f348a6a52f22b6e2cb5f4a8"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 6,
+    "line": 368,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3f1e1f4c3c9aa88f4fba070c3a1ab0751b011a60ffabbc41311fb39b4843288e"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 7,
+    "line": 411,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c24cd682629acbe4b9cbb92f6bd208341a72c95d02797083bf8160472e06f6ed"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 8,
+    "line": 458,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "52f18bba3923bde788e15b1dcda2531284020230b6caef175481bf7bff525ebd"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 9,
+    "line": 520,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "529639667e39d15e0dd9c6f0c6c091d60398dc0b0858e9688b73fb9da02000fb"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 10,
+    "line": 554,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "70ff465b0054ff64172fb7f570aef2c1814dbb158e6deef9561ad2f2b2c11377"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 11,
+    "line": 660,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4595913d2e29271cd1446bbe797c04361a07b7661c8c50e4475903f5ef021c3e"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 12,
+    "line": 722,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f5b68477c46862675b2de81284a92155b6d7ae34cf4276a0e8e059e9d66c954e"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 13,
+    "line": 747,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "60cb176782c591e8aabf3f997e95817aadf61f933a11e2dfa8216dcafb1706f4"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 14,
+    "line": 778,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "41999d4a6fb20b2a19d2dd32410f678780dd43f99a5a7ec1f70a28c3487bc388"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 15,
+    "line": 806,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1eb75935e48a97fff1767dc6f9699992eb99603babc12c825f1ca9fedd598478"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 16,
+    "line": 843,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "93094b034e03443f5dc9ff807e4afd63b0cce63015de2c1386a05021ff47cfa8"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 17,
+    "line": 885,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f20feae3e46a434baf86a627f2098e6bc1479c39a5592640e4776b97bc7f5979"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 18,
+    "line": 905,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a0b2da6d78d574a3b8376c300ceb2ddd47b807ed0297a5de3c8778778bb26b8a"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 19,
+    "line": 923,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "bb6e3a8a2afedb6e833ccf0a9a3ff617adb1037da4c6ef681f3d3c669cb4a9ff"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 20,
+    "line": 962,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d64346d2017b7f4209071dad5556216a10fa547b9d22d75ce20a10c60b51d8c1"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 21,
+    "line": 996,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3ab897db8e47918151a35bd13c75c7d291c607135d759861a5481fc2a4d4c814"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 22,
+    "line": 1032,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d03e91d045811f6691dc2c02bfcc24f875f6977c3ae889eebbde88061826e22f"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 23,
+    "line": 1062,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f223aedc882b2d2c640266c02949ea245fd317bb0508592b7bb46c16ab26e9b0"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 24,
+    "line": 1100,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "dca047539c404dfe1794a23b1dd3dd747c3bc5c7bfeebef9352c290808d081ff"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 25,
+    "line": 1133,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "95e3c397ff5bafdd627aa68e876750f989383a452deeaa34ad8c1a5c9cbeb407"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 26,
+    "line": 1180,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1972be06c2316c3f29cd4da1fc961cfa1287bf3e12163178f698d2595cb1eee1"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 27,
+    "line": 1210,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "67b0adb07ae3783a4976b04d0b86f33d64dc3514c68f4017b97fc9732ca88dc9"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 28,
+    "line": 1266,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "12c0b963be6167669decd31b962e8571d8481b7d2aa96366c6f2ddcec5d63ee6"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 29,
+    "line": 1300,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4bd2fa312256cec9e5ce156e8abb9bee144ede7da8d284b76f65d4fef391da1c"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 30,
+    "line": 1352,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a641d8c58aeefe86e582e4ce655144bdcf5b7e8c2955150dd782d59c58b2a762"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 31,
+    "line": 1392,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e94072626c23dfc737624d1fd9e7b8579f577aa3cf0fcebd2fd07dffa6b06552"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 32,
+    "line": 1407,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "93b4f80be83829e8acf21df373e33d69f3e9bf4e60cd62784307e0adee9623c9"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 33,
+    "line": 1421,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d22e53905e9a91bb0799e5b189550e68e9aa0f6104292287c30fd769ca2aee9c"
+  },
+  {
+    "page": "01-h100-architecture.md",
+    "block": 34,
+    "line": 1444,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b66421d1c31e28b3777cd1835f08b3f357091980d72738b2f26a848e02cc61b0"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 1,
+    "line": 36,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d640f7926101eb1939df2c34520b45444670f170d428f0445811c366a3d56804"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 2,
+    "line": 62,
+    "kind": "code fragment; context required",
+    "sha256": "7e7e6da93f7696cf27bfa4495e978fdb3e2bfec7730c07848ffad85a0b919fd3"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 3,
+    "line": 99,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "882c8f3e6328ed4b8f60a40cdcc3d2238df418d2024961f2cfbc8daf1dd10a52"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 4,
+    "line": 138,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "bee1f8bdb22f0e3f082688a8c901af1c9b6126c2fab6d685f1126a6b73928daf"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 5,
+    "line": 168,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "112b052de8d29c8f108a868192aa1bba1dedc9183282c15ca54c2afc26715c60"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 6,
+    "line": 212,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a6baff2f04bbf4a06f94d5f5fe844910026ad817524a291c958005664f910a89"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 7,
+    "line": 303,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e339266c4ce2226636156639fd8a85947e1995f77db9302594f1b6a2f94a71d0"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 8,
+    "line": 331,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4ba4f1fc1fd0345386476705d8d4070cdea94138484cb0b29d8c71e5c343a63c"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 9,
+    "line": 382,
+    "kind": "code fragment; context required",
+    "sha256": "86b0d4dd55f07d0318d2fd1dbc2205cdd3cd393137c2fcc0d88328dad2a7a68c"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 10,
+    "line": 436,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "59594e9104b4a69c1a8e3e214aa092a1b1217b311356e8534fb0e9db9239a362"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 11,
+    "line": 495,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5e36a43f800393daac94b25a5bf456e83cb37f6813fa1663df147f1640b3f40d"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 12,
+    "line": 556,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3e754917c347df6964cc638d6a1ca5ade92c29adc85c6edddc581964f27e9539"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 13,
+    "line": 568,
+    "kind": "complete CUDA program",
+    "sha256": "ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 14,
+    "line": 825,
+    "kind": "shell commands",
+    "sha256": "730bdace37e7e7a7e92d5865ba13623b6589b2e7c5b7299fce81a1c456865b7e"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 15,
+    "line": 832,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c36f7af19e206bb94fe4343fa212c82e0dc02f6b5bd5dba49d17f9f706d01c17"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 16,
+    "line": 896,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "43701bfed41fc96a752572e3d19b5f3add3c5ac91ec0e399c6634c26e7945fd4"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 17,
+    "line": 939,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "33d58156f5f8a7260e769f8aca1b36279a6a47e78caaf9ce74820e32ddaf7de6"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 18,
+    "line": 977,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d4f3fd69aecd71c3e1493a15d3cc47e4329b8f7f05a1ce8a93dfa9266f1ed05f"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 19,
+    "line": 999,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0ef79077f5005de2c0ba4b98679b1214fdab2d06e8bc5a586f3ba40070a489b8"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 20,
+    "line": 1051,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "702b388a2a2e5beda4dc42df173b8f82b2c7088b5a0d03f1146c88de5e7f2992"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 21,
+    "line": 1120,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "22586624b72c2588f52ecdd0e99d6eee38a051352c218bb6246e522c73e1fdd0"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 22,
+    "line": 1131,
+    "kind": "complete CUDA program",
+    "sha256": "50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 23,
+    "line": 1809,
+    "kind": "shell commands",
+    "sha256": "aa2e4ba466eb44e6239eb1c803659a3733c1280084662bb43d008ffd39f13dd2"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 24,
+    "line": 1816,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "70f8e7c3d9cd148e4787e1fcb127a695fe11b7909b31c6c76ba18460daad9161"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 25,
+    "line": 1896,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "23652301bf5a46f429873acc96393f972b65780e5ca8328e7e6e32a7b7156acc"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 26,
+    "line": 1959,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "489c243f10ee2b6712649912ee9665002ff8ac7dc4183158f2f66d58db89110d"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 27,
+    "line": 2015,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "63b9d92e154653af87f7ee1750b694ee0d8a6f823cfe6982ef04682718afc0a4"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 28,
+    "line": 2088,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "dd0533f33ea79849505e1ba2a80d1470aa6589a01a6a66403ff95677235ec00e"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 29,
+    "line": 2144,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f02ed196428d012bbf623d0525280118cc1f09de73f47f84af79d73a205bd0e5"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 30,
+    "line": 2191,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f95a4931e329dcf2905814da9574a782823947d4c5b75b2ad780a2e3102526cd"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 31,
+    "line": 2216,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6b4b15d9cf6a41b10e73bdd14167661c69f925a4c934b9a9ed36f9878e3f9005"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 32,
+    "line": 2255,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "958d58191beb3f8bffb8aeb4ef6d9d309f94220552b2a5cc4d83035741055ccd"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 33,
+    "line": 2309,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ed8e0c524a672eba346f1eaaadc7b2c29f80cb62b28add50c41f91e7f2b4d4e0"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 34,
+    "line": 2328,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "10d74cced9733d1cd2c503529e6e4e966289fd8106943ef50352f5fbc70f8097"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 35,
+    "line": 2345,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "352922c3e9334791d50543a548c63cffc54f4d24072399ac9ac4aceb24a646ef"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 36,
+    "line": 2416,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "650ce3cafd50e99cbcb6f82d2ca48a5dee967f11877968e8e4890a1eec29bca9"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 37,
+    "line": 2428,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a04e3974d81e04aad71b47b000791660657e6c62fbb8014973d8eaffb74b9e09"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 38,
+    "line": 2438,
+    "kind": "complete CUDA program",
+    "sha256": "1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 39,
+    "line": 2796,
+    "kind": "shell commands",
+    "sha256": "014434ca7063049ec1301bacfb34c493d27ae186b6db13342e399e1ccc9e4f4c"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 40,
+    "line": 2803,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "960ebcd07828ce0845d4f76a84d26a53c410b5d21b7ce9be2fe73706113771e7"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 41,
+    "line": 2848,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8e077cae86a7d34e9bbcce3e31bb4353c767055f4827b7cdd0b4bcc7183d24b8"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 42,
+    "line": 2935,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "21faa7548d76d4790d5d68c2c1f6d334cbfd1372d3127fb7c5aaab9f9859aeed"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 43,
+    "line": 2944,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7cfd70111cd877e704a387ff96fc3d91511135b1a022fcaa7e73606f9be4c154"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 44,
+    "line": 2962,
+    "kind": "code fragment; context required",
+    "sha256": "5fa288f8139ba5dd80ba5e73c37e9e9311ae86759d6c1dba968309e0dae62f33"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 45,
+    "line": 3019,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0d33fb2565cb6b2d09051f9a812617a114a01578d2f8671315b264f092cc30b2"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 46,
+    "line": 3091,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e3eb7d3194681edcdf41536de5dc46f3fe0f38ea8f11e7d51c66867149c58369"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 47,
+    "line": 3100,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b7f80addc33a6ac0ea30ff5aad88df70972d980b608ca1d44be2218c9daa7bdb"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 48,
+    "line": 3146,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8b6b53ac6ee5fb85fdda6a92bbb267d9298ae9a58e8dcc855ba2600e0cc43bf6"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 49,
+    "line": 3188,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c4a4414cba424c4368d8131b879bc3bdbb4680a88ea3a05e58375223b8bd34fe"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 50,
+    "line": 3197,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "06d0d4d13fa639e8532d34e3a25106925d6e4e9551a2e8053c2ce9053d3aa2a2"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 51,
+    "line": 3272,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7b6b6cfa2e9b0f4b463b42f39c35e6cfd2063f07fed523e0a2b3d716be7cdf56"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 52,
+    "line": 3278,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "838e12b107580cf3cc9dbf166ee56a53bc418fb1b3ff449a1a687642388be964"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 53,
+    "line": 3287,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d04daac775db40b939cd38d4f7d62f416e13398fda8e6a1c3cdaa11ac81b4739"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 54,
+    "line": 3347,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "42196298749311843b2f6624e01c849cc732c0a6f0dc2144b1b6d6e172ec2890"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 55,
+    "line": 3439,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "007dba2c8d51aaf946b4e5d67cc1f6f78c6db79386cd9166f81fc33354ebab3c"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 56,
+    "line": 3482,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f8d3987a0266cf230dd9a83e3078aee1f115217d86cf9a799a9d917e74eb36de"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 57,
+    "line": 3521,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c6d3863de454176bbc8870f74e6cce9e28a48ad6fecafa6a6037d2a5890c4fe4"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 58,
+    "line": 3569,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a3cd403e77486b51b41b64c837bbb41232972be2d192e358fde81b749f89d624"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 59,
+    "line": 3583,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "372b671bce62329f20bf990b599f0aabb0f84ef68b1203e2c91d789b8756cb2b"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 60,
+    "line": 3593,
+    "kind": "complete CUDA program",
+    "sha256": "77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 61,
+    "line": 3868,
+    "kind": "shell commands",
+    "sha256": "b04b6a511f80496a4e9ee988d2b2b5d498912079c431700741af31c0b597fb83"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 62,
+    "line": 3875,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ae7527935ba1964520d753f1058699f348df287ca0283913f6b198fc56166767"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 63,
+    "line": 3913,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "91b6f3cf02306c6f16b065599489c87feb7a0737ce35fa638f7efb3c89f307b9"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 64,
+    "line": 3926,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "59776263d26dd4a3cebd6aadd3fdd4ffbba26450d09bac5fabdf0ff1ee5c77fa"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 65,
+    "line": 3936,
+    "kind": "complete CUDA program",
+    "sha256": "711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 66,
+    "line": 4150,
+    "kind": "shell commands",
+    "sha256": "0d4a010955de20f889635b4bbaed122adde6ee9829a6b60be531bdea7874a65d"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 67,
+    "line": 4157,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "42fa31d1b986346cac5e5fc652552badc66908e5a21bf6e2459383b0774303ac"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 68,
+    "line": 4201,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8f777a488166ab880db872531e6eaba39b1846264d6e88117860d9dfe7df442b"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 69,
+    "line": 4238,
+    "kind": "code fragment; context required",
+    "sha256": "5f02c8812d1d4add353ab7d7b2fa707dd2fa12feec963176fd3e3416045ca7b6"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 70,
+    "line": 4255,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "063b29c0cd05b83c8e53785605c371617ad77527bd60c73d6c27bf0a1559b2f1"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 71,
+    "line": 4275,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "257a796983bffe1d64d96404ae587cb1ee3b38b541f79599cb7b806c2d6bc663"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 72,
+    "line": 4296,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "be804cbe09fa2680895782298731008849146569f6440250c687198b43810f96"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 73,
+    "line": 4317,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a9ba52e6d15d6fab8d70a5f3943f4ebd53e9a119773f488f9afb23d2339018f3"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 74,
+    "line": 4357,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "60eb0e436fe2d1941199da9fc9599bf67f2811a9afd3ea6c2dcbfa97866e63b9"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 75,
+    "line": 4379,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3097036886d859c1802acea1845e054e6d9f8eea9b0b8c9b02b4b515f618957c"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 76,
+    "line": 4397,
+    "kind": "complete CUDA program",
+    "sha256": "4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 77,
+    "line": 4677,
+    "kind": "shell commands",
+    "sha256": "1c18b240750adcd080b702618beca8d695236f23bf4bed700ab665fb5b655144"
+  },
+  {
+    "page": "02-clusters-inline-ptx.md",
+    "block": 78,
+    "line": 4684,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b576a01448e99aaa782a901c6d8189108b67b983304f69f282d0e8cb20a13642"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 1,
+    "line": 44,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "50520a48236392318e587efc26fefcd42888221e7954e1d2ad3ae26fb19728d7"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 2,
+    "line": 68,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e6b1b9ca0e2f9cfb2a6a15932419cf0effd5354e5b38e19adafcca49331ff1ff"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 3,
+    "line": 97,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "22e69cb9d9c5dc943f08eadc15bb65a754a2533ddd672d57f14bebab76a1fe48"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 4,
+    "line": 118,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "873d7c50b24e9213d8d161777d9f31d33ab3b9915c1681fefaa714a7cbf5304d"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 5,
+    "line": 144,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "95b3f757527efbe84a2813a3908b91aa8bddb13f08dbce633c379357d87ea6e4"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 6,
+    "line": 215,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cd098d737bb95626e9a36a5f5ea2d7b611d531bb20027095efcc5ff6c4405fbf"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 7,
+    "line": 250,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "025d0fee5dbf101b6422a8867003cbd422ac8784c40a3a46d37f1c870ecedfb8"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 8,
+    "line": 329,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cc1bfa05bae7873f2647d1cc7c6c31516e034c5f5774f2e55c7a9fe8d7709e0b"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 9,
+    "line": 352,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c7bbb61a48cdc5417d8887dc3404c61f3c54548d1285b179bb4fb439af70eb7a"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 10,
+    "line": 389,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "119b6acd86794bc8489d60fd571d54bc71e1414bdd7d0aa161cd12372abfba6e"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 11,
+    "line": 421,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "bc0e8ff90fea8cc0cfe5d074b3fbb8bb3bbebb5816ba2598a0d5ac1ede712a53"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 12,
+    "line": 492,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "04c1581b7b27387c2d0213b0d432e3ee9153c21dbfaa67e1a3b919cd673d9ac0"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 13,
+    "line": 521,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e7a37fba58136fb9ae77bc0f206ff16d426a5905f0e580ca4d14362139e09863"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 14,
+    "line": 562,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4d781bef4698dcd1b35201e3fe6bc0a45d4fe698e7b328e6fba6864eb4c20d0b"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 15,
+    "line": 594,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "888e5ec70b4682e13e842cf31f77438dcb9637ae9de6297f12ef66d4b77cdc4e"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 16,
+    "line": 641,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "112bb6e2e0305a954acf8a55cd967b04ca90370e8c5e94c372999b0495de2152"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 17,
+    "line": 686,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "dc89f6f3a44e0b908cadb44cdb13465870d67da1ba537088b006fbd1096b6b52"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 18,
+    "line": 718,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "29c83c9ca8b2b83e55bee5433deb1535db937ba8ce1557a667d8d306a6bf8382"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 19,
+    "line": 749,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3a0f01449f38837edb59a54cf035bf693739b344439f82c2c8571b2aa563e799"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 20,
+    "line": 817,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ce62828da051c964705e8b6ffacf3e5c7bfc173e0239c97049afbcfaa0f0c25d"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 21,
+    "line": 851,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "405943a3e3605f457284bc312261dc7f233e8a400b56351d3b7be626e2c5fbad"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 22,
+    "line": 926,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "519f27eca49151a66b4a6e3ee134c920df2e55e0575cd5d509f214530b8034fc"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 23,
+    "line": 983,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a410b9116acc5663dd7c4a43ee51747c88eab1382a2836ef155b4226b5afa7fd"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 24,
+    "line": 1052,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "085b1e89a8a62cd6aef2a3c8467a556e742b6961218bceb9c85fada969495617"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 25,
+    "line": 1107,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "33083b70b393a21d0d95aed563a8b3088a369510601b53cda06572a7fd033c05"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 26,
+    "line": 1174,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "03019fd96806a0dbfbe5f5f817c5235ffb64078c96c51f2b78444fb02f1c1087"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 27,
+    "line": 1243,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6edb0634f4bc8955a97e5cb656efe76c656286e4dfe1b35a51bf723d17040bdf"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 28,
+    "line": 1294,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "69806abef332bf7f744069082934e5070414ea7220ae1626a070fed18c64db78"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 29,
+    "line": 1348,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6911d28a5b03c78fc9254f85a1fb534c24c2de0759fbd5e7b01e119ae2e29f16"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 30,
+    "line": 1423,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d5e213b34193d5e9a21a365fa90913c4e191341ce84bcc087e0aabbc227a721e"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 31,
+    "line": 1453,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "87dfafd9fdab0688ea41df0d7765edb1fa83346d7905263b9bba390beeb60b4f"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 32,
+    "line": 1497,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f9215b52b2df68b80028221f7acbe8ebc28c6d53922a8e20c6a6e1587107e191"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 33,
+    "line": 1536,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1bf87623e43665d40ebe3dfc900c51db15ee7b811c6b153ef88e2141154a019a"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 34,
+    "line": 1581,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "74c4f14a8f4c47ba7425e01dbc026a3e95f04ce77931330b51d15bf30ded509e"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 35,
+    "line": 1633,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1e0e76b28e0cb7c8cbbd7eeb11be6bcf93bb21941c7c1134d9a87a9172dc0da2"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 36,
+    "line": 1699,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1e3605ad571af7447d78caa795e1b489bcf232ed7daa09c58f51be961f966e8e"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 37,
+    "line": 1743,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "effd691cf521f754e1a710611417bd8739f0eb0b831ad67e13cd0daa6c9f0592"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 38,
+    "line": 1775,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "eb3e34cd0eeb8279423e424b5036d490a6cd889904d8bd7640b65848d644aefe"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 39,
+    "line": 1838,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9bcf5ef3cb15c49eaa9573c5c6b58b7c1a13b10bd254b20eddcbb54d3534d947"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 40,
+    "line": 1877,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8170170c07c06a58a3e443b98402666cb08bd982ae39182bfa893d7daf46298e"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 41,
+    "line": 1949,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ba4ceb7f6d52c5ac4ae17b2401a4824f6c5bdcf971cd7ec8b0c9121b8b27b022"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 42,
+    "line": 1980,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "551dd089cc0a83a016be75edf7efa6253a82d53dcd4314eccf85745361ad181d"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 43,
+    "line": 1990,
+    "kind": "complete CUDA program",
+    "sha256": "075961dac147dd0c2ef4a5a288af51c6cc6f0330364bb8fbf4b62cbf4c5aef92"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 44,
+    "line": 2231,
+    "kind": "shell commands",
+    "sha256": "3fe0b372f9ba7b728852657b184394c1c005ac703c8111c7adb7cf6c43bbbbdd"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 45,
+    "line": 2238,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "497ff66c75c8cc6a126fabe923a09a932d9fdc00d6dd28f35d9c028acc816a96"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 46,
+    "line": 2263,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "da60914a689f1efc046f64de97f9d8548f993a80cb94df4257ad5c1f922b54a3"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 47,
+    "line": 2281,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "20a77af362e7906d7f4648d81108dd94df873bf2e31288fb37b9085e28693e33"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 48,
+    "line": 2290,
+    "kind": "complete CUDA program",
+    "sha256": "852967b65c0f83348cffac11df0ed9fbbed40802aa730944f31564efda5eb2d0"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 49,
+    "line": 2505,
+    "kind": "shell commands",
+    "sha256": "b475e448d9897c80b68a219e89020248e1e7a0aab435aadcb7da779770657db3"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 50,
+    "line": 2512,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7242ad2d2b818346efeaf871a9095cd83adf9c49b06113fcfde0590e56388095"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 51,
+    "line": 2545,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "38e014a4c8192c67554f36883c240e1967ede28378ee5c4da7b037976f3f8d8d"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 52,
+    "line": 2562,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cba5d0df8b09ee3b75627c0e729e4ecb033055d6b18d89e681737635fbf3522d"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 53,
+    "line": 2578,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7a03039348f5da150b5771bb5dd866305a8496d2660c9964e17420ba880acf19"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 54,
+    "line": 2592,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "efa865946d7aa18654fcef49d4becf73610cc79dcee4bf4e9a7bb5f80e316552"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 55,
+    "line": 2606,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "2b11da157fe75c6680d2a533462676dbcad363311b2b7a366456039b279bfd56"
+  },
+  {
+    "page": "03-asynchronicity-mbarrier.md",
+    "block": 56,
+    "line": 2628,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "2959b938fe41a05ddf87b8ab2a167cb24735ecf78dc38311ee5cf93a2b0a15cf"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 1,
+    "line": 47,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "391914555d4707f1817cb08aff4c1e4c7f7f197fb44cd758810524c38bdfef7a"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 2,
+    "line": 73,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6023002200fd8548cc809f9bbc7e8e5eded3fc42d49ac6a5a27ecb5600a3830d"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 3,
+    "line": 88,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c0d80167fc88066296dda41baafb16e399103189bee50fa79eeaf2317ddcb2e8"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 4,
+    "line": 105,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cbb9d109559b6531ae0252b2f74f1da43f3dda86d9b63654238a9545772e13ed"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 5,
+    "line": 131,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "95b3f757527efbe84a2813a3908b91aa8bddb13f08dbce633c379357d87ea6e4"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 6,
+    "line": 186,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cf87e27b485e7ffd9c927b462c2ed2f00ac8a4f3733d674b27b28740cfb43a90"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 7,
+    "line": 235,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4b8e4d0c05c8236011088993e5bfa145f0a3f6a17dfd54104123ca6a674553e0"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 8,
+    "line": 304,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "99d612038dacfb9ec17f021661f8bec020a16a19c228810ae0cb0b38df615203"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 9,
+    "line": 361,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "aa43a411124f9cd48a4a93f303cc02ddb62a81000737d900840c4bfe5c95680d"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 10,
+    "line": 413,
+    "kind": "code fragment; context required",
+    "sha256": "d868da7db3598fe87eadf5ac9f79cf9a7a7cb991f992d2051728a3059def9a30"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 11,
+    "line": 464,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d7cbfaae4c7f85d5127f8b9b91fc8f8d6991f33af30c3b5a8bc095f6890735d2"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 12,
+    "line": 502,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a2396609e178db779e3a9ef7833bb211cc527df4a26daeaf8e17c58327b264c6"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 13,
+    "line": 545,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5eb750503d7d4159cf93b9443f79a431ae77ca3e69f3a32a2163c0ef6fcef2a4"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 14,
+    "line": 636,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a2d8f7fa83b975bd0248af4707fb7941a65097a46b1edf97c3afb9e8f93f4047"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 15,
+    "line": 717,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4b08c4c5df9742107984327a5f52261438ee98106e7dc49f0a0d7411174206e1"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 16,
+    "line": 771,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6330ee7f7af810cbaccb2c4fe849a508cb55ab5a42aa71636e28ea6446674673"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 17,
+    "line": 833,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ddf80e27b64a69d2c624237d43901c9b376d7f22a7989ae583723f6eeefacf4a"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 18,
+    "line": 877,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0e84cff491bdd07f5096ae2235cd65a8b5ba3d243a217c4b01cd6970aaab35b5"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 19,
+    "line": 950,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "816d9d0d9797db5d22033b28e2ea60901f38182797e33f90af32d1aae63e4ce1"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 20,
+    "line": 1022,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5c52ab49feeaa83601366ddeb7d84af8962c8f4b395171857d4805ae24f2b614"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 21,
+    "line": 1077,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "442068d34b40b0bba788b5c43ad597d33f1d560048dbd085d0830ae1187ff5df"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 22,
+    "line": 1115,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5734f6e2bc3f087079b61486ef468faf379c67832789cc19e6f714787ffe51f1"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 23,
+    "line": 1167,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8e25ad5a92a70df24cbe80ad5060a321c205a1f669e663118406e6ce38850c07"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 24,
+    "line": 1217,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9da785227b23945d772090abc734b9a55fb0000a0cd859ac102acccee7175781"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 25,
+    "line": 1241,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "17a708ad8dd2986ce95a6f1c71739bb251569a6977d5c4b818da0cf60699acd9"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 26,
+    "line": 1269,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "134d8ac0009dbcccab67c4f649454d7bda10483fb72fe1420c1fe329cb81c031"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 27,
+    "line": 1317,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "188c746814aa74e8c2ff289df825f79870c035c65c76cc4f7ad73433c91e207c"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 28,
+    "line": 1375,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "dfd7c88c9b12a6bb947fae63293afe6af23cad17b78cdb27cc1eb2f1972a1c06"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 29,
+    "line": 1439,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9590f196985419f15254ee6a0437329f4be8d0e155cd2c645ea79008cf44564e"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 30,
+    "line": 1516,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ee48f35a905d34c609a35ce46f731f080c4d949851102ff8504241d728a35940"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 31,
+    "line": 1589,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "00fa9814620c8287a1380b02f6c7811194366dc2b4d3693e4e4327d4b9f74df3"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 32,
+    "line": 1619,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c78fed67c15abe0adc872377b4804ae157f5bbea49cee8594029531d85e76309"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 33,
+    "line": 1629,
+    "kind": "complete CUDA program",
+    "sha256": "c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 34,
+    "line": 1906,
+    "kind": "shell commands",
+    "sha256": "49df4295e399d68ee86941e74e2f3a3b5be7790fedc595d4f0f17eb03819fda1"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 35,
+    "line": 1913,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e6aa708f5923342b7996458ffa617017c0260e92bf8238ee615e873c80019de2"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 36,
+    "line": 1947,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5d5b973b025624d6726dbcb0d9ad03786b9c92273f0eb15b85fd06cbce25d259"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 37,
+    "line": 1961,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a48dcc9797252a09e353881250b7b9e30e3fd16a865f55fb59762fbc01a648d9"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 38,
+    "line": 1970,
+    "kind": "complete CUDA program",
+    "sha256": "b80719ce45119fa91323bc610a68e7aeb84945ccfa8864fc3f2ee06cc594cab3"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 39,
+    "line": 2173,
+    "kind": "shell commands",
+    "sha256": "4c15a976928412b4682c632c13c76a970bceb17e61044f839decd3f23c94655e"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 40,
+    "line": 2180,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "896701b775327d8ff45a5e2e1a0555976fdfb10b55afae083a1e0879bde37f5e"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 41,
+    "line": 2217,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "20a9babdd1ff2b82923c854fd98ae76865b0b5d8bfae62bc785e9052443d335b"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 42,
+    "line": 2239,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "dfad50918716174caf29fbc68f604674f89f09d5cfc3c48743c086c4630c9009"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 43,
+    "line": 2258,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "73a0619f64b575115983c9ae6266903652b88796e28d4b77745a7e64684857a2"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 44,
+    "line": 2274,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6d2bbe60bd895c8fe0c5f38258197ac52ab28c576cfa3511de4540a1934b5778"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 45,
+    "line": 2287,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "389b8f7620767a961dc074221d864e6128404f90b7fc8216351813af68ed194f"
+  },
+  {
+    "page": "04-cutensormap-tma-swizzling.md",
+    "block": 46,
+    "line": 2300,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "123241e845f881073f14f6426d8df236bb9fd401f56f305dcf88657c672569b6"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 1,
+    "line": 47,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "2052dbc72f6bfee6084f0892ecec1aee1c197f081281b4b88dfac8c4e975c808"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 2,
+    "line": 68,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "206a2c9533de67b2bbbc17a037782fc90c443b4f454e89bc62334acbcc2291d2"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 3,
+    "line": 83,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7517d0b3120dcf9dc6f9b7da94ae062e78ddf50de0b876069f2c1b42d2c82b48"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 4,
+    "line": 99,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7f41d07c93fa74c080d13a7a02d6c24fee40f575fc09aec06fa3e13a49eab9ca"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 5,
+    "line": 162,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e932800bef4a48072ebe9f5db406b9f7f395bd5991bcca5919cfa4533d42ab5a"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 6,
+    "line": 187,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5bad3bfd958280d8ef3dd3c16d99f5ea74843cbcb15828bca7e1d20804a4d902"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 7,
+    "line": 229,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e279e04bc37446672450f077e8665532eee536c5f2443567aec0955b372be295"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 8,
+    "line": 266,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f7e35ec1dce0ec4a0b7883ec41f3eb4cfddab120b105cc17169dbbd9740e58b2"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 9,
+    "line": 299,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e74e60f6f7812ff17aa61f22f931720530a0137964b6629cf5deab5e79e40872"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 10,
+    "line": 315,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "02ef73977f2b307ce5b460d5f9d13fa67214dc3d3dabe96b633aca29a22086ac"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 11,
+    "line": 352,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "365fa7c1c1da2c861adbebeb2bb6fc55a1b48e770760915bcc9811b3a79dd758"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 12,
+    "line": 394,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "dc375d33bafa856a09153ff7a127c6eac7e7db8cd9bcc8b76e577e233b887945"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 13,
+    "line": 460,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0fee2fdad9545c04fe4bcbda5865d6e75853d8a7c0623317af6117d8336f5b4c"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 14,
+    "line": 526,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "510f2524e8b8c813d95e78fbf38551d25a2789019b492dc6f5a4e9bb3a91d7d9"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 15,
+    "line": 589,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "84d41c2c2bfcaab744f8d8cb0e46cadbafc76b55e6ccd9d1628d8935e0436223"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 16,
+    "line": 608,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "fdb76e835db4f17d0fa2e4971ebca0b6fff501bdba065fbea277af881e761ddb"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 17,
+    "line": 617,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "07e6ad93d6a7f109e47f4085a56bab3aea517b59f8f85f93dbdbafb8bca76312"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 18,
+    "line": 659,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c36ae73184b38a28835b0eb9a1ed41a37dfdd3f538e15e1c019390f73f897eab"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 19,
+    "line": 704,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8591307ad0512f2c2edfed9700cae9a8267b9fa1befa325df64aca067d038ea5"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 20,
+    "line": 772,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f6164e9f9cc12c18d691d330f6624f0b0c2b2bd48cda61624e46679f0274dda1"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 21,
+    "line": 818,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "441eb206f6b78ef47335c648a75ebdc9c62d99eeef0f53483e909de236269159"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 22,
+    "line": 880,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "097dea87d510e1a5856fa665f6ce0218890cab51d43dfa13bd1a12395bbdd7d7"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 23,
+    "line": 940,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1d2ea956301541a9a6c92d446244aeb31c2ee1edc3ac9cf6be270b9a02339492"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 24,
+    "line": 1043,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ef28517c6bad5406d0dcd73aaec800fe6c50af528a4a02855809f9e16b65327a"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 25,
+    "line": 1091,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "05c6b65c259f7f9ee5ffab8540c4a7bbd11cc3ab2b4e1f45e9f0f9bccf9faee7"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 26,
+    "line": 1158,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8c1ca535e4315aa0b41c07fd97b64dbfd3d4eeb78af6d95c45349e85e22f3caa"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 27,
+    "line": 1186,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7e188c5864e9503877221f39aab4c74ff4f3ea1b843729bebb55332e30ba9f14"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 28,
+    "line": 1195,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0dc846f06fe65aa8f42ab08e20b2735aad05f32d70554b2ae5726974acc29fc3"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 29,
+    "line": 1249,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "2dae8aeaaa5707ee9ace9e7b2096827d45c19085f231fe756cdc1ff177c598fb"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 30,
+    "line": 1328,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1e4e178d7dd731e25e9bf5d7812e318f0687c0da4704b6c2a187213d22bc7f35"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 31,
+    "line": 1365,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "06880932dd2fbcce2dc9df6dd6ec536e503c5037d570f3ad7b57277f2112e05b"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 32,
+    "line": 1402,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f13d549eab454a292ddaa459d159800c82a63bbc9b9a7da6b3760da8544ba2ec"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 33,
+    "line": 1412,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9730ddc55eed60c964f4f5c86b6bd14b6433d29e8dbe38118b42d15f62fc1f3e"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 34,
+    "line": 1473,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "00dde8271ea48b2bcd4800461a1bb3c11fb7f249fcce320d7bd93c47572d2032"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 35,
+    "line": 1512,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "69f08943bbf8701d6a6a737e50cbfc644ce9c400f46f834e5b80528c342c9201"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 36,
+    "line": 1605,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b60095f1258cbd229cfaff0c9ae20c8cfb9c76471825a864b71296997083566b"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 37,
+    "line": 1626,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f45e0c58573eb6441e91f172fb80d71ed1ab7b8ed4c93373fc859b038d1eb4a4"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 38,
+    "line": 1635,
+    "kind": "complete CUDA program",
+    "sha256": "d3205e1cc28e486f95c1923b3d347bc08bb8f9e52ae4324a8171bef168f22fbd"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 39,
+    "line": 1804,
+    "kind": "shell commands",
+    "sha256": "6b5b9e9c2a9b1a843d1bacf8a3b793a574172c24f0d7efd34b80204c3c29fdde"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 40,
+    "line": 1811,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4690483a676f2ca99ec5ffdf7dde2a10f14ec4d21c04b53e8ec80d7da9f8a679"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 41,
+    "line": 1834,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "fbcad6746b6db32a2e644ec10a06b1dd4ed36a385f0672e455c73804976dce11"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 42,
+    "line": 1848,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "200e7f4c60ff6de14fae80378ffec0df8be01931fe9e13ccde021cd2496664fe"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 43,
+    "line": 1857,
+    "kind": "complete CUDA program",
+    "sha256": "52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 44,
+    "line": 1985,
+    "kind": "shell commands",
+    "sha256": "b65c0817e37c97488b97132b6b8fefaa55cbeaa5edc6d73ef99035b9e4efdad9"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 45,
+    "line": 1992,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "01a1c3bef6dbf58ffbdacba3ca8044f73d2dbeb787a6e1f79f4f585c4e309343"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 46,
+    "line": 2026,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ff5b9f37e4e61cdf1c0279191260974607c45735868c1c347df1d8ff7a272b79"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 47,
+    "line": 2044,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a845006a3766bdcd608e8accbd48fc7c8cc5e4c39706bfa8cfcddb747853b7d1"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 48,
+    "line": 2055,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c1b7f43f43e3fa3f32f32a55341d61ee462e069da95dbb8ecd34d0c5f074766c"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 49,
+    "line": 2069,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "47eb174de253e5b5b71b8d05719def85a1703d3355b7ceb35c5870c0deda69b8"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 50,
+    "line": 2086,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c82085b6941330dad1742ccc83118e9bf548b90179029e84b08d21dfe31204b2"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 51,
+    "line": 2106,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "99593f6cb1eff0608d72426bc50ff31c9b0665052aafa7af16327d369712e868"
+  },
+  {
+    "page": "05-cp-async-bulk-l2-hinting.md",
+    "block": 52,
+    "line": 2126,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7c64e59e48c905d3adcda6f6f9225145351fed683afd449ca85eee2bb64bd46e"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 1,
+    "line": 46,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ed0156955e2d1ffda42fb352f2113b5ba63322f6ded1f9d62325638d86de9264"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 2,
+    "line": 59,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "206a2c9533de67b2bbbc17a037782fc90c443b4f454e89bc62334acbcc2291d2"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 3,
+    "line": 74,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5f09b9e3c3fb97b1bccf5504a78ff63d99520e2c3e0647980540304cd03c4fc0"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 4,
+    "line": 163,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "71f723a6c9f68a1ec6b50e7c566ace71c831069501b5a264b53e8f4ca38e8907"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 5,
+    "line": 200,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cafcfc9414dbc8522e04e436b81bc71aef7d5167f0f3eb3244ca902da76444e2"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 6,
+    "line": 261,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "13a932603aecf74c901858817395bc9a452a6e824ef888c71c714638b42310e7"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 7,
+    "line": 275,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ea08a45b3c6e7bbeeccd3fd22ca84dce1b2900bc30c1c5792491809ac05f61e8"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 8,
+    "line": 327,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "46c3e6a3d12d80b4e440ae2f0454cc92f71abbb2c6daba0c73799cf982b118e8"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 9,
+    "line": 380,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6179ed45e7d842e53283cc074aa88f1961569036a85e829e992e9daa91d5c11e"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 10,
+    "line": 436,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8f604595f8c4b44aa1d0236fe4a175792675a731e1deb9eb0158f30a80c31246"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 11,
+    "line": 508,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d4b9972da772202eb41c5812e8aafb357998e5a76ac22fd3fb2dc27ad2eee9f7"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 12,
+    "line": 580,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "89f5cb05a77611e6f1d33b0e024f0897d7fdb395047658b6d9eacba1fdea39c6"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 13,
+    "line": 660,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1f6cc58ef8a7b0742bc016b43be4188fa175da1234ec50b01bef9a6a27c365da"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 14,
+    "line": 701,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b451f8ee9266aadf8e951184634ad9d71a156fd0a83abea78b3e93273dcc950f"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 15,
+    "line": 781,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "2c1b149766465eeb7765de6db67b7ee45470aff1658bbe9faa2680e4f0438f39"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 16,
+    "line": 822,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "bd5b407c8d23bb647e0b3a63f47c97985d0e670897fbb5c8434c49a7b9c6e8c8"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 17,
+    "line": 881,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9b3476868c8e91e5ee70ca1d5b426a0ba121acd00b9e693c0d515734a604608d"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 18,
+    "line": 925,
+    "kind": "code fragment; context required",
+    "sha256": "88d77ca9fe8929ff981bb05eab77d3e6980a6a0807db45aaf329fe9ee247feeb"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 19,
+    "line": 1006,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "fb773886618bee5b479498491ce95fcac0a942bd209ac8259b430206a448b9f7"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 20,
+    "line": 1040,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "11fc82f52dcdb28424597e65fac25ac9feabba97eedf8928e8e81afde2d464c0"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 21,
+    "line": 1069,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "776916ebbf6412cf834365054e79d6b9050cdb4e29d5737bbc68632ecd52a6e7"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 22,
+    "line": 1121,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "26dd899c3de2019aca9d17d9f8e9edaa5f2c05ea9469fa63b0be7e0bb13c323f"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 23,
+    "line": 1158,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7cf1473f6ff77ab2267e1ded2278402458761848109ad1b7787ada3e7d20aaa9"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 24,
+    "line": 1189,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e7b7fcc2d1141963dc6401bd4cdf2a1847b2cba439af1d7e3f426010501e4950"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 25,
+    "line": 1224,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "397486572eb37bbbfa0133cc22a2c1d52a5fcdc49afc894ec47499f994f09506"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 26,
+    "line": 1269,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f814e9f2c2dc3893b2e46cc063611046e356022aa03c3de07524a45f12b0c96e"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 27,
+    "line": 1332,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9a2fd394d8de7cb57a608c1d5901da033b0c59bd0c7fcf4a01c24ed1eb72c183"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 28,
+    "line": 1354,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "54a75d8d06dffbcec5ae82da6ee20a9ca3f7f70d4913aca62adf38fd6043b7ca"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 29,
+    "line": 1364,
+    "kind": "complete CUDA program",
+    "sha256": "282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 30,
+    "line": 1632,
+    "kind": "shell commands",
+    "sha256": "37241e1a2285a9340ef1e40948bc597c4cbdf9d67e5d42b4959b1eb97cc2c3e8"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 31,
+    "line": 1639,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "190bc220ff20792083b5572511a0c5cb483dd6225ab1db3b4ab2153cba762e89"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 32,
+    "line": 1675,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f062dc3efa41856422a0bfce2676363dcd9d6219979b2d8c1af901e7a1cf6d14"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 33,
+    "line": 1695,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "922b0af6a9bc9c86fb59658858b3ad7d77a25b6235204ca2aefdb7fe3f715ef3"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 34,
+    "line": 1709,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cb1a0391c48c9c02a259c6a90489170330beb051da7a47cf7ee16c39cff20dcf"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 35,
+    "line": 1726,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "39089d0d6b2688fe94b1affc7287c18170dc0a5c3c4b934aa2c647fa814f9b73"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 36,
+    "line": 1738,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "238cd98e318794dc361f51afb41270a14868c6d081c1a2eb57b01fd0efbdda07"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 37,
+    "line": 1755,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c404ab36d6860a0e50fbb3d27f9626457a55f94fc65c7c34eb55e498ebf036bb"
+  },
+  {
+    "page": "06-wgmma-part-1.md",
+    "block": 38,
+    "line": 1771,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e1472a3952b152c15341fc44d671b2d3fc0e442e7264eb372250f355f04ca896"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 1,
+    "line": 42,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ed0156955e2d1ffda42fb352f2113b5ba63322f6ded1f9d62325638d86de9264"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 2,
+    "line": 55,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "206a2c9533de67b2bbbc17a037782fc90c443b4f454e89bc62334acbcc2291d2"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 3,
+    "line": 70,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c00c02716495b1e698528e3f73299a8b6ed04facd03798240269e50e9b3a3cfe"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 4,
+    "line": 133,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "012544183c8f5a8364ca1c10ba5a84ffa02d706d72d18ae57185b697a728f1c1"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 5,
+    "line": 196,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ae46d4775d57f0b7d596af8c3459582ac0850b3bb887a8d71cac873cd94395e6"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 6,
+    "line": 266,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "36c9582c9524f05d564dee164a8432b08bc2e344c5d502bda820c1b12db56104"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 7,
+    "line": 345,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "39313b4c8b0e9f3b98c29161f8c26a125e46a91d317a9a147a9d14b161aa02d7"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 8,
+    "line": 427,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d11e0af9f4c5b4388445137fe8f8121f25d887dcfdecc54edafecec1dfc16781"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 9,
+    "line": 513,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "95ac0ef52c374c8e579e299bb320ce29226505f641dd9ca324ac78fc7ab5e257"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 10,
+    "line": 580,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "312e89c21f1f023b86bc97b10dd292d6424a53da9f1a9a5bea75ef77f2f66148"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 11,
+    "line": 648,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3daa1a3f92e440745474ba23d47c6ffb2f8e7089e9909a24909c07118e58b689"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 12,
+    "line": 719,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1e165ada83f7d21216daac353b62227cb3fd450a37d7a1327ed626d5d7846662"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 13,
+    "line": 793,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "773d339bbc6ab79fa92ca86db4659181e6d7332ebf3c1e6a5a392ed032976a2e"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 14,
+    "line": 848,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e6aced47fd887931476d7a0eae7441ce7e35bb0e85ce165a765d9c0cd8fef622"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 15,
+    "line": 886,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "782d4aab9293a3ba67151f2402e73361cc93d653a49ae03364aae09ab9af8e00"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 16,
+    "line": 962,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ee83ec934c868ac644871340b74e5072b90c6d01b2ff16e755dabe9ab4eb5bc5"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 17,
+    "line": 1039,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e883dab8b52b176ce3a495dace0fc0aab118da7bdae11c236585874b22619354"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 18,
+    "line": 1098,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "21cd6eb453adab21e133bcba32208edcb7dc560afcb258282b40b0b427c4ceb9"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 19,
+    "line": 1168,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6f868b7c39d31ae0388f8db1999b2746112f09a6089ca6714dda19a5e978124d"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 20,
+    "line": 1205,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "335c670814c96dd91998fea009a571bb94921832ba6cbf126608fa2b98a3659e"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 21,
+    "line": 1294,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "2ca9b2ebad80cf7c2faf830f783d01b7b83b387e6fcda048565d23a778732e5b"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 22,
+    "line": 1376,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1aefcf91ef5e1274a5faf3cc03eac45e9bf5f0c5d71ba38cfb02c4ebb9266693"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 23,
+    "line": 1443,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "882e9f77f6e01d0f8769d7d79c5cfb6165db6a49f59917f53171145c2f4bacae"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 24,
+    "line": 1526,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6495cb3dc6c091767afecd538728f83695855bb07a5dc0a53910e0c379b7f47e"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 25,
+    "line": 1591,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7e4f3f5606c988b0cf36e118f4cce53589ea65e68de8ff62c77df994ef25b5f6"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 26,
+    "line": 1606,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "095dee4b1282e85f6b19260addb51e1eb29eafa85cf52fe4b087339c65bc354c"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 27,
+    "line": 1616,
+    "kind": "complete CUDA program",
+    "sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 28,
+    "line": 1886,
+    "kind": "shell commands",
+    "sha256": "1acf6057bee94d45445546023b13d02c55ce2c8593a2555e642f260ad321a593"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 29,
+    "line": 1893,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ad870f3bc3cb949e952dbb5becd73eb1080a609bd5fc126b2a43fff49d3ef920"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 30,
+    "line": 1931,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3713f5ee644f08e1691307e06004bb50ad1bbe50f34e01b84419d07a3405a4e3"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 31,
+    "line": 1947,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a704d2955a4c8bbe278f6a432af25c5fc590199517c5173ebfc5c0ddfeb2c63e"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 32,
+    "line": 1972,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "efa84101cf8917b4916a74792df5f28817e8b00c635d86a1185e00f6e1d4f03f"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 33,
+    "line": 1987,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1813883714b9a6ad019a2d3fd8ca6b06dca848f2fca38f08e6e85e46975d67d9"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 34,
+    "line": 2001,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6f240a58697fbfc9a5a119dfb5d4cbd503537a58f7f6aa5bf4e696ec6abb3e93"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 35,
+    "line": 2024,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7d6d023db07dc3cdf6da9e84f640181ffe0ed6bb22d0f7484fb2dc212176fade"
+  },
+  {
+    "page": "07-wgmma-part-2.md",
+    "block": 36,
+    "line": 2041,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "49cf8bd3067cff0b3a00e3b86bc638285467fd5eca98bf126fb81d9a7f1b266f"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 1,
+    "line": 17,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "970eaf3dd4739cc45581260ddf8083577cadde761c02916d54fcd11536838805"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 2,
+    "line": 50,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f10e8241fc4c27aa7d52cdcec230a9bf5caacb7414fad6dbea781961ff3549a4"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 3,
+    "line": 115,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "78994172a3963ac51edd64c89125c7c07c9b7443affb0124cb3ae09890fde099"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 4,
+    "line": 164,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f5aa40d6c3e998ec4d8a6d382f32e07917f43d87311e6ff515e7dd79395134f9"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 5,
+    "line": 223,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0ac17c2fa3c2221bade79afd2f90d1cbfa2c789a931bed5a7b6e871a1eba0376"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 6,
+    "line": 243,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "71b80505c27f7a157efc98c50a0e7bb65287988eb148695f7149c15cba541ba5"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 7,
+    "line": 254,
+    "kind": "complete CUDA program",
+    "sha256": "d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 8,
+    "line": 537,
+    "kind": "shell commands",
+    "sha256": "038ad4479af932f95256e9c6c39699b3dbf379f8c1f26beb52c5acc85b555690"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 9,
+    "line": 544,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c6ad11276c7b42e79b829399648b61285defc32d8d1905fa34df41364325b7df"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 10,
+    "line": 601,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9ac796149809eacc75c7561f9531575edce75c7f968b380fa389895573b9fcf6"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 11,
+    "line": 658,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0f32d11109e98e40f421683699d29c790ee24749982c595eabf68563a5e7e0e2"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 12,
+    "line": 694,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5c9fbf033e6693a746861bc3b7526480d4be0e2d1000a76674b2b44554ab8181"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 13,
+    "line": 748,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9157a2035adc448c117f1f756432c6cdd2b80a78a17734aa7f90a13a9278587f"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 14,
+    "line": 796,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c8e9a7fd343c6df09a0aa5d227b7c0a9064287e25d769d096559345991662ee3"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 15,
+    "line": 865,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "82868538a5c04cd43406d4006d6a04aa4d222e062bfae32c318382c9db96d227"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 16,
+    "line": 934,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "62764df8623211d455eae9f0a3e9593004ab9bf142b98c9163b877f62706a9f5"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 17,
+    "line": 947,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7ccfb4e9493c79df9c342737ac5a7d6e862d782a9b6432a53f3aace99053897b"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 18,
+    "line": 958,
+    "kind": "complete CUDA program",
+    "sha256": "fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 19,
+    "line": 1193,
+    "kind": "shell commands",
+    "sha256": "71097fb09dcd254b1d21efa31eed2c50fa3a2af1815ff0314a2af77de34a459e"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 20,
+    "line": 1200,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f3906e9763f8347b929136df4b92e44fe32f71c24d0b8acf289060e8e6d0820a"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 21,
+    "line": 1264,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6168cff09bb545be1406c109823d4cbe28c028473408b0cdaa39106937ea49dc"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 22,
+    "line": 1350,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ccce3178f5392d446c9bf59f1489c5de80ffe6de55a2b4973bfd18947b5f88a0"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 23,
+    "line": 1365,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "96080ba520956543ef329eaefb3912da58e41e9668fc8ab7bfa753aa7c2de5c1"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 24,
+    "line": 1377,
+    "kind": "complete CUDA program",
+    "sha256": "c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 25,
+    "line": 1576,
+    "kind": "shell commands",
+    "sha256": "7c1d12ecf59d5ac4109e91e003855910c7503b956af9bdcda46710e1dbb87eb4"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 26,
+    "line": 1583,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "57d430cd325036e46528438094e51a71e0d0a5f9a354d61b788cbea8d6b0391f"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 27,
+    "line": 1624,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b7efb2ee88e1834728c2056f382179637d81455a044ad8219d454c8bb0fdb808"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 28,
+    "line": 1701,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "32158129376eb8c97ada56be626e232d057aec0cb1b29a33bc2c75524778469c"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 29,
+    "line": 1761,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a68e0aa3887107947ad912ad522a133bb7c1ec15521d57b4eefcc0bb56c45bec"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 30,
+    "line": 1816,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "84ffbe15f60838960c3416edbc5be45f78e527fd867c74d32b4caa5f6000e283"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 31,
+    "line": 1890,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "810ff6f26f5aaf55422b68499a9975afec89fefcf350dcdf3b579ed2b51c0caf"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 32,
+    "line": 1904,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b373a9c0f9089523c9b9f0bf97b5c8694c391d81c0e61c692f71b1855d96fb6f"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 33,
+    "line": 1916,
+    "kind": "complete CUDA program",
+    "sha256": "3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 34,
+    "line": 2160,
+    "kind": "shell commands",
+    "sha256": "306e0166fca676d5b16edd29d86f985dae70df5e3e6bc83b5daede8c3270bb53"
+  },
+  {
+    "page": "08-kernel-design-part-1.md",
+    "block": 35,
+    "line": 2167,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "19e4286a4f1bf404cec82a7d5f525a8cc43ac28805708e2eebe4c3f3a1553cf8"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 1,
+    "line": 20,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "27d58e33e152fed320fa0c8431a921126227033f43c19af9d2f7f99f6ed14c9b"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 2,
+    "line": 91,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d905bf7d6d5034eee0268a745fc624900e99bf978abd55fd7799e3cd4c41a62f"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 3,
+    "line": 160,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "087ca3e6f256a1f3e8d7049352fc5252789863e4579a177624a1ca8fa90562ea"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 4,
+    "line": 176,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e0c63fd2bea2b47f46401e6d0f57529031627d7c1082e48d3b81e5f55d1f9af9"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 5,
+    "line": 187,
+    "kind": "complete CUDA program",
+    "sha256": "c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 6,
+    "line": 445,
+    "kind": "shell commands",
+    "sha256": "709488f1dd00a3857f74f0e43d4b5adf720f215b741ceec8380c6ec093780466"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 7,
+    "line": 452,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0cd57c809533bda123c0072e1608f17f28f2b575e11c7e2a7bc084e421d0af1b"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 8,
+    "line": 499,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3cd33ceb3638d2299c6e482887da694ef5ba4e510092b37fc47e5614af21ee9e"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 9,
+    "line": 594,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "82e9f6dc50174a142d25e7b7fd5f8d8d92f7d2d053bdb6d6dc75559f641fc913"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 10,
+    "line": 679,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b0b74320953baa1bb01d85adc01be385e09f97ef0088efd69c30d6f23b6ce841"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 11,
+    "line": 778,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7d4bc87b23b144f19e369246985f46761e3a0be5fbfbff0d93a2d940510be35d"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 12,
+    "line": 842,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d264d5405b1c82d2cf1bf13277454b0d060613f7fcaaab3f53e63ab07418fb4f"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 13,
+    "line": 931,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1a615f180748a48f72f1614bc18fd0bccf70d72865853a568bc1e2cba53c6892"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 14,
+    "line": 953,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c12f435f6c55d057402cfa6d2f78c85eb1248e4d926213f2bd87539c03b3a1bc"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 15,
+    "line": 964,
+    "kind": "complete CUDA program",
+    "sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 16,
+    "line": 1166,
+    "kind": "shell commands",
+    "sha256": "c121ac277454a5a3b62333d1863b78d3ebb7f6bc5cda97409e7caec993a96519"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 17,
+    "line": 1173,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f357d98f63984bcdb8165d64ce6671b22447a90235effeff5cdaa2d584a337e8"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 18,
+    "line": 1219,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "52eec15b852dc8b087172fdadfeba66ae345920a0b4f0137e01d2bc44d28d807"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 19,
+    "line": 1283,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "267cedf45c407230f4eb9a2c1b7bf1ef04ed81a14eb3ac02c7f19b9ca66a0874"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 20,
+    "line": 1340,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "095d620dcb726b138025af2a166e7dac8090895d4871060fdb301407b1c252db"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 21,
+    "line": 1439,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "64885f10594b3d584982835f24f57de219fe75960535cac14d3b653b895bfd34"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 22,
+    "line": 1454,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b0b0ef6c1cef4a5eb9e951dbe3f0b17103fe4e0af87f990faa47bfcaf832c14d"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 23,
+    "line": 1464,
+    "kind": "complete CUDA program",
+    "sha256": "bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 24,
+    "line": 1715,
+    "kind": "shell commands",
+    "sha256": "ed8435fe361af87d46748e00c7a77c5f8551f094d61d5a3c2d0e695cc5a2a510"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 25,
+    "line": 1722,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0b3bb43c2cc8700c3cddcb7280901d741a2f2dbc24acea54ea7fe4a9d918194c"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 26,
+    "line": 1772,
+    "kind": "code fragment; context required",
+    "sha256": "1d6ed86ed48be8d412c80fb2b2ef9ff03e46663906d4e5342ae4aeb6fba66cf6"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 27,
+    "line": 1830,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6ab032f929d8702b646833764a6b6f723e1ae2cf692343f94d804f186592116b"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 28,
+    "line": 1862,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1d4ed2c8764413ab1b6e33b1fc2a6d89aa732acad74a54d195624e615e0d99ae"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 29,
+    "line": 1931,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8af1e37696949a6a06ef9d4448681548161272e4d3907001c094e349f9127d45"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 30,
+    "line": 2012,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "91555c7b9fea84781907b92e5cbf2447a294ad12225ac0b86462bd1bc3559316"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 31,
+    "line": 2075,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "032efb906012074284fe98642f3d8fd20ff4db800417fe3c6ee8ca3586996b55"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 32,
+    "line": 2097,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1ad2835d681134f4ebf09c765f585c41378a22a314c9eddd6c67995dc889939e"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 33,
+    "line": 2113,
+    "kind": "complete CUDA program",
+    "sha256": "7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 34,
+    "line": 2424,
+    "kind": "shell commands",
+    "sha256": "40b61d88cb2e49b4acd8648087c15ff515b59030eaf4b323d967fd1e5164520d"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 35,
+    "line": 2431,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7716b69624b52244d20a944e50d79a0d8fbd33e9aefa649480037a1fc54f4a70"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 36,
+    "line": 2484,
+    "kind": "shell commands",
+    "sha256": "9b55b9e47b97f936bdccc70a64ce2196fdccee879dc7bfbaf095e89a96ee65e0"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 37,
+    "line": 2503,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8defccf6754764e671e662d3f2792ec303442ae001e0f9118dec5c75eceab223"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 38,
+    "line": 2517,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e1487e5e3f70c02a1b9db32551cdf3167cd74901deb65ea9ee67c52d6382e836"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 39,
+    "line": 2532,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "2ec0c1a97ff9e4889727a2a9bda2cc5796e5066c038e0db8dbc641c2cfb9cf01"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 40,
+    "line": 2546,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d1c5c5f3baef57219194e3fb05948d7fa3a4c4c7cc2b053675e3fb9b7c6a51d9"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 41,
+    "line": 2567,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9d693bb409f12d2cd6f776428646b299b080b80a084b2ae5c323d4d40d90b007"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 42,
+    "line": 2581,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d9410cb86b40b59b11601a9d67186e5ba744fe6a54c09556a956a9ab95279196"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 43,
+    "line": 2608,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cb728cf23c61490073a75b2f14149f7c1d34c9819ed29c8b63ea8d64c44a667a"
+  },
+  {
+    "page": "09-kernel-design-part-2.md",
+    "block": 44,
+    "line": 2628,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9ce30733ddeddb0c85accadeb4de01d1bdf4c68fd8c4ffda44b99cab04483d79"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 1,
+    "line": 17,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "23d019663bb62e554139304401317a95026aae62f94c8b833b1de673ad621e97"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 2,
+    "line": 47,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cb2124d06e99931e03ae482d2695a4ef330b61e72c23589f136d9c735ea451b7"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 3,
+    "line": 103,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e86cf80656a239d4d94d25575c092cdbf294cd4893fbfbcf3ae6b09c35886265"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 4,
+    "line": 148,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ef034f962ce188f889476796bd215857e950758acaef5d777f8978729da30d3c"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 5,
+    "line": 157,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cdea4e80e610ac3813c066c4377890d3b5fe2248d22d8e0407652ade83d3ff21"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 6,
+    "line": 198,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "002f1de96ec071579dcd69ea4713bc3a2bd88a919a8bba2e55cd1d6302093600"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 7,
+    "line": 245,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "796f75521e86ab7e1a0440222f3a7656880d9b6c3c7d73dbc550147d97d75a39"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 8,
+    "line": 306,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0802283ca77f3029d9756b8cdad603e60e56c29d99b8b5d174b72c11d1aaec79"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 9,
+    "line": 373,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b39f2d770d7c3a8c94e9253fa93c6e4c37c140e56de116e9d3b4f3a2c4f545c6"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 10,
+    "line": 439,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f31a2bfb33187eaf37365fec769d6a25149ca9a1bb615220c7c909d4b077698c"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 11,
+    "line": 456,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "618ba66330d3bd9a26bd90966900d0cedbd4f1ab2989cbd266b2eb9173ebf772"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 12,
+    "line": 467,
+    "kind": "complete CUDA program",
+    "sha256": "fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 13,
+    "line": 737,
+    "kind": "shell commands",
+    "sha256": "ca51d5476951d7b9c914db7601e4c603960ebd5499ee07389922636eea809e41"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 14,
+    "line": 744,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "20b95cc06c5fe0f442be9a02666c4eb5d76d54a56c0b4f5552baaf044d219104"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 15,
+    "line": 795,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a7160b61fd23d05f48cc665861b6fb4aa9c56d4736707e91e07072f1229ac993"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 16,
+    "line": 831,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d399f9788563ae539cdf94760a9ded47f79dfcdc3cceedb6a8a09a5a50412ed2"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 17,
+    "line": 871,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d7916cd7ab8c6429d20c0460f27571df186fa5d1ccacd731b04ddae5e3a1d4d5"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 18,
+    "line": 930,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "468f063b9696e9bfe7f7413b12312e3f3f4001d88027a33a5c966944025b7acb"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 19,
+    "line": 975,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cb57eb57b27203d36915d55e7599f1d4a3fd17c0390ecbf63a400266d05944c4"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 20,
+    "line": 1023,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "db2609b67eff83dbb70c6abbd4e5bdf4c636492ced8f170667ac2b624e2db0dd"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 21,
+    "line": 1085,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "16146fef8fa2347e89501a45c858f0e26eae0bcddb2bb2638871552d6c560040"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 22,
+    "line": 1161,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e28a271192f5eb7d664bb620c618cc41571888e94c4e37df15caabcb70c6186d"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 23,
+    "line": 1175,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "99442db1e8c36ed5d86ecabf94144a53b005e0bf93ee9c86043a9847d37dafb5"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 24,
+    "line": 1275,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c61bc4e5782e19f4b513b09bccd13bfa26213787b4fafceb67cfa4228b4da955"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 25,
+    "line": 1320,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cf173f16e273ac35702cdb859f247824b1ea0c1c58bc9a36f71520e0d11210b0"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 26,
+    "line": 1375,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0ca2f4a7ae98084553577a6545307cfa3677d08abc14d1b4a2c7c57b9ba85f04"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 27,
+    "line": 1408,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6d71502d1803959f20287a486f987dc7b737171ed4bb22fdb14e702349719d40"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 28,
+    "line": 1419,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1bacb3c0bb1bf1808f70ec599139f73dcf7a474535450a86640b12a953f4fb58"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 29,
+    "line": 1429,
+    "kind": "complete CUDA program",
+    "sha256": "36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 30,
+    "line": 1600,
+    "kind": "shell commands",
+    "sha256": "9d94d07470eb11e28010e99141f622843c6780be20de58df858e78452886b181"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 31,
+    "line": 1607,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1a88739c859b5dc5ec977fe35562109239e3a18e12d715c8b06fd2e7b8011c4d"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 32,
+    "line": 1643,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "07dd187b463fa86f237182bdf1363fdc78fc3f58f2b0de377dbe3b7cebec8721"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 33,
+    "line": 1715,
+    "kind": "code fragment; context required",
+    "sha256": "56e413add7ba539910b38f85fbeb806695d88625001c782ecd78624231673ea4"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 34,
+    "line": 1790,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f0cfaadf5d006048ee36e7177c44bbda53d466c0eca1b73df65ffd1ab35d4668"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 35,
+    "line": 1890,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9ffc0169166163975fec409818d87e6d7a8c89ddab5253c535a384c2f5032005"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 36,
+    "line": 1964,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "be281573a679c4f8d66a8e37357f3614b93437dbe2dd97f513b70d4e582af2c7"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 37,
+    "line": 2008,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e3fd0e42dfc185c2b83f94dd01bffcba8ceb526575fc4e9c0afb778b5e584202"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 38,
+    "line": 2059,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "26263e0af1e3250883401604e1199a0877ef5a2bcb4df0fde7666be9e2013e27"
+  },
+  {
+    "page": "10-stream-k-scheduling.md",
+    "block": 39,
+    "line": 2094,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8710733f773a5657c9c0d5ee2778aea9ddae896f945f17d1276e46d5a7a79626"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 1,
+    "line": 18,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "62e6fcb4194b9add00a465fc49dd4610108e21b31efd67c1d12bfecf887d1a06"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 2,
+    "line": 47,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "63100c38fbdcf404c4e283acc75e8b985341c5074584406e126a0df06045b33d"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 3,
+    "line": 107,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "bb12591096a340ed70d4ce544ec4be08afb7d84b59f1eeca9cef6565fac9be5b"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 4,
+    "line": 156,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "930daae6f27e0e9246545b36405054d734d8fa3a8eb878cebc2e91f2d94f681e"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 5,
+    "line": 218,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "fa2b0ff266e11346303d6c5db8a471923ec1457fc3fe609f06f4bcae74b6a9c0"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 6,
+    "line": 286,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f2c682b22ce9343fed12080ea8f16c6effc0d9ee64e756723bbe41e15d8443dd"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 7,
+    "line": 358,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "441b7c130652c3ffc0a4587bac74bb90256d2622052bf4c511e9daa536cfa1fe"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 8,
+    "line": 418,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0bb080bfbbb89f66016618dcc71ce36f1e916ce2983fceea60b798988fd64461"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 9,
+    "line": 486,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "84ecff9054c3bd7046318392cbaa451dfa0e6122d9d49ff2ddadaad55a1a03ca"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 10,
+    "line": 562,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c9cf67a4fdc9dce643aba321fcdbdcfcdce74b7e9b4844383b1716932231a2d8"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 11,
+    "line": 640,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6e6654562a511e3816eeb04a2f23fd5f9ba6c4148c5d7fa676b2138ad8cfdd85"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 12,
+    "line": 715,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "73813d3a5cf4c40191577e15e7829dccfcb526850a9ae7d3c8d51efa6e7a8f4f"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 13,
+    "line": 727,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1e3215fbaa1f5b4e13a5e2ff2e218dc26e0dd64f6f6d007a13ddbfc6d43b3b0f"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 14,
+    "line": 738,
+    "kind": "complete CUDA program",
+    "sha256": "e789b36984c5f5c5f661299a1029330bc15a4b1fba18b5e4a1605aef2500a11c"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 15,
+    "line": 1002,
+    "kind": "shell commands",
+    "sha256": "d5625ce5f8ced3907a495f32eafcb169ddb2476fd9525ab0d91e5d6c842750d6"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 16,
+    "line": 1009,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ccf2fe2ca91c3064ea771155bdbfb520219c7f966ce9006e18dcefe4dd197817"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 17,
+    "line": 1035,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ceccb3fc78c65ab6b24a9357a8c1a3e7765059d7c3178600f5dfb34d03ee8a66"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 18,
+    "line": 1120,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "996fb774c8ea6f166261b561574ec440d02a4a7157952b8486cc04a71a8bfcae"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 19,
+    "line": 1206,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "23ddfa1477909ca09890acba86d6d4e2ee5e0de97f90dece60ff85fdad92076e"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 20,
+    "line": 1319,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "aaed6ceed2f17e92a9b993a6a2091bbe8ce9c30a6069e8993f81b707b3479013"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 21,
+    "line": 1417,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d80fbd099a1bbcf8e57ae6357b5455faf2649dd8c4edb3d32729ba271400c28c"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 22,
+    "line": 1489,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "77be39cba5262a61f2f48619b86883d0be4019531611709563b30c8eedbae4c4"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 23,
+    "line": 1502,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "56ab456d6d921a53c3c12d9bf4cf5155ce03505dc2f060bde3f0ac7098d7b9d8"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 24,
+    "line": 1515,
+    "kind": "complete CUDA program",
+    "sha256": "7d9238e4b56e51c9b54c3ba86bd8cb6a7ed4ed0829c8a4beb44ea0cf89610939"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 25,
+    "line": 1797,
+    "kind": "shell commands",
+    "sha256": "6d12e6c89e9aea190ef7db5c409d06afd53debe37e6845e8eae81dbb2d4a726d"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 26,
+    "line": 1804,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b0703d5b076c7f8ab594953b5d2377c0eba3be0e7f26963a13c6f4fd45e0fea7"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 27,
+    "line": 1828,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "da0da73ed48864aac94746d155d5997d0f7e54c7a12eb0abf5e427e046337f95"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 28,
+    "line": 1911,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9e0d37c52ffa13f30b0133f4537be4c0c1fa760eae8abf63aebb3d4297f7e82e"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 29,
+    "line": 1967,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "168fba7e63d70e4f12b5fad89bc49de2deaccbb0a601abca7950abe7d44cc4e0"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 30,
+    "line": 2052,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "54c883d20f37ff41ccdfafac22a4c3735d2596c7ea165b2fb5b1046a9066480a"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 31,
+    "line": 2101,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "91d43eb41598ae920d04abbd4a3cf08fb36b60693182ecd4a0f96fc7c307a534"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 32,
+    "line": 2149,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "de0a9c2e7b33bc323f2cbedcec61e6bacb540a1504725c6e0fd53a4168e41ba7"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 33,
+    "line": 2239,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "641bf285be1a64820f80e657fdd26e0db1b884461a6d7de29cdc211c37463c8c"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 34,
+    "line": 2297,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "c7b07d38f800c40484de829bf71889b803d13dc021c315ec61f157371f671887"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 35,
+    "line": 2322,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "15b545dca7bedb9dd532030481074a5e8833d3c58f16e5325a5a05de6ea45598"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 36,
+    "line": 2345,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "538ddc4c4ad9f590361d04fe4d1d2d026e01132fb648dbdb86a856aef4f9b28d"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 37,
+    "line": 2377,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "cda4a1e1660d783c0c7fd0cceb9f626affb99c740b1ed75379a6b48b8e55a4a6"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 38,
+    "line": 2407,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1273ba2e95e088709bc3e7be06a7276f7e63b90dccfbb81ed7caa8d90d42550f"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 39,
+    "line": 2461,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "66deee1e9969aa645f1b40431132732132ef86311764b28399c7037e8cc1db9d"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 40,
+    "line": 2530,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6d0457a54752d1fa25df5de3ab7047450a9f07f99ea6a9020611aa441cf019d7"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 41,
+    "line": 2547,
+    "kind": "complete CUDA program",
+    "sha256": "99f1b0a3238b2833c49ed65171cba66cd446991a1be3e807a1645a7f408de9f3"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 42,
+    "line": 3268,
+    "kind": "shell commands",
+    "sha256": "9de89596d74534adef909ad64651d285999e3af43d1b026cb34422e474b1b5b2"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 43,
+    "line": 3275,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "26c2f4929bb427655d60df141badcf700c4672dd6cb8e120e553b45667c59d30"
+  },
+  {
+    "page": "11-multi-gpu-nccl.md",
+    "block": 44,
+    "line": 3298,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "909410957530fa888fc632ae12db7f0725e6a7c4befe0f07355e1fa601ed22ee"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 1,
+    "line": 54,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3153faaa8449f534a1636d2accf651f5e18e688c4962fab38d0fd70aa72f1f1f"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 2,
+    "line": 103,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0a39e9879ad054e2d8f979d9b04cce5af56fb0f082df6783dfb23d128ae50f64"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 3,
+    "line": 153,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4dd5404a21f697411c0e83a42ae592fbb1152bb4e52da814cc3050b1073efec8"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 4,
+    "line": 186,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a9eb7ad2904f6681ef71a46f42bae317167e3080e16a6b1626bf8f73e5b09c39"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 5,
+    "line": 238,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7a73e9d95f8593d5611ee65a576d14269b88385468e7b60ed95fb20317fef273"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 6,
+    "line": 292,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7d876bef848c2977c6d1808126963662aef6f20af8fefb066c9154f801fb4279"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 7,
+    "line": 327,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e64ac7aca2401ac4ce2f236da2e490a89fab4f43bf39278060898877eabbf202"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 8,
+    "line": 377,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "dab0d7fe5f0a3536a58896af9972b129388a22b84878b43132dead000f7ae3fc"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 9,
+    "line": 458,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "f071a5cd86983861c23c85bbc67cdda132286396eb49d8e7dabacf79996852eb"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 10,
+    "line": 498,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "62850f64be75091c4e701f9b7ef8f0587b3b497d4baca2329195b4345650fadd"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 11,
+    "line": 568,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8c7cf4c90a59d650170ed75fd65de6f006e2428ac178139cae59220747d926f8"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 12,
+    "line": 605,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "99462332a23098e525d42adc8034730002d0da5d3de4dd96c7bd4698e40bb655"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 13,
+    "line": 670,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "248bc6b1ce9c3235756eb13925969a77b00c2d8dd7ccb5af5b0b5408c4d711a3"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 14,
+    "line": 713,
+    "kind": "reference skeleton or fragment",
+    "sha256": "c4d120038ce6a6ff26a0ca47f9c08e6915656bad2fea6da5be27fe2d21dd5c7a"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 15,
+    "line": 785,
+    "kind": "reference skeleton or fragment",
+    "sha256": "939a03f833de8668253760550423077ec1f761f8c3fead3b01b13c47864111a5"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 16,
+    "line": 851,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "771039e600e41d602543728633b0170eeb185be9552538d57d57a9a9572b47cb"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 17,
+    "line": 895,
+    "kind": "reference skeleton or fragment",
+    "sha256": "23319acb1bcc734043a372e3752148f8d4f91860c4679a8bbad620b82b70c527"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 18,
+    "line": 954,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "fa4b4d388733683c2d51467b166698d8e261e3f230efdedf5d81cee70e0cc897"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 19,
+    "line": 974,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "28c506ca575d9cf994ca970535e846a422a62dd422e209a22b2af2ffada680b9"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 20,
+    "line": 1046,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d8d03ffc34b4cae20423faafeda4bef50c4183c4c7a904ed44e7c3e79ce23fe7"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 21,
+    "line": 1089,
+    "kind": "reference skeleton or fragment",
+    "sha256": "958540e5ce3ec0956d3301da1783b453d98d480564d5ad2282c01ca72d88274c"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 22,
+    "line": 1146,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d656199985df953d843f5a1bdbeed65ea64a2f725a4e16c5a0ef1e74c0f5e77c"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 23,
+    "line": 1192,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6e9dff160ec4dd55f8ac063acf0b3c4648563eafc0aacf3d0037d9abf22bf7b3"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 24,
+    "line": 1243,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ede7ab97ee7c95d16419f98519574a8e3d79068651fd2feb087f96d400087f76"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 25,
+    "line": 1313,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "532b20fcdc2344786dacb8d1584f92177c81b011ed86232db5c5470c48b7802b"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 26,
+    "line": 1369,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b4c550af8943992a04ffe3d85b3a4b0dbad5eefaa17204dd8f83263cd374dbbc"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 27,
+    "line": 1411,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ea40386367dc2842e5806e7415320079328835fe964aa08ba62a50c652cad1fe"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 28,
+    "line": 1463,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0fd94e4f48bf7dcd86d2f1a8af88cd1273dcdb179d349b08e71f11990b5d831a"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 29,
+    "line": 1534,
+    "kind": "shell commands",
+    "sha256": "35da2cc948e592ac85013e0fb4581b3f760b8fa3704b2457d4b96f0bb9971981"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 30,
+    "line": 1540,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "de253a5cc2521e5307d632939d47cb2087813ac67405aaf7b3565077b0f6495a"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 31,
+    "line": 1566,
+    "kind": "reference skeleton or fragment",
+    "sha256": "6e6a9605660c2b2b9265205b19c23d8c384a87f6dc2c452bf1f3a15fcee9fd05"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 32,
+    "line": 1653,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6d71bb579204a5171e68c4823ac97676f43eb4f25faaf8e9707ad4395d0b5265"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 33,
+    "line": 1685,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "997c57a344c1b91982b559382d04e8af79d5dbc825397fac9d2359ae32469a27"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 34,
+    "line": 1714,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "74dc022f1bd18931faaa358e13abcc77fbea7b084f647afec180939dec393919"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 35,
+    "line": 1749,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3f13b943144445e6717f2450c43b4b96eb8e9ff6ba0c14dd7f28a86a60bb7640"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 36,
+    "line": 1770,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a0b3f7f0bb97ca349f7f23d65ea802202bf5e784a06ea5ae36aa2f014271e34d"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 37,
+    "line": 1792,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6a86bade73f6ebad21f167e12cecf0bea33ffde2211e5e9ec34b82e4a74aecb3"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 38,
+    "line": 1803,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "e31e7bbea2166530d379bdc1b93f6696322ad814afd88a9ccaad4f40752e1207"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 39,
+    "line": 1819,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "51eaab6349d2f3c093a49dbf414a0b0ade31e3b232c58deab6d920c13d1742e3"
+  },
+  {
+    "page": "12-flashattention-3.md",
+    "block": 40,
+    "line": 1832,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "01b055c59b17c3a4f9e240cd830274f77144ad63f26c06b1e9aecb279fe02c4a"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 1,
+    "line": 48,
+    "kind": "shell commands",
+    "sha256": "90eb1e72a0dcf6926ce6566732a265f7fcfefa5168f9c763e32ce72c00800907"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 2,
+    "line": 57,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b0d7888a47e5f1771e870cf76340a8ef8109b833d47049712784b1fc6050b37a"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 3,
+    "line": 74,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0fc3a73431cfc7f8b893e3627e732900817d419de73399d26978bdde62974513"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 4,
+    "line": 102,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a87eac53968eba25f1fa097f22f70d7ab9c5f732bc162cfcb154b0f16735bbe1"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 5,
+    "line": 152,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "fdc34ae0923e5f3b590a707928e659c684e89ba13abcb6c2a2eb10714448b86b"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 6,
+    "line": 201,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "86967ea45ab783e240196a177cc18a477c478396cf1f286171505465e4ac9533"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 7,
+    "line": 232,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a75817d53b868795f9273e67cb30d2b4e0a7131111059f91f7049e9388dba27d"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 8,
+    "line": 289,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8178c7a3d759ed83627764983bcec682c69a848171cc2ad6672f40888400e8e6"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 9,
+    "line": 344,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "2dec6b6d62590da05fd3830938deb147864d79c23c03d5b373854a1064144225"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 10,
+    "line": 408,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "1af7e6545d46f367405bf9fcc911444d7540424a7cc790180d5b5d48c11f1b5d"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 11,
+    "line": 443,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a6f3fe039fc027e75a548fd55352a44b914db98b8d6984371cafceb0c300f9ca"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 12,
+    "line": 490,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "fffab4f673d63dce8ed8f4e259db12c525023e6bfabc17616cd942778bb2ffcd"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 13,
+    "line": 538,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "bc6b94c91eb8b48c5ac6d4dff136c281f6294726158fbffddf57146bc970f5ef"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 14,
+    "line": 580,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "3ef3decc727d6d25bd857c52d92494e79bda6f6d078ecae0b14c7d8ce759bcbf"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 15,
+    "line": 620,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "463a854f4ddb9f990f9a2035dea48c79c188fe3127d3cdf44b6fd767ae894aee"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 16,
+    "line": 678,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "37c5c09443bfb1e71515f85a30bc3a34c766c6c995cf9ce775df7a1218756c14"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 17,
+    "line": 711,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "974098719d53fcd96e0ba9f33b609767619e2f0e5dfef0f712f1e2194c2636f9"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 18,
+    "line": 763,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "5f46a2a8fe962f437d5dbc32c4b22cd0a45b580bd1022bb3e73e30bb3432b5b6"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 19,
+    "line": 811,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6cb321a47f0ac15005689811ae8a5680d658cf77bc6ca63d2142a0c4e525e7e6"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 20,
+    "line": 863,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "65645face65c5e04a3d7cfaab50b9c1da62323bdff115e57a0a97e611118d102"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 21,
+    "line": 899,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6eaabb1c147f327c37568051c4fdef36dcffce1aa6c166382b87defd4cdd3602"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 22,
+    "line": 940,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "365af99669952eb07e97e2eeb4d63d44e9191d94d9c1fe0aae83f7256bd6dc65"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 23,
+    "line": 1022,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "735f8e7f5fd05264c9685ada4d28b21d85e44767193792ac99bf2ee59f42c44a"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 24,
+    "line": 1055,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "8331b46f0920e8c9af41392d57d3d105fea9386d4672975b971591aa88da4c60"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 25,
+    "line": 1115,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "10d05ac5fd29b25133c398ab04ee66f975afbdbb5a43d5ca0271a1f2159576e7"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 26,
+    "line": 1166,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "ec5aa9d3f4c9c69b7f1a53fd625f221e78ebe802748b000da690d0948dedd37d"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 27,
+    "line": 1210,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "90fd481de82905585812266a618d2d9a0fce8957073152f9b6ca2715adb9b601"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 28,
+    "line": 1279,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "7760990e88083d5f02a060461a85259d5da7620516faca68f547f707b38621d6"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 29,
+    "line": 1319,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "be3688c640b5b9460e0e7b88e806f1a1ca9f53d155610865ea612df04d8d62fc"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 30,
+    "line": 1345,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "9316a9dc1b0d3a3b500f5e1bd05f64590352b1f7c48ee187988928be65d71f96"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 31,
+    "line": 1375,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "0fc730f88d20f8a06f38bddce7ee45244a324aef8d23a337959781a36024fddb"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 32,
+    "line": 1423,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "27296549891ae90ee2bb9d32570f56862e83bd29053d37a25450304ad4c1944b"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 33,
+    "line": 1470,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "6bdef8287e1b4cb69da982a84b47cbdaf9139506f0085b7e56e86c5e4177f99f"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 34,
+    "line": 1519,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "26c252942b0a713df989964a1e15a9920338aad78ff568091d765a932596531e"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 35,
+    "line": 1577,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "4c88e54d4c9976ee5552a260812ed2ea3371eb0cd8ceaf8fab65698ac30338c7"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 36,
+    "line": 1606,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "a144bea01f29837aeaf54b0ae24db955c849ab3d05e13b57bc71f4cb33663333"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 37,
+    "line": 1617,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "b061db8a12278c9732a1dcaf4d284c6a13dca0c907e38ec50df6a55dce7b787e"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 38,
+    "line": 1633,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "d3b6c417bad7237f72a25682be9e34d572bc81a83e344f02676ad7b6ea708f94"
+  },
+  {
+    "page": "13-nsight-compute.md",
+    "block": 39,
+    "line": 1647,
+    "kind": "reference text, diagram, output, or code fragment",
+    "sha256": "42a23d79cfcad83753f48aaf7735948e66889d36c701c56340cd52047dd83827"
+  },
+  {
+    "page": "index.md",
+    "block": 1,
+    "line": 169,
+    "kind": "shell commands",
+    "sha256": "7b0e6da9b13a87542102fecb8bfbf2561b82b99662297a5e01342ec1d422f057"
+  }
+]

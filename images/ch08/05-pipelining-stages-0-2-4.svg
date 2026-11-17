@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="864pt" height="669.6pt" viewBox="0 0 864 669.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg role="img" xmlns:xlink="http://www.w3.org/1999/xlink" width="864pt" height="669.6pt" viewBox="0 0 864 669.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title>Three stacked timelines: serial load-then-compute at ~9% utilization, 2-stage pipelining overlapping loads and math at &gt;95% utilization, and a 4-stage pipeline where every step runs one Load and one MMA simultaneously</title>
+ <desc>Technical diagram for Programming the H100; see the adjacent chapter text for the full explanation.</desc>
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
@@ -21,235 +23,235 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 669.6 
-L 864 669.6 
-L 864 0 
-L 0 0 
+   <path d="M 0 669.6
+L 864 669.6
+L 864 0
+L 0 0
 z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 31.86 106.332387 
-L 333.72 106.332387 
-L 333.72 68.801806 
-L 31.86 68.801806 
+    <path d="M 31.86 106.332387
+L 333.72 106.332387
+L 333.72 68.801806
+L 31.86 68.801806
 z
 " clip-path="url(#p968b261a1e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
-    <path d="M 333.72 106.332387 
-L 386.37 106.332387 
-L 386.37 68.801806 
-L 333.72 68.801806 
+    <path d="M 333.72 106.332387
+L 386.37 106.332387
+L 386.37 68.801806
+L 333.72 68.801806
 z
 " clip-path="url(#p968b261a1e)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
-    <path d="M 386.37 106.332387 
-L 688.23 106.332387 
-L 688.23 68.801806 
-L 386.37 68.801806 
+    <path d="M 386.37 106.332387
+L 688.23 106.332387
+L 688.23 68.801806
+L 386.37 68.801806
 z
 " clip-path="url(#p968b261a1e)" style="fill: #fdecea; stroke: #8a1c1c; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
-    <path d="M 31.86 239.395355 
-L 256.5 239.395355 
-L 256.5 205.276645 
-L 31.86 205.276645 
+    <path d="M 31.86 239.395355
+L 256.5 239.395355
+L 256.5 205.276645
+L 31.86 205.276645
 z
 " clip-path="url(#p968b261a1e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_6">
-    <path d="M 256.5 280.337806 
-L 481.14 280.337806 
-L 481.14 246.219097 
-L 256.5 246.219097 
+    <path d="M 256.5 280.337806
+L 481.14 280.337806
+L 481.14 246.219097
+L 256.5 246.219097
 z
 " clip-path="url(#p968b261a1e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_7">
-    <path d="M 481.14 321.280258 
-L 705.78 321.280258 
-L 705.78 287.161548 
-L 481.14 287.161548 
+    <path d="M 481.14 321.280258
+L 705.78 321.280258
+L 705.78 287.161548
+L 481.14 287.161548
 z
 " clip-path="url(#p968b261a1e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_8">
-    <path d="M 256.5 239.395355 
-L 323.19 239.395355 
-L 323.19 205.276645 
-L 256.5 205.276645 
+    <path d="M 256.5 239.395355
+L 323.19 239.395355
+L 323.19 205.276645
+L 256.5 205.276645
 z
 " clip-path="url(#p968b261a1e)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_9">
-    <path d="M 481.14 280.337806 
-L 547.83 280.337806 
-L 547.83 246.219097 
-L 481.14 246.219097 
+    <path d="M 481.14 280.337806
+L 547.83 280.337806
+L 547.83 246.219097
+L 481.14 246.219097
 z
 " clip-path="url(#p968b261a1e)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_10">
-    <path d="M 123.12 420.224516 
-L 256.5 420.224516 
-L 256.5 394.294297 
-L 123.12 394.294297 
+    <path d="M 123.12 420.224516
+L 256.5 420.224516
+L 256.5 394.294297
+L 123.12 394.294297
 z
 " clip-path="url(#p968b261a1e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_11">
-    <path d="M 123.12 455.707974 
-L 256.5 455.707974 
-L 256.5 429.777755 
-L 123.12 429.777755 
+    <path d="M 123.12 455.707974
+L 256.5 455.707974
+L 256.5 429.777755
+L 123.12 429.777755
 z
 " clip-path="url(#p968b261a1e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_12">
-    <path d="M 263.52 455.707974 
-L 354.78 455.707974 
-L 354.78 429.777755 
-L 263.52 429.777755 
+    <path d="M 263.52 455.707974
+L 354.78 455.707974
+L 354.78 429.777755
+L 263.52 429.777755
 z
 " clip-path="url(#p968b261a1e)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_13">
-    <path d="M 123.12 491.191432 
-L 256.5 491.191432 
-L 256.5 465.261213 
-L 123.12 465.261213 
+    <path d="M 123.12 491.191432
+L 256.5 491.191432
+L 256.5 465.261213
+L 123.12 465.261213
 z
 " clip-path="url(#p968b261a1e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_14">
-    <path d="M 263.52 491.191432 
-L 354.78 491.191432 
-L 354.78 465.261213 
-L 263.52 465.261213 
+    <path d="M 263.52 491.191432
+L 354.78 491.191432
+L 354.78 465.261213
+L 263.52 465.261213
 z
 " clip-path="url(#p968b261a1e)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_15">
-    <path d="M 123.12 526.67489 
-L 214.38 526.67489 
-L 214.38 500.744671 
-L 123.12 500.744671 
+    <path d="M 123.12 526.67489
+L 214.38 526.67489
+L 214.38 500.744671
+L 123.12 500.744671
 z
 " clip-path="url(#p968b261a1e)" style="fill: #e3f2fd; stroke: #0d47a1; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_16">
-    <path d="M 221.4 526.67489 
-L 312.66 526.67489 
-L 312.66 500.744671 
-L 221.4 500.744671 
+    <path d="M 221.4 526.67489
+L 312.66 526.67489
+L 312.66 500.744671
+L 221.4 500.744671
 z
 " clip-path="url(#p968b261a1e)" style="fill: #c8e6c9; stroke: #1b5e20; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="patch_17">
-    <path d="M 123.12 562.158348 
-L 291.6 562.158348 
-L 291.6 536.228129 
-L 123.12 536.228129 
+    <path d="M 123.12 562.158348
+L 291.6 562.158348
+L 291.6 536.228129
+L 123.12 536.228129
 z
 " clip-path="url(#p968b261a1e)" style="fill: #fff3e0; stroke: #8a5a00; stroke-width: 0.9; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
-    <text style="font-weight: 700; font-size: 16.2px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="432" y="38.891933" transform="rotate(-0 432 38.891933)">Pipelining — Hiding Load Latency Behind Compute</text>
+    <text style="font-weight: 700; font-size: 16.2px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="432" y="38.891933" transform="rotate(-0 432 38.891933)">Pipelining — Hiding Load Latency Behind Compute</text>
    </g>
    <g id="text_2">
-    <text style="font-weight: 700; font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #8a1c1c" x="31.86" y="61.978065" transform="rotate(-0 31.86 61.978065)">WITHOUT pipelining — serialized, ~9% utilization</text>
+    <text style="font-weight: 700; font-size: 13px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #8a1c1c" x="31.86" y="61.978065" transform="rotate(-0 31.86 61.978065)">WITHOUT pipelining — serialized, ~9% utilization</text>
    </g>
    <g id="text_3">
-    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="182.79" y="90.684753" transform="rotate(-0 182.79 90.684753)">Load T0  (~500 cycles)</text>
+    <text style="font-size: 12px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="182.79" y="90.684753" transform="rotate(-0 182.79 90.684753)">Load T0  (~500 cycles)</text>
    </g>
    <g id="text_4">
-    <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="360.045" y="90.554401" transform="rotate(-0 360.045 90.554401)">MMA T0</text>
+    <text style="font-size: 11.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="360.045" y="90.554401" transform="rotate(-0 360.045 90.554401)">MMA T0</text>
    </g>
    <g id="text_5">
-    <text style="font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="537.3" y="90.684753" transform="rotate(-0 537.3 90.684753)">Load T1  (~500 cycles)</text>
+    <text style="font-size: 12px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="537.3" y="90.684753" transform="rotate(-0 537.3 90.684753)">Load T1  (~500 cycles)</text>
    </g>
    <g id="text_6">
-    <text style="font-style: italic; font-size: 11.2px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="386.37" y="128.168361" transform="rotate(-0 386.37 128.168361)">tensor cores idle the whole time Load T1 runs</text>
+    <text style="font-style: italic; font-size: 11.2px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="386.37" y="128.168361" transform="rotate(-0 386.37 128.168361)">tensor cores idle the whole time Load T1 runs</text>
    </g>
    <g id="text_7">
-    <text style="font-weight: 700; font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #00695c" x="31.86" y="184.805419" transform="rotate(-0 31.86 184.805419)">WITH 2-stage pipelining — loads and math overlap, &gt;95% utilization</text>
+    <text style="font-weight: 700; font-size: 13px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #00695c" x="31.86" y="184.805419" transform="rotate(-0 31.86 184.805419)">WITH 2-stage pipelining — loads and math overlap, &gt;95% utilization</text>
    </g>
    <g id="text_8">
-    <text style="font-size: 11.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="144.18" y="225.401695" transform="rotate(-0 144.18 225.401695)">Load T0</text>
+    <text style="font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="144.18" y="225.401695" transform="rotate(-0 144.18 225.401695)">Load T0</text>
    </g>
    <g id="text_9">
-    <text style="font-size: 11.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="368.82" y="266.344147" transform="rotate(-0 368.82 266.344147)">Load T1</text>
+    <text style="font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="368.82" y="266.344147" transform="rotate(-0 368.82 266.344147)">Load T1</text>
    </g>
    <g id="text_10">
-    <text style="font-size: 11.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="593.46" y="307.286599" transform="rotate(-0 593.46 307.286599)">Load T2</text>
+    <text style="font-size: 11.8px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="593.46" y="307.286599" transform="rotate(-0 593.46 307.286599)">Load T2</text>
    </g>
    <g id="text_11">
-    <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="289.845" y="225.323305" transform="rotate(-0 289.845 225.323305)">MMA T0</text>
+    <text style="font-size: 11.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="289.845" y="225.323305" transform="rotate(-0 289.845 225.323305)">MMA T0</text>
    </g>
    <g id="text_12">
-    <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="514.485" y="266.265756" transform="rotate(-0 514.485 266.265756)">MMA T1</text>
+    <text style="font-size: 11.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="514.485" y="266.265756" transform="rotate(-0 514.485 266.265756)">MMA T1</text>
    </g>
    <g id="patch_18">
-    <path d="M 589.479475 204.121782 
-Q 441.532881 223.335525 294.805883 242.39088 
+    <path d="M 589.479475 204.121782
+Q 441.532881 223.335525 294.805883 242.39088
 " style="fill: none; stroke: #555555; stroke-width: 1.1; stroke-linecap: round"/>
-    <path d="M 299.410331 243.99121 
-L 294.805883 242.39088 
-L 298.848816 239.667519 
+    <path d="M 299.410331 243.99121
+L 294.805883 242.39088
+L 298.848816 239.667519
 " style="fill: none; stroke: #555555; stroke-width: 1.1; stroke-linecap: round"/>
    </g>
    <g id="text_13">
-    <text style="font-style: italic; font-size: 10.9px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(593.46 193.462579)">MMA T0 overlaps</text>
-    <text style="font-style: italic; font-size: 10.9px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(593.46 208.688516)">with Load T1</text>
+    <text style="font-style: italic; font-size: 10.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #555555" transform="translate(593.46 193.462579)">MMA T0 overlaps</text>
+    <text style="font-style: italic; font-size: 10.9px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #555555" transform="translate(593.46 208.688516)">with Load T1</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 700; font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #00695c" x="31.86" y="375.870194" transform="rotate(-0 31.86 375.870194)">WITH 4-stage pipelining — up to 4× the load latency hidden</text>
+    <text style="font-weight: 700; font-size: 13px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #00695c" x="31.86" y="375.870194" transform="rotate(-0 31.86 375.870194)">WITH 4-stage pipelining — up to 4× the load latency hidden</text>
    </g>
    <g id="text_15">
-    <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.86" y="407.259406" transform="rotate(-0 31.86 407.259406)">Stage 0</text>
+    <text style="font-size: 11.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.86" y="407.259406" transform="rotate(-0 31.86 407.259406)">Stage 0</text>
    </g>
    <g id="text_16">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="189.81" y="410.013336" transform="rotate(-0 189.81 410.013336)">Load T0</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="410.013336" transform="rotate(-0 189.81 410.013336)">Load T0</text>
    </g>
    <g id="text_17">
-    <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.86" y="442.742865" transform="rotate(-0 31.86 442.742865)">Stage 1</text>
+    <text style="font-size: 11.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.86" y="442.742865" transform="rotate(-0 31.86 442.742865)">Stage 1</text>
    </g>
    <g id="text_18">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="189.81" y="445.496794" transform="rotate(-0 189.81 445.496794)">Load T1</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="445.496794" transform="rotate(-0 189.81 445.496794)">Load T1</text>
    </g>
    <g id="text_19">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="309.15" y="445.49638" transform="rotate(-0 309.15 445.49638)">MMA T0</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="309.15" y="445.49638" transform="rotate(-0 309.15 445.49638)">MMA T0</text>
    </g>
    <g id="text_20">
-    <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.86" y="478.226323" transform="rotate(-0 31.86 478.226323)">Stage 2</text>
+    <text style="font-size: 11.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.86" y="478.226323" transform="rotate(-0 31.86 478.226323)">Stage 2</text>
    </g>
    <g id="text_21">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="189.81" y="480.980252" transform="rotate(-0 189.81 480.980252)">Load T2</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="189.81" y="480.980252" transform="rotate(-0 189.81 480.980252)">Load T2</text>
    </g>
    <g id="text_22">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="309.15" y="480.979838" transform="rotate(-0 309.15 480.979838)">MMA T1</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="309.15" y="480.979838" transform="rotate(-0 309.15 480.979838)">MMA T1</text>
    </g>
    <g id="text_23">
-    <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.86" y="513.709781" transform="rotate(-0 31.86 513.709781)">Stage 3</text>
+    <text style="font-size: 11.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.86" y="513.709781" transform="rotate(-0 31.86 513.709781)">Stage 3</text>
    </g>
    <g id="text_24">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="168.75" y="516.46371" transform="rotate(-0 168.75 516.46371)">Load T3</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="168.75" y="516.46371" transform="rotate(-0 168.75 516.46371)">Load T3</text>
    </g>
    <g id="text_25">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="267.03" y="516.463296" transform="rotate(-0 267.03 516.463296)">MMA T2</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="267.03" y="516.463296" transform="rotate(-0 267.03 516.463296)">MMA T2</text>
    </g>
    <g id="text_26">
-    <text style="font-size: 11.5px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.86" y="549.193239" transform="rotate(-0 31.86 549.193239)">Stage 4</text>
+    <text style="font-size: 11.5px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.86" y="549.193239" transform="rotate(-0 31.86 549.193239)">Stage 4</text>
    </g>
    <g id="text_27">
-    <text style="font-size: 10.6px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #1a1a1a" x="207.36" y="551.947168" transform="rotate(-0 207.36 551.947168)">MMA T3 (drain)</text>
+    <text style="font-size: 10.6px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="207.36" y="551.947168" transform="rotate(-0 207.36 551.947168)">MMA T3 (drain)</text>
    </g>
    <g id="text_28">
-    <text style="font-style: italic; font-size: 12px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #555555" x="31.86" y="621.524903" transform="rotate(-0 31.86 621.524903)">Steady state: one Load and one MMA always in flight together, every step.</text>
+    <text style="font-style: italic; font-size: 12px; font-family: Arial, 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #555555" x="31.86" y="621.524903" transform="rotate(-0 31.86 621.524903)">Steady state: one Load and one MMA always in flight together, every step.</text>
    </g>
   </g>
  </g>

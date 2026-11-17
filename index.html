@@ -1317,6 +1317,11 @@
 
 
 <h1 id="programming-the-h100">Programming the H100<a class="headerlink" href="#programming-the-h100" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Validation — November 17, 2026.</strong> 27 complete CUDA programs compiled; 24 single-GPU workloads passed. Three multi-GPU workloads require additional hardware.
+<strong>Execution system:</strong> 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; <code>sm_90a</code>, C++17, <code>-O2</code>.
+<a href="validation/2026-11-17/system-information.txt">Full system information</a> · <a href="validation/2026-11-17/results.json">CUDA result manifest</a>. Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.</p>
+</blockquote>
 <h2 id="a-hardware-level-companion-guide-to-nvidia-hopper">A hardware-level companion guide to NVIDIA Hopper<a class="headerlink" href="#a-hardware-level-companion-guide-to-nvidia-hopper" title="Permanent link">&para;</a></h2>
 <p class="hero-tagline">
 The gap between "my kernel runs" and "my kernel saturates the tensor cores" is
@@ -1327,8 +1332,7 @@ read line by line.
 </p>
 
 <blockquote>
-<p><strong>Verified on:</strong> CUDA 12.x + Hopper GPU (<code>sm_90a</code>).
-<strong>Compile CUDA examples with:</strong> <code>nvcc -std=c++17 -arch=sm_90a -O2 &lt;file&gt;.cu -o &lt;out&gt;</code>
+<p><strong>Compile CUDA examples with:</strong> <code>nvcc -std=c++17 -arch=sm_90a -O2 &lt;file&gt;.cu -o &lt;out&gt;</code>
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on any H100 or B200 instance.</p>
 </blockquote>
 <h2 id="how-to-read-this">How to read this<a class="headerlink" href="#how-to-read-this" title="Permanent link">&para;</a></h2>

@@ -2421,6 +2421,9 @@
 <h1 id="flashattention-3-on-the-h100">FlashAttention-3 on the H100<a class="headerlink" href="#flashattention-3-on-the-h100" title="Permanent link">&para;</a></h1>
 <h2 id="chapter-12-companion-guide-every-primitive-in-this-book-working-at-once">Chapter 12 Companion Guide — Every Primitive in This Book, Working at Once<a class="headerlink" href="#chapter-12-companion-guide-every-primitive-in-this-book-working-at-once" title="Permanent link">&para;</a></h2>
 <blockquote>
+<p><strong>Validation — November 17, 2026.</strong> 12 online-softmax numerical reference cases passed on CUDA; the FA3 scheduling listings remain explicitly labeled skeletons.
+<strong>Execution system:</strong> 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; <code>sm_90a</code>, C++17, <code>-O2</code>.
+<a href="../validation/2026-11-17/system-information.txt">Full system information</a> · <a href="../validation/2026-11-17/results.json">CUDA result manifest</a>. Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.</p>
 <p><strong>Reference implementation — not executed during authoring.</strong> Unlike Chapters
 1–11, the code in this chapter has not been compiled and run on Hopper
 hardware. It is written to be correct and to be read, and the structure follows
@@ -2608,7 +2611,7 @@ calls — and you get the following.</p>
 </span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>
 </span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>  Scaling: S grows as N². At N = 32k it is 2.1 GB per head.
 </span></code></pre></div>
-<p><img alt="Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction" src="../images/ch12/01-materialization-traffic.svg" /></p>
+<p><a href="../images/ch12/01-materialization-traffic.svg"><img alt="Naive attention vs FlashAttention HBM traffic: 545.2 MB vs 8.4 MB, a 65x reduction" src="../images/ch12/01-materialization-traffic.svg" /></a></p>
 <p>The whole of FlashAttention rests on one observation: <strong><code>S</code> and <code>P</code> never need to
 exist in HBM.</strong> They are intermediates. If you can compute the output tile by
 tile, keeping each <code>S</code> tile in shared memory and throwing it away, the traffic
@@ -2799,7 +2802,7 @@ multiplicative factor.</p>
 </span><span id="__span-7-60"><a id="__codelineno-7-60" name="__codelineno-7-60" href="#__codelineno-7-60"></a>  That single multiply is why attention can be tiled.
 </span><span id="__span-7-61"><a id="__codelineno-7-61" name="__codelineno-7-61" href="#__codelineno-7-61"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><img alt="Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE" src="../images/ch12/02-online-softmax-timeline.svg" /></p>
+<p><a href="../images/ch12/02-online-softmax-timeline.svg"><img alt="Online softmax state evolution across two blocks: INIT, BLOCK 0, BLOCK 1, FINALIZE" src="../images/ch12/02-online-softmax-timeline.svg" /></a></p>
 <p><strong>The one thing to notice for later:</strong> step 5 rescales <code>O</code>, which is the
 accumulator living in tensor core registers. That means every time the row max
 moves, the kernel must reach into the WGMMA accumulator and multiply it. Chapter
@@ -2910,7 +2913,7 @@ in the vocabulary of Chapters 3 through 9.</p>
 <p>Before the three techniques arrive one at a time, here is the shape of the thing
 they are being applied to.</p>
 <h3 id="41-the-three-techniques-and-what-each-buys">4.1 The Three Techniques and What Each Buys<a class="headerlink" href="#41-the-three-techniques-and-what-each-buys" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>FA3 — Cumulative Throughput (BF16 forward, H100 SXM5)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>FA3 — Cumulative Throughput (FP16 forward, H100 SXM5)
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  Baseline: FlashAttention-2 on H100          ~350 TFLOP/s   (35%)
@@ -2941,7 +2944,7 @@ they are being applied to.</p>
 </span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a>  buys the first 23 points.
 </span><span id="__span-10-30"><a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><img alt="Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path" src="../images/ch12/07-throughput-ladder.svg" /></p>
+<p><a href="../images/ch12/07-throughput-ladder.svg"><img alt="Cumulative throughput ladder from FA2 baseline through each FA3 technique to the FP8 path" src="../images/ch12/07-throughput-ladder.svg" /></a></p>
 <h3 id="42-tile-shapes-and-the-two-gemms">4.2 Tile Shapes and the Two GEMMs<a class="headerlink" href="#42-tile-shapes-and-the-two-gemms" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>The Two GEMMs Inside Attention
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3039,7 +3042,7 @@ FA2 comes from applying textbook Hopper kernel design to a kernel that had none.
 </span><span id="__span-12-35"><a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>    producer gives up is one the consumer can use to avoid
 </span><span id="__span-12-36"><a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a>    spilling.
 </span></code></pre></div>
-<p><img alt="FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers" src="../images/ch12/03-warpgroup-roles.svg" /></p>
+<p><a href="../images/ch12/03-warpgroup-roles.svg"><img alt="FA3 thread block: 384 threads as 3 warpgroups — 1 producer, 2 consumers" src="../images/ch12/03-warpgroup-roles.svg" /></a></p>
 <h3 id="52-the-producer-loop">5.2 The Producer Loop<a class="headerlink" href="#52-the-producer-loop" title="Permanent link">&para;</a></h3>
 <div class="language-cuda highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1">// REFERENCE — illustrates structure; not compiled or benchmarked.</span>
@@ -3203,7 +3206,7 @@ a <em>different</em> warpgroup to serve.</p>
 </span><span id="__span-15-32"><a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>  is the epilogue, here it is softmax.
 </span><span id="__span-15-33"><a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><img alt="Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave" src="../images/ch12/04-pingpong-timeline.svg" /></p>
+<p><a href="../images/ch12/04-pingpong-timeline.svg"><img alt="Ping-pong timeline: without the stagger the two warpgroups' softmax holes coincide; with it they interleave" src="../images/ch12/04-pingpong-timeline.svg" /></a></p>
 <h3 id="62-forcing-the-stagger-with-named-barriers">6.2 Forcing the Stagger with Named Barriers<a class="headerlink" href="#62-forcing-the-stagger-with-named-barriers" title="Permanent link">&para;</a></h3>
 <p>The hardware will not stagger the warpgroups for you. Left alone, both consumers
 start at the same instant and stay in lockstep forever. You have to impose the
@@ -3292,39 +3295,39 @@ offset, and named barriers (Chapter 3 §16) are how.</p>
 </span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    exp():          128 × 128              = 16,384 ops
 </span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>
 </span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>  Per-SM rates (Chapter 1 §19 — derived bottom-up from the full-GPU
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>  spec, 989.4 TFLOP/s ÷ 132 SMs ÷ 1.98 GHz, not an assumed issue rate):
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>    tensor BF16:   ~3,786 FLOP/cycle/SM
+</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>  spec, 989.4 TFLOP/s ÷ 132 SMs ÷ 1.83 GHz Tensor Core clock, not an assumed issue rate):
+</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>    tensor BF16:   4,096 FLOP/cycle/SM
 </span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>    SFU:             16 ops/cycle/SM
 </span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>
 </span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>  (Correction: an earlier draft of this table used 1024 FLOP/cycle/SM,
 </span><span id="__span-18-16"><a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>  which contradicts the very figure this chapter cites it from — Chapter
-</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>  1 §19's own number is ~3,786. Using 1024 would imply a full-chip peak
-</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>  of only ~267 TFLOP/s, nowhere near the H100's real 989.4 TFLOP/s. The
+</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>  1 §19's own number is 4,096. Using 1024 would imply a full-chip peak
+</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>  of only ~247 TFLOP/s at the 1.83 GHz Tensor Core clock, nowhere near the H100's real 989.4 TFLOP/s. The
 </span><span id="__span-18-19"><a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a>  cycle counts below are recomputed with the correct rate.)
 </span><span id="__span-18-20"><a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a>
 </span><span id="__span-18-21"><a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a>  Cycle costs:
-</span><span id="__span-18-22"><a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a>    GEMM0:   4.19e6 / 3786   ≈  1,108 cycles
-</span><span id="__span-18-23"><a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>    GEMM1:   4.19e6 / 3786   ≈  1,108 cycles
+</span><span id="__span-18-22"><a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a>    GEMM0:   4.19e6 / 4096   ≈  1,024 cycles
+</span><span id="__span-18-23"><a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>    GEMM1:   4.19e6 / 4096   ≈  1,024 cycles
 </span><span id="__span-18-24"><a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a>    exp:    16,384 / 16     =  1,024 cycles
 </span><span id="__span-18-25"><a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a>    (plus ~512 cycles of row reductions, rescaling, bookkeeping)
 </span><span id="__span-18-26"><a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a>
 </span><span id="__span-18-27"><a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a>  ─── SERIAL (one warpgroup, §5.3) ────────────────────────────────
-</span><span id="__span-18-28"><a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>    1108  +  1536  +  1108  ≈  3,752 cycles per iteration
-</span><span id="__span-18-29"><a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a>    Tensor cores busy: 2,216 / 3,752 ≈ 59%
-</span><span id="__span-18-30"><a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a>    ... and with TWO warpgroups both stalling at the same time (no
-</span><span id="__span-18-31"><a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a>    ping-pong), the SM-level figure lands lower still — consistent
-</span><span id="__span-18-32"><a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a>    with FA2-on-H100's measured ~35% of peak (§3.2).
+</span><span id="__span-18-28"><a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>    1024  +  1536  +  1024  =  3,584 cycles per iteration
+</span><span id="__span-18-29"><a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a>    Tensor cores busy: 2,048 / 3,584 ≈ 57%
+</span><span id="__span-18-30"><a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a>    This toy schedule does not predict whole-kernel utilization or the
+</span><span id="__span-18-31"><a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a>    measured FA2 baseline: it omits instruction issue, loads, tails and
+</span><span id="__span-18-32"><a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a>    dependencies between stages.
 </span><span id="__span-18-33"><a id="__codelineno-18-33" name="__codelineno-18-33" href="#__codelineno-18-33"></a>
 </span><span id="__span-18-34"><a id="__codelineno-18-34" name="__codelineno-18-34" href="#__codelineno-18-34"></a>  ─── PING-PONG (two warpgroups, offset) ──────────────────────────
 </span><span id="__span-18-35"><a id="__codelineno-18-35" name="__codelineno-18-35" href="#__codelineno-18-35"></a>    One warpgroup's full per-iteration GEMM work (QK + PV) is
-</span><span id="__span-18-36"><a id="__codelineno-18-36" name="__codelineno-18-36" href="#__codelineno-18-36"></a>    1,108 + 1,108 = 2,216 cycles — MORE than the other warpgroup's
+</span><span id="__span-18-36"><a id="__codelineno-18-36" name="__codelineno-18-36" href="#__codelineno-18-36"></a>    1,024 + 1,024 = 2,048 cycles — MORE than the other warpgroup's
 </span><span id="__span-18-37"><a id="__codelineno-18-37" name="__codelineno-18-37" href="#__codelineno-18-37"></a>    1,536-cycle softmax, so in this idealized model the softmax
-</span><span id="__span-18-38"><a id="__codelineno-18-38" name="__codelineno-18-38" href="#__codelineno-18-38"></a>    fits entirely underneath it with ~680 cycles of slack:
-</span><span id="__span-18-39"><a id="__codelineno-18-39" name="__codelineno-18-39" href="#__codelineno-18-39"></a>      WG1 softmax (1,536 cycles) runs UNDER WG2's QK+PV (2,216 cycles).
+</span><span id="__span-18-38"><a id="__codelineno-18-38" name="__codelineno-18-38" href="#__codelineno-18-38"></a>    fits entirely underneath it with 512 cycles of slack:
+</span><span id="__span-18-39"><a id="__codelineno-18-39" name="__codelineno-18-39" href="#__codelineno-18-39"></a>      WG1 softmax (1,536 cycles) runs UNDER WG2's QK+PV (2,048 cycles).
 </span><span id="__span-18-40"><a id="__codelineno-18-40" name="__codelineno-18-40" href="#__codelineno-18-40"></a>      WG2 softmax runs under WG1's QK+PV.
 </span><span id="__span-18-41"><a id="__codelineno-18-41" name="__codelineno-18-41" href="#__codelineno-18-41"></a>
 </span><span id="__span-18-42"><a id="__codelineno-18-42" name="__codelineno-18-42" href="#__codelineno-18-42"></a>    Steady-state cost per iteration per warpgroup:
-</span><span id="__span-18-43"><a id="__codelineno-18-43" name="__codelineno-18-43" href="#__codelineno-18-43"></a>      max(2,216 tensor cycles, 1,536 softmax) ≈ 2,216 — i.e., in this
+</span><span id="__span-18-43"><a id="__codelineno-18-43" name="__codelineno-18-43" href="#__codelineno-18-43"></a>      max(2,048 tensor cycles, 1,536 softmax) = 2,048 — i.e., in this
 </span><span id="__span-18-44"><a id="__codelineno-18-44" name="__codelineno-18-44" href="#__codelineno-18-44"></a>      idealized accounting the tensor cores are never the ones waiting.
 </span><span id="__span-18-45"><a id="__codelineno-18-45" name="__codelineno-18-45" href="#__codelineno-18-45"></a>
 </span><span id="__span-18-46"><a id="__codelineno-18-46" name="__codelineno-18-46" href="#__codelineno-18-46"></a>    Measured whole-kernel: 570 → 620 TFLOP/s  (63% of peak)
@@ -3386,7 +3389,7 @@ iteration j+1".</p>
 </span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>  flight while the SFUs chew through the previous block's exp().
 </span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><img alt="2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath" src="../images/ch12/05-twostage-pipeline-timeline.svg" /></p>
+<p><a href="../images/ch12/05-twostage-pipeline-timeline.svg"><img alt="2-stage intra-warpgroup pipeline: QK and PV issued together while softmax from the previous iteration runs underneath" src="../images/ch12/05-twostage-pipeline-timeline.svg" /></a></p>
 <div class="language-cuda highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="c1">// REFERENCE — illustrates structure; not compiled or benchmarked.</span>
 </span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1">// The 2-stage inner loop. Note that NOTHING waits until after the</span>
@@ -3524,7 +3527,7 @@ than the one it solves.</p>
 </span><span id="__span-22-43"><a id="__codelineno-22-43" name="__codelineno-22-43" href="#__codelineno-22-43"></a>  cannot occur there. Specialising the loop removes it entirely.
 </span><span id="__span-22-44"><a id="__codelineno-22-44" name="__codelineno-22-44" href="#__codelineno-22-44"></a>  ══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
-<p><img alt="Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it" src="../images/ch12/06-causal-masking-grid.svg" /></p>
+<p><a href="../images/ch12/06-causal-masking-grid.svg"><img alt="Causal masking block taxonomy: SKIP above the diagonal, FULL below, DIAG on it" src="../images/ch12/06-causal-masking-grid.svg" /></a></p>
 <h3 id="82-balancing-the-triangle">8.2 Balancing the Triangle<a class="headerlink" href="#82-balancing-the-triangle" title="Permanent link">&para;</a></h3>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>The Load Imbalance
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>══════════════════════════════════════════════════════════════════════
@@ -3791,281 +3794,299 @@ Chapter 7 §13.2.</p>
 </span></code></pre></div>
 <hr />
 <h2 id="10-putting-it-all-together">10 — Putting It All Together<a class="headerlink" href="#10-putting-it-all-together" title="Permanent link">&para;</a></h2>
+<p><strong>Executable numerical reference.</strong> The skeleton below omits the CuTe layouts, TMA wrappers, register fragments, launch code, and error handling required for a production kernel. It is not a compilable FA3 implementation. The repository's <code>tools/validate_attention.py</code> checks the online-softmax recurrence on CUDA against PyTorch's math SDPA backend using nonuniform inputs, causal and noncausal masks, two head dimensions, and sequence lengths that leave partial tiles. This checks the algorithm; it does not validate this skeleton's synchronization or reproduce the paper's FA3 throughput. Run <code>python3 tools/validate_attention.py</code> from the repository root. The run below used Python 3.12.3, PyTorch 2.7.0 and CUDA runtime 12.8.</p>
+<p>Save <a href="../validation/2026-11-17/validate_attention.py">validate_attention.py</a>, then run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>python3<span class="w"> </span>validate_attention.py
+</span></code></pre></div>
+<p>Captured execution output (November 17, 2026 UTC):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Execution UTC: 2026-11-17T21:32:13.471298+00:00
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>GPU: NVIDIA H100 PCIe
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>PyTorch: 2.7.0 CUDA runtime: 12.8
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>Reference algorithm only: no FA3 kernel or throughput claim.
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>N=17 d=32 causal=False: PASS max_abs_error=0.000000417
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>N=17 d=32 causal=True: PASS max_abs_error=0.000000417
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>N=17 d=64 causal=False: PASS max_abs_error=0.000000358
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>N=17 d=64 causal=True: PASS max_abs_error=0.000000298
+</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>N=33 d=32 causal=False: PASS max_abs_error=0.000000417
+</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>N=33 d=32 causal=True: PASS max_abs_error=0.000000548
+</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>N=33 d=64 causal=False: PASS max_abs_error=0.000000358
+</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>N=33 d=64 causal=True: PASS max_abs_error=0.000000358
+</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>N=65 d=32 causal=False: PASS max_abs_error=0.000000298
+</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>N=65 d=32 causal=True: PASS max_abs_error=0.000000298
+</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>N=65 d=64 causal=False: PASS max_abs_error=0.000000387
+</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>N=65 d=64 causal=True: PASS max_abs_error=0.000000358
+</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>PASS: 12 cases, including causal masks and partial final tiles.
+</span></code></pre></div>
+<p><a href="../validation/2026-11-17/attention-reference.log">Full execution log</a>.</p>
 <p>The complete forward kernel, in skeleton. Every piece below has appeared
 somewhere in Chapters 3–9; what is new is only the arrangement.</p>
-<div class="language-cuda highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="c1">// REFERENCE IMPLEMENTATION — structure only.</span>
-</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="c1">// Not compiled, not benchmarked, not numerically validated.</span>
-</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="c1">// Read alongside flash-attention/hopper/flash_fwd_kernel.h.</span>
-</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
-</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
-</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">kBlockM</span><span class="p">,</span><span class="w">     </span><span class="c1">// B_r — Q rows per block</span>
-</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="w">          </span><span class="kt">int</span><span class="w"> </span><span class="n">kBlockN</span><span class="p">,</span><span class="w">     </span><span class="c1">// B_c — K/V rows per block</span>
-</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="w">          </span><span class="kt">int</span><span class="w"> </span><span class="n">kHeadDim</span><span class="p">,</span><span class="w">    </span><span class="c1">// d</span>
-</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a><span class="w">          </span><span class="kt">int</span><span class="w"> </span><span class="n">kNumStages</span><span class="p">,</span><span class="w">  </span><span class="c1">// circular buffer depth (Chapter 8 §8)</span>
-</span><span id="__span-28-11"><a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a><span class="w">          </span><span class="kt">bool</span><span class="w"> </span><span class="n">kIsCausal</span><span class="o">&gt;</span>
-</span><span id="__span-28-12"><a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a><span class="kr">__global__</span><span class="w"> </span><span class="n">__launch_bounds__</span><span class="p">(</span><span class="mi">384</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-28-13"><a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a><span class="kt">void</span><span class="w"> </span><span class="n">flash_fwd_kernel</span><span class="p">(</span>
-</span><span id="__span-28-14"><a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">__grid_constant__</span><span class="w"> </span><span class="n">CUtensorMap</span><span class="w"> </span><span class="n">tma_q</span><span class="p">,</span>
-</span><span id="__span-28-15"><a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">__grid_constant__</span><span class="w"> </span><span class="n">CUtensorMap</span><span class="w"> </span><span class="n">tma_k</span><span class="p">,</span>
-</span><span id="__span-28-16"><a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">__grid_constant__</span><span class="w"> </span><span class="n">CUtensorMap</span><span class="w"> </span><span class="n">tma_v</span><span class="p">,</span>
-</span><span id="__span-28-17"><a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a><span class="w">    </span><span class="n">FlashParams</span><span class="w"> </span><span class="n">params</span><span class="p">)</span>
-</span><span id="__span-28-18"><a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a><span class="p">{</span>
-</span><span id="__span-28-19"><a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a><span class="w">    </span><span class="k">extern</span><span class="w"> </span><span class="kt">__shared__</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">smem_raw</span><span class="p">[];</span>
-</span><span id="__span-28-20"><a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a><span class="w">    </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">smem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">SharedStorage</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">smem_raw</span><span class="p">);</span>
-</span><span id="__span-28-21"><a id="__codelineno-28-21" name="__codelineno-28-21" href="#__codelineno-28-21"></a><span class="w">    </span><span class="c1">//  SharedStorage layout — Chapter 5 §12 for the alignment rules:</span>
-</span><span id="__span-28-22"><a id="__codelineno-28-22" name="__codelineno-28-22" href="#__codelineno-28-22"></a><span class="w">    </span><span class="c1">//    alignas(128) Element q[kBlockM][kHeadDim];</span>
-</span><span id="__span-28-23"><a id="__codelineno-28-23" name="__codelineno-28-23" href="#__codelineno-28-23"></a><span class="w">    </span><span class="c1">//    alignas(128) Element k[kNumStages][kBlockN][kHeadDim];</span>
-</span><span id="__span-28-24"><a id="__codelineno-28-24" name="__codelineno-28-24" href="#__codelineno-28-24"></a><span class="w">    </span><span class="c1">//    alignas(128) Element v[kNumStages][kBlockN][kHeadDim];</span>
-</span><span id="__span-28-25"><a id="__codelineno-28-25" name="__codelineno-28-25" href="#__codelineno-28-25"></a><span class="w">    </span><span class="c1">//    alignas(8)   uint64_t data_ready[kNumStages];</span>
-</span><span id="__span-28-26"><a id="__codelineno-28-26" name="__codelineno-28-26" href="#__codelineno-28-26"></a><span class="w">    </span><span class="c1">//    alignas(8)   uint64_t buffer_free[kNumStages];</span>
-</span><span id="__span-28-27"><a id="__codelineno-28-27" name="__codelineno-28-27" href="#__codelineno-28-27"></a>
-</span><span id="__span-28-28"><a id="__codelineno-28-28" name="__codelineno-28-28" href="#__codelineno-28-28"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">warpgroup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">128</span><span class="p">;</span><span class="w">   </span><span class="c1">// 0 = producer, 1-2 = consumers</span>
-</span><span id="__span-28-29"><a id="__codelineno-28-29" name="__codelineno-28-29" href="#__codelineno-28-29"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">q_block</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="nb">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
-</span><span id="__span-28-30"><a id="__codelineno-28-30" name="__codelineno-28-30" href="#__codelineno-28-30"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">head</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nb">blockIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
-</span><span id="__span-28-31"><a id="__codelineno-28-31" name="__codelineno-28-31" href="#__codelineno-28-31"></a>
-</span><span id="__span-28-32"><a id="__codelineno-28-32" name="__codelineno-28-32" href="#__codelineno-28-32"></a><span class="w">    </span><span class="c1">// ── Barrier init: exactly one thread, then a block-wide sync ──</span>
-</span><span id="__span-28-33"><a id="__codelineno-28-33" name="__codelineno-28-33" href="#__codelineno-28-33"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-28-34"><a id="__codelineno-28-34" name="__codelineno-28-34" href="#__codelineno-28-34"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">kNumStages</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-28-35"><a id="__codelineno-28-35" name="__codelineno-28-35" href="#__codelineno-28-35"></a><span class="w">            </span><span class="n">mbarrier_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">data_ready</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="w">  </span><span class="mi">1</span><span class="p">);</span><span class="w">    </span><span class="c1">// TMA signals</span>
-</span><span id="__span-28-36"><a id="__codelineno-28-36" name="__codelineno-28-36" href="#__codelineno-28-36"></a><span class="w">            </span><span class="n">mbarrier_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">buffer_free</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="w"> </span><span class="mi">256</span><span class="p">);</span><span class="w">  </span><span class="c1">// 2 consumer WGs</span>
-</span><span id="__span-28-37"><a id="__codelineno-28-37" name="__codelineno-28-37" href="#__codelineno-28-37"></a><span class="w">        </span><span class="p">}</span>
-</span><span id="__span-28-38"><a id="__codelineno-28-38" name="__codelineno-28-38" href="#__codelineno-28-38"></a><span class="w">        </span><span class="c1">// Prime buffer_free so the producer may fill every slot once.</span>
-</span><span id="__span-28-39"><a id="__codelineno-28-39" name="__codelineno-28-39" href="#__codelineno-28-39"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">kNumStages</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">s</span><span class="p">)</span>
-</span><span id="__span-28-40"><a id="__codelineno-28-40" name="__codelineno-28-40" href="#__codelineno-28-40"></a><span class="w">            </span><span class="n">mbarrier_arrive_n</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">buffer_free</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="w"> </span><span class="mi">256</span><span class="p">);</span>
-</span><span id="__span-28-41"><a id="__codelineno-28-41" name="__codelineno-28-41" href="#__codelineno-28-41"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-28-42"><a id="__codelineno-28-42" name="__codelineno-28-42" href="#__codelineno-28-42"></a><span class="w">    </span><span class="nf">__syncthreads</span><span class="p">();</span>
-</span><span id="__span-28-43"><a id="__codelineno-28-43" name="__codelineno-28-43" href="#__codelineno-28-43"></a>
-</span><span id="__span-28-44"><a id="__codelineno-28-44" name="__codelineno-28-44" href="#__codelineno-28-44"></a><span class="w">    </span><span class="c1">// ── Causal bounds (§8.1): compute the K range, skip the rest ──</span>
-</span><span id="__span-28-45"><a id="__codelineno-28-45" name="__codelineno-28-45" href="#__codelineno-28-45"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">k_begin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-</span><span id="__span-28-46"><a id="__codelineno-28-46" name="__codelineno-28-46" href="#__codelineno-28-46"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">k_end</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="p">.</span><span class="n">n_kv_blocks</span><span class="p">;</span>
-</span><span id="__span-28-47"><a id="__codelineno-28-47" name="__codelineno-28-47" href="#__codelineno-28-47"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">kIsCausal</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-28-48"><a id="__codelineno-28-48" name="__codelineno-28-48" href="#__codelineno-28-48"></a><span class="w">        </span><span class="n">k_end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">min</span><span class="p">(</span><span class="n">k_end</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">q_block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">kBlockM</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">kBlockN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
-</span><span id="__span-28-49"><a id="__codelineno-28-49" name="__codelineno-28-49" href="#__codelineno-28-49"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-28-50"><a id="__codelineno-28-50" name="__codelineno-28-50" href="#__codelineno-28-50"></a>
-</span><span id="__span-28-51"><a id="__codelineno-28-51" name="__codelineno-28-51" href="#__codelineno-28-51"></a><span class="w">    </span><span class="c1">// ── Q is loaded once and stays resident for the whole loop ────</span>
-</span><span id="__span-28-52"><a id="__codelineno-28-52" name="__codelineno-28-52" href="#__codelineno-28-52"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-28-53"><a id="__codelineno-28-53" name="__codelineno-28-53" href="#__codelineno-28-53"></a><span class="w">        </span><span class="n">tma_load_2d</span><span class="p">(</span><span class="n">tma_q</span><span class="p">,</span><span class="w"> </span><span class="n">smem</span><span class="p">.</span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">q_ready</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">q_block</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">kBlockM</span><span class="p">});</span>
-</span><span id="__span-28-54"><a id="__codelineno-28-54" name="__codelineno-28-54" href="#__codelineno-28-54"></a>
-</span><span id="__span-28-55"><a id="__codelineno-28-55" name="__codelineno-28-55" href="#__codelineno-28-55"></a><span class="w">    </span><span class="c1">// ── Role dispatch ─────────────────────────────────────────────</span>
-</span><span id="__span-28-56"><a id="__codelineno-28-56" name="__codelineno-28-56" href="#__codelineno-28-56"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">warpgroup</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-28-57"><a id="__codelineno-28-57" name="__codelineno-28-57" href="#__codelineno-28-57"></a><span class="w">        </span><span class="n">producer_loop</span><span class="p">(</span><span class="n">tma_k</span><span class="p">,</span><span class="w"> </span><span class="n">tma_v</span><span class="p">,</span><span class="w"> </span><span class="n">smem</span><span class="p">,</span><span class="w"> </span><span class="n">k_begin</span><span class="p">,</span><span class="w"> </span><span class="n">k_end</span><span class="p">,</span><span class="w"> </span><span class="n">q_block</span><span class="p">);</span><span class="w">   </span><span class="c1">// §5.2</span>
-</span><span id="__span-28-58"><a id="__codelineno-28-58" name="__codelineno-28-58" href="#__codelineno-28-58"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-28-59"><a id="__codelineno-28-59" name="__codelineno-28-59" href="#__codelineno-28-59"></a><span class="w">        </span><span class="n">mbarrier_wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">q_ready</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
-</span><span id="__span-28-60"><a id="__codelineno-28-60" name="__codelineno-28-60" href="#__codelineno-28-60"></a>
-</span><span id="__span-28-61"><a id="__codelineno-28-61" name="__codelineno-28-61" href="#__codelineno-28-61"></a><span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">O</span><span class="p">[</span><span class="n">kOAccumRegs</span><span class="p">];</span><span class="w">                 </span><span class="c1">// [B_r × d], FP32</span>
-</span><span id="__span-28-62"><a id="__codelineno-28-62" name="__codelineno-28-62" href="#__codelineno-28-62"></a><span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">m</span><span class="p">[</span><span class="n">kRowsPerThread</span><span class="p">];</span><span class="w">              </span><span class="c1">// running max  (§2)</span>
-</span><span id="__span-28-63"><a id="__codelineno-28-63" name="__codelineno-28-63" href="#__codelineno-28-63"></a><span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">l</span><span class="p">[</span><span class="n">kRowsPerThread</span><span class="p">];</span><span class="w">              </span><span class="c1">// running sum  (§2)</span>
-</span><span id="__span-28-64"><a id="__codelineno-28-64" name="__codelineno-28-64" href="#__codelineno-28-64"></a><span class="w">        </span><span class="n">init_accumulators</span><span class="p">(</span><span class="n">O</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">);</span>
-</span><span id="__span-28-65"><a id="__codelineno-28-65" name="__codelineno-28-65" href="#__codelineno-28-65"></a>
-</span><span id="__span-28-66"><a id="__codelineno-28-66" name="__codelineno-28-66" href="#__codelineno-28-66"></a><span class="w">        </span><span class="n">consumer_loop_pingpong_pipelined</span><span class="p">(</span><span class="w">     </span><span class="c1">// §6 + §7 combined</span>
-</span><span id="__span-28-67"><a id="__codelineno-28-67" name="__codelineno-28-67" href="#__codelineno-28-67"></a><span class="w">            </span><span class="n">smem</span><span class="p">,</span><span class="w"> </span><span class="n">O</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">k_begin</span><span class="p">,</span><span class="w"> </span><span class="n">k_end</span><span class="p">,</span>
-</span><span id="__span-28-68"><a id="__codelineno-28-68" name="__codelineno-28-68" href="#__codelineno-28-68"></a><span class="w">            </span><span class="cm">/*wg_id=*/</span><span class="n">warpgroup</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-28-69"><a id="__codelineno-28-69" name="__codelineno-28-69" href="#__codelineno-28-69"></a><span class="w">            </span><span class="cm">/*causal=*/</span><span class="n">kIsCausal</span><span class="p">);</span>
-</span><span id="__span-28-70"><a id="__codelineno-28-70" name="__codelineno-28-70" href="#__codelineno-28-70"></a>
-</span><span id="__span-28-71"><a id="__codelineno-28-71" name="__codelineno-28-71" href="#__codelineno-28-71"></a><span class="w">        </span><span class="c1">// ── Epilogue ──────────────────────────────────────────────</span>
-</span><span id="__span-28-72"><a id="__codelineno-28-72" name="__codelineno-28-72" href="#__codelineno-28-72"></a><span class="w">        </span><span class="c1">//  1. Finalize: O /= l                     (§2.2 step 6)</span>
-</span><span id="__span-28-73"><a id="__codelineno-28-73" name="__codelineno-28-73" href="#__codelineno-28-73"></a><span class="w">        </span><span class="c1">//  2. Convert FP32 accumulator → BF16      (Chapter 7 §8 —</span>
-</span><span id="__span-28-74"><a id="__codelineno-28-74" name="__codelineno-28-74" href="#__codelineno-28-74"></a><span class="w">        </span><span class="c1">//     stmatrix has no 32-bit form)</span>
-</span><span id="__span-28-75"><a id="__codelineno-28-75" name="__codelineno-28-75" href="#__codelineno-28-75"></a><span class="w">        </span><span class="c1">//  3. stmatrix into SMEM                   (Chapter 7 §6)</span>
-</span><span id="__span-28-76"><a id="__codelineno-28-76" name="__codelineno-28-76" href="#__codelineno-28-76"></a><span class="w">        </span><span class="c1">//  4. TMA store SMEM → HBM                 (Chapter 5 §10.2)</span>
-</span><span id="__span-28-77"><a id="__codelineno-28-77" name="__codelineno-28-77" href="#__codelineno-28-77"></a><span class="w">        </span><span class="c1">//  5. Optionally write logsumexp = m + log(l) for the</span>
-</span><span id="__span-28-78"><a id="__codelineno-28-78" name="__codelineno-28-78" href="#__codelineno-28-78"></a><span class="w">        </span><span class="c1">//     backward pass</span>
-</span><span id="__span-28-79"><a id="__codelineno-28-79" name="__codelineno-28-79" href="#__codelineno-28-79"></a><span class="w">        </span><span class="n">finalize_and_store</span><span class="p">(</span><span class="n">O</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">smem</span><span class="p">,</span><span class="w"> </span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">q_block</span><span class="p">,</span><span class="w"> </span><span class="n">head</span><span class="p">);</span>
-</span><span id="__span-28-80"><a id="__codelineno-28-80" name="__codelineno-28-80" href="#__codelineno-28-80"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-28-81"><a id="__codelineno-28-81" name="__codelineno-28-81" href="#__codelineno-28-81"></a><span class="p">}</span>
+<div class="language-cuda highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="c1">// REFERENCE IMPLEMENTATION — structure only.</span>
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="c1">// Not compiled, not benchmarked, not numerically validated.</span>
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="c1">// Read alongside flash-attention/hopper/flash_fwd_kernel.h.</span>
+</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="c1">// ─────────────────────────────────────────────────────────────────</span>
+</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>
+</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">kBlockM</span><span class="p">,</span><span class="w">     </span><span class="c1">// B_r — Q rows per block</span>
+</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="w">          </span><span class="kt">int</span><span class="w"> </span><span class="n">kBlockN</span><span class="p">,</span><span class="w">     </span><span class="c1">// B_c — K/V rows per block</span>
+</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="w">          </span><span class="kt">int</span><span class="w"> </span><span class="n">kHeadDim</span><span class="p">,</span><span class="w">    </span><span class="c1">// d</span>
+</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="w">          </span><span class="kt">int</span><span class="w"> </span><span class="n">kNumStages</span><span class="p">,</span><span class="w">  </span><span class="c1">// circular buffer depth (Chapter 8 §8)</span>
+</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="w">          </span><span class="kt">bool</span><span class="w"> </span><span class="n">kIsCausal</span><span class="o">&gt;</span>
+</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="kr">__global__</span><span class="w"> </span><span class="n">__launch_bounds__</span><span class="p">(</span><span class="mi">384</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-30-13"><a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a><span class="kt">void</span><span class="w"> </span><span class="n">flash_fwd_kernel</span><span class="p">(</span>
+</span><span id="__span-30-14"><a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">__grid_constant__</span><span class="w"> </span><span class="n">CUtensorMap</span><span class="w"> </span><span class="n">tma_q</span><span class="p">,</span>
+</span><span id="__span-30-15"><a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">__grid_constant__</span><span class="w"> </span><span class="n">CUtensorMap</span><span class="w"> </span><span class="n">tma_k</span><span class="p">,</span>
+</span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">__grid_constant__</span><span class="w"> </span><span class="n">CUtensorMap</span><span class="w"> </span><span class="n">tma_v</span><span class="p">,</span>
+</span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a><span class="w">    </span><span class="n">FlashParams</span><span class="w"> </span><span class="n">params</span><span class="p">)</span>
+</span><span id="__span-30-18"><a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a><span class="p">{</span>
+</span><span id="__span-30-19"><a id="__codelineno-30-19" name="__codelineno-30-19" href="#__codelineno-30-19"></a><span class="w">    </span><span class="k">extern</span><span class="w"> </span><span class="kt">__shared__</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">smem_raw</span><span class="p">[];</span>
+</span><span id="__span-30-20"><a id="__codelineno-30-20" name="__codelineno-30-20" href="#__codelineno-30-20"></a><span class="w">    </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">smem</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">SharedStorage</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">smem_raw</span><span class="p">);</span>
+</span><span id="__span-30-21"><a id="__codelineno-30-21" name="__codelineno-30-21" href="#__codelineno-30-21"></a><span class="w">    </span><span class="c1">//  SharedStorage layout — Chapter 5 §12 for the alignment rules:</span>
+</span><span id="__span-30-22"><a id="__codelineno-30-22" name="__codelineno-30-22" href="#__codelineno-30-22"></a><span class="w">    </span><span class="c1">//    alignas(1024) Element q[kBlockM][kHeadDim];</span>
+</span><span id="__span-30-23"><a id="__codelineno-30-23" name="__codelineno-30-23" href="#__codelineno-30-23"></a><span class="w">    </span><span class="c1">//    alignas(1024) Element k[kNumStages][kBlockN][kHeadDim];</span>
+</span><span id="__span-30-24"><a id="__codelineno-30-24" name="__codelineno-30-24" href="#__codelineno-30-24"></a><span class="w">    </span><span class="c1">//    alignas(1024) Element v[kNumStages][kBlockN][kHeadDim];</span>
+</span><span id="__span-30-25"><a id="__codelineno-30-25" name="__codelineno-30-25" href="#__codelineno-30-25"></a><span class="w">    </span><span class="c1">//    alignas(8)   uint64_t data_ready[kNumStages];</span>
+</span><span id="__span-30-26"><a id="__codelineno-30-26" name="__codelineno-30-26" href="#__codelineno-30-26"></a><span class="w">    </span><span class="c1">//    alignas(8)   uint64_t buffer_free[kNumStages];</span>
+</span><span id="__span-30-27"><a id="__codelineno-30-27" name="__codelineno-30-27" href="#__codelineno-30-27"></a>
+</span><span id="__span-30-28"><a id="__codelineno-30-28" name="__codelineno-30-28" href="#__codelineno-30-28"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">warpgroup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">128</span><span class="p">;</span><span class="w">   </span><span class="c1">// 0 = producer, 1-2 = consumers</span>
+</span><span id="__span-30-29"><a id="__codelineno-30-29" name="__codelineno-30-29" href="#__codelineno-30-29"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">q_block</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="nb">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+</span><span id="__span-30-30"><a id="__codelineno-30-30" name="__codelineno-30-30" href="#__codelineno-30-30"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">head</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="nb">blockIdx</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
+</span><span id="__span-30-31"><a id="__codelineno-30-31" name="__codelineno-30-31" href="#__codelineno-30-31"></a>
+</span><span id="__span-30-32"><a id="__codelineno-30-32" name="__codelineno-30-32" href="#__codelineno-30-32"></a><span class="w">    </span><span class="c1">// ── Barrier init: exactly one thread, then a block-wide sync ──</span>
+</span><span id="__span-30-33"><a id="__codelineno-30-33" name="__codelineno-30-33" href="#__codelineno-30-33"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-30-34"><a id="__codelineno-30-34" name="__codelineno-30-34" href="#__codelineno-30-34"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">kNumStages</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-30-35"><a id="__codelineno-30-35" name="__codelineno-30-35" href="#__codelineno-30-35"></a><span class="w">            </span><span class="n">mbarrier_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">data_ready</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="w">  </span><span class="mi">1</span><span class="p">);</span><span class="w">    </span><span class="c1">// TMA signals</span>
+</span><span id="__span-30-36"><a id="__codelineno-30-36" name="__codelineno-30-36" href="#__codelineno-30-36"></a><span class="w">            </span><span class="n">mbarrier_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">buffer_free</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="w"> </span><span class="mi">256</span><span class="p">);</span><span class="w">  </span><span class="c1">// 2 consumer WGs</span>
+</span><span id="__span-30-37"><a id="__codelineno-30-37" name="__codelineno-30-37" href="#__codelineno-30-37"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-30-38"><a id="__codelineno-30-38" name="__codelineno-30-38" href="#__codelineno-30-38"></a><span class="w">        </span><span class="n">mbarrier_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">q_ready</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</span><span id="__span-30-39"><a id="__codelineno-30-39" name="__codelineno-30-39" href="#__codelineno-30-39"></a><span class="w">        </span><span class="c1">// Prime buffer_free so the producer may fill every slot once.</span>
+</span><span id="__span-30-40"><a id="__codelineno-30-40" name="__codelineno-30-40" href="#__codelineno-30-40"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">kNumStages</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">s</span><span class="p">)</span>
+</span><span id="__span-30-41"><a id="__codelineno-30-41" name="__codelineno-30-41" href="#__codelineno-30-41"></a><span class="w">            </span><span class="n">mbarrier_arrive_n</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">buffer_free</span><span class="p">[</span><span class="n">s</span><span class="p">],</span><span class="w"> </span><span class="mi">256</span><span class="p">);</span>
+</span><span id="__span-30-42"><a id="__codelineno-30-42" name="__codelineno-30-42" href="#__codelineno-30-42"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-30-43"><a id="__codelineno-30-43" name="__codelineno-30-43" href="#__codelineno-30-43"></a><span class="w">    </span><span class="nf">__syncthreads</span><span class="p">();</span>
+</span><span id="__span-30-44"><a id="__codelineno-30-44" name="__codelineno-30-44" href="#__codelineno-30-44"></a>
+</span><span id="__span-30-45"><a id="__codelineno-30-45" name="__codelineno-30-45" href="#__codelineno-30-45"></a><span class="w">    </span><span class="c1">// ── Causal bounds (§8.1): compute the K range, skip the rest ──</span>
+</span><span id="__span-30-46"><a id="__codelineno-30-46" name="__codelineno-30-46" href="#__codelineno-30-46"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">k_begin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-30-47"><a id="__codelineno-30-47" name="__codelineno-30-47" href="#__codelineno-30-47"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">k_end</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">params</span><span class="p">.</span><span class="n">n_kv_blocks</span><span class="p">;</span>
+</span><span id="__span-30-48"><a id="__codelineno-30-48" name="__codelineno-30-48" href="#__codelineno-30-48"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">kIsCausal</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-30-49"><a id="__codelineno-30-49" name="__codelineno-30-49" href="#__codelineno-30-49"></a><span class="w">        </span><span class="n">k_end</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">min</span><span class="p">(</span><span class="n">k_end</span><span class="p">,</span><span class="w"> </span><span class="p">((</span><span class="n">q_block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">kBlockM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">kBlockN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">kBlockN</span><span class="p">);</span>
+</span><span id="__span-30-50"><a id="__codelineno-30-50" name="__codelineno-30-50" href="#__codelineno-30-50"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-30-51"><a id="__codelineno-30-51" name="__codelineno-30-51" href="#__codelineno-30-51"></a>
+</span><span id="__span-30-52"><a id="__codelineno-30-52" name="__codelineno-30-52" href="#__codelineno-30-52"></a><span class="w">    </span><span class="c1">// ── Q is loaded once and stays resident for the whole loop ────</span>
+</span><span id="__span-30-53"><a id="__codelineno-30-53" name="__codelineno-30-53" href="#__codelineno-30-53"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-30-54"><a id="__codelineno-30-54" name="__codelineno-30-54" href="#__codelineno-30-54"></a><span class="w">        </span><span class="n">mbarrier_arrive_expect_tx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">q_ready</span><span class="p">,</span><span class="w"> </span><span class="n">kBlockM</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">kHeadDim</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">Element</span><span class="p">));</span>
+</span><span id="__span-30-55"><a id="__codelineno-30-55" name="__codelineno-30-55" href="#__codelineno-30-55"></a><span class="w">        </span><span class="n">tma_load_2d</span><span class="p">(</span><span class="n">tma_q</span><span class="p">,</span><span class="w"> </span><span class="n">smem</span><span class="p">.</span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">q_ready</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">q_block</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">kBlockM</span><span class="p">});</span>
+</span><span id="__span-30-56"><a id="__codelineno-30-56" name="__codelineno-30-56" href="#__codelineno-30-56"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-30-57"><a id="__codelineno-30-57" name="__codelineno-30-57" href="#__codelineno-30-57"></a>
+</span><span id="__span-30-58"><a id="__codelineno-30-58" name="__codelineno-30-58" href="#__codelineno-30-58"></a><span class="w">    </span><span class="c1">// ── Role dispatch ─────────────────────────────────────────────</span>
+</span><span id="__span-30-59"><a id="__codelineno-30-59" name="__codelineno-30-59" href="#__codelineno-30-59"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">warpgroup</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-30-60"><a id="__codelineno-30-60" name="__codelineno-30-60" href="#__codelineno-30-60"></a><span class="w">        </span><span class="n">producer_loop</span><span class="p">(</span><span class="n">tma_k</span><span class="p">,</span><span class="w"> </span><span class="n">tma_v</span><span class="p">,</span><span class="w"> </span><span class="n">smem</span><span class="p">,</span><span class="w"> </span><span class="n">k_begin</span><span class="p">,</span><span class="w"> </span><span class="n">k_end</span><span class="p">,</span><span class="w"> </span><span class="n">q_block</span><span class="p">);</span><span class="w">   </span><span class="c1">// §5.2</span>
+</span><span id="__span-30-61"><a id="__codelineno-30-61" name="__codelineno-30-61" href="#__codelineno-30-61"></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-30-62"><a id="__codelineno-30-62" name="__codelineno-30-62" href="#__codelineno-30-62"></a><span class="w">        </span><span class="n">mbarrier_wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">smem</span><span class="p">.</span><span class="n">q_ready</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</span><span id="__span-30-63"><a id="__codelineno-30-63" name="__codelineno-30-63" href="#__codelineno-30-63"></a>
+</span><span id="__span-30-64"><a id="__codelineno-30-64" name="__codelineno-30-64" href="#__codelineno-30-64"></a><span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">O</span><span class="p">[</span><span class="n">kOAccumRegs</span><span class="p">];</span><span class="w">                 </span><span class="c1">// [B_r × d], FP32</span>
+</span><span id="__span-30-65"><a id="__codelineno-30-65" name="__codelineno-30-65" href="#__codelineno-30-65"></a><span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">m</span><span class="p">[</span><span class="n">kRowsPerThread</span><span class="p">];</span><span class="w">              </span><span class="c1">// running max  (§2)</span>
+</span><span id="__span-30-66"><a id="__codelineno-30-66" name="__codelineno-30-66" href="#__codelineno-30-66"></a><span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">l</span><span class="p">[</span><span class="n">kRowsPerThread</span><span class="p">];</span><span class="w">              </span><span class="c1">// running sum  (§2)</span>
+</span><span id="__span-30-67"><a id="__codelineno-30-67" name="__codelineno-30-67" href="#__codelineno-30-67"></a><span class="w">        </span><span class="n">init_accumulators</span><span class="p">(</span><span class="n">O</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">);</span>
+</span><span id="__span-30-68"><a id="__codelineno-30-68" name="__codelineno-30-68" href="#__codelineno-30-68"></a>
+</span><span id="__span-30-69"><a id="__codelineno-30-69" name="__codelineno-30-69" href="#__codelineno-30-69"></a><span class="w">        </span><span class="n">consumer_loop_pingpong_pipelined</span><span class="p">(</span><span class="w">     </span><span class="c1">// §6 + §7 combined</span>
+</span><span id="__span-30-70"><a id="__codelineno-30-70" name="__codelineno-30-70" href="#__codelineno-30-70"></a><span class="w">            </span><span class="n">smem</span><span class="p">,</span><span class="w"> </span><span class="n">O</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">k_begin</span><span class="p">,</span><span class="w"> </span><span class="n">k_end</span><span class="p">,</span>
+</span><span id="__span-30-71"><a id="__codelineno-30-71" name="__codelineno-30-71" href="#__codelineno-30-71"></a><span class="w">            </span><span class="cm">/*wg_id=*/</span><span class="n">warpgroup</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-30-72"><a id="__codelineno-30-72" name="__codelineno-30-72" href="#__codelineno-30-72"></a><span class="w">            </span><span class="cm">/*causal=*/</span><span class="n">kIsCausal</span><span class="p">);</span>
+</span><span id="__span-30-73"><a id="__codelineno-30-73" name="__codelineno-30-73" href="#__codelineno-30-73"></a>
+</span><span id="__span-30-74"><a id="__codelineno-30-74" name="__codelineno-30-74" href="#__codelineno-30-74"></a><span class="w">        </span><span class="c1">// ── Epilogue ──────────────────────────────────────────────</span>
+</span><span id="__span-30-75"><a id="__codelineno-30-75" name="__codelineno-30-75" href="#__codelineno-30-75"></a><span class="w">        </span><span class="c1">//  1. Finalize: O /= l                     (§2.2 step 6)</span>
+</span><span id="__span-30-76"><a id="__codelineno-30-76" name="__codelineno-30-76" href="#__codelineno-30-76"></a><span class="w">        </span><span class="c1">//  2. Convert FP32 accumulator → BF16      (Chapter 7 §8 —</span>
+</span><span id="__span-30-77"><a id="__codelineno-30-77" name="__codelineno-30-77" href="#__codelineno-30-77"></a><span class="w">        </span><span class="c1">//     stmatrix has no 32-bit form)</span>
+</span><span id="__span-30-78"><a id="__codelineno-30-78" name="__codelineno-30-78" href="#__codelineno-30-78"></a><span class="w">        </span><span class="c1">//  3. stmatrix into SMEM                   (Chapter 7 §6)</span>
+</span><span id="__span-30-79"><a id="__codelineno-30-79" name="__codelineno-30-79" href="#__codelineno-30-79"></a><span class="w">        </span><span class="c1">//  4. TMA store SMEM → HBM                 (Chapter 5 §10.2)</span>
+</span><span id="__span-30-80"><a id="__codelineno-30-80" name="__codelineno-30-80" href="#__codelineno-30-80"></a><span class="w">        </span><span class="c1">//  5. Optionally write logsumexp = m + log(l) for the</span>
+</span><span id="__span-30-81"><a id="__codelineno-30-81" name="__codelineno-30-81" href="#__codelineno-30-81"></a><span class="w">        </span><span class="c1">//     backward pass</span>
+</span><span id="__span-30-82"><a id="__codelineno-30-82" name="__codelineno-30-82" href="#__codelineno-30-82"></a><span class="w">        </span><span class="n">finalize_and_store</span><span class="p">(</span><span class="n">O</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">smem</span><span class="p">,</span><span class="w"> </span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">q_block</span><span class="p">,</span><span class="w"> </span><span class="n">head</span><span class="p">);</span>
+</span><span id="__span-30-83"><a id="__codelineno-30-83" name="__codelineno-30-83" href="#__codelineno-30-83"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-30-84"><a id="__codelineno-30-84" name="__codelineno-30-84" href="#__codelineno-30-84"></a><span class="p">}</span>
 </span></code></pre></div>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Launch Configuration
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>
-</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>  dim3 block(384);                     // 3 warpgroups (§5.1)
-</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>  dim3 grid(n_q_blocks, n_heads, batch);
-</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>
-</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>  Dynamic SMEM (Chapter 5 §12):
-</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>    kBlockM=128, kBlockN=128, kHeadDim=128, kNumStages=2, BF16
-</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>
-</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>      Q:            128 × 128 × 2                    =  32 KB
-</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>      K:      2 ×   128 × 128 × 2                    =  64 KB
-</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>      V:      2 ×   128 × 128 × 2                    =  64 KB
-</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>      barriers:     ~2 × 2 × 8 B                     ≈   0 KB
-</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>                                                      ───────
-</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>                                                       160 KB
-</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>
-</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>    Requires opting in beyond the 48 KB static limit:
-</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>
-</span><span id="__span-29-19"><a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>      cudaFuncSetAttribute(flash_fwd_kernel&lt;...&gt;,
-</span><span id="__span-29-20"><a id="__codelineno-29-20" name="__codelineno-29-20" href="#__codelineno-29-20"></a>          cudaFuncAttributeMaxDynamicSharedMemorySize, 160 * 1024);
-</span><span id="__span-29-21"><a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a>
-</span><span id="__span-29-22"><a id="__codelineno-29-22" name="__codelineno-29-22" href="#__codelineno-29-22"></a>  Occupancy: 1 block/SM. That is intentional, not a failure —
-</span><span id="__span-29-23"><a id="__codelineno-29-23" name="__codelineno-29-23" href="#__codelineno-29-23"></a>  Chapter 8 §6. One block of 384 threads with big accumulators
-</span><span id="__span-29-24"><a id="__codelineno-29-24" name="__codelineno-29-24" href="#__codelineno-29-24"></a>  and a deep pipeline beats two blocks fighting over registers.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>Launch Configuration
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>══════════════════════════════════════════════════════════════════════
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>  dim3 block(384);                     // 3 warpgroups (§5.1)
+</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>  dim3 grid(n_q_blocks, n_heads, batch);
+</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>
+</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>  Dynamic SMEM (Chapter 5 §12):
+</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>    kBlockM=128, kBlockN=128, kHeadDim=128, kNumStages=2, BF16
+</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>
+</span><span id="__span-31-10"><a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a>      Q:            128 × 128 × 2                    =  32 KB
+</span><span id="__span-31-11"><a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a>      K:      2 ×   128 × 128 × 2                    =  64 KB
+</span><span id="__span-31-12"><a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a>      V:      2 ×   128 × 128 × 2                    =  64 KB
+</span><span id="__span-31-13"><a id="__codelineno-31-13" name="__codelineno-31-13" href="#__codelineno-31-13"></a>      barriers:     ~2 × 2 × 8 B                     ≈   0 KB
+</span><span id="__span-31-14"><a id="__codelineno-31-14" name="__codelineno-31-14" href="#__codelineno-31-14"></a>                                                      ───────
+</span><span id="__span-31-15"><a id="__codelineno-31-15" name="__codelineno-31-15" href="#__codelineno-31-15"></a>                                                       160 KB
+</span><span id="__span-31-16"><a id="__codelineno-31-16" name="__codelineno-31-16" href="#__codelineno-31-16"></a>
+</span><span id="__span-31-17"><a id="__codelineno-31-17" name="__codelineno-31-17" href="#__codelineno-31-17"></a>    Requires opting in beyond the 48 KB static limit:
+</span><span id="__span-31-18"><a id="__codelineno-31-18" name="__codelineno-31-18" href="#__codelineno-31-18"></a>
+</span><span id="__span-31-19"><a id="__codelineno-31-19" name="__codelineno-31-19" href="#__codelineno-31-19"></a>      cudaFuncSetAttribute(flash_fwd_kernel&lt;...&gt;,
+</span><span id="__span-31-20"><a id="__codelineno-31-20" name="__codelineno-31-20" href="#__codelineno-31-20"></a>          cudaFuncAttributeMaxDynamicSharedMemorySize, 160 * 1024);
+</span><span id="__span-31-21"><a id="__codelineno-31-21" name="__codelineno-31-21" href="#__codelineno-31-21"></a>
+</span><span id="__span-31-22"><a id="__codelineno-31-22" name="__codelineno-31-22" href="#__codelineno-31-22"></a>  Occupancy: 1 block/SM. That is intentional, not a failure —
+</span><span id="__span-31-23"><a id="__codelineno-31-23" name="__codelineno-31-23" href="#__codelineno-31-23"></a>  Chapter 8 §6. One block of 384 threads with big accumulators
+</span><span id="__span-31-24"><a id="__codelineno-31-24" name="__codelineno-31-24" href="#__codelineno-31-24"></a>  and a deep pipeline beats two blocks fighting over registers.
 </span></code></pre></div>
 <hr />
 <h2 id="11-measured-results">11 — Measured Results<a class="headerlink" href="#11-measured-results" title="Permanent link">&para;</a></h2>
-<p>Numbers from the FlashAttention-3 paper, H100 SXM5. (Confirmed against the
-paper's own authors' summary on the PyTorch blog and against independent
-coverage from Colfax Research: 740 TFLOP/s / 75% of peak BF16, ~1.2 PFLOP/s
-FP8, the FA2-on-H100 baseline of ~350 TFLOP/s / 35%, the 570→620 TFLOP/s
-step from ping-pong alone, and the 2.6× FP8 error reduction all check out
-exactly. One terminology note: the paper's own headline benchmark reports
-FP16, not BF16 — this chapter follows the rest of the book in saying BF16
-throughout, which is accurate for the <em>numbers</em>, since FP16 and BF16 share
-the same tensor-core throughput class on Hopper (same bit width, same
-rate), but worth knowing if you go compare against the paper's own tables.)</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>FA3 vs FA2 — Forward Pass, BF16
-</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
-</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>  Technique ladder (from §4.1):
-</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>
-</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>    FlashAttention-2 on H100              ~350 TFLOP/s    35%
-</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>    + warp specialization + TMA           ~570 TFLOP/s    58%
-</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>    + ping-pong                           ~620 TFLOP/s    63%
-</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>    + intra-warpgroup 2-stage             ~660 TFLOP/s    67%
-</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>    + tuning                          up to 740 TFLOP/s   75%
-</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>
-</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>  Speedup over FA2:   1.5 – 2.0×  (forward)
-</span><span id="__span-30-13"><a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>                      1.5 – 1.75× (backward)
-</span><span id="__span-30-14"><a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>
-</span><span id="__span-30-15"><a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>  FP8 forward:        ~1.2 PFLOP/s
-</span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>  FP8 accuracy:       2.6× lower error than per-tensor
-</span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a>                      quantization, with block quant +
-</span><span id="__span-30-18"><a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a>                      incoherent processing (§9.4)
-</span><span id="__span-30-19"><a id="__codelineno-30-19" name="__codelineno-30-19" href="#__codelineno-30-19"></a>
-</span><span id="__span-30-20"><a id="__codelineno-30-20" name="__codelineno-30-20" href="#__codelineno-30-20"></a>  Behaviour across shapes:
-</span><span id="__span-30-21"><a id="__codelineno-30-21" name="__codelineno-30-21" href="#__codelineno-30-21"></a>    ├── Head dim 64, 128, 256 all benefit; 128 is the sweet spot
-</span><span id="__span-30-22"><a id="__codelineno-30-22" name="__codelineno-30-22" href="#__codelineno-30-22"></a>    ├── Sequence 512 → 16k; longer sequences amortise the
-</span><span id="__span-30-23"><a id="__codelineno-30-23" name="__codelineno-30-23" href="#__codelineno-30-23"></a>    │   prologue better and land nearer the top of the range
-</span><span id="__span-30-24"><a id="__codelineno-30-24" name="__codelineno-30-24" href="#__codelineno-30-24"></a>    └── Short sequences are dominated by launch and epilogue
-</span><span id="__span-30-25"><a id="__codelineno-30-25" name="__codelineno-30-25" href="#__codelineno-30-25"></a>        overhead — the techniques here need a long inner loop
-</span><span id="__span-30-26"><a id="__codelineno-30-26" name="__codelineno-30-26" href="#__codelineno-30-26"></a>        to pay off
-</span></code></pre></div>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>What the Remaining 25% Is
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>
-</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>  75% of peak is excellent. It is not 100%, and it is worth
-</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>  knowing where the rest goes — these are the same categories
-</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>  Chapter 13 teaches you to measure.
-</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>
-</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>  ├── Softmax that ping-pong and pipelining cannot hide.
-</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>  │   The overlap is good, not perfect; row reductions have
-</span><span id="__span-31-10"><a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a>  │   serial dependencies that resist scheduling.
-</span><span id="__span-31-11"><a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a>  │
-</span><span id="__span-31-12"><a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a>  ├── Prologue and epilogue. The first iteration has nothing
-</span><span id="__span-31-13"><a id="__codelineno-31-13" name="__codelineno-31-13" href="#__codelineno-31-13"></a>  │   to overlap with; the last has nothing to overlap into.
-</span><span id="__span-31-14"><a id="__codelineno-31-14" name="__codelineno-31-14" href="#__codelineno-31-14"></a>  │   For 32 K-blocks that is ~6% of iterations running
-</span><span id="__span-31-15"><a id="__codelineno-31-15" name="__codelineno-31-15" href="#__codelineno-31-15"></a>  │   un-pipelined.
-</span><span id="__span-31-16"><a id="__codelineno-31-16" name="__codelineno-31-16" href="#__codelineno-31-16"></a>  │
-</span><span id="__span-31-17"><a id="__codelineno-31-17" name="__codelineno-31-17" href="#__codelineno-31-17"></a>  ├── Register pressure. §7.2 — 214 registers per thread means
-</span><span id="__span-31-18"><a id="__codelineno-31-18" name="__codelineno-31-18" href="#__codelineno-31-18"></a>  │   one block per SM, so there is no second block to cover
-</span><span id="__span-31-19"><a id="__codelineno-31-19" name="__codelineno-31-19" href="#__codelineno-31-19"></a>  │   a stall.
-</span><span id="__span-31-20"><a id="__codelineno-31-20" name="__codelineno-31-20" href="#__codelineno-31-20"></a>  │
-</span><span id="__span-31-21"><a id="__codelineno-31-21" name="__codelineno-31-21" href="#__codelineno-31-21"></a>  ├── The causal tail (§8). Even with paired scheduling, the
-</span><span id="__span-31-22"><a id="__codelineno-31-22" name="__codelineno-31-22" href="#__codelineno-31-22"></a>  │   diagonal blocks do masked work at a lower rate.
-</span><span id="__span-31-23"><a id="__codelineno-31-23" name="__codelineno-31-23" href="#__codelineno-31-23"></a>  │
-</span><span id="__span-31-24"><a id="__codelineno-31-24" name="__codelineno-31-24" href="#__codelineno-31-24"></a>  └── HBM, occasionally. At d=64 the arithmetic intensity is
-</span><span id="__span-31-25"><a id="__codelineno-31-25" name="__codelineno-31-25" href="#__codelineno-31-25"></a>      halved and short sequences can slip back toward
-</span><span id="__span-31-26"><a id="__codelineno-31-26" name="__codelineno-31-26" href="#__codelineno-31-26"></a>      memory-bound. Chapter 8 §1's roofline tells you when.
+<p>These are <strong>published H100 SXM results</strong>, not measurements from this book's single H100 PCIe validation run. The paper reports up to 740 TFLOP/s for FP16 and close to 1.2 PFLOP/s for FP8. Although BF16 and FP16 share Hopper's nominal Tensor Core throughput class, that does not turn an FP16 benchmark into a measured BF16 result. The tables below identify the paper's FP16 headline correctly. See the <a href="https://tridao.me/publications/flash3/flash3.pdf">FlashAttention-3 paper</a> and the <a href="https://pytorch.org/blog/flashattention-3/">authors' summary</a>.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>FA3 vs FA2 — Forward Pass, FP16
+</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>══════════════════════════════════════════════════════════════════════
+</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
+</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>  Technique ladder (from §4.1):
+</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>
+</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>    FlashAttention-2 on H100              ~350 TFLOP/s    35%
+</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>    + warp specialization + TMA           ~570 TFLOP/s    58%
+</span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>    + ping-pong                           ~620 TFLOP/s    63%
+</span><span id="__span-32-9"><a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>    + intra-warpgroup 2-stage             ~660 TFLOP/s    67%
+</span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>    + tuning                          up to 740 TFLOP/s   75%
+</span><span id="__span-32-11"><a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>
+</span><span id="__span-32-12"><a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a>  Speedup over FA2:   1.5 – 2.0×  (forward)
+</span><span id="__span-32-13"><a id="__codelineno-32-13" name="__codelineno-32-13" href="#__codelineno-32-13"></a>                      1.5 – 1.75× (backward)
+</span><span id="__span-32-14"><a id="__codelineno-32-14" name="__codelineno-32-14" href="#__codelineno-32-14"></a>
+</span><span id="__span-32-15"><a id="__codelineno-32-15" name="__codelineno-32-15" href="#__codelineno-32-15"></a>  FP8 forward:        ~1.2 PFLOP/s
+</span><span id="__span-32-16"><a id="__codelineno-32-16" name="__codelineno-32-16" href="#__codelineno-32-16"></a>  FP8 accuracy:       2.6× lower error than per-tensor
+</span><span id="__span-32-17"><a id="__codelineno-32-17" name="__codelineno-32-17" href="#__codelineno-32-17"></a>                      quantization, with block quant +
+</span><span id="__span-32-18"><a id="__codelineno-32-18" name="__codelineno-32-18" href="#__codelineno-32-18"></a>                      incoherent processing (§9.4)
+</span><span id="__span-32-19"><a id="__codelineno-32-19" name="__codelineno-32-19" href="#__codelineno-32-19"></a>
+</span><span id="__span-32-20"><a id="__codelineno-32-20" name="__codelineno-32-20" href="#__codelineno-32-20"></a>  Behaviour across shapes:
+</span><span id="__span-32-21"><a id="__codelineno-32-21" name="__codelineno-32-21" href="#__codelineno-32-21"></a>    ├── Head dim 64, 128, 256 all benefit; 128 is the sweet spot
+</span><span id="__span-32-22"><a id="__codelineno-32-22" name="__codelineno-32-22" href="#__codelineno-32-22"></a>    ├── Sequence 512 → 16k; longer sequences amortise the
+</span><span id="__span-32-23"><a id="__codelineno-32-23" name="__codelineno-32-23" href="#__codelineno-32-23"></a>    │   prologue better and land nearer the top of the range
+</span><span id="__span-32-24"><a id="__codelineno-32-24" name="__codelineno-32-24" href="#__codelineno-32-24"></a>    └── Short sequences are dominated by launch and epilogue
+</span><span id="__span-32-25"><a id="__codelineno-32-25" name="__codelineno-32-25" href="#__codelineno-32-25"></a>        overhead — the techniques here need a long inner loop
+</span><span id="__span-32-26"><a id="__codelineno-32-26" name="__codelineno-32-26" href="#__codelineno-32-26"></a>        to pay off
+</span></code></pre></div></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>What the Remaining 25% Is
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>══════════════════════════════════════════════════════════════════════
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>  75% of peak is excellent. It is not 100%, and it is worth
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>  knowing where the rest goes — these are the same categories
+</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>  Chapter 13 teaches you to measure.
+</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>
+</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>  ├── Softmax that ping-pong and pipelining cannot hide.
+</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>  │   The overlap is good, not perfect; row reductions have
+</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a>  │   serial dependencies that resist scheduling.
+</span><span id="__span-33-11"><a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>  │
+</span><span id="__span-33-12"><a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a>  ├── Prologue and epilogue. The first iteration has nothing
+</span><span id="__span-33-13"><a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>  │   to overlap with; the last has nothing to overlap into.
+</span><span id="__span-33-14"><a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a>  │   For 32 K-blocks that is ~6% of iterations running
+</span><span id="__span-33-15"><a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a>  │   un-pipelined.
+</span><span id="__span-33-16"><a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a>  │
+</span><span id="__span-33-17"><a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a>  ├── Register pressure. §7.2 — 214 registers per thread means
+</span><span id="__span-33-18"><a id="__codelineno-33-18" name="__codelineno-33-18" href="#__codelineno-33-18"></a>  │   one block per SM, so there is no second block to cover
+</span><span id="__span-33-19"><a id="__codelineno-33-19" name="__codelineno-33-19" href="#__codelineno-33-19"></a>  │   a stall.
+</span><span id="__span-33-20"><a id="__codelineno-33-20" name="__codelineno-33-20" href="#__codelineno-33-20"></a>  │
+</span><span id="__span-33-21"><a id="__codelineno-33-21" name="__codelineno-33-21" href="#__codelineno-33-21"></a>  ├── The causal tail (§8). Even with paired scheduling, the
+</span><span id="__span-33-22"><a id="__codelineno-33-22" name="__codelineno-33-22" href="#__codelineno-33-22"></a>  │   diagonal blocks do masked work at a lower rate.
+</span><span id="__span-33-23"><a id="__codelineno-33-23" name="__codelineno-33-23" href="#__codelineno-33-23"></a>  │
+</span><span id="__span-33-24"><a id="__codelineno-33-24" name="__codelineno-33-24" href="#__codelineno-33-24"></a>  └── HBM, occasionally. At d=64 the arithmetic intensity is
+</span><span id="__span-33-25"><a id="__codelineno-33-25" name="__codelineno-33-25" href="#__codelineno-33-25"></a>      halved and short sequences can slip back toward
+</span><span id="__span-33-26"><a id="__codelineno-33-26" name="__codelineno-33-26" href="#__codelineno-33-26"></a>      memory-bound. Chapter 8 §1's roofline tells you when.
 </span></code></pre></div>
 <hr />
 <h2 id="12-quick-reference">12 — Quick Reference<a class="headerlink" href="#12-quick-reference" title="Permanent link">&para;</a></h2>
 <h3 id="the-online-softmax-recurrence">The Online Softmax Recurrence<a class="headerlink" href="#the-online-softmax-recurrence" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>State per row:  m (max, init -inf),  l (sum, init 0),  O (accum, init 0)
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>
-</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>Per block S_j:
-</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>    m_new = max(m_old, rowmax(S_j))
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>    α     = exp(m_old - m_new)
-</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>    P_j   = exp(S_j - m_new)
-</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>    l_new = α·l_old + rowsum(P_j)
-</span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>    O_new = α·O_old + P_j·V_j
-</span><span id="__span-32-9"><a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>
-</span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>Finalize once:  O = O / l
-</span><span id="__span-32-11"><a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>For backward:   save logsumexp = m + log(l)
-</span><span id="__span-32-12"><a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a>
-</span><span id="__span-32-13"><a id="__codelineno-32-13" name="__codelineno-32-13" href="#__codelineno-32-13"></a>Merging two partials (split-K, §8.2):
-</span><span id="__span-32-14"><a id="__codelineno-32-14" name="__codelineno-32-14" href="#__codelineno-32-14"></a>    m = max(m_A, m_B)
-</span><span id="__span-32-15"><a id="__codelineno-32-15" name="__codelineno-32-15" href="#__codelineno-32-15"></a>    O = exp(m_A-m)·O_A + exp(m_B-m)·O_B
-</span><span id="__span-32-16"><a id="__codelineno-32-16" name="__codelineno-32-16" href="#__codelineno-32-16"></a>    l = exp(m_A-m)·l_A + exp(m_B-m)·l_B
+<div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>State per row:  m (max, init -inf),  l (sum, init 0),  O (accum, init 0)
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>
+</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>Per block S_j:
+</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>    m_new = max(m_old, rowmax(S_j))
+</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>    α     = exp(m_old - m_new)
+</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>    P_j   = exp(S_j - m_new)
+</span><span id="__span-34-7"><a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>    l_new = α·l_old + rowsum(P_j)
+</span><span id="__span-34-8"><a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>    O_new = α·O_old + P_j·V_j
+</span><span id="__span-34-9"><a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a>
+</span><span id="__span-34-10"><a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a>Finalize once:  O = O / l
+</span><span id="__span-34-11"><a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a>For backward:   save logsumexp = m + log(l)
+</span><span id="__span-34-12"><a id="__codelineno-34-12" name="__codelineno-34-12" href="#__codelineno-34-12"></a>
+</span><span id="__span-34-13"><a id="__codelineno-34-13" name="__codelineno-34-13" href="#__codelineno-34-13"></a>Merging two partials (split-K, §8.2):
+</span><span id="__span-34-14"><a id="__codelineno-34-14" name="__codelineno-34-14" href="#__codelineno-34-14"></a>    m = max(m_A, m_B)
+</span><span id="__span-34-15"><a id="__codelineno-34-15" name="__codelineno-34-15" href="#__codelineno-34-15"></a>    O = exp(m_A-m)·O_A + exp(m_B-m)·O_B
+</span><span id="__span-34-16"><a id="__codelineno-34-16" name="__codelineno-34-16" href="#__codelineno-34-16"></a>    l = exp(m_A-m)·l_A + exp(m_B-m)·l_B
 </span></code></pre></div>
 <h3 id="the-three-techniques">The Three Techniques<a class="headerlink" href="#the-three-techniques" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>Technique                  Mechanism                        Gain
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>──────────────────────────────────────────────────────────────────
-</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>Warp specialization        Producer WG runs TMA;            350 → 570
-</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>  (§5)                     consumer WGs run wgmma;
-</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>                           setmaxnreg moves registers
-</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>
-</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>Ping-pong                  Two consumer WGs offset by       570 → 620
-</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>  (§6)                     half a phase via named
-</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>                           barriers; softmax of one
-</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a>                           hides under GEMMs of other
-</span><span id="__span-33-11"><a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>
-</span><span id="__span-33-12"><a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a>2-stage intra-WG           Issue QK_{j+1} and PV_j,         620 → 660
-</span><span id="__span-33-13"><a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>  (§7)                     then softmax_j underneath
-</span><span id="__span-33-14"><a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a>                           both; wait_group&lt;1&gt; not &lt;0&gt;
-</span><span id="__span-33-15"><a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a>
-</span><span id="__span-33-16"><a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a>FP8 (§9)                   Block quant + V transpose        740 → 1200
-</span><span id="__span-33-17"><a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a>                           + Hadamard incoherent proc.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>Technique                  Mechanism                        Gain
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>──────────────────────────────────────────────────────────────────
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>Warp specialization        Producer WG runs TMA;            350 → 570
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>  (§5)                     consumer WGs run wgmma;
+</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>                           setmaxnreg moves registers
+</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>
+</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>Ping-pong                  Two consumer WGs offset by       570 → 620
+</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>  (§6)                     half a phase via named
+</span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>                           barriers; softmax of one
+</span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>                           hides under GEMMs of other
+</span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>
+</span><span id="__span-35-12"><a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a>2-stage intra-WG           Issue QK_{j+1} and PV_j,         620 → 660
+</span><span id="__span-35-13"><a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>  (§7)                     then softmax_j underneath
+</span><span id="__span-35-14"><a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a>                           both; wait_group&lt;1&gt; not &lt;0&gt;
+</span><span id="__span-35-15"><a id="__codelineno-35-15" name="__codelineno-35-15" href="#__codelineno-35-15"></a>
+</span><span id="__span-35-16"><a id="__codelineno-35-16" name="__codelineno-35-16" href="#__codelineno-35-16"></a>FP8 (§9)                   Block quant + V transpose        740 → 1200
+</span><span id="__span-35-17"><a id="__codelineno-35-17" name="__codelineno-35-17" href="#__codelineno-35-17"></a>                           + Hadamard incoherent proc.
 </span></code></pre></div>
 <h3 id="warpgroup-roles">Warpgroup Roles<a class="headerlink" href="#warpgroup-roles" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>WG   Warps   Role       setmaxnreg   Responsibility
-</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>──────────────────────────────────────────────────────────────────
-</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>0    0-3     Producer   dec →  32    TMA loads of K_j, V_j;
-</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>                                     expect_tx; buffer_free waits
-</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>1    4-7     Consumer   inc → 160+   QK, softmax, PV for its Q rows
-</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>2    8-11    Consumer   inc → 160+   same, offset half a phase
+<div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>WG   Warps   Role       setmaxnreg   Responsibility
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>──────────────────────────────────────────────────────────────────
+</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>0    0-3     Producer   dec →  32    TMA loads of K_j, V_j;
+</span><span id="__span-36-4"><a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>                                     expect_tx; buffer_free waits
+</span><span id="__span-36-5"><a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>1    4-7     Consumer   inc → 160+   QK, softmax, PV for its Q rows
+</span><span id="__span-36-6"><a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>2    8-11    Consumer   inc → 160+   same, offset half a phase
 </span></code></pre></div>
 <h3 id="causal-block-types">Causal Block Types<a class="headerlink" href="#causal-block-types" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>Type   Condition                       Action
-</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>──────────────────────────────────────────────────────────────────
-</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>SKIP   k_block &gt; q_block               Never launched; K/V not fetched
-</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>FULL   k_block &lt; q_block               Unmasked inner loop (no
-</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>                                       predicates at all)
-</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>DIAG   k_block == q_block              Masked inner loop; S = -inf
-</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>                                       where (q_base+r) &lt; (k_base+c)
-</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>
-</span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>Balance with: paired Q blocks (i, n-1-i), or a persistent
-</span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>kernel with a work queue (Chapter 9 §17), or Stream-K
-</span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>splitting of the K loop (Chapter 10).
+<div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>Type   Condition                       Action
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>──────────────────────────────────────────────────────────────────
+</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>SKIP   k_block &gt; q_block               Never launched; K/V not fetched
+</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>FULL   k_block &lt; q_block               Unmasked inner loop (no
+</span><span id="__span-37-5"><a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>                                       predicates at all)
+</span><span id="__span-37-6"><a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>DIAG   k_block == q_block              Masked inner loop; S = -inf
+</span><span id="__span-37-7"><a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>                                       where (q_base+r) &lt; (k_base+c)
+</span><span id="__span-37-8"><a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>
+</span><span id="__span-37-9"><a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>Balance with: paired Q blocks (i, n-1-i), or a persistent
+</span><span id="__span-37-10"><a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a>kernel with a work queue (Chapter 9 §17), or Stream-K
+</span><span id="__span-37-11"><a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a>splitting of the K loop (Chapter 10).
 </span></code></pre></div>
 <h3 id="fp8-checklist">FP8 Checklist<a class="headerlink" href="#fp8-checklist" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>□ Block quantization, not per-tensor — one scale per tile (§9.1)
-</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>□ Fuse the quantize into RoPE or whatever precedes attention
-</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>□ E4M3 forward (range 448); E5M2 only if gradients (Chapter 7 §10)
-</span><span id="__span-36-4"><a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>□ V transposed in SMEM before GEMM1 — K-major is mandatory (§9.2)
-</span><span id="__span-36-5"><a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>□ ldmatrix.trans + prmt fix-up for 8-bit elements (§9.3)
-</span><span id="__span-36-6"><a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>□ Hadamard incoherent processing on Q and K (§9.4)
-</span><span id="__span-36-7"><a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>□ K-slice the accumulation — Chapter 7 §14, the FP22 issue
-</span><span id="__span-36-8"><a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>□ Descale the output by (scale_Q · scale_K · scale_V)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>□ Block quantization, not per-tensor — one scale per tile (§9.1)
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>□ Fuse the quantize into RoPE or whatever precedes attention
+</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>□ E4M3 forward (range 448); E5M2 only if gradients (Chapter 7 §10)
+</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>□ V transposed in SMEM before GEMM1 — K-major is mandatory (§9.2)
+</span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>□ ldmatrix.trans + prmt fix-up for 8-bit elements (§9.3)
+</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>□ Hadamard incoherent processing on Q and K (§9.4)
+</span><span id="__span-38-7"><a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a>□ K-slice the accumulation — Chapter 7 §14, the FP22 issue
+</span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>□ Descale the output by (scale_Q · scale_K · scale_V)
 </span></code></pre></div>
 <h3 id="common-mistakes">Common Mistakes<a class="headerlink" href="#common-mistakes" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>Mistake                                  Symptom            Fix
-</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>──────────────────────────────────────────────────────────────────────
-</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>wgmma_wait_group&lt;0&gt; in the 2-stage       No speedup from    Use &lt;1&gt;;
-</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>loop                                     §7                 Ch 7 §3
-</span><span id="__span-37-5"><a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>
-</span><span id="__span-37-6"><a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>Rescaling O before the fence             Corrupt output     wgmma.fence
-</span><span id="__span-37-7"><a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>                                                            before
-</span><span id="__span-37-8"><a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>                                                            touching
-</span><span id="__span-37-9"><a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>                                                            accumulator
-</span><span id="__span-37-10"><a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a>                                                            (Ch 7 §5)
-</span><span id="__span-37-11"><a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a>
-</span><span id="__span-37-12"><a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a>Forgetting buffer_free arrive            Hang after         Ch 3 §13 —
-</span><span id="__span-37-13"><a id="__codelineno-37-13" name="__codelineno-37-13" href="#__codelineno-37-13"></a>                                         kNumStages iters   WAR barrier
-</span><span id="__span-37-14"><a id="__codelineno-37-14" name="__codelineno-37-14" href="#__codelineno-37-14"></a>
-</span><span id="__span-37-15"><a id="__codelineno-37-15" name="__codelineno-37-15" href="#__codelineno-37-15"></a>expect_tx after issuing the TMA copy     Intermittent hang  Always before
-</span><span id="__span-37-16"><a id="__codelineno-37-16" name="__codelineno-37-16" href="#__codelineno-37-16"></a>                                                            (Ch 3 §9.2)
-</span><span id="__span-37-17"><a id="__codelineno-37-17" name="__codelineno-37-17" href="#__codelineno-37-17"></a>
-</span><span id="__span-37-18"><a id="__codelineno-37-18" name="__codelineno-37-18" href="#__codelineno-37-18"></a>Mask predicate inside FULL blocks        ~10% slower        Specialise the
-</span><span id="__span-37-19"><a id="__codelineno-37-19" name="__codelineno-37-19" href="#__codelineno-37-19"></a>                                                            loop (§8.1)
-</span><span id="__span-37-20"><a id="__codelineno-37-20" name="__codelineno-37-20" href="#__codelineno-37-20"></a>
-</span><span id="__span-37-21"><a id="__codelineno-37-21" name="__codelineno-37-21" href="#__codelineno-37-21"></a>Per-tensor FP8 scaling                   Accuracy collapse  Block quant
-</span><span id="__span-37-22"><a id="__codelineno-37-22" name="__codelineno-37-22" href="#__codelineno-37-22"></a>                                         on outlier heads   (§9.1)
-</span><span id="__span-37-23"><a id="__codelineno-37-23" name="__codelineno-37-23" href="#__codelineno-37-23"></a>
-</span><span id="__span-37-24"><a id="__codelineno-37-24" name="__codelineno-37-24" href="#__codelineno-37-24"></a>V not transposed for FP8 GEMM1           Silently wrong     In-kernel
-</span><span id="__span-37-25"><a id="__codelineno-37-25" name="__codelineno-37-25" href="#__codelineno-37-25"></a>                                         output             transpose
-</span><span id="__span-37-26"><a id="__codelineno-37-26" name="__codelineno-37-26" href="#__codelineno-37-26"></a>                                                            (§9.3)
-</span><span id="__span-37-27"><a id="__codelineno-37-27" name="__codelineno-37-27" href="#__codelineno-37-27"></a>
-</span><span id="__span-37-28"><a id="__codelineno-37-28" name="__codelineno-37-28" href="#__codelineno-37-28"></a>Both warpgroups sync on the same         Ping-pong does     Two barrier
-</span><span id="__span-37-29"><a id="__codelineno-37-29" name="__codelineno-37-29" href="#__codelineno-37-29"></a>barrier                                  nothing            IDs (§6.2)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>Mistake                                  Symptom            Fix
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>──────────────────────────────────────────────────────────────────────
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>wgmma_wait_group&lt;0&gt; in the 2-stage       No speedup from    Use &lt;1&gt;;
+</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>loop                                     §7                 Ch 7 §3
+</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a>
+</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>Rescaling O before the fence             Corrupt output     wgmma.fence
+</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>                                                            before
+</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>                                                            touching
+</span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a>                                                            accumulator
+</span><span id="__span-39-10"><a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a>                                                            (Ch 7 §5)
+</span><span id="__span-39-11"><a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a>
+</span><span id="__span-39-12"><a id="__codelineno-39-12" name="__codelineno-39-12" href="#__codelineno-39-12"></a>Forgetting buffer_free arrive            Hang after         Ch 3 §13 —
+</span><span id="__span-39-13"><a id="__codelineno-39-13" name="__codelineno-39-13" href="#__codelineno-39-13"></a>                                         kNumStages iters   WAR barrier
+</span><span id="__span-39-14"><a id="__codelineno-39-14" name="__codelineno-39-14" href="#__codelineno-39-14"></a>
+</span><span id="__span-39-15"><a id="__codelineno-39-15" name="__codelineno-39-15" href="#__codelineno-39-15"></a>expect_tx after issuing the TMA copy     Intermittent hang  Always before
+</span><span id="__span-39-16"><a id="__codelineno-39-16" name="__codelineno-39-16" href="#__codelineno-39-16"></a>                                                            (Ch 3 §9.2)
+</span><span id="__span-39-17"><a id="__codelineno-39-17" name="__codelineno-39-17" href="#__codelineno-39-17"></a>
+</span><span id="__span-39-18"><a id="__codelineno-39-18" name="__codelineno-39-18" href="#__codelineno-39-18"></a>Mask predicate inside FULL blocks        ~10% slower        Specialise the
+</span><span id="__span-39-19"><a id="__codelineno-39-19" name="__codelineno-39-19" href="#__codelineno-39-19"></a>                                                            loop (§8.1)
+</span><span id="__span-39-20"><a id="__codelineno-39-20" name="__codelineno-39-20" href="#__codelineno-39-20"></a>
+</span><span id="__span-39-21"><a id="__codelineno-39-21" name="__codelineno-39-21" href="#__codelineno-39-21"></a>Per-tensor FP8 scaling                   Accuracy collapse  Block quant
+</span><span id="__span-39-22"><a id="__codelineno-39-22" name="__codelineno-39-22" href="#__codelineno-39-22"></a>                                         on outlier heads   (§9.1)
+</span><span id="__span-39-23"><a id="__codelineno-39-23" name="__codelineno-39-23" href="#__codelineno-39-23"></a>
+</span><span id="__span-39-24"><a id="__codelineno-39-24" name="__codelineno-39-24" href="#__codelineno-39-24"></a>V not transposed for FP8 GEMM1           Silently wrong     In-kernel
+</span><span id="__span-39-25"><a id="__codelineno-39-25" name="__codelineno-39-25" href="#__codelineno-39-25"></a>                                         output             transpose
+</span><span id="__span-39-26"><a id="__codelineno-39-26" name="__codelineno-39-26" href="#__codelineno-39-26"></a>                                                            (§9.3)
+</span><span id="__span-39-27"><a id="__codelineno-39-27" name="__codelineno-39-27" href="#__codelineno-39-27"></a>
+</span><span id="__span-39-28"><a id="__codelineno-39-28" name="__codelineno-39-28" href="#__codelineno-39-28"></a>Both warpgroups sync on the same         Ping-pong does     Two barrier
+</span><span id="__span-39-29"><a id="__codelineno-39-29" name="__codelineno-39-29" href="#__codelineno-39-29"></a>barrier                                  nothing            IDs (§6.2)
 </span></code></pre></div>
 <hr />
 <blockquote>

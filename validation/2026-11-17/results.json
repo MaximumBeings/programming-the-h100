@@ -1,0 +1,495 @@
+[
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 564,
+    "example": "ex01_cluster_inspect.cu",
+    "sha256": "ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3",
+    "timestamp": "2026-11-17T21:28:33.276960+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 1110,
+    "example": "ex02_ptx_basics.cu",
+    "sha256": "50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f",
+    "timestamp": "2026-11-17T21:28:39.443220+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 2400,
+    "example": "ex03_state_spaces.cu",
+    "sha256": "1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8",
+    "timestamp": "2026-11-17T21:28:42.267177+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex03_state_spaces/ex03_state_spaces.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex03_state_spaces/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 3538,
+    "example": "ex04_ptx_pointers.cu",
+    "sha256": "77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c",
+    "timestamp": "2026-11-17T21:28:44.942444+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex04_ptx_pointers/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 3864,
+    "example": "ex05_ptx_datatypes.cu",
+    "sha256": "711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220",
+    "timestamp": "2026-11-17T21:28:48.110117+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex05_ptx_datatypes/ex05_ptx_datatypes.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex05_ptx_datatypes/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 4308,
+    "example": "ex06_comprehensive.cu",
+    "sha256": "4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d",
+    "timestamp": "2026-11-17T21:28:51.667149+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 1986,
+    "example": "ex01_mbarrier_basic.cu",
+    "sha256": "075961dac147dd0c2ef4a5a288af51c6cc6f0330364bb8fbf4b62cbf4c5aef92",
+    "timestamp": "2026-11-17T21:28:58.180168+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 2269,
+    "example": "ex02_war_prevention.cu",
+    "sha256": "852967b65c0f83348cffac11df0ed9fbbed40802aa730944f31564efda5eb2d0",
+    "timestamp": "2026-11-17T21:29:01.005659+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1625,
+    "example": "ex01_tma_basic.cu",
+    "sha256": "c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa",
+    "timestamp": "2026-11-17T21:29:03.717488+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/example",
+      "-lcuda"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1949,
+    "example": "ex02_tma_3d.cu",
+    "sha256": "b80719ce45119fa91323bc610a68e7aeb84945ccfa8864fc3f2ee06cc594cab3",
+    "timestamp": "2026-11-17T21:29:06.638185+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/04-cutensormap-tma-swizzling/ex02_tma_3d/example",
+      "-lcuda"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1631,
+    "example": "ex01_bulk_raw.cu",
+    "sha256": "d3205e1cc28e486f95c1923b3d347bc08bb8f9e52ae4324a8171bef168f22fbd",
+    "timestamp": "2026-11-17T21:29:09.745589+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1836,
+    "example": "ex02_reduce_async.cu",
+    "sha256": "52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a",
+    "timestamp": "2026-11-17T21:29:12.439860+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 249,
+    "example": "ex01_roofline.cu",
+    "sha256": "d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449",
+    "timestamp": "2026-11-17T21:29:22.446323+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/08-kernel-design-part-1/ex01_roofline/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 936,
+    "example": "ex02_warp_spec.cu",
+    "sha256": "fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675",
+    "timestamp": "2026-11-17T21:29:25.108798+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/08-kernel-design-part-1/ex02_warp_spec/ex02_warp_spec.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/08-kernel-design-part-1/ex02_warp_spec/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1858,
+    "example": "ex04_circular_buffer.cu",
+    "sha256": "3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665",
+    "timestamp": "2026-11-17T21:29:30.202728+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/08-kernel-design-part-1/ex04_circular_buffer/ex04_circular_buffer.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/08-kernel-design-part-1/ex04_circular_buffer/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 462,
+    "example": "ex09_streamk_roles.cu",
+    "sha256": "fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf",
+    "timestamp": "2026-11-17T21:29:44.863655+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/10-stream-k-scheduling/ex09_streamk_roles/ex09_streamk_roles.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/10-stream-k-scheduling/ex09_streamk_roles/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 1407,
+    "example": "ex10_dependent_launch.cu",
+    "sha256": "36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640",
+    "timestamp": "2026-11-17T21:29:50.920919+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/10-stream-k-scheduling/ex10_dependent_launch/ex10_dependent_launch.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/10-stream-k-scheduling/ex10_dependent_launch/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 733,
+    "example": "ex11_nvlink_bandwidth.cu",
+    "sha256": "e789b36984c5f5c5f661299a1029330bc15a4b1fba18b5e4a1605aef2500a11c",
+    "timestamp": "2026-11-17T21:29:53.498073+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 1490,
+    "example": "ex12_nccl_allreduce.cu",
+    "sha256": "7d9238e4b56e51c9b54c3ba86bd8cb6a7ed4ed0829c8a4beb44ea0cf89610939",
+    "timestamp": "2026-11-17T21:29:55.906085+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/11-multi-gpu-nccl/ex12_nccl_allreduce/example",
+      "-lnccl"
+    ],
+    "compile_exit": 0,
+    "run_exit": 1
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 2505,
+    "example": "ex13_hybrid_parallel_training.cu",
+    "sha256": "99f1b0a3238b2833c49ed65171cba66cd446991a1be3e807a1645a7f408de9f3",
+    "timestamp": "2026-11-17T21:29:59.278741+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/11-multi-gpu-nccl/ex13_hybrid_parallel_training/example",
+      "-lnccl",
+      "-lcublas",
+      "-Xcompiler",
+      "-pthread"
+    ],
+    "compile_exit": 0,
+    "run_exit": 1
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 182,
+    "example": "ex05_mbarrier.cu",
+    "sha256": "c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046",
+    "timestamp": "2026-11-17T21:30:36.171223+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex05_mbarrier/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 935,
+    "example": "ex06_pingpong.cu",
+    "sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd",
+    "timestamp": "2026-11-17T21:30:38.836350+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex06_pingpong/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 1413,
+    "example": "ex07_epilogue.cu",
+    "sha256": "bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff",
+    "timestamp": "2026-11-17T21:30:41.698993+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex07_epilogue/ex07_epilogue.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex07_epilogue/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1370,
+    "example": "ex03_setmaxnreg.cu",
+    "sha256": "c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292",
+    "timestamp": "2026-11-17T21:34:53.940559+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/08-kernel-design-part-1/ex03_setmaxnreg/ex03_setmaxnreg.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/08-kernel-design-part-1/ex03_setmaxnreg/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/06-wgmma-part-1.md",
+    "line": 1491,
+    "example": "ex01_wgmma_basic.cu",
+    "sha256": "282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04",
+    "timestamp": "2026-11-17T21:38:12.120542+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/06-wgmma-part-1/ex01_wgmma_basic/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/07-wgmma-part-2.md",
+    "line": 1611,
+    "example": "ex01_wgmma_pipeline.cu",
+    "sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790",
+    "timestamp": "2026-11-17T21:38:15.857900+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/07-wgmma-part-2/ex01_wgmma_pipeline/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 2105,
+    "example": "ex08_comprehensive.cu",
+    "sha256": "7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964",
+    "timestamp": "2026-11-17T21:40:17.045545+00:00",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu",
+      "-o",
+      "/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/09-kernel-design-part-2/ex08_comprehensive/example"
+    ],
+    "compile_exit": 0,
+    "run_exit": 0
+  }
+]

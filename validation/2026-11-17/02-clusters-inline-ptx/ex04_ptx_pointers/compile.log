@@ -1,0 +1,12 @@
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu(86): warning #550-D: variable "old" was set but never used
+      uint32_t old;
+               ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu(86): warning #550-D: variable "old" was set but never used
+      uint32_t old;
+               ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+

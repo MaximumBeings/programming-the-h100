@@ -1,0 +1,16 @@
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu: In function ‘int main()’:
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu:207:8: warning: format ‘%llu’ expects argument of type ‘long long unsigned int’, but argument 2 has type ‘cuuint64_t’ {aka ‘long unsigned int’} [-Wformat=]
+  207 |     printf("  globalDim:    {%llu, %llu}\n", global_dim[0], global_dim[1]);
+      |        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~
+      |                                                      |
+      |                                                      cuuint64_t {aka long unsigned int}
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu:207:8: warning: format ‘%llu’ expects argument of type ‘long long unsigned int’, but argument 3 has type ‘cuuint64_t’ {aka ‘long unsigned int’} [-Wformat=]
+  207 |     printf("  globalDim:    {%llu, %llu}\n", global_dim[0], global_dim[1]);
+      |        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                 ~~~~~~~~~~~~~
+      |                                                                     |
+      |                                                                     cuuint64_t {aka long unsigned int}
+/lambda/nfs/H100-Testing/programming-the-h100/validation/2026-11-17/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu:208:8: warning: format ‘%llu’ expects argument of type ‘long long unsigned int’, but argument 2 has type ‘cuuint64_t’ {aka ‘long unsigned int’} [-Wformat=]
+  208 |     printf("  globalStride: {%llu} bytes\n", global_stride[0]);
+      |        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~
+      |                                                         |
+      |                                                         cuuint64_t {aka long unsigned int}
