@@ -6,12 +6,14 @@
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
 
-> **Reference implementation — not executed during authoring.** Unlike Chapters
-> 1–11, the code in this chapter has not been compiled and run on Hopper
-> hardware. It is written to be correct and to be read, and the structure follows
-> the published FlashAttention-3 design, but treat it as a annotated blueprint
-> rather than a tested artifact.
-> **Target:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
+> **Execution coverage — November 17, 2026.** The executable online-softmax
+> numerical reference was run on an H100 PCIe and passed all 12 cases against
+> PyTorch's math SDPA backend; its command and captured output appear in §10.
+> The CUDA listings labeled **REFERENCE** are incomplete kernel skeletons with
+> placeholder helpers. Those listings were not compiled or executed as FA3
+> kernels, and the paper's performance numbers were not reproduced by this run.
+> **Kernel target:** Hopper `sm_90a`; the skeletons require a complete
+> implementation and launch harness before they can be built.
 > **Canonical source:** Shah, Bikshandi, Zhang, Thakkar, Ramani, Dao —
 > *FlashAttention-3: Fast and Accurate Attention with Asynchrony and
 > Low-precision*, NeurIPS 2024 ([arXiv:2407.08608](https://arxiv.org/abs/2407.08608)).
