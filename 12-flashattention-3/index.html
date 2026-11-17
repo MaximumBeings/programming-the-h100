@@ -2424,12 +2424,14 @@
 <p><strong>Validation — November 17, 2026.</strong> 12 online-softmax numerical reference cases passed on CUDA; the FA3 scheduling listings remain explicitly labeled skeletons.
 <strong>Execution system:</strong> 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; <code>sm_90a</code>, C++17, <code>-O2</code>.
 <a href="../validation/2026-11-17/system-information.txt">Full system information</a> · <a href="../validation/2026-11-17/results.json">CUDA result manifest</a>. Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.</p>
-<p><strong>Reference implementation — not executed during authoring.</strong> Unlike Chapters
-1–11, the code in this chapter has not been compiled and run on Hopper
-hardware. It is written to be correct and to be read, and the structure follows
-the published FlashAttention-3 design, but treat it as a annotated blueprint
-rather than a tested artifact.
-<strong>Target:</strong> <code>nvcc -std=c++17 -arch=sm_90a -O2 &lt;file&gt;.cu -o &lt;out&gt;</code>
+<p><strong>Execution coverage — November 17, 2026.</strong> The executable online-softmax
+numerical reference was run on an H100 PCIe and passed all 12 cases against
+PyTorch's math SDPA backend; its command and captured output appear in §10.
+The CUDA listings labeled <strong>REFERENCE</strong> are incomplete kernel skeletons with
+placeholder helpers. Those listings were not compiled or executed as FA3
+kernels, and the paper's performance numbers were not reproduced by this run.
+<strong>Kernel target:</strong> Hopper <code>sm_90a</code>; the skeletons require a complete
+implementation and launch harness before they can be built.
 <strong>Canonical source:</strong> Shah, Bikshandi, Zhang, Thakkar, Ramani, Dao —
 <em>FlashAttention-3: Fast and Accurate Attention with Asynchrony and
 Low-precision</em>, NeurIPS 2024 (<a href="https://arxiv.org/abs/2407.08608">arXiv:2407.08608</a>).</p>
