@@ -24,6 +24,10 @@ read line by line.
 
 ## How to read this
 
+[![Book reading map: hardware and PTX lead to safe asynchronous data movement and Tensor Core computation, then kernel design, multi-GPU training, attention and profiling.](images/book/overview.svg)](images/book/overview.svg)
+
+*The whole book in one view. Read downward to build the dependencies; return to the relevant layer when profiling exposes a bottleneck.*
+
 **CUDA prerequisites:** Be comfortable with thread/block indexing, launch dimensions, shared-memory lifetime, block synchronisation and CUDA error checking. If these are new, first work through [NVIDIA’s CUDA programming introduction](https://docs.nvidia.com/cuda/cuda-programming-guide/index.html), then follow this book’s [first verified run](getting-started.md#5-compile-and-execute-your-first-verified-program).
 
 The chapters build on each other. Chapter 1 is pure architecture — no code,
@@ -138,7 +142,7 @@ have a slow kernel in front of you right now, start at Chapter 13.
     **[6. WGMMA — Warp Group Matrix Multiply-Accumulate](06-wgmma-part-1.md)**
 
     The shift from warp to warp group, why `wgmma.mma_async` is non-blocking,
-    the fence → load → compute → collect pipeline, every qualifier, operand
+    the load → fence → compute → collect pipeline, every qualifier, operand
     location rules, `ldmatrix` and swizzle addressing, the 64-bit WGMMA
     descriptor field by field, and all supported tile shapes.
 

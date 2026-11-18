@@ -634,9 +634,14 @@ stmatrix Register Source — The Striped Layout
   Serialization for a 64×N output:
     Each thread owns N/2 result elements: N/2 scalar registers for FP32,
     or N/4 packed 32-bit registers for FP16 accumulators.
-    Each warp stores its 16×N slice in N/16 stmatrix.x4.b16 calls.
-    Each call consumes four packed registers per lane and writes 16×16 values.
+    For N divisible by 16, each warp can store its 16×N slice in
+    N/16 stmatrix.x4.b16 calls, with matching fragment selection.
+    Each x4 call consumes four packed registers per lane and writes four
+    8×8 matrices, arranged here as 16×16 values.
     For N=128: eight calls per warp; for N=256: sixteen calls per warp.
+    N can also be 8 modulo 16: use a supported smaller composition
+    (for example x2 for a 16×8 remainder) or ordinary stores; N/16
+    is not an integral x4-only call count for those shapes.
     Source register selection and destination addresses must agree with
     the chosen WGMMA fragment layout and shared-memory layout.
 

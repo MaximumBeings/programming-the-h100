@@ -1548,179 +1548,85 @@ Two Instructions, One Barrier
 
 ## 15 — cp.async.bulk Groups — Commit and Wait
 
-A second, lighter-weight completion mechanism, and an alternative to `mbarrier`
-for the cases that don't need its precision.
-
-The model is a queue: you issue some copies, `commit_group` draws a line under
-them (§15.2), and `wait_group<N>` waits until all but the newest N batches have
-landed (§15.3). That "all but N" phrasing is what makes it useful — it's how you
-express "keep two loads in flight at all times" in a single instruction.
-
-§15.4 covers the `.read` variant, which waits for a weaker condition — the
-source has been read, not the destination written — and is precisely what you
-need for the WAR hazards of §13.
+Bulk async groups track the issuing thread's **shared-to-global stores**. They
+are not interchangeable with the transaction-counted `mbarrier` completion used
+by Hopper global-to-shared TMA loads. Choose the completion mechanism supported
+by the instruction direction, then choose the wait condition your protocol needs.
+See the [PTX bulk-copy and completion contracts](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk).
 
 ### 15.1 Grouping Async Copies for Pipeline Control
 
-When you issue multiple `cp.async.bulk` operations, you can group them into batches using commit/wait. This allows you to express "wait for the N most recently committed groups to complete" rather than waiting for every individual copy.
+Each issuing thread has its own sequence of bulk async groups. Committing closes
+a batch; `wait_group N` waits for all except at most the N newest committed
+groups. Group numbers below are explanatory labels, not programmer-visible IDs.
 
+```text
+Store-side conceptual sequence (one elected issuing thread):
+  store tile A from shared to global;   // bulk_group completion
+  store tile B from shared to global;
+  cp.async.bulk.commit_group;           // G0 contains A and B
+
+  store tile C from shared to global;
+  cp.async.bulk.commit_group;           // G1 contains C
+
+  cp.async.bulk.wait_group 1;
+  // G0 is complete; G1 may still be pending.
+  // This does not describe TMA loads into shared memory.
 ```
-cp.async.bulk Groups — The Mental Model
-══════════════════════════════════════════════════════════════════════
 
-  Without groups (coarse control):
-    cp.async.bulk [mbar], tile_A;
-    cp.async.bulk [mbar], tile_B;
-    cp.async.bulk [mbar], tile_C;
-    // All three share one mbarrier → must wait for ALL before using ANY
-
-  With groups (fine-grained control):
-    cp.async.bulk bulk_group tile_A;   // uncommitted, in "current group"
-    cp.async.bulk bulk_group tile_B;   // also in "current group"
-    cp.async.bulk.commit_group;        // → these two form Group 0
-
-    cp.async.bulk bulk_group tile_C;   // in "current group"
-    cp.async.bulk bulk_group tile_D;   // also in "current group"
-    cp.async.bulk.commit_group;        // → these two form Group 1
-
-    // Now:
-    cp.async.bulk.wait_group 1;        // wait until AT MOST 1 group pending
-    // → Group 0 (tile_A, tile_B) is guaranteed complete
-    // → Group 1 (tile_C, tile_D) may still be in flight
-    // → Can now safely use tile_A and tile_B
-
-  ─── Why This Enables Software Pipelining ────────────────────────
-
-  Iteration K:
-    commit_group;         // commits copies for tile K → Group 0
-  Iteration K+1:
-    commit_group;         // commits copies for tile K+1 → Group 1
-  Iteration K+2:
-    commit_group;         // commits copies for tile K+2 → Group 2
-    wait_group<1>;        // wait until at most 1 group pending
-                          // → Groups 0 AND 1 are complete
-                          // → Group 2 may still be in flight
-    use tile K data;      // Group 0 is definitely done
-```
+Before an asynchronous store reads data produced through the generic proxy,
+the producing threads must publish their shared-memory writes with the required
+proxy fence and thread synchronization. Completion of one thread's group does
+not by itself notify other threads that they may reuse a buffer.
 
 ### 15.2 cp.async.bulk.commit_group
 
-The instruction that draws a line under the copies issued so far and turns them
-into one countable batch.
-
-```
-cp.async.bulk.commit_group — Batching Copies
-══════════════════════════════════════════════════════════════════════
-
-  PTX:
-    cp.async.bulk.commit_group;
-
-  What it does:
-  ├── Takes all currently UNCOMMITTED cp.async.bulk operations and
-  │   groups them into a single named batch (a "group")
-  ├── Any cp.async.bulk issued AFTER this belong to the NEXT group
-  ├── Groups are numbered implicitly from 0 (oldest) to N (newest)
-  └── The group number is an implicit internal counter
-
-  Important:
-  ├── If no cp.async.bulk operations have been issued since the last
-  │   commit_group, this creates an empty group (harmless)
-  ├── All operations in a committed group are tracked together
-  └── Groups complete in FIFO order (group 0 before group 1, etc.)
-
-  Analogy:
-    Imagine dropping items onto a conveyor belt, then pressing
-    a "seal this batch" button. Items before the seal = one shipment.
-    Items after the seal = next shipment. commit_group is the seal.
-```
+`cp.async.bulk.commit_group;` batches the executing thread's earlier uncommitted
+operations that use `.bulk_group` completion. An empty commit creates an empty
+group. Copies that use `.mbarrier::complete_tx::bytes` do not join these groups.
+Do not infer a FIFO physical-completion guarantee or ordering among operations
+in a group; waits provide the documented completion condition.
 
 ### 15.3 cp.async.bulk.wait_group — Waiting for N Groups
 
-The counterpart. Read the `N` carefully: it is how many groups you are willing
-to leave *outstanding*, not how many to wait for — which is backwards from most
-people's first guess.
+```text
+Committed groups: G0, G1, G2, G3 (oldest to newest)
 
+cp.async.bulk.wait_group 0;  // G0–G3 complete
+cp.async.bulk.wait_group 1;  // G0–G2 complete; G3 may be pending
+cp.async.bulk.wait_group 2;  // G0–G1 complete; G2/G3 may be pending
+cp.async.bulk.wait_group 3;  // G0 complete; G1–G3 may be pending
 ```
-cp.async.bulk.wait_group<N> — Selective Wait
-══════════════════════════════════════════════════════════════════════
 
-  PTX:
-    cp.async.bulk.wait_group N;
-
-  Semantics:
-    "Wait until at most N committed groups are still pending."
-    Equivalently: wait until all groups EXCEPT the N most recent are done.
-
-  Parameter N:
-  ─────────────────────────────────────────────────────────────────
-  wait_group<0>  → wait for ALL committed groups to complete
-  wait_group<1>  → wait until only the 1 most recent group is pending
-                   (the 2nd-most-recent and older are all complete)
-  wait_group<2>  → wait until only the 2 most recent groups are pending
-
-  ─── Manual Worked Example ───────────────────────────────────────
-
-  Groups committed so far: [G0, G1, G2, G3]  (G0 oldest, G3 newest)
-
-  wait_group<0> → stalls until G0, G1, G2, G3 all complete
-  wait_group<1> → stalls until G0, G2, G1 complete; G3 may still run
-  wait_group<2> → stalls until G0, G1 complete; G2, G3 may still run
-  wait_group<3> → stalls until G0 complete; G1, G2, G3 may still run
-
-  ─── Pipeline Depth and wait_group ──────────────────────────────
-
-  For a 2-stage (double-buffered) pipeline:
-    Load tile for K+1 into buffer B1  → commit → Group 0
-    Compute on tile K from buffer B0
-    wait_group<0>  → ensures tile K+1 (Group 0) is ready in B1
-    Swap buffers (B0 ↔ B1)
-    Load tile for K+2 into B1         → commit → Group 1
-    Compute on tile K+1 from B0
-    wait_group<0>  → ensures tile K+2 (Group 1) is ready
-    ...
-
-  For a 3-stage (triple-buffered) pipeline:
-    Load K+1 → Group 0
-    Load K+2 → Group 1
-    Compute K
-    wait_group<1>   → Group 0 (K+1) is ready; Group 1 (K+2) may be in flight
-    Load K+3 → Group 2
-    Compute K+1
-    wait_group<1>   → Group 1 (K+2) is ready; Group 2 (K+3) may be in flight
-    ...
-
-  ─── The Acquire Fence ───────────────────────────────────────────
-
-  wait_group also enforces an implicit ACQUIRE FENCE on completion.
-  After it returns, all data written by the completed groups is
-  visible to the Generic Proxy (thread). You can safely read the data
-  without an additional fence.
-```
+A full wait covers the relevant source reads, destination writes and visibility
+to the executing thread. Publish readiness to other threads using an appropriate
+synchronization protocol. A wait on a store group is not a global-to-shared load
+completion barrier and does not provide unrelated memory-ordering guarantees.
 
 ### 15.4 cp.async.bulk.wait_group.read — For WAR Hazard Prevention
 
-A weaker and therefore faster wait. It tells you the copy has finished *reading*
-its source, which is all you need before overwriting that source — you don't
-have to wait for the destination write to land.
+The `.read` form waits only for source reads (and tensor-map reads where
+applicable), rather than destination-write completion. This weaker condition is
+often exactly what a store pipeline needs before reusing its shared-memory
+source buffer.
 
+```text
+All producer threads:
+  write the output tile into shared memory;
+  fence.proxy.async.shared::cta;
+  CTA rendezvous;
+One elected thread:
+  issue shared-to-global store with .bulk_group completion;
+  cp.async.bulk.commit_group;
+  cp.async.bulk.wait_group.read 0;
+All participating threads:
+  CTA rendezvous after the elected thread's wait;
+  // The shared source may now be overwritten.
 ```
-cp.async.bulk.wait_group.read — The Read Variant
-══════════════════════════════════════════════════════════════════════
 
-  PTX:
-    cp.async.bulk.wait_group.read N;
-
-  Purpose: Same as wait_group, BUT also ensures that any pending
-  reads issued via cp.async.bulk (for read operations) have completed.
-
-  When to use:
-  ├── When you are using cp.async.bulk for READ operations
-  │   (rare: most cp.async.bulk are writes to SMEM)
-  ├── When you need to guarantee that the source memory has been
-  │   fully read before the producer overwrites it (WAR hazard)
-  └── In practice: standard wait_group suffices for most use cases.
-      Use wait_group.read only if your profiling shows ordering issues.
-```
+Use a full wait when the consumer needs destination completion; use `.read`
+when source reuse is the required condition. This is a correctness choice,
+not a response to profiling or an additional fence for an ordering failure.
 
 ---
 

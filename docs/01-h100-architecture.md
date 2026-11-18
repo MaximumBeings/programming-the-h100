@@ -107,7 +107,7 @@ Key Innovation:      Fully asynchronous execution via TMA
 
 ### 1.2 The Generational Leap
 
-The single most important thing to understand about the H100 is that it represents a **paradigm shift from synchronous to asynchronous execution**. Every previous GPU architecture required the SM's threads to babysit data movement — issuing loads, waiting for them, then computing. The H100 introduces hardware that does the data movement *in the background* while the SM computes on previously loaded data.
+Hopper expands the asynchronous programming model with **TMA bulk tensor transfers and warpgroup matrix arithmetic**. Ampere already supported asynchronous global-to-shared copies with `cp.async`; overlap did not begin with Hopper. TMA lets an elected thread describe a multidimensional transfer while other threads compute on a previously completed tile. See the [Ampere asynchronous-copy contract](https://docs.nvidia.com/cuda/archive/12.8.0/ampere-tuning-guide/index.html#asynchronous-data-copy-from-global-memory-to-shared-memory).
 
 [![Serial work and pipelined overlap](images/ch01/05-sync-vs-async-model.svg)](images/ch01/05-sync-vs-async-model.svg)
 
@@ -121,21 +121,18 @@ This is why pipelined kernels (GEMMs, attention) can approach the theoretical ro
 
 Section 1 claimed the H100 is asynchronous. This section makes that concrete.
 
-The idea in one sentence: on older GPUs, threads had to fetch their own data and
-then sit and wait for it; on the H100 a dedicated piece of hardware — the
-**Tensor Memory Accelerator**, or TMA — does the fetching while those threads
-keep computing.
+The idea in one sentence: **Tensor Memory Accelerator (TMA)** requests describe bulk tensor movement, reducing per-thread address generation and allowing computation to overlap a transfer. Earlier GPUs already offered overlap mechanisms, including Ampere asynchronous copies; Hopper adds tensor-aware bulk transfers and their completion protocols.
 
 We build up to it in four steps: what "asynchronous" means for a copy (§2.1),
-what the TMA actually is (§2.2), a worked example where one TMA instruction
-replaces roughly twenty thousand (§2.3), and the price you pay for all this —
+what the TMA actually is (§2.2), a worked comparison of per-thread copying
+with one tensor-transfer request (§2.3), and the price you pay for all this —
 bookkeeping (§2.4).
 
 ### 2.1 Synchronous vs Asynchronous Copies
 
-A **synchronous copy** blocks the issuing thread (or warp) until the data arrives. The thread cannot execute any other instruction until the copy completes. Simple mental model: after the instruction, the data is ready.
+A **synchronous copy abstraction** requires completion before its consumer proceeds. An ordinary global load is not a promise that every subsequent independent instruction stalls: dependency tracking and scheduling can overlap independent work. The distinction here is explicit asynchronous transfer/completion control, rather than a claim that older load instructions made overlap impossible.
 
-An **asynchronous copy** only *starts* the transfer. The issuing thread can immediately continue doing other work — computing on previously loaded data, managing bookkeeping, etc. The thread later checks a barrier or fence to know when the copy has finished.
+An **asynchronous copy** only *starts* the transfer. The issuing thread can immediately continue doing other work — computing on previously loaded data, managing bookkeeping, etc. The thread later uses the operation’s supported completion wait to know when the copy has finished; an ordering fence alone is not a completion wait.
 
 [![A warp can work while data moves](images/ch01/06-warp-timeline.svg)](images/ch01/06-warp-timeline.svg)
 
@@ -811,7 +808,7 @@ FP64 Units
 
   Used for:
     ├── High-precision scientific simulations
-    ├── Financial computations requiring exact precision
+    ├── Numerical calculations requiring greater floating-point precision
     └── Numerical methods where FP32 isn't sufficient
 
   For comparison:
@@ -822,40 +819,26 @@ FP64 Units
 
 ### 12.4 Special Function Units (SFUs)
 
-When your code calls `exp()` or `sqrt()`, it does not run a software routine.
-These units approximate the answer in hardware, trading a little accuracy for a
-great deal of speed.
+Special-function hardware accelerates selected elementary operations, but a
+CUDA source-level function call is not necessarily one SFU instruction. The
+compiler may combine approximate hardware operations with range reduction,
+correction and special-case handling. Double-precision functions, standard
+single-precision functions and fast intrinsics have different implementations
+and accuracy contracts; compiler flags can also change the lowering.
 
+```text
+Source operation             What to verify
+expf(x), sinf(x), sqrtf(x)    The documented function error bound and compiled code
+__expf(x), __sinf(x)          Fast-intrinsic accuracy/range contract
+exp(x) on double             The double-precision implementation, not an FP32 SFU model
+--use_fast_math               Which functions and floating-point modes it changes
 ```
-Special Function Units (SFUs)
-══════════════════════════════════════════════════════════
 
-  Per SM:     16 (4 per quadrant)
-  Throughput: 1 instruction per cycle per SFU → 16 ops/cycle/SM
-
-  Functions handled:
-    ├── sin(x), cos(x)           (trigonometric)
-    ├── exp(x), exp2(x)          (exponential)
-    ├── log(x), log2(x)          (logarithmic)
-    ├── sqrt(x), rsqrt(x)        (roots)
-    ├── rcp(x)                    (reciprocal: 1/x)
-    └── Other transcendental functions
-
-  Implementation:
-    ├── Polynomial approximations (Chebyshev or minimax)
-    ├── Lookup tables + interpolation
-    └── Sacrifice some precision for massive throughput
-
-  Precision: ~22 bits of mantissa accuracy (vs 23 for full FP32).
-  For most ML workloads, this is more than sufficient.
-
-  WARNING: If ALL 32 threads in a warp call an SFU function,
-  and there are only 4 SFUs per quadrant, the operation takes:
-    32 threads / 4 SFUs = 8 cycles per warp (for one quadrant)
-
-  This is still much faster than computing sin() in software
-  on the CUDA cores, which would take ~20+ instructions.
-```
+Do not assume a uniform "22-bit mantissa" accuracy or derive instruction latency
+from a physical unit count. Throughput, dependent latency and whole-function
+execution time are different measurements. Check the [CUDA mathematical-function
+accuracy tables](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#mathematical-functions-appendix),
+inspect the generated code, and measure the actual input distribution and math mode.
 
 ### 12.5 Load/Store Units (LSUs)
 
@@ -1201,67 +1184,29 @@ than the unrolling saved.
 
 ### 15.1 L0 Instruction Cache
 
-A very small buffer, private to each quadrant, whose entire job is to hold your
-inner loop so the scheduler never waits on an instruction fetch.
+Hopper's SM diagram shows an L0 instruction cache for each SM partition, behind
+a shared L1 instruction cache. A compact hot loop can benefit from instruction
+reuse, but neither every first iteration nor every subsequent fetch is guaranteed
+to hit a particular level. Data-cache sizes must not be reused as instruction-cache
+capacities, and an instruction-cache hit is not an instruction-latency guarantee.
 
-```
-L0 Instruction Cache — Per-Quadrant Micro-Buffer
-══════════════════════════════════════════════════════════
-
-  Purpose:    Feed the warp scheduler with instructions at wire speed
-  Scope:      Private to each SMSP (quadrant 0 cannot use quadrant 1's L0)
-  Size:       Very small (a few tight loops fit, not much more)
-  Hit rate:   Extremely high for inner loops (GEMM, convolution)
-
-  Without L0:
-    Every cycle, the scheduler would have to fetch from L1.
-    L1 is shared across all 4 quadrants → contention.
-    L1 has higher latency → pipeline bubbles.
-
-  With L0:
-    Tight loops are captured in L0 after first execution.
-    Subsequent iterations: instruction fetch = 1 cycle.
-    The scheduler issues at full speed without waiting.
-
-  What BREAKS the L0:
-    ├── Aggressive loop unrolling (code doesn't fit in L0)
-    ├── Heavy function inlining (expanded code too large)
-    ├── Very branchy code (cache thrashing)
-    └── Solution: balance unrolling vs. L0 cache pressure
-```
+The practical issue is code footprint. Unrolling and inlining can remove control
+or call overhead while expanding the instruction working set. Compare variants
+with the same workload and inspect instruction-fetch stalls instead of assuming
+that maximum unrolling is best.
 
 ### 15.2 L1 Instruction Cache
 
-The larger backstop behind L0, shared by all four quadrants.
+The shared instruction-cache level backs the partition-local instruction caches.
+Capacity, associativity, replacement and timing details require an appropriate
+published measurement or specification; this guide does not assign an unsupported
+fixed capacity or latency to them.
 
-```
-L1 Instruction Cache — Shared Across SM
-══════════════════════════════════════════════════════════
-
-  Size:     128 KB per SM
-  Purpose:  Buffer SASS instructions for all 4 quadrants
-
-  Without L1 I-Cache:
-    Every instruction would come from L2 cache or HBM3.
-    L2 access: ~30-50 cycles
-    HBM3 access: ~300-500 cycles
-    The pipeline would stall constantly.
-
-  With L1 I-Cache:
-    Kernel code is loaded once into L1.
-    All 4 quadrants fetch from the same L1.
-    Common loops served at ~5-10 cycle latency.
-
-  The L1 I-Cache also handles:
-    ├── Branch target buffering (jumps, loops)
-    ├── Function call/return target caching
-    └── Prefetching sequential instruction streams
-
-  GEMM inner loop example:
-    The inner loop of a tiled GEMM is typically ~50-200 instructions.
-    This easily fits in the L1 I-Cache (128 KB).
-    After the first iteration, all instruction fetches hit L1.
-```
+NVIDIA's [H100 instruction-cache case study](https://developer.nvidia.com/blog/improving-gpu-performance-by-reducing-instruction-cache-misses-2/)
+shows how larger instruction working sets can degrade a real workload and how
+selective unrolling can improve it. Use the profiler to compare instruction-fetch
+stall evidence with register pressure, occupancy and executed instruction count.
+A reduction in code size is useful only if the complete kernel gets faster.
 
 ---
 
@@ -1436,7 +1381,7 @@ L2 Cache             50 MB       ~12 TB/s       128B / 32B
 Shared Mem (max)    228 KB/SM    ~0.25 TB/s/SM     32 banks × 4B
 L1 Data Cache       28-224 KB    (part of shared) 128B / 32B
 Register File       256 KB/SM    128 R/W/cycle   32-bit slots
-L1 I-Cache          128 KB/SM    —               —
+L1 I-Cache          Shared/SM    Not specified here; profile instruction-fetch stalls
 L0 I-Cache          tiny/SMSP    1 insn/cycle    —
 ```
 

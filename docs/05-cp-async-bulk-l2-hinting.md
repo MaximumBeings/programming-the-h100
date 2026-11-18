@@ -655,7 +655,7 @@ mbarrier::complete_tx::bytes — How It Works
 
 ### 7.2 bulk_group — Lightweight Batch Tracking
 
-`bulk_group` is a simpler, lighter-weight alternative to mbarrier for tracking groups of async copies. Instead of per-byte tracking, you commit a batch of copies into a named group and then wait for entire groups to complete.
+`bulk_group` tracks the supported shared-to-global bulk stores. It is not an alternative completion choice for global-to-shared TMA loads. The issuing thread commits its stores into groups and waits for the source-read or full-completion condition required by its protocol.
 
 ```
 bulk_group — How It Works
@@ -663,12 +663,15 @@ bulk_group — How It Works
 
   Three-step pattern:
   ─────────────────────────────────────────────────────────────────
-  Step 1: Issue copies tagged with bulk_group
-    cp.async.bulk.tensor.2d.shared::cta.global.bulk_group
-        [smem_A], [desc], {col0, row0};   // uncommitted copy A
+  Step 1: Publish generic shared-memory writes, then issue stores.
+    // All producing threads fence and rendezvous before the elected issuer.
+    fence.proxy.async.shared::cta;
+    // CTA synchronization here; the following PTX runs in one elected thread.
+    cp.async.bulk.tensor.2d.global.shared::cta.bulk_group
+        [desc, {col0, row0}], [smem_A];   // uncommitted store A
 
-    cp.async.bulk.tensor.2d.shared::cta.global.bulk_group
-        [smem_B], [desc], {col1, row1};   // uncommitted copy B
+    cp.async.bulk.tensor.2d.global.shared::cta.bulk_group
+        [desc, {col1, row1}], [smem_B];   // uncommitted store B
 
   Step 2: Commit all pending copies into a group
     cp.async.bulk.commit_group;
@@ -1110,8 +1113,8 @@ ctaMask — How to Construct It
   Typically block with rank 0 (the "leader") is the producer:
 
   cg::cluster_group cluster = cg::this_cluster();
-  if (cluster.block_rank() == 0) {
-      // Only rank 0 issues the instruction for all blocks
+  if (cluster.block_rank() == 0 && threadIdx.x == 0) {
+      // One elected thread in rank 0 issues the instruction for all blocks
       asm volatile(
           "cp.async.bulk.tensor.2d.shared::cluster.global"
           ".mbarrier::complete_tx::bytes.multicast::cluster"

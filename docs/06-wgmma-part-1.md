@@ -22,7 +22,7 @@
     [Chapters 3–5](03-asynchronicity-mbarrier.md) explain the data’s lifetime and layout. The tested program below checks a complete nonuniform BF16 tile.
 <!-- learning:end -->
 
-**What this covers:** Everything from Lesson 6 — the four key innovations in Hopper's tensor core model, the paradigm shift from warp to warp group as the unit of execution, how wgmma.mma_async works and why it is non-blocking, the WGMMA pipeline (fence → load → compute → collect), the full instruction syntax and all qualifier meanings (.sync, .aligned, scale_d, imm-scale, imm-trans), operand location rules (A in registers vs SMEM, B always in SMEM, D always in registers), ldmatrix for loading A tiles (address phase, register phase, swizzle addressing, x1/x2/x4 vectorization), the 64-bit WGMMA descriptor (base address, LBO, SBO, matrix base offset, swizzle mode bits), all supported tile shapes for BF16/FP16/TF32/FP8/INT8, register layout and output accumulator structure, and stmatrix for writing results back. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
+**What this covers:** Everything from Lesson 6 — the four key innovations in Hopper's tensor core model, the paradigm shift from warp to warp group as the unit of execution, how wgmma.mma_async works and why it is non-blocking, the WGMMA pipeline (load → fence → compute → collect), the full instruction syntax and all qualifier meanings (.sync, .aligned, scale_d, imm-scale, imm-trans), operand location rules (A in registers vs SMEM, B always in SMEM, D always in registers), ldmatrix for loading A tiles (address phase, register phase, swizzle addressing, x1/x2/x4 vectorization), the 64-bit WGMMA descriptor (base address, LBO, SBO, matrix base offset, swizzle mode bits), all supported tile shapes for BF16/FP16/TF32/FP8/INT8, register layout and output accumulator structure, and stmatrix for writing results back. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.
 
 **How to read this chapter.** This is where the book stops moving data around
 and starts doing arithmetic with it. `wgmma` is the instruction that drives
@@ -154,9 +154,10 @@ The first and most disorienting of those four changes: the unit of execution
 gets bigger.
 
 For a decade the warp — 32 threads — was the atom of NVIDIA GPU execution. On
-Hopper, `wgmma` is issued by a **warp group**: four consecutive warps, 128
-threads, acting as a single instruction issuer. Not four cooperating warps —
-one instruction, issued once, on behalf of all of them.
+Hopper, `wgmma` is a **warpgroup collective**: four consecutive warps, 128
+threads, execute the same aligned instruction with consistent operands. This
+is an ISA participation rule, not a claim that the hardware fuses four schedulers
+or performs a single physical instruction issue for the entire group.
 
 This has practical consequences you'll feel immediately. Block sizes want to be
 multiples of 128. Divergence between the four warps is not merely slow, it is
@@ -165,7 +166,7 @@ which is what §8 is about.
 
 ### 2.1 What Is a Warp Group?
 
-A **warp group** is a set of 4 consecutive warps within a thread block that are fused together by the hardware for wgmma execution. A warp has 32 threads; a warp group has 4 × 32 = **128 threads**. The warp group is the new fundamental unit of tensor core computation on Hopper.
+A **warp group** is an aligned set of 4 consecutive warps within a thread block that collectively participate in WGMMA execution. A warp has 32 threads; a warp group has 4 × 32 = **128 threads**. The warp group is the new fundamental unit of tensor core computation on Hopper.
 
 This is a significant paradigm shift. For a decade, the warp (32 threads) was the unit of SIMT execution on NVIDIA GPUs. Every instruction — loads, math, branches — was issued per-warp. Hopper adds warp group as a higher-level concept specifically for tensor core operations.
 
@@ -189,7 +190,7 @@ Warp Group — Structure and Execution
   w_in_wg = warp & 3;                 // warp index within group (0..3)
 ```
 
-### 2.2 How the Warp Scheduler Fuses Warps
+### 2.2 How the Warps Participate
 
 A warpgroup is the logical collective of four consecutive warps required by WGMMA. All participating threads must execute the same aligned instruction, with consistent descriptors. The PTX contract does not describe a physical "fusion" of four warp schedulers or guarantee that they arrive in one cycle. Divergent participation is undefined behavior, not a supported way to wait for lagging warps.
 
@@ -199,16 +200,13 @@ A warpgroup is the logical collective of four consecutive warps required by WGMM
 
 ## 3 — The WGMMA Pipeline
 
-Before any syntax, the shape. Every wgmma kernel ever written follows the same
-four stages: **fence → load → compute → collect**.
+Before any syntax, the dependencies. A useful first-kernel sequence is **load → fence → compute → collect**.
 
-Learn this sequence now, because the next four sections are each an expansion of
-one stage of it, and the ordering is not negotiable — the fence exists precisely
-to stop the compiler from rearranging what follows.
+Learn the dependencies in this sequence: stage and publish operands, order ordinary register accesses before WGMMA, issue arithmetic, then commit and wait before consuming its results. A register-ordering fence does not replace data readiness or operation completion.
 
 ### 3.1 The Four-Stage Pipeline
 
-Every wgmma-based kernel follows the same four-stage pipeline. Understanding this pipeline is the prerequisite for writing correct, high-performance GEMM kernels.
+This four-stage model separates operand readiness, register ordering, arithmetic issue and result completion. Optimized kernels may overlap or reorganize stages while preserving those dependencies.
 
 ```
 The WGMMA Pipeline — Four Stages
@@ -252,7 +250,7 @@ The WGMMA Pipeline — Four Stages
 
 ## 4 — wgmma.fence.sync.aligned — The Register Barrier
 
-Stage one of the pipeline, and the instruction most often misunderstood.
+The register-ordering stage of the pipeline, and an instruction often misunderstood.
 
 The name suggests a general-purpose memory fence. It is not. `wgmma.fence`
 orders **register** access — it tells the hardware that the accumulator
@@ -1037,11 +1035,16 @@ Matrix Base Offset and Swizzle Mode
   and the second tile starts mid-pattern.
 
   Computation:
-    // For the standard pattern anchored to the allocation boundary:
-    base_offset = (smem_addr / swizzle_bytes) % (swizzle_bytes / 16)
+    // WGMMA descriptor field: use the start address of the swizzle pattern.
+    // This is distinct from the tensor-copy swizzle-base calculation.
+    base_offset = (pattern_start_addr >> 7) & 7
 
-    For 128B swizzle, period = 1024B:
-    base_offset = (smem_addr % 1024) / 128
+    Zero-offset pattern alignment depends on the mode:
+      128B swizzle: 1024B boundary
+       64B swizzle:  512B boundary
+       32B swizzle:  256B boundary
+    Derive the field from the actual staged layout and PTX descriptor rules;
+    do not substitute a matrix pointer unless it is the pattern start.
 
   Swizzle Mode Bits (bits 62-63):
   ─────────────────────────────────────────────────────────────────
@@ -1290,7 +1293,7 @@ Setup: m64n64k16, BF16 inputs, FP32 accumulator.
   SMEM A tile: 64 rows × 16 cols BF16 = 2048 bytes.
   SMEM B tile: 16 rows × 64 cols BF16 = 2048 bytes.
 
-Descriptor for B (K-major, 128B swizzle):
+Separate descriptor-field illustration for B (K-major, 128B swizzle):
   smem_B base at, say, offset 0x0400 in SMEM.
   base_field = 0x0400 >> 4 = 0x040 = 64
   LBO for K-major 128B = 1 (hardware ignores for K-major 128B)
@@ -1299,10 +1302,12 @@ Descriptor for B (K-major, 128B swizzle):
   swizzle = 01 (128B)
 
   desc = (64) | (1 << 16) | (16 << 32) | (0 << 49) | (1LL << 62)
-       = 0x4001000000010040
+       = 0x4000001000010040
 
 Verify: A[2][3] × B[3][5] should contribute to D[2][5].
-After accumulation across K=16: D contains the correct dot products.
+After accumulation across K=16: D should contain the correct dot products.
+The complete tested program below instead stages an unswizzled core-matrix
+layout and sets swizzle=0; do not combine its storage with this descriptor.
 ```
 
 ```

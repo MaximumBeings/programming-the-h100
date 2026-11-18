@@ -1,12 +1,12 @@
 # Final independent technical review — 2026-11-18
 
-This review inspected actual instructions, reference arithmetic and explanatory models across all 13 chapters. It did not execute GPU code. Existing run records remain evidence for their captured source revisions; the four source corrections below require new GPU evidence.
+This review inspected instructions, reference arithmetic and explanatory models across all 13 chapters. The independent offline review was followed by the November 18 two-H100 rerun: all four barrier corrections passed numerical checks and zero-error memcheck. All 27 current programs have verified workload records across the recorded H100 and eight-A100 hosts. The later adversarial exposition review below changed no complete program or captured evidence.
 
 ## P1 — bulk-async barrier initialization needed proxy publication
 
 The complete programs `ex01_mbarrier_basic.cu` and `ex02_war_prevention.cu` in Chapter 3, `ex02_tma_3d.cu` in Chapter 4, and `ex01_bulk_raw.cu` in Chapter 5 initialized raw shared barriers and synchronized threads, but omitted publication of initialization to the bulk-async proxy. The initializing thread's generic-proxy write must be made visible before the async operation uses that barrier. A successful observed run does not establish this memory-ordering contract.
 
-The current sources now issue `fence.proxy.async.shared::cta` before the initialization `__syncthreads()`. The exact archived/current SHA-256 pairs and pending states are pinned in [pending_gpu_revalidation.json](../tools/pending_gpu_revalidation.json). Only those four complete sources changed. The adjacent book notes identify the revision and pending GPU evidence. Raw archives were preserved. Teaching snippets in Chapters 3, 5 and 9 now include the same publication requirement.
+The current sources now issue `fence.proxy.async.shared::cta` before the initialization `__syncthreads()`. The exact archived/current SHA-256 pairs and verified states are pinned in [gpu_revalidation.json](../tools/gpu_revalidation.json). Only those four complete sources changed in the original barrier correction. The adjacent book records identify the corrected revisions and their successful November 18 GPU evidence. Raw archives were preserved. Teaching snippets in Chapters 3, 5 and 9 now include the same publication requirement.
 
 Primary source: [CUDA 12.8 Programming Guide, TMA barrier initialization](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#asynchronous-data-copies-using-the-tensor-memory-accelerator-tma).
 
@@ -33,7 +33,7 @@ Chapter 13's stale 63→4095 attention-intensity assertion was aligned with Chap
 
 - Chapter 1: checked dense throughput arithmetic and directional versus aggregate bandwidth units.
 - Chapter 2: reviewed cluster/co-residency claims and peer-address lifetime versus synchronization.
-- Chapters 3–5: reviewed proxy directions, completed-copy visibility, phase reuse, raw-copy alignment and descriptor edge handling. The publication defect above is the outstanding source revalidation work.
+- Chapters 3–5: reviewed proxy directions, completed-copy visibility, phase reuse, raw-copy alignment and descriptor edge handling. The publication defect above is covered by the successful November 18 source revalidation.
 - Chapters 6–7: reviewed WGMMA fence versus completion, disjoint-register requirements for partial waits, fragment storage, swizzle assumptions and sparse metadata selectors.
 - Chapters 8–9: reviewed arithmetic-intensity models, register redistribution budget and generic-proxy producer/consumer handshakes.
 - Chapter 10: inspected actual first/middle/final split publication and merge paths; distinguished the single-thread teaching schedule from a general GEMM scheduler.
@@ -41,4 +41,19 @@ Chapter 13's stale 63→4095 attention-intensity assertion was aligned with Chap
 - Chapter 12: checked the online-softmax recurrence and the 8192×128 traffic/FLOP models. Requested K/V traffic differs from measured HBM traffic because L2 reuse depends on schedule; ideal useful-I/O is not a once-per-input hardware guarantee.
 - Chapter 13: checked roofline arithmetic and the separation of illustrative diagnoses from captured profiles.
 
-These checks did not reveal another required CUDA algorithm change. They do not prove correctness for untested dimensions, precision regimes, schedules or architectures. New GPU verification is required for the four revised barrier programs before their current revisions can inherit PASS status.
+These checks did not reveal another required CUDA algorithm change. They do not prove correctness for untested dimensions, precision regimes, schedules or architectures. The four revised barrier programs now have their own successful GPU and memcheck records; earlier raw records were not relabeled as runs of the new revisions.
+
+
+## Final adversarial exposition pass — November 18
+
+Confirmed and corrected residual contradictions outside all complete tested source blocks:
+
+- Chapter 1: replaced the claim that asynchronous copying started with Hopper with the Ampere `cp.async` versus Hopper TMA distinction. Removed the incorrect claim that ordinary loads block all independent following work, and the stale twenty-thousand-instruction comparison.
+- Chapter 1: replaced universal SFU one-instruction/accuracy claims with function-specific lowering and error contracts; removed unsupported instruction-cache capacity and timing guarantees. FP64 offers greater precision, not exact arithmetic.
+- Chapter 3 §15: bulk groups now describe the supported shared-to-global store direction, not an interchangeable completion mechanism for TMA loads. Corrected newest-N wait semantics, source-read versus full completion, issuer-local tracking, and notification of other source-buffer producers.
+- Chapter 5 §7.2: replaced invalid global-to-shared `.bulk_group` teaching instructions with the supported shared-to-global tensor-store syntax and explicit proxy-publication prerequisites. The multicast illustration now elects one issuing thread, rather than issuing once per thread in the leader CTA.
+- Chapter 6: removed physical warp-fusion/one-issuer claims; aligned pipeline summaries with load → register fence → compute → completion. Corrected the worked descriptor hexadecimal arithmetic, separated it from the unswizzled complete program, and used PTX's pattern-start-based matrix-base-offset formula.
+- Chapter 7: scoped the `N/16` x4 epilogue-store count to N divisible by 16 and explained the smaller remainder composition needed for valid shapes such as N=8 or N=24.
+- Home page: aligned the WGMMA pipeline summary with the corrected chapter.
+
+Primary contracts: [Ampere asynchronous copies](https://docs.nvidia.com/cuda/archive/12.8.0/ampere-tuning-guide/index.html#asynchronous-data-copy-from-global-memory-to-shared-memory), [PTX bulk copy](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk), [WGMMA shared-memory descriptor](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-shared-memory-layout), [CUDA mathematical functions](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#mathematical-functions-appendix), [NVIDIA's H100 instruction-cache case study](https://developer.nvidia.com/blog/improving-gpu-performance-by-reducing-instruction-cache-misses-2/).
