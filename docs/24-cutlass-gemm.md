@@ -232,6 +232,10 @@ A successful `can_implement` checks supported arguments; it does not run the ker
 5. Call `run`, then check CUDA completion with `cudaDeviceSynchronize`.
 6. Copy D back and compare every output, including every batch.
 
+`can_implement` is a kernel-support check, not a general validator for application-owned memory. A success status does not prove that pointers remain live, allocations cover every stride-derived address, data belongs to the intended CUDA device, or overlapping operands obey the operation's aliasing contract. The harness establishes these conditions through its fixed shapes, separate allocations, selected device and synchronized lifetimes. An application wrapper must check its own memory contract before relying on the adapter's support result.
+
+**Allocation check:** a compact 128×128 FP32 D view needs `128×128=16384` elements, or 65536 bytes. Its last element begins at byte offset `(127×128+127)×4=65532` and occupies four bytes. A 16-byte-aligned pointer with only 4096 bytes remaining cannot back this view. Alignment and allocation coverage are different obligations, regardless of the adapter’s support status.
+
 The source includes the full code rather than relying on a library demo’s process exit status. In pinned upstream example 49, unsupported prerequisites and some printed failed cases can still be followed by process exit zero. If you run that example, read every result label and reject any failed/skipped configuration; an exit-only wrapper is insufficient.
 
 ## 7 — Why these reference cases are diagnostic

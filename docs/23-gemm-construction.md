@@ -18,6 +18,8 @@ This is a **SIMT shared-memory baseline**, not a Tensor Core kernel and not a co
 
 The full [tiled_gemm.cu](examples/advanced/tiled_gemm.cu) includes allocation, initialization, launch checks, an independent CPU oracle, input-preservation checks, padding and guards. Its mathematical reference does not call the GPU implementation’s indexing helpers.
 
+The captured harness uses separate allocations for A, B, C and D, with nonoverlapping batch regions within each allocation. This removes input/output aliasing from the contract. Overlapping D with A or B can overwrite a value another block still needs; a block barrier cannot order unrelated blocks. An in-place C/D variant must separately establish compatible layout and aliasing semantics and obtain its own validation; it is not demonstrated by the separate-buffer result. The integer indexing in this small lab is also bounded by its fixed cases, rather than a general interface for arbitrarily large dimensions.
+
 ## 2 — Hand-compute the operation first
 
 Consider

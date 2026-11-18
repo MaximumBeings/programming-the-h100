@@ -21,6 +21,12 @@ A copy kernel combines several mappings that are easy to confuse:
 
 The source and destination can have different leading dimensions. They must agree on which logical value is being copied. Merely giving them the same allocation size does not establish that agreement.
 
+The lab's source and destination have the **same logical shape `(M,N)`**, independent nonoverlapping allocations and sufficient storage for their own pitches and guards. Its single source-derived coordinate predicate protects both accesses only under that matching-domain contract. If a destination has a smaller logical extent, checking only the source shape is insufficient: define the intended copy region and validate both sides before issuing the operation. An allocated padding slot is not an extra logical destination.
+
+**Boundary check:** if you change the source to shape `(37,70)` and the destination to `(37,69)`, coordinate `(36,69)` passes the source tests `36<37 && 69<70` but fails the destination test `69<69`. Even if that address lands in allocated destination padding, it is not a valid logical store. The current lab avoids this mismatch by using the same extents on both sides.
+
+This parallel copy is not `memmove`. Partially overlapping source and destination views can let one thread overwrite data another has not read, even if every destination has one writer. The tested separate-buffer case avoids that dependency; any overlapping-copy operation needs its own supported algorithm and ordering proof.
+
 CuTe's `TiledCopy` packages an instruction-level copy atom with a thread/value tiling. `partition_S` and `partition_D` produce the per-thread views that the copy consumes. Constructing those views does not issue a memory instruction. The pinned [predicated-copy tutorial](https://github.com/NVIDIA/cutlass/blob/v4.3.6/examples/cute/tutorial/tiled_copy_if.cu) demonstrates the API; [copy.hpp](https://github.com/NVIDIA/cutlass/blob/v4.3.6/include/cute/algorithm/copy.hpp) supplies the dispatch rules.
 
 ## 2 — Derive a 128-thread tile
