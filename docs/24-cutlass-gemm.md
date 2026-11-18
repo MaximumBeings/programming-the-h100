@@ -1,7 +1,7 @@
 # 24. CUTLASS — Build a Hopper GEMM You Can Verify
 ## Lesson 24 Companion Guide — Assemble a Pinned Hopper Kernel and Its Launch Contract
 
-[![CHAPTER 24: 23. CUTLASS — Build a Hopper GEMM You Can Verify — conceptual chapter illustration](images/chapter-openers/24-workshop.svg)](images/chapter-openers/24-workshop.svg)
+[![CHAPTER 24: 24. CUTLASS — Build a Hopper GEMM You Can Verify — conceptual chapter illustration](images/chapter-openers/24-workshop.svg)](images/chapter-openers/24-workshop.svg)
 
 
 !!! tip "Your goal in this chapter"

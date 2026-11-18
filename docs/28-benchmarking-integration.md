@@ -1,7 +1,7 @@
 # 28. Benchmarking and Framework Integration Without Changing the Question
 ## Lesson 28 Companion Guide — Measure the Useful Operation and Preserve Framework Semantics
 
-[![CHAPTER 28: 27. Benchmarking and Framework Integration Without Changing the Question — conceptual chapter illustration](images/chapter-openers/28-workshop.svg)](images/chapter-openers/28-workshop.svg)
+[![CHAPTER 28: 28. Benchmarking and Framework Integration Without Changing the Question — conceptual chapter illustration](images/chapter-openers/28-workshop.svg)](images/chapter-openers/28-workshop.svg)
 
 
 

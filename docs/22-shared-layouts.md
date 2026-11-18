@@ -1,7 +1,7 @@
 # 22. Shared Layouts — Banks, Swizzles and Descriptor Agreement
 ## Lesson 22 Companion Guide — Keep Banks, Swizzles and Descriptors in Agreement
 
-[![CHAPTER 22: 21. Shared Layouts — Banks, Swizzles and Descriptor Agreement — conceptual chapter illustration](images/chapter-openers/22-workshop.svg)](images/chapter-openers/22-workshop.svg)
+[![CHAPTER 22: 22. Shared Layouts — Banks, Swizzles and Descriptor Agreement — conceptual chapter illustration](images/chapter-openers/22-workshop.svg)](images/chapter-openers/22-workshop.svg)
 
 
 !!! tip "Your goal in this chapter"

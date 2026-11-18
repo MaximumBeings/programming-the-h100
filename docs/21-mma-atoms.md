@@ -1,7 +1,7 @@
 # 21. MMA Atoms — Prove Who Owns Every Result
 ## Lesson 21 Companion Guide — Decode the Instruction’s Real Fragment Contract
 
-[![CHAPTER 21: 20. MMA Atoms — Prove Who Owns Every Result — conceptual chapter illustration](images/chapter-openers/21-workshop.svg)](images/chapter-openers/21-workshop.svg)
+[![CHAPTER 21: 21. MMA Atoms — Prove Who Owns Every Result — conceptual chapter illustration](images/chapter-openers/21-workshop.svg)](images/chapter-openers/21-workshop.svg)
 
 
 !!! tip "Your goal in this chapter"

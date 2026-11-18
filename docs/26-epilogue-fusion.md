@@ -1,7 +1,7 @@
 # 26. Epilogue Fusion — Preserve the Operation, Remove a Pass
 ## Lesson 26 Companion Guide — Preserve Numerical Semantics While Removing a Memory Pass
 
-[![CHAPTER 26: 25. Epilogue Fusion — Preserve the Operation, Remove a Pass — conceptual chapter illustration](images/chapter-openers/26-workshop.svg)](images/chapter-openers/26-workshop.svg)
+[![CHAPTER 26: 26. Epilogue Fusion — Preserve the Operation, Remove a Pass — conceptual chapter illustration](images/chapter-openers/26-workshop.svg)](images/chapter-openers/26-workshop.svg)
 
 
 !!! tip "Your goal in this chapter"

@@ -1,7 +1,7 @@
 # 25. Read Hopper CUTLASS Pipelines, Fusion and Tuning
 ## Lesson 25 Companion Guide — Trace Readiness, Reuse and the Cost of More Stages
 
-[![CHAPTER 25: 24. Read Hopper CUTLASS Pipelines, Fusion and Tuning — conceptual chapter illustration](images/chapter-openers/25-workshop.svg)](images/chapter-openers/25-workshop.svg)
+[![CHAPTER 25: 25. Read Hopper CUTLASS Pipelines, Fusion and Tuning — conceptual chapter illustration](images/chapter-openers/25-workshop.svg)](images/chapter-openers/25-workshop.svg)
 
 
 !!! tip "Your goal in this chapter"

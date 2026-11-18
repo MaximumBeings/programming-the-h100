@@ -1,7 +1,7 @@
 # 19. CTA Indexing — Rectangular GEMM Offsets and the K Loop
 ## Lesson 19 Companion Guide — Trace Every GEMM Operand from CTA to Byte Address
 
-[![CHAPTER 19: 18. CTA Indexing — Rectangular GEMM Offsets and the K Loop — conceptual chapter illustration](images/chapter-openers/19-workshop.svg)](images/chapter-openers/19-workshop.svg)
+[![CHAPTER 19: 19. CTA Indexing — Rectangular GEMM Offsets and the K Loop — conceptual chapter illustration](images/chapter-openers/19-workshop.svg)](images/chapter-openers/19-workshop.svg)
 
 
 
