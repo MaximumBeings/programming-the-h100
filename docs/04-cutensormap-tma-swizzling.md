@@ -55,103 +55,38 @@ you already have an H100 and a working `nvcc`, skip to the Table of Contents.
 
 ### What Hardware Can You Use?
 
-`sm_90a` or later. The trailing `a` is required — plain `sm_90` will not give
-you the TMA instructions.
+The recorded TMA examples run on H100 and use `sm_90a`, consistent with the rest of this book. Basic tensor bulk-copy instructions start at `sm_90`; unlike WGMMA, TMA does not universally require the `a` suffix. Check each instruction's [PTX target requirements](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor).
 
-```
-Hardware Compatibility Matrix
-══════════════════════════════════════════════════════════════════════
-
-  Architecture   Chip     SM Target   Example GPUs          TMA Support
-  ─────────────────────────────────────────────────────────────────────
-  Ampere         GA100    sm_80       A100 (AWS p4d, Lambda) cp.async only (no TMA)
-  Hopper         GH100    sm_90a      H100 (AWS p5, Lambda)  FULL TMA ★
-  Blackwell      GB100    sm_100a     B100/B200              FULL TMA + extensions
-
-  KEY:
-    cuTensorMap / cp.async.bulk.tensor → Hopper (sm_90a) or Blackwell ONLY
-    All code in §5+ requires sm_90a or sm_100a.
-    Conceptual sections §1-4 apply to all architectures.
-
-  AMPERE vs HOPPER DIFFERENCE (the core motivation for this lesson):
-    Ampere: threads compute addresses, issue cp.async (16 bytes at a time),
-            SM is tethered to the copy engine for every chunk.
-    Hopper: one thread fills a 128-byte descriptor, fires cp.async.bulk.tensor,
-            One issuer launches the request; threads still manage readiness and reuse.
-```
+| GPU family | Setup and execution scope |
+| --- | --- |
+| A100 / Ampere | No Hopper TMA; use a separate `cp.async` implementation. |
+| H100 / Hopper | Recorded target: `sm_90a`; use the full command including `-lcuda` for Driver API descriptor functions. |
+| Blackwell | Select its actual target, inspect descriptor/instruction limits, then revalidate. Changing only an architecture flag is not a validated port. |
 
 ### Cloud GPU Rental — Lambda Labs
 
-Check current provider availability and pricing.
+Choose an instance whose actual GPU model and count meet the chapter's requirements. Use the provider's current Linux GPU image, connect using its supplied SSH key and address, then inspect the environment:
 
+```bash
+nvidia-smi
+nvcc --version
 ```
-Lambda Labs Setup (H100)
-══════════════════════════════════════════════════════════════════════
 
-  1. https://lambdalabs.com/ → sign up → Launch Instance
-  2. Choose "1x H100 PCIe" (sufficient for the single-GPU examples)
-  3. SSH: ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
-  4. Verify: nvcc --version && nvidia-smi
-  5. Compile any example: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out
-```
+Follow [Getting Started: driver, CUDA and libraries](getting-started.md#3-check-the-driver-and-toolkit-separately). Keep a working provider driver; install only missing components. Select the toolkit explicitly rather than assuming a particular Conda environment exists. For the first launch, use the guide's [complete verified program](getting-started.md#5-compile-and-execute-your-first-verified-program).
 
 ### Cloud GPU Rental — AWS
 
-`p5` is the H100 family; `p4d` is A100 and has no TMA.
+Choose a Linux EC2 instance explicitly listing Hopper GPUs for the Hopper-specific examples; confirm its current hardware specification and GPU count. On a Deep Learning AMI, inspect the image's documented CUDA installations and select a matching toolkit. A PyTorch environment name is image-specific, and activating Python packages alone does not install the C++ compiler/toolkit.
 
-```
-AWS p5 Setup (H100)
-══════════════════════════════════════════════════════════════════════
-
-  Instance: p5.48xlarge (8× H100 SXM5)
-  AMI: "Deep Learning AMI GPU PyTorch" (Ubuntu 22.04) — CUDA pre-installed
-  ssh -i key.pem ubuntu@<IP>
-  source activate pytorch
-  nvcc --version && nvidia-smi
-  For A100 (p4d): use sm_80. TMA / cuTensorMap sections will NOT work.
-```
+Connect with the SSH command/key for that image, run `nvidia-smi` and `nvcc --version`, then follow the same [installation checklist](getting-started.md#3-check-the-driver-and-toolkit-separately). See [AWS's CUDA environment guidance](https://docs.aws.amazon.com/dlami/latest/devguide/tutorial-base.html). A100 is not a substitute for Hopper TMA/WGMMA examples, and changing only `-arch` does not port those kernels.
 
 ### Hopper vs Blackwell — What Changes
 
-Read once if you are on a B100 or B200. The descriptor API carries over
-essentially unchanged; only the compile flag differs.
-
-```
-Hopper (sm_90a) vs Blackwell (sm_100a) — TMA Differences
-══════════════════════════════════════════════════════════════════════
-
-  WHAT STAYS IDENTICAL:
-    ├── cuTensorMapEncodeTiled() API and all 12 parameters
-    ├── All swizzle modes (32B, 64B, 128B) and XOR formulas
-    ├── All interleave modes (16B, 32B)
-    ├── All L2 promotion flags
-    ├── OOB fill behavior
-    └── All code in this guide compiles and runs unchanged on sm_100a
-
-  WHAT IS NEW IN BLACKWELL:
-    ├── Larger maximum box dimensions supported
-    ├── Additional data types (FP4/MX formats)
-    ├── Tensor memory uses its own tcgen05 copy/MMA instructions;
-    │   do not treat it as an ordinary TMA shared-memory destination
-    └── New cuTensorMapEncodeTiledMemref() variant for tmem
-
-  PORTING: Change -arch=sm_90a to -arch=sm_100a. Done.
-```
+Blackwell has TMA facilities, but this chapter's execution records cover Hopper. Review the target notes, descriptor constraints and supported data types before porting; do not infer that every example compiles and runs unchanged. Hopper-specific WGMMA requires a different Tensor Core implementation on Blackwell. See [NVIDIA's compatibility guidance](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html).
 
 ### How to Compile and Run Each Example
 
-The compile/run box format used throughout the chapter. Every code block comes
-with one, so you can copy a file out and build it without guessing flags.
-
-```
-═══════════════════════════════════════════════════════
-  FILE:    examples/exNN_name.cu
-  COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 exNN_name.cu -o exNN
-           (Blackwell: replace sm_90a with sm_100a)
-  RUN:     ./exNN
-  EXPECT:  [description of expected output]
-═══════════════════════════════════════════════════════
-```
+Save a complete named listing to its indicated filename and use the full compile/run command beside that example. Descriptor API calls need `-lcuda`; NCCL/cuBLAS examples need their own linker flags. The [first-run walkthrough](getting-started.md#5-compile-and-execute-your-first-verified-program) starts from an exact downloadable source. Short fragments are explanatory pieces of a kernel, not standalone files.
 
 ---
 
@@ -1826,6 +1761,45 @@ int main() {
 }
 ```
 
+<!-- revalidation:start:ex01_tma_basic.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:26.803033+00:00`. Executed UTC: `2026-11-18T11:19:27.695435+00:00`.
+
+Source SHA-256: `c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa`. [Exact source](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu) · [Compile log](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/compile.log) · [Run log](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_tma_basic.cu -o ./example -lcuda
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex01: cuTensorMap Setup + TMA Load + Verify             ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Descriptor setup:
+  Matrix:       256 × 128 FP32
+  Tile:         32 × 32 = 1024 elements = 4096 bytes
+  globalDim:    {256, 128}
+  globalStride: {1024} bytes
+  boxDim:       {32, 32}
+  swizzle:      128B
+  l2Promotion:  128B
+
+cuTensorMapEncodeTiled: SUCCESS
+
+Launching 32 tile blocks (8×4 tiles)...
+Element checks: 32768 / 32768 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — TMA loaded all tiles correctly!          ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex01_tma_basic.cu -->
+
+
 <!-- validation:start:ex01_tma_basic.cu -->
 **Captured output — ex01_tma_basic.cu**
 
@@ -2100,7 +2074,40 @@ int main() {
 }
 ```
 
-> **Barrier-initialization correction — ex02_tma_3d.cu.** This revision publishes initialized barrier state with `fence.proxy.async.shared::cta` before the block synchronization and bulk-copy launch. The linked earlier GPU record covers the pre-fix source; **GPU revalidation pending** for this corrected revision; fresh compilation and execution evidence will replace the earlier result.
+<!-- revalidation:start:ex02_tma_3d.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:28.240111+00:00`. Executed UTC: `2026-11-18T11:19:29.363398+00:00`.
+
+Source SHA-256: `ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173`. [Exact source](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu) · [Compile log](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/compile.log) · [Run log](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_tma_3d.cu -o ./example -lcuda
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex02: 3D TMA — Attention Tensor [B][S][D] Tile Load     ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+3D Tensor: [4][128][64] FP16
+Tile:      [1][32][64] = 2048 elements = 4096 bytes
+
+Descriptor created successfully.
+
+Launching 16 blocks (4 seq_tiles × 4 batches)...
+Element checks: 32768 / 32768 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS                                              ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex02_tma_3d.cu -->
+
+
+> **Barrier-initialization correction verified — ex02_tma_3d.cu.** The current revision passed the November 18 H100 rerun and memcheck. See the dated record above.
 
 
 <!-- validation:start:ex02_tma_3d.cu -->

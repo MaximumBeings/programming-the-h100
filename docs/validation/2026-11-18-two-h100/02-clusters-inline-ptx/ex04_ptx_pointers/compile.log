@@ -1,0 +1,12 @@
+/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu(86): warning #550-D: variable "old" was set but never used
+      uint32_t old;
+               ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu(86): warning #550-D: variable "old" was set but never used
+      uint32_t old;
+               ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+

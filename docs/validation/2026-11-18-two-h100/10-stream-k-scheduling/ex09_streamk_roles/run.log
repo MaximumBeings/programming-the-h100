@@ -1,0 +1,31 @@
+═══════════════════════════════════════════════════════
+  ex09_streamk_roles — Stream-K Split Role Demo
+  3 output tiles × 90 K-tiles/tile = 270 total iters
+  4 CTAs
+═══════════════════════════════════════════════════════
+
+Split assignment:
+  Split 0: tile=0 K_idx= 0 k_tile_count=67 role=FIRST
+  Split 1: tile=0 K_idx=67 k_tile_count=23 role=FINAL
+  Split 2: tile=1 K_idx= 0 k_tile_count=44 role=FIRST
+  Split 3: tile=1 K_idx=44 k_tile_count=46 role=FINAL
+  Split 4: tile=2 K_idx= 0 k_tile_count=22 role=FIRST
+  Split 5: tile=2 K_idx=22 k_tile_count=68 role=FINAL
+
+Kernel output:
+  CTA 0 → tile 0: FIRST SPLIT [0,67), partial=2278
+  CTA 2 → tile 1: FIRST SPLIT [0,44), partial=4950
+  CTA 4 → tile 2: FIRST SPLIT [0,22), partial=4213
+  CTA 3 → tile 1: FINAL SPLIT [44,90), waiting for lock>=44
+  CTA 5 → tile 2: FINAL SPLIT [22,90), waiting for lock>=22
+  CTA 1 → tile 0: FINAL SPLIT [67,90), waiting for lock>=67
+  CTA 3 → tile 1: FINAL SPLIT merged: prior=4950 + mine=7245 = 12195
+  CTA 5 → tile 2: FINAL SPLIT merged: prior=4213 + mine=16082 = 20295
+  CTA 1 → tile 0: FINAL SPLIT merged: prior=2278 + mine=1817 = 4095
+
+Verification:
+  Tile 0: got=4095  expected=4095  PASS ✓
+  Tile 1: got=12195  expected=12195  PASS ✓
+  Tile 2: got=20295  expected=20295  PASS ✓
+
+ALL PASS ✓

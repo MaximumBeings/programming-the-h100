@@ -69,33 +69,20 @@ and [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compa
 
 ### Cloud GPU Rental — Lambda Labs
 
-Check current provider availability and pricing.
+Choose an instance whose actual GPU model and count meet the chapter's requirements. Use the provider's current Linux GPU image, connect using its supplied SSH key and address, then inspect the environment:
 
+```bash
+nvidia-smi
+nvcc --version
 ```
-Lambda Labs Setup (H100)
-══════════════════════════════════════════════════════════════════════
 
-  1. https://lambdalabs.com/ → sign up → Launch Instance
-  2. Choose "1x H100 PCIe" (sufficient for the single-GPU examples)
-  3. SSH: ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
-  4. Verify: nvcc --version && nvidia-smi
-  5. Compile: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out && ./out
-```
+Follow [Getting Started: driver, CUDA and libraries](getting-started.md#3-check-the-driver-and-toolkit-separately). Keep a working provider driver; install only missing components. Select the toolkit explicitly rather than assuming a particular Conda environment exists. For the first launch, use the guide's [complete verified program](getting-started.md#5-compile-and-execute-your-first-verified-program).
 
 ### Cloud GPU Rental — AWS
 
-`p5` is H100; `p4d` is A100 and has none of this.
+Choose a Linux EC2 instance explicitly listing Hopper GPUs for the Hopper-specific examples; confirm its current hardware specification and GPU count. On a Deep Learning AMI, inspect the image's documented CUDA installations and select a matching toolkit. A PyTorch environment name is image-specific, and activating Python packages alone does not install the C++ compiler/toolkit.
 
-```
-AWS p5 Setup (H100)
-══════════════════════════════════════════════════════════════════════
-
-  Instance: p5.48xlarge (8× H100 SXM5)
-  AMI: "Deep Learning AMI GPU PyTorch" (Ubuntu 22.04)
-  ssh -i key.pem ubuntu@<IP> && source activate pytorch
-  nvcc --version && nvidia-smi
-  A100 (p4d): use sm_80. cp.async.bulk sections will NOT work.
-```
+Connect with the SSH command/key for that image, run `nvidia-smi` and `nvcc --version`, then follow the same [installation checklist](getting-started.md#3-check-the-driver-and-toolkit-separately). See [AWS's CUDA environment guidance](https://docs.aws.amazon.com/dlami/latest/devguide/tutorial-base.html). A100 is not a substitute for Hopper TMA/WGMMA examples, and changing only `-arch` does not port those kernels.
 
 ### Hopper vs Blackwell — What Changes
 
@@ -1700,7 +1687,36 @@ int main() {
 }
 ```
 
-> **Barrier-initialization correction — ex01_bulk_raw.cu.** This revision publishes initialized barrier state with `fence.proxy.async.shared::cta` before the block synchronization and bulk-copy launch. The linked earlier GPU record covers the pre-fix source; **GPU revalidation pending** for this corrected revision; fresh compilation and execution evidence will replace the earlier result.
+<!-- revalidation:start:ex01_bulk_raw.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:29.952145+00:00`. Executed UTC: `2026-11-18T11:19:30.798016+00:00`.
+
+Source SHA-256: `f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805`. [Exact source](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu) · [Compile log](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/compile.log) · [Run log](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_bulk_raw.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex01: Raw cp.async.bulk + mbarrier + L2 evict_last      ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Config: 6 tiles × 1024 FP32 = 4096 bytes per tile
+
+Checks: 6144 / 6144 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS                                              ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex01_bulk_raw.cu -->
+
+
+> **Barrier-initialization correction verified — ex01_bulk_raw.cu.** The current revision passed the November 18 H100 rerun and memcheck. See the dated record above.
 
 
 <!-- validation:start:ex01_bulk_raw.cu -->
@@ -1888,6 +1904,37 @@ int main() {
     return ok ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex02_reduce_async.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:31.351016+00:00`. Executed UTC: `2026-11-18T11:19:32.175941+00:00`.
+
+Source SHA-256: `52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a`. [Exact source](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu) · [Compile log](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/compile.log) · [Run log](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_reduce_async.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex02: cp.reduce.async — Atomic Tile Reduction           ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Config: 4 blocks each adding their value (1,2,3,4) to 256 elements
+Expected result: every element = 1+2+3+4 = 10.0
+
+Errors: 0 / 256 elements
+Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — cp.reduce.async works correctly!         ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex02_reduce_async.cu -->
+
 
 <!-- validation:start:ex02_reduce_async.cu -->
 **Captured output — ex02_reduce_async.cu**

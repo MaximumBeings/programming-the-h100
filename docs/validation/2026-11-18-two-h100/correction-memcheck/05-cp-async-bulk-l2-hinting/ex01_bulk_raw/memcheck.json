@@ -1,0 +1,15 @@
+{
+  "command": [
+    "compute-sanitizer",
+    "--tool",
+    "memcheck",
+    "--error-exitcode",
+    "97",
+    "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+  ],
+  "started_utc": "2026-11-18T11:17:43.090275+00:00",
+  "exit_code": 0,
+  "finished_utc": "2026-11-18T11:17:43.722226+00:00",
+  "log_sha256": "4ab7a96a646dc7ecd7329c73d0b23057789341141b54abad66193bf090c3d3e5",
+  "zero_error_summaries": 1
+}

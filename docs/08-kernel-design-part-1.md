@@ -537,6 +537,60 @@ int main() {
 }
 ```
 
+<!-- revalidation:start:ex01_roofline.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:36.642155+00:00`. Executed UTC: `2026-11-18T11:19:37.502670+00:00`.
+
+Source SHA-256: `d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449`. [Exact source](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu) · [Compile log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/compile.log) · [Run log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_roofline.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Roofline Model Demo — Memory vs Compute Bound        ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+     Peak memory bandwidth (theoretical): 3352.3 GB/s
+     SM count: 132
+
+════════════════════════════════════════════════════════
+KERNEL A: elementwise_scale (expected: MEMORY-BOUND)
+════════════════════════════════════════════════════════
+  Elements: 64M    Bytes moved: 537 MB    AI: 0.125 FLOP/Byte
+  (Ridge point for FP32 CUDA cores ≈ 20 FLOP/Byte)
+  → AI=0.125 << 20 → MEMORY-BOUND ✓
+
+  Time: 0.226 ms
+  Bandwidth achieved: 2375.9 GB/s
+  GFLOPS achieved:    297.0
+  → Kernel is BANDWIDTH limited (not compute limited)
+
+════════════════════════════════════════════════════════
+KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
+════════════════════════════════════════════════════════
+  M=N=K=512    FLOPs: 268.4 M    Bytes: 3.1 MB    AI: 85.3 FLOP/Byte
+  → AI=85.3 >> 20 → COMPUTE-BOUND ✓
+
+  Time: 0.033 ms
+  GFLOPS achieved: 8019.7
+  Effective BW:    94.0 GB/s (not the bottleneck)
+  → Kernel is COMPUTE limited (bandwidth not saturated)
+
+╔══════════════════════════════════════════════════════╗
+║  KEY TAKEAWAY:                                        ║
+║  • elementwise_scale: optimize bandwidth, not FLOPs   ║
+║  • tile_matmul: optimize FLOPs, pipeline depth        ║
+║  • Wrong optimization → wrong results → wasted time   ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex01_roofline.cu -->
+
+
 <!-- validation:start:ex01_roofline.cu -->
 **Captured output — ex01_roofline.cu**
 
@@ -1206,6 +1260,67 @@ int main() {
 }
 ```
 
+<!-- revalidation:start:ex02_warp_spec.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:38.058112+00:00`. Executed UTC: `2026-11-18T11:19:38.924950+00:00`.
+
+Source SHA-256: `fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675`. [Exact source](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex02_warp_spec/ex02_warp_spec.cu) · [Compile log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex02_warp_spec/compile.log) · [Run log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex02_warp_spec/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_warp_spec.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Warp Specialization Demo                             ║
+║  256 threads = WG0 (producer) + WG1 (consumer)       ║
+╚══════════════════════════════════════════════════════╝
+
+Launch: 1 block × 256 threads
+  WG0 (threads   0-127): PRODUCER role
+  WG1 (threads 128-255): CONSUMER role
+
+Role Assignment Check:
+  WG0 role recorded: 0 (expected 0 = producer)
+  WG1 role recorded: 1 (expected 1 = consumer)
+  Role assignment: ✓ CORRECT
+
+Consumer Output Verification:
+  Expected formula: output[i] = 2 × (3×i + 7) = 6i + 14
+  Checking all 128 outputs...
+
+  Index    Expected     Got          OK?
+  ────────────────────────────────────────
+  0        14.0         14.0         ✓
+  1        20.0         20.0         ✓
+  2        26.0         26.0         ✓
+  3        32.0         32.0         ✓
+  4        38.0         38.0         ✓
+  ... (checking all 128, showing first 5 and last 3) ...
+  125      764.0        764.0        ✓
+  126      770.0        770.0        ✓
+  127      776.0        776.0        ✓
+
+════════════════════════════════════════════════════════
+Results: 128/128 output values correct
+Role assignment: CORRECT
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED                                  ║
+║                                                      ║
+║  KEY OBSERVATIONS:                                   ║
+║  • WG0 (threads 0-127) executed ONLY producer code   ║
+║  • WG1 (threads 128-255) executed ONLY consumer code  ║
+║  • No warp divergence within either warpgroup        ║
+║  • __syncthreads() ensured safe handoff              ║
+║  • In production: replace sync with mbarrier (§9)    ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex02_warp_spec.cu -->
+
+
 <!-- validation:start:ex02_warp_spec.cu -->
 **Captured output — ex02_warp_spec.cu**
 
@@ -1572,6 +1687,46 @@ int main() {
     return all_pass ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex03_setmaxnreg.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:39.476370+00:00`. Executed UTC: `2026-11-18T11:19:40.281281+00:00`.
+
+Source SHA-256: `c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292`. [Exact source](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/ex03_setmaxnreg.cu) · [Compile log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/compile.log) · [Run log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex03_setmaxnreg.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  setmaxnreg Demo — Dynamic Register Resizing         ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Register Plan:
+  WG0 (threads   0-127): setmaxnreg.dec → 32 regs (producer)
+  WG1 (threads 128-255): setmaxnreg.inc → 128 regs (consumer)
+
+WG0 (PRODUCER, 32 regs after resize):
+  ✓ All 128 values correct (registers NOT corrupted by setmaxnreg)
+  Sample: output[0]=1.0 (expect 1.0), output[1]=3.5 (expect 3.5)
+
+WG1 (CONSUMER, 128 regs after resize):
+  ✓ All 128 values correct (registers NOT corrupted by setmaxnreg)
+  Sample: output[0]=2.0 (expect 2.0), output[1]=6.5 (expect 6.5)
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED                                  ║
+║  setmaxnreg correctly resized registers without      ║
+║  corrupting existing register state.                 ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex03_setmaxnreg.cu -->
+
 
 <!-- validation:start:ex03_setmaxnreg.cu -->
 **Captured output — ex03_setmaxnreg.cu**
@@ -2156,6 +2311,71 @@ int main() {
     return all_ok ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex04_circular_buffer.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:40.843154+00:00`. Executed UTC: `2026-11-18T11:19:41.816510+00:00`.
+
+Source SHA-256: `3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665`. [Exact source](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex04_circular_buffer/ex04_circular_buffer.cu) · [Compile log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex04_circular_buffer/compile.log) · [Run log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex04_circular_buffer/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex04_circular_buffer.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Circular Pipeline Buffer Simulation                  ║
+║  N_STAGES=4, DEPTH=2, K_TILES=8                    ║
+╚══════════════════════════════════════════════════════╝
+
+[Prologue]: filling first 2 stages
+  k=0: Producer writes stage 0  |  Consumer: waiting
+  k=1: Producer writes stage 1  |  Consumer: waiting
+
+[Steady State]: producer and consumer overlap
+  k=2: Producer writes stage 2  |  Consumer reads stage 0
+  k=3: Producer writes stage 3  |  Consumer reads stage 1
+  k=4: Producer writes stage 0  |  Consumer reads stage 2
+  k=5: Producer writes stage 1  |  Consumer reads stage 3
+  k=6: Producer writes stage 2  |  Consumer reads stage 0
+  k=7: Producer writes stage 3  |  Consumer reads stage 1
+
+[Drain]: flushing 2 remaining stages
+  drain 0: Consumer reads stage 2  |  Producer: done
+  drain 1: Consumer reads stage 3  |  Producer: done
+
+════════════════════════════════════════════════════════
+Stage Assignment Verification:
+  Expected producer: 0,1,2,3,0,1,2,3,-1,-1 (then drain)
+  Expected consumer: -1,-1,0,1,2,3,0,1,2,3
+
+  Iter    Prod    Cons
+  ────────────────────
+     0       0      -1 ✓
+     1       1      -1 ✓
+     2       2       0 ✓
+     3       3       1 ✓
+     4       0       2 ✓
+     5       1       3 ✓
+     6       2       0 ✓
+     7       3       1 ✓
+     8      -1       2 ✓
+     9      -1       3 ✓
+
+Output Verification (element 0 and element 10):
+  output[0]  = 280.000 (expected 280.000) ✓
+  output[10] = 280.800 (expected 280.800) ✓
+
+╔══════════════════════════════════════════════════════╗
+║  Stage assignment errors: 0                           ║
+║  Runtime barrier errors:  0                           ║
+║  ✓ ALL TESTS PASSED — circular buffer correct        ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex04_circular_buffer.cu -->
+
 
 <!-- validation:start:ex04_circular_buffer.cu -->
 **Captured output — ex04_circular_buffer.cu**

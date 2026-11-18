@@ -1,0 +1,102 @@
+UTC: 2026-11-18T11:19:10.116228+00:00
+OS: Linux-6.8.0-1064-nvidia-x86_64-with-glibc2.39
+Python: 3.12.3
+PRETTY_NAME="Ubuntu 24.04.5 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04.5 LTS (Noble Numbat)"
+VERSION_CODENAME=noble
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=noble
+LOGO=ubuntu-logo
+
+
+$ nvcc --version
+Exit: 0
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2025 NVIDIA Corporation
+Built on Fri_Feb_21_20:23:50_PST_2025
+Cuda compilation tools, release 12.8, V12.8.93
+Build cuda_12.8.r12.8/compiler.35583870_0
+
+
+$ gcc --version
+Exit: 0
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Copyright (C) 2023 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+
+$ nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv
+Exit: 0
+name, driver_version, memory.total [MiB]
+NVIDIA H100 80GB HBM3, 580.105.08, 81559 MiB
+NVIDIA H100 80GB HBM3, 580.105.08, 81559 MiB
+
+
+$ nvidia-smi topo -m
+Exit: 0
+	[4mGPU0	GPU1	NIC0	CPU Affinity	NUMA Affinity	GPU NUMA ID[0m
+GPU0	 X 	NV18	PHB	0-51	0		N/A
+GPU1	NV18	 X 	PHB	0-51	0		N/A
+NIC0	PHB	PHB	 X 				
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks
+
+NIC Legend:
+
+  NIC0: mlx5_0
+
+
+
+$ /usr/bin/python3 /home/ubuntu/full-gpu-rerun-20261118/h100/tools/h100_preflight.py --json
+Exit: 0
+{
+  "timestamp_utc": "2026-11-18T11:19:10.684481+00:00",
+  "os": "Linux",
+  "python": "3.12.3",
+  "gpu_count": 2,
+  "devices": [
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "compute_capability": "9.0",
+      "memory_mib": 81079.125
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "compute_capability": "9.0",
+      "memory_mib": 81079.125
+    }
+  ],
+  "driver": "580.105.08",
+  "nvcc": "12.8.93",
+  "tools": {
+    "ncu": false,
+    "compute-sanitizer": true,
+    "cuobjdump": true,
+    "nvdisasm": true
+  },
+  "status": "PASS",
+  "errors": [],
+  "notes": [
+    "Device discovery uses the CUDA Driver API and respects CUDA_VISIBLE_DEVICES.",
+    "Driver compatibility, compiler version and the compiled architecture target are separate checks.",
+    "This checks prerequisites, not kernel correctness, GPU interconnects or profiler permissions."
+  ]
+}
+

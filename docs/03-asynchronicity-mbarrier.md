@@ -44,11 +44,7 @@ mental model; the rest is detail you can look up.
 
 ## ★ BEFORE YOU START — Hardware, Setup & Installation
 
-A short preamble on where to run the examples. The `mbarrier` and
-`cp.async.bulk` instructions in this chapter were introduced with Hopper, so
-unlike the earlier chapters there is no meaningful A100 fallback — you need an
-H100 (`sm_90a`) or a B200. If you already have one and a working `nvcc`, skip
-ahead to the Table of Contents.
+The complete examples target Hopper and use `sm_90a`. Basic `mbarrier` operations also exist on Ampere, while transaction-count and bulk/TMA operations have Hopper-specific requirements. A100 is not a fallback for the complete Hopper examples, and Blackwell requires separate instruction/target validation.
 
 ### What Hardware Can You Use?
 
@@ -62,7 +58,7 @@ Hardware Compatibility Matrix
   ─────────────────────────────────────────────────────────────────────
   Ampere         GA100    sm_80       A100 (AWS p4d, Lambda) Basic mbarrier / cp.async; no TMA
   Hopper         GH100    sm_90a      H100 (AWS p5, Lambda)  ALL sections ★
-  Blackwell      GB100    sm_100a     B100/B200              ALL + new instructions
+  Blackwell      GB100    sm_100a     B100/B200              Separate port; check instruction support
 
   KEY:
     Basic mbarrier init/arrive/test_wait → sm_80 or later
@@ -78,51 +74,20 @@ Hardware Compatibility Matrix
 
 ### Cloud GPU Rental — Lambda Labs
 
-Usually the cheapest way to get an hour on an H100 without a corporate account.
+Choose an instance whose actual GPU model and count meet the chapter's requirements. Use the provider's current Linux GPU image, connect using its supplied SSH key and address, then inspect the environment:
 
+```bash
+nvidia-smi
+nvcc --version
 ```
-Lambda Labs Setup (H100)
-══════════════════════════════════════════════════════════════════════
 
-  1. https://lambdalabs.com/ → sign up → Launch Instance
-  2. Choose "1x H100 PCIe" (cheapest) or "8x H100 SXM5"
-  3. SSH in:  ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
-
-  4. Verify CUDA:
-       nvcc --version          # should show 12.x
-       nvidia-smi              # should show H100, CUDA 12.x
-
-  5. If CUDA missing:
-       wget https://developer.download.nvidia.com/compute/cuda/repos/\
-ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-       sudo dpkg -i cuda-keyring_1.1-1_all.deb
-       sudo apt-get update && sudo apt-get -y install cuda-toolkit-12-4
-       export PATH=/usr/local/cuda/bin:$PATH
-
-  6. Quick compile test:
-       nvcc -std=c++17 -arch=sm_90a -O2 ex01_async_basics.cu -o ex01
-       ./ex01
-```
+Follow [Getting Started: driver, CUDA and libraries](getting-started.md#3-check-the-driver-and-toolkit-separately). Keep a working provider driver; install only missing components. Select the toolkit explicitly rather than assuming a particular Conda environment exists. For the first launch, use the guide's [complete verified program](getting-started.md#5-compile-and-execute-your-first-verified-program).
 
 ### Cloud GPU Rental — AWS
 
-The alternative if you already have AWS set up. Note that `p5` is the H100
-family; `p4d` is A100 and will not run this chapter's examples.
+Choose a Linux EC2 instance explicitly listing Hopper GPUs for the Hopper-specific examples; confirm its current hardware specification and GPU count. On a Deep Learning AMI, inspect the image's documented CUDA installations and select a matching toolkit. A PyTorch environment name is image-specific, and activating Python packages alone does not install the C++ compiler/toolkit.
 
-```
-AWS p5 Setup (H100)
-══════════════════════════════════════════════════════════════════════
-
-  Instance: p5.48xlarge (8× H100 SXM5) or p4d.24xlarge (8× A100)
-  AMI: "Deep Learning AMI GPU PyTorch" (Ubuntu 22.04) — CUDA pre-installed
-
-  ssh -i key.pem ubuntu@<PUBLIC_IP>
-  source activate pytorch          # activates CUDA environment
-  nvcc --version && nvidia-smi     # verify
-
-  For A100 (p4d): basic mbarrier is supported; do not run Hopper TMA examples.
-  For H100 (p5):  use -arch=sm_90a, all sections work.
-```
+Connect with the SSH command/key for that image, run `nvidia-smi` and `nvcc --version`, then follow the same [installation checklist](getting-started.md#3-check-the-driver-and-toolkit-separately). See [AWS's CUDA environment guidance](https://docs.aws.amazon.com/dlami/latest/devguide/tutorial-base.html). A100 is not a substitute for Hopper TMA/WGMMA examples, and changing only `-arch` does not port those kernels.
 
 ### Hopper vs Blackwell — What Changes for This Lesson
 
@@ -154,17 +119,7 @@ Hopper (sm_90a) vs Blackwell (sm_100a) — Async/Barrier Differences
 
 ### How to Compile and Run Each Example
 
-Each code section has a compile/run box:
-
-```
-═══════════════════════════════════════════════════════
-  FILE:    examples/exNN_name.cu
-  COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 exNN_name.cu -o exNN
-           (Blackwell: replace sm_90a with sm_100a)
-  RUN:     ./exNN
-  EXPECT:  [description of expected output]
-═══════════════════════════════════════════════════════
-```
+Save a complete named listing to its indicated filename and use the full compile/run command beside that example. Descriptor API calls need `-lcuda`; NCCL/cuBLAS examples need their own linker flags. The [first-run walkthrough](getting-started.md#5-compile-and-execute-your-first-verified-program) starts from an exact downloadable source. Short fragments are explanatory pieces of a kernel, not standalone files.
 
 ---
 
@@ -2134,7 +2089,36 @@ int main() {
 }
 ```
 
-> **Barrier-initialization correction — ex01_mbarrier_basic.cu.** This revision publishes initialized barrier state with `fence.proxy.async.shared::cta` before the block synchronization and bulk-copy launch. The linked earlier GPU record covers the pre-fix source; **GPU revalidation pending** for this corrected revision; fresh compilation and execution evidence will replace the earlier result.
+<!-- revalidation:start:ex01_mbarrier_basic.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:23.992648+00:00`. Executed UTC: `2026-11-18T11:19:24.852132+00:00`.
+
+Source SHA-256: `406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7`. [Exact source](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu) · [Compile log](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/compile.log) · [Run log](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_mbarrier_basic.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex01: mbarrier Pipeline — Init/Arrive/Wait/Reuse        ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Config: K=4 tiles, 256 elements/tile, 64 threads/block
+
+Element checks: 1024 / 1024 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — mbarrier pipeline working correctly!     ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex01_mbarrier_basic.cu -->
+
+
+> **Barrier-initialization correction verified — ex01_mbarrier_basic.cu.** The current revision passed the November 18 H100 rerun and memcheck. See the dated record above.
 
 
 <!-- validation:start:ex01_mbarrier_basic.cu -->
@@ -2420,7 +2404,36 @@ int main() {
 }
 ```
 
-> **Barrier-initialization correction — ex02_war_prevention.cu.** This revision publishes initialized barrier state with `fence.proxy.async.shared::cta` before the block synchronization and bulk-copy launch. The linked earlier GPU record covers the pre-fix source; **GPU revalidation pending** for this corrected revision; fresh compilation and execution evidence will replace the earlier result.
+<!-- revalidation:start:ex02_war_prevention.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:25.401355+00:00`. Executed UTC: `2026-11-18T11:19:26.237306+00:00`.
+
+Source SHA-256: `d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395`. [Exact source](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu) · [Compile log](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/compile.log) · [Run log](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_war_prevention.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex02: WAR Prevention — Two-Barrier Pipeline             ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Config: 8 tiles × 128 elements = 1024 total
+Element errors: 0 / 1024
+Sample: in=7 → out=14 (expected 14)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — WAR hazard correctly prevented!          ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex02_war_prevention.cu -->
+
+
+> **Barrier-initialization correction verified — ex02_war_prevention.cu.** The current revision passed the November 18 H100 rerun and memcheck. See the dated record above.
 
 
 <!-- validation:start:ex02_war_prevention.cu -->

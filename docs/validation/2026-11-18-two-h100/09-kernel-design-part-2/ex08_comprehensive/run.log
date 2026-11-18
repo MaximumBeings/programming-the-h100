@@ -1,0 +1,47 @@
+╔══════════════════════════════════════════════════════════╗
+║  ex08: Comprehensive — Persistent Warp-Spec GEMM+ReLU   ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Problem: M=256, N=256, K=256
+Tile:    64×64 (K-step=16, stages=3)
+Tiles:   16 (tiles_m=4 × tiles_n=4)
+AI:      42.7 FLOP/Byte (COMPUTE-BOUND ✓)
+
+Launch: 1 CTA × 256 threads (WG0=producer, WG1=consumer)
+Persistent loop: processes all 16 tiles sequentially.
+
+Runtime: 0.981 ms
+GFLOPS: 34.19
+
+Verification:
+  Total elements: 65536
+  Errors: 0 (threshold: 1e-3)
+  Max abs error: 0.000000
+  Sample: C[0][0]=0.0000 ref=0.0000
+  Sample: C[5][7]=0.0273 ref=0.0273
+
+Design Summary:
+  Kernel model:    Arithmetic intensity (AI=43 FLOP/Byte)
+  Warp spec:       WG0=producer (loads), WG1=consumer (computes)
+  Pipeline stages: 3 (circular buffer in shared memory)
+  Scheduling:      Persistent (1 CTA, processes 16 tiles)
+  Rasterization:   Swizzle=2 (M-dimension locality)
+  Epilogue:        ReLU fused (register-level, zero extra HBM)
+  Production TODO: Replace __syncthreads() with mbarrier,
+                   replace manual loads with TMA,
+                   replace st.global with TMA store,
+                   add setmaxnreg for true WS benefit.
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL 65536 ELEMENTS CORRECT                              ║
+║                                                        ║
+║  ALL LESSON 3 CONCEPTS DEMONSTRATED:                   ║
+║  ✓ Roofline classification (compute-bound)             ║
+║  ✓ Warp specialization (producer + consumer)           ║
+║  ✓ Circular pipeline buffer (N_STAGES=3)              ║
+║  ✓ Persistent scheduling (all tiles in one kernel)     ║
+║  ✓ Swizzled rasterization (L2 locality)                ║
+║  ✓ Fused epilogue (ReLU in registers)                  ║
+╚══════════════════════════════════════════════════════════╝

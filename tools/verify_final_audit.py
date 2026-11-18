@@ -76,7 +76,10 @@ def verify(root, public=None, summary=None):
                 errors.append(f'Blocked status lacks prerequisite diagnostic: {key}')
         else:
             errors.append(f'Unsuccessful or unexecuted workload: {key}')
-        if supplemental and (row['page'], row['example']) == KEY:
+        corrected = revisions.get((row['page'], row['example']))
+        if corrected and corrected['status'] == 'verified_gpu_revalidation':
+            shown_time, shown_hash = corrected['record']['timestamp'], corrected['record']['sha256']
+        elif supplemental and (row['page'], row['example']) == KEY:
             from verify_eight_gpu_audit import NAME as EXTRA
             extra = json.loads((root / 'docs/validation' / EXTRA / 'manifest.json').read_text())
             shown_time, shown_hash = extra['timestamp_utc'], extra['source_sha256']
@@ -120,9 +123,10 @@ def verify(root, public=None, summary=None):
     text = summary.read_text()
     active_passed = passed + (1 if supplemental else 0)
     active_blocked = blocked - (1 if supplemental else 0)
-    current_passed = active_passed - len(revisions)
+    pending_count = sum(r['status'] == 'pending_gpu_revalidation' for r in revisions.values())
+    current_passed = active_passed - pending_count
     if (f'**{current_passed} PASS**' not in text or active_blocked != 0 or '**BLOCKED_HARDWARE**' in text
-            or revisions and f'**{len(revisions)} GPU revalidation pending**' not in text):
+            or pending_count and f'**{pending_count} GPU revalidation pending**' not in text):
         errors.append('Current summary must distinguish verified revisions from pending GPU corrections.')
     return errors
 

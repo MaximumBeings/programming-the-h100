@@ -447,6 +447,50 @@ int main() {
 }
 ```
 
+<!-- revalidation:start:ex05_mbarrier.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:42.375062+00:00`. Executed UTC: `2026-11-18T11:19:43.203635+00:00`.
+
+Source SHA-256: `c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046`. [Exact source](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu) · [Compile log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/compile.log) · [Run log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex05_mbarrier.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  mbarrier Two-Barrier Handshake Demo                  ║
+║  3 rounds of producer→consumer using full/empty bars  ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Producer values: [42.00, 99.50, 7.25]
+Expected consumer outputs: [84.00, 199.00, 14.50]
+
+Handshake Results:
+  Round    Produced     Expected     Got          OK?
+  ────────────────────────────────────────────────
+  0        42.00        84.00        84.00        ✓ PASS
+  1        99.50        199.00       199.00       ✓ PASS
+  2        7.25         14.50        14.50        ✓ PASS
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL 3 ROUNDS PASSED                               ║
+║                                                      ║
+║  WHAT HAPPENED:                                      ║
+║  1. empty_bar pre-signaled → producer starts freely  ║
+║  2. Producer writes SMEM → arrives on full_bar       ║
+║  3. Consumer waits full_bar → reads SMEM → doubles   ║
+║  4. Consumer arrives on empty_bar → stage recyclable  ║
+║  5. phase bits prevent stale barrier reads           ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex05_mbarrier.cu -->
+
+
 <!-- validation:start:ex05_mbarrier.cu -->
 **Captured output — ex05_mbarrier.cu**
 
@@ -1175,6 +1219,55 @@ int main() {
 }
 ```
 
+<!-- revalidation:start:ex06_pingpong.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:43.758040+00:00`. Executed UTC: `2026-11-18T11:19:44.640676+00:00`.
+
+Source SHA-256: `d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd`. [Exact source](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu) · [Compile log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/compile.log) · [Run log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex06_pingpong.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Ping-Pong Pipeline Simulation                        ║
+║  6 tiles, C0=even, C1=odd, K_TILES=4 per tile      ║
+╚══════════════════════════════════════════════════════╝
+
+Tile Assignment and Output Verification:
+  MMA formula: accumulate k*100+tile_id for k=0..4-1
+  sum per tile = sum(k=0..3 of k*100) + tile_id × 4
+  = 600 + tile_id × 4
+  After epilogue (×2):
+
+  Tile   Consumer   Expected     Got          OK?
+  ──────────────────────────────────────────────
+  0      C0         1200         1200         ✓ PASS
+  1      C1         1208         1208         ✓ PASS
+  2      C0         1216         1216         ✓ PASS
+  3      C1         1224         1224         ✓ PASS
+  4      C0         1232         1232         ✓ PASS
+  5      C1         1240         1240         ✓ PASS
+
+Ping-Pong Behavior Check:
+  Even tiles processed by Consumer 0: ✓ ALL CORRECT
+  Odd tiles processed by Consumer 1:  ✓ ALL CORRECT
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED                                  ║
+║                                                      ║
+║  In production, C0's epilogue overlaps C1's MMA:     ║
+║  C0: [MMA T0][EPI T0][MMA T2][EPI T2]               ║
+║  C1:    [MMA T1][EPI T1][MMA T3][EPI T3]            ║
+║  Tensor cores: NEVER idle (perfect overlap)          ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex06_pingpong.cu -->
+
+
 <!-- validation:start:ex06_pingpong.cu -->
 **Captured output — ex06_pingpong.cu**
 
@@ -1729,6 +1822,48 @@ int main() {
     return all_pass ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex07_epilogue.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:45.193648+00:00`. Executed UTC: `2026-11-18T11:19:46.042302+00:00`.
+
+Source SHA-256: `bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff`. [Exact source](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex07_epilogue/ex07_epilogue.cu) · [Compile log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex07_epilogue/compile.log) · [Run log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex07_epilogue/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex07_epilogue.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Epilogue Fusion Demo                                 ║
+║  D = ReLU( α×acc + β×C + bias[row] )                 ║
+╚══════════════════════════════════════════════════════╝
+
+Input tile: 64×64, alpha=1.0, beta=0.5
+Bias: bias[m] = m * 0.1
+Expected ReLU clamped to 0: 1965/4096 elements
+
+Verification:
+  Total elements: 4096
+  Errors: 0
+  Max absolute error: 0.000000 (threshold: 1e-4)
+
+Sample outputs:
+  D[0][0] = 0.0000 (expected 0.0000)
+  D[2][5] = 0.0000 (expected 0.0000)
+  D[3][2] = 0.0000 (expected 0.0000, should be 0 if pre-ReLU < 0)
+
+FP8 amax reduction result: 44.6000
+  (This is max|D[m][n]| across the tile, used for FP8 scaling)
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL 4096 ELEMENTS CORRECT — epilogue fusion works!   ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex07_epilogue.cu -->
+
 
 <!-- validation:start:ex07_epilogue.cu -->
 **Captured output — ex07_epilogue.cu**
@@ -2458,6 +2593,70 @@ int main(int argc, char** argv) {
     return all_pass ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex08_comprehensive.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:46.577755+00:00`. Executed UTC: `2026-11-18T11:19:47.903815+00:00`.
+
+Source SHA-256: `7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964`. [Exact source](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu) · [Compile log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/compile.log) · [Run log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex08_comprehensive.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex08: Comprehensive — Persistent Warp-Spec GEMM+ReLU   ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Problem: M=256, N=256, K=256
+Tile:    64×64 (K-step=16, stages=3)
+Tiles:   16 (tiles_m=4 × tiles_n=4)
+AI:      42.7 FLOP/Byte (COMPUTE-BOUND ✓)
+
+Launch: 1 CTA × 256 threads (WG0=producer, WG1=consumer)
+Persistent loop: processes all 16 tiles sequentially.
+
+Runtime: 0.981 ms
+GFLOPS: 34.19
+
+Verification:
+  Total elements: 65536
+  Errors: 0 (threshold: 1e-3)
+  Max abs error: 0.000000
+  Sample: C[0][0]=0.0000 ref=0.0000
+  Sample: C[5][7]=0.0273 ref=0.0273
+
+Design Summary:
+  Kernel model:    Arithmetic intensity (AI=43 FLOP/Byte)
+  Warp spec:       WG0=producer (loads), WG1=consumer (computes)
+  Pipeline stages: 3 (circular buffer in shared memory)
+  Scheduling:      Persistent (1 CTA, processes 16 tiles)
+  Rasterization:   Swizzle=2 (M-dimension locality)
+  Epilogue:        ReLU fused (register-level, zero extra HBM)
+  Production TODO: Replace __syncthreads() with mbarrier,
+                   replace manual loads with TMA,
+                   replace st.global with TMA store,
+                   add setmaxnreg for true WS benefit.
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL 65536 ELEMENTS CORRECT                              ║
+║                                                        ║
+║  ALL LESSON 3 CONCEPTS DEMONSTRATED:                   ║
+║  ✓ Roofline classification (compute-bound)             ║
+║  ✓ Warp specialization (producer + consumer)           ║
+║  ✓ Circular pipeline buffer (N_STAGES=3)              ║
+║  ✓ Persistent scheduling (all tiles in one kernel)     ║
+║  ✓ Swizzled rasterization (L2 locality)                ║
+║  ✓ Fused epilogue (ReLU in registers)                  ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex08_comprehensive.cu -->
+
 
 <!-- validation:start:ex08_comprehensive.cu -->
 **Captured output — ex08_comprehensive.cu**

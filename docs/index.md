@@ -4,7 +4,7 @@
 
 
 > **Validation — November 17–18, 2026.** The recorded revisions of all **27 complete CUDA programs compiled and executed successfully** across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The [complete validation summary](final-audit.md) links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The [training record](eight-gpu-validation.md) targets `sm_80` and checks all final weights and per-step losses against an independent CPU reference.
-> The final review added required async-proxy publication fences to four examples in Chapters 3–5. **23 current revisions retain verified PASS records; four corrected revisions await GPU revalidation.** Earlier dated logs refer to their exact archived sources.
+> The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **All 27 current revisions have verified workload records** across the H100 and eight-A100 hosts. The [additional H100 record](revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 > **Follow-up system:** 2× H100 80GB HBM3, 132 SMs each, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > The [original single-GPU records](validation/2026-11-17/results.json) remain available as historical evidence. Each tested source and captured output is linked beside its example or in the follow-up audit. Diagrams open as original SVGs for zooming.
 

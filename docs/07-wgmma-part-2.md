@@ -64,33 +64,20 @@ Blackwell      B100/B200      Unsupported; requires a tcgen05 implementation
 
 ### Cloud GPU Rental — Lambda Labs
 
-Check current provider availability and pricing.
+Choose an instance whose actual GPU model and count meet the chapter's requirements. Use the provider's current Linux GPU image, connect using its supplied SSH key and address, then inspect the environment:
 
+```bash
+nvidia-smi
+nvcc --version
 ```
-Lambda Labs Setup (H100)
-══════════════════════════════════════════════════════════════════════
 
-  1. https://lambdalabs.com/ → sign up → Launch Instance
-  2. Choose "1x H100 PCIe" (sufficient for the single-GPU examples)
-  3. SSH: ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
-  4. Verify: nvcc --version && nvidia-smi
-  5. Compile: nvcc -std=c++17 -arch=sm_90a -O2 file.cu -o out && ./out
-```
+Follow [Getting Started: driver, CUDA and libraries](getting-started.md#3-check-the-driver-and-toolkit-separately). Keep a working provider driver; install only missing components. Select the toolkit explicitly rather than assuming a particular Conda environment exists. For the first launch, use the guide's [complete verified program](getting-started.md#5-compile-and-execute-your-first-verified-program).
 
 ### Cloud GPU Rental — AWS
 
-`p5` is the H100 family. `p4d` is A100 and cannot run this chapter.
+Choose a Linux EC2 instance explicitly listing Hopper GPUs for the Hopper-specific examples; confirm its current hardware specification and GPU count. On a Deep Learning AMI, inspect the image's documented CUDA installations and select a matching toolkit. A PyTorch environment name is image-specific, and activating Python packages alone does not install the C++ compiler/toolkit.
 
-```
-AWS p5 Setup (H100)
-══════════════════════════════════════════════════════════════════════
-
-  Instance: p5.48xlarge (8× H100 SXM5)
-  AMI: "Deep Learning AMI GPU PyTorch" (Ubuntu 22.04)
-  ssh -i key.pem ubuntu@<IP> && source activate pytorch
-  nvcc --version && nvidia-smi
-  A100 (p4d): use sm_80. Nothing in this lesson compiles on sm_80.
-```
+Connect with the SSH command/key for that image, run `nvidia-smi` and `nvcc --version`, then follow the same [installation checklist](getting-started.md#3-check-the-driver-and-toolkit-separately). See [AWS's CUDA environment guidance](https://docs.aws.amazon.com/dlami/latest/devguide/tutorial-base.html). A100 is not a substitute for Hopper TMA/WGMMA examples, and changing only `-arch` does not port those kernels.
 
 ### Hopper vs Blackwell — What Changes
 
@@ -1704,6 +1691,38 @@ int main() {
     return ok ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex01_wgmma_pipeline.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:34.697322+00:00`. Executed UTC: `2026-11-18T11:19:36.086020+00:00`.
+
+Source SHA-256: `76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790`. [Exact source](validation/2026-11-18-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu) · [Compile log](validation/2026-11-18-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/compile.log) · [Run log](validation/2026-11-18-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_wgmma_pipeline.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex01: wgmma commit/wait pipeline + stmatrix epilogue    ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Shape: m64n64k16, FP16 accumulator, 2 tiles pipelined
+Expected: all acc values = K×0.01² = 0.001600
+
+Threads with non-zero sums in BOTH tiles: 128 / 128
+Sample out_A[0] = 0.001600
+Output verification: 0 errors across both 64×64 tiles
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — commit/wait pipeline + stmatrix working!  ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex01_wgmma_pipeline.cu -->
+
 
 <!-- validation:start:ex01_wgmma_pipeline.cu -->
 **Captured output — ex01_wgmma_pipeline.cu**

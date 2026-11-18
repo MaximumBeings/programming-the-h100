@@ -5,7 +5,8 @@
     "archived_sha256": "075961dac147dd0c2ef4a5a288af51c6cc6f0330364bb8fbf4b62cbf4c5aef92",
     "current_sha256": "406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7",
     "reason": "Add fence.proxy.async.shared::cta after mbarrier initialization and before the initialization __syncthreads; no arithmetic, dimensions, or launch parameters changed. Primary source: https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#asynchronous-data-copies-using-the-tensor-memory-accelerator-tma",
-    "status": "pending_gpu_revalidation"
+    "status": "verified_gpu_revalidation",
+    "dataset": "2026-11-18-two-h100"
   },
   {
     "page": "docs/03-asynchronicity-mbarrier.md",
@@ -13,7 +14,8 @@
     "archived_sha256": "852967b65c0f83348cffac11df0ed9fbbed40802aa730944f31564efda5eb2d0",
     "current_sha256": "d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395",
     "reason": "Add fence.proxy.async.shared::cta after mbarrier initialization and before the initialization __syncthreads; no arithmetic, dimensions, or launch parameters changed. Primary source: https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#asynchronous-data-copies-using-the-tensor-memory-accelerator-tma",
-    "status": "pending_gpu_revalidation"
+    "status": "verified_gpu_revalidation",
+    "dataset": "2026-11-18-two-h100"
   },
   {
     "page": "docs/04-cutensormap-tma-swizzling.md",
@@ -21,7 +23,8 @@
     "archived_sha256": "b80719ce45119fa91323bc610a68e7aeb84945ccfa8864fc3f2ee06cc594cab3",
     "current_sha256": "ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173",
     "reason": "Add fence.proxy.async.shared::cta after mbarrier initialization and before the initialization __syncthreads; no arithmetic, dimensions, or launch parameters changed. Primary source: https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#asynchronous-data-copies-using-the-tensor-memory-accelerator-tma",
-    "status": "pending_gpu_revalidation"
+    "status": "verified_gpu_revalidation",
+    "dataset": "2026-11-18-two-h100"
   },
   {
     "page": "docs/05-cp-async-bulk-l2-hinting.md",
@@ -29,6 +32,7 @@
     "archived_sha256": "d3205e1cc28e486f95c1923b3d347bc08bb8f9e52ae4324a8171bef168f22fbd",
     "current_sha256": "f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805",
     "reason": "Add fence.proxy.async.shared::cta after mbarrier initialization and before the initialization __syncthreads; no arithmetic, dimensions, or launch parameters changed. Primary source: https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#asynchronous-data-copies-using-the-tensor-memory-accelerator-tma",
-    "status": "pending_gpu_revalidation"
+    "status": "verified_gpu_revalidation",
+    "dataset": "2026-11-18-two-h100"
   }
 ]

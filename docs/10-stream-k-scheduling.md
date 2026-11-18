@@ -756,6 +756,54 @@ int main() {
 }
 ```
 
+<!-- revalidation:start:ex09_streamk_roles.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:48.473250+00:00`. Executed UTC: `2026-11-18T11:19:51.172405+00:00`.
+
+Source SHA-256: `fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf`. [Exact source](validation/2026-11-18-two-h100/10-stream-k-scheduling/ex09_streamk_roles/ex09_streamk_roles.cu) · [Compile log](validation/2026-11-18-two-h100/10-stream-k-scheduling/ex09_streamk_roles/compile.log) · [Run log](validation/2026-11-18-two-h100/10-stream-k-scheduling/ex09_streamk_roles/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex09_streamk_roles.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+═══════════════════════════════════════════════════════
+  ex09_streamk_roles — Stream-K Split Role Demo
+  3 output tiles × 90 K-tiles/tile = 270 total iters
+  4 CTAs
+═══════════════════════════════════════════════════════
+
+Split assignment:
+  Split 0: tile=0 K_idx= 0 k_tile_count=67 role=FIRST
+  Split 1: tile=0 K_idx=67 k_tile_count=23 role=FINAL
+  Split 2: tile=1 K_idx= 0 k_tile_count=44 role=FIRST
+  Split 3: tile=1 K_idx=44 k_tile_count=46 role=FINAL
+  Split 4: tile=2 K_idx= 0 k_tile_count=22 role=FIRST
+  Split 5: tile=2 K_idx=22 k_tile_count=68 role=FINAL
+
+Kernel output:
+  CTA 0 → tile 0: FIRST SPLIT [0,67), partial=2278
+  CTA 2 → tile 1: FIRST SPLIT [0,44), partial=4950
+  CTA 4 → tile 2: FIRST SPLIT [0,22), partial=4213
+  CTA 3 → tile 1: FINAL SPLIT [44,90), waiting for lock>=44
+  CTA 5 → tile 2: FINAL SPLIT [22,90), waiting for lock>=22
+  CTA 1 → tile 0: FINAL SPLIT [67,90), waiting for lock>=67
+  CTA 3 → tile 1: FINAL SPLIT merged: prior=4950 + mine=7245 = 12195
+  CTA 5 → tile 2: FINAL SPLIT merged: prior=4213 + mine=16082 = 20295
+  CTA 1 → tile 0: FINAL SPLIT merged: prior=2278 + mine=1817 = 4095
+
+Verification:
+  Tile 0: got=4095  expected=4095  PASS ✓
+  Tile 1: got=12195  expected=12195  PASS ✓
+  Tile 2: got=20295  expected=20295  PASS ✓
+
+ALL PASS ✓
+```
+<!-- revalidation:end:ex09_streamk_roles.cu -->
+
+
 <!-- validation:start:ex09_streamk_roles.cu -->
 **Captured output — ex09_streamk_roles.cu**
 
@@ -1617,6 +1665,43 @@ int main() {
     return all_pass ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex10_dependent_launch.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:51.829636+00:00`. Executed UTC: `2026-11-18T11:19:52.650956+00:00`.
+
+Source SHA-256: `36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640`. [Exact source](validation/2026-11-18-two-h100/10-stream-k-scheduling/ex10_dependent_launch/ex10_dependent_launch.cu) · [Compile log](validation/2026-11-18-two-h100/10-stream-k-scheduling/ex10_dependent_launch/compile.log) · [Run log](validation/2026-11-18-two-h100/10-stream-k-scheduling/ex10_dependent_launch/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex10_dependent_launch.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+═══════════════════════════════════════════════════════
+  ex10_dependent_launch — GDC Dependent Grid Protocol
+  N=256 elements
+═══════════════════════════════════════════════════════
+
+Launching Kernel A (producer)...
+Launching Kernel B (consumer) with programmatic serialization...
+
+Verification (first 8 elements):
+  [  0] A wrote    1 (exp    1) ✓  B result 1001 (exp 1001) ✓
+  [  1] A wrote    4 (exp    4) ✓  B result 1004 (exp 1004) ✓
+  [  2] A wrote    7 (exp    7) ✓  B result 1007 (exp 1007) ✓
+  [  3] A wrote   10 (exp   10) ✓  B result 1010 (exp 1010) ✓
+  [  4] A wrote   13 (exp   13) ✓  B result 1013 (exp 1013) ✓
+  [  5] A wrote   16 (exp   16) ✓  B result 1016 (exp 1016) ✓
+  [  6] A wrote   19 (exp   19) ✓  B result 1019 (exp 1019) ✓
+  [  7] A wrote   22 (exp   22) ✓  B result 1022 (exp 1022) ✓
+  ... (248 more elements)
+
+ALL PASS ✓
+```
+<!-- revalidation:end:ex10_dependent_launch.cu -->
+
 
 <!-- validation:start:ex10_dependent_launch.cu -->
 **Captured output — ex10_dependent_launch.cu**

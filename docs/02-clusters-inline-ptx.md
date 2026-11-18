@@ -52,108 +52,26 @@ The `a` suffix enables architecture-specific features; it is not part of the run
 
 ### Cloud GPU Rental — Lambda Labs
 
-**Optional setup smoke check.** Use `hello.cu` below to confirm local compilation and GPU launch before starting the named examples. The dated execution records cover the 27 named book programs.
+Choose an instance whose actual GPU model and count meet the chapter's requirements. Use the provider's current Linux GPU image, connect using its supplied SSH key and address, then inspect the environment:
 
-Lambda Labs offers H100 instances (the ideal hardware for this guide).
-
+```bash
+nvidia-smi
+nvcc --version
 ```
-Lambda Labs Setup Instructions
-══════════════════════════════════════════════════════════════════════
 
-  1. Go to: https://lambdalabs.com/
-  2. Sign up and add payment method
-  3. Launch an H100 instance (1x or 8x H100 SXM5)
-     → Instance type: "1x H100 PCIe" (sufficient for the single-GPU examples)
-     → Select a region with availability
-  4. SSH into your instance:
-       ssh -i ~/.ssh/your_key ubuntu@<INSTANCE_IP>
-
-  5. Check CUDA is installed:
-       nvcc --version              # should show 12.x
-       nvidia-smi                  # should show H100 GPU
-
-  6. If CUDA not found, install:
-       # Select your actual OS release and architecture in NVIDIA’s installer:
-       # https://developer.nvidia.com/cuda-downloads
-       # Do not add an Ubuntu 22.04 repository to an Ubuntu 24.04 image.
-
-  7. Add to PATH (add to ~/.bashrc for persistence):
-       export PATH=/usr/local/cuda/bin:$PATH
-       export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-
-  8. Verify compilation works:
-       echo '#include <cstdio>
-       __global__ void hello() { printf("Hello from GPU!\n"); }
-       int main() { hello<<<1,1>>>(); cudaDeviceSynchronize(); }' > hello.cu
-       nvcc -arch=sm_90a hello.cu -o hello && ./hello
-       # Expected: "Hello from GPU!"
-```
+Follow [Getting Started: driver, CUDA and libraries](getting-started.md#3-check-the-driver-and-toolkit-separately). Keep a working provider driver; install only missing components. Select the toolkit explicitly rather than assuming a particular Conda environment exists. For the first launch, use the guide's [complete verified program](getting-started.md#5-compile-and-execute-your-first-verified-program).
 
 ### Cloud GPU Rental — AWS
 
-AWS offers H100 instances via the p5 instance family.
+Choose a Linux EC2 instance explicitly listing Hopper GPUs for the Hopper-specific examples; confirm its current hardware specification and GPU count. On a Deep Learning AMI, inspect the image's documented CUDA installations and select a matching toolkit. A PyTorch environment name is image-specific, and activating Python packages alone does not install the C++ compiler/toolkit.
 
-```
-AWS p5 Setup Instructions (H100)
-══════════════════════════════════════════════════════════════════════
-
-  Instance Types:
-    p5.48xlarge  → 8× H100 SXM5 80GB (most powerful, expensive)
-    p4d.24xlarge → 8× A100 SXM4 40GB (cheaper, no clusters)
-
-  1. In AWS Console → EC2 → Launch Instance
-  2. Search AMI: "Deep Learning AMI GPU PyTorch" (Ubuntu 22.04)
-     → This AMI has CUDA 12.x pre-installed
-  3. Choose instance type: p5.48xlarge (or p4d for A100)
-  4. Create/select key pair
-  5. Launch and SSH:
-       ssh -i your-key.pem ubuntu@<PUBLIC_IP>
-
-  6. Activate CUDA environment (on Deep Learning AMI):
-       source activate pytorch  # or check: conda env list
-
-  7. Verify:
-       nvcc --version
-       nvidia-smi
-
-  For spot instances (cheaper):
-    Use Spot Requests in EC2 console
-    p5 spot can be ~70% cheaper but may be interrupted
-
-  IMPORTANT for p4d (A100):
-    Use -arch=sm_80 instead of -arch=sm_90a
-    Cluster code will NOT compile — add #ifdef __CUDA_ARCH__ guards
-```
+Connect with the SSH command/key for that image, run `nvidia-smi` and `nvcc --version`, then follow the same [installation checklist](getting-started.md#3-check-the-driver-and-toolkit-separately). See [AWS's CUDA environment guidance](https://docs.aws.amazon.com/dlami/latest/devguide/tutorial-base.html). A100 is not a substitute for Hopper TMA/WGMMA examples, and changing only `-arch` does not port those kernels.
 
 ### Local Setup (Desktop GPU)
 
-If you have a Hopper or Ada card in your own machine, this is the fastest path —
-no hourly billing, no SSH. Note the `-arch` flag at the bottom: it must match
-your card, and getting it wrong is the most common reason an example refuses to
-compile.
+Use the [fresh Ubuntu installation path](getting-started.md#choose-the-installation-path), including the matching repository, host driver, CUDA 12.8 and library checks. The guide also covers retaining a working cloud installation. Existing CUDA toolkits can coexist; do not begin by purging all CUDA/NVIDIA packages.
 
-```
-Local CUDA Installation (Ubuntu 22.04)
-══════════════════════════════════════════════════════════════════════
-
-  # Remove old CUDA if present:
-  sudo apt-get --purge remove "*cuda*" "*cublas*" "*cufft*" "*cufile*" \
-    "*curand*" "*cusolver*" "*cusparse*" "*gds-tools*" "*npp*" "*nvjpeg*" \
-    "nsight*" "*nvvm*"
-
-  # Install CUDA 12.4 (adjust version as needed):
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-  sudo dpkg -i cuda-keyring_1.1-1_all.deb
-  sudo apt-get update
-  sudo apt-get install cuda-toolkit-12-4
-
-  # For RTX 4090 (Ada, sm_89):
-  nvcc -std=c++17 -arch=sm_89 -O2 file.cu -o out
-
-  # For RTX 3090 (Ampere, sm_86):
-  nvcc -std=c++17 -arch=sm_86 -O2 file.cu -o out
-  # NOTE: Cluster code won't compile on sm_86!
-```
+An Ada or Ampere desktop GPU can run suitable ordinary CUDA programs, but cannot execute this book's Hopper-specific TMA/WGMMA kernels. Match each instruction family to hardware; changing a compiler target does not add a missing hardware feature.
 
 ### Hopper vs Blackwell — What Changes in the Code?
 
@@ -768,6 +686,45 @@ int main() {
     return (passed == tests && meta_ok) ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex01_cluster_inspect.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:10.753247+00:00`. Executed UTC: `2026-11-18T11:19:13.520596+00:00`.
+
+Source SHA-256: `ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_cluster_inspect.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Thread Block Cluster Inspection — H100 Demo         ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Per-Block Report:
+Block(global) Cluster Rank   Cluster Size   My SMEM Val  Partner Val  Exchange OK?
+--------------------------------------------------------------------------------
+  0            0              2              0            100          ✓ PASS
+  1            1              2              100          0            ✓ PASS
+  2            0              2              200          300          ✓ PASS
+  3            1              2              300          200          ✓ PASS
+
+DSMEM Exchange Tests: 4/4 passed
+
+Cluster Metadata Verification:
+  ✓ All cluster metadata correct
+
+════════════════════════════════════════════════
+ALL TESTS PASSED — Clusters working correctly!
+════════════════════════════════════════════════
+```
+<!-- revalidation:end:ex01_cluster_inspect.cu -->
+
 
 <!-- validation:start:ex01_cluster_inspect.cu -->
 **Captured output — ex01_cluster_inspect.cu**
@@ -1757,6 +1714,72 @@ int main() {
     return (passed == tests) ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex02_ptx_basics.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:14.175173+00:00`. Executed UTC: `2026-11-18T11:19:15.109469+00:00`.
+
+Source SHA-256: `50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_ptx_basics.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  Inline PTX Basics — Full Test Suite                  ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: add.u32 (42 + 10 = 52)
+  ✓ PASS: result = 52
+
+Test 2: mad.lo.u32 (5*7+3 = 38)
+  ✓ PASS: result = 38
+
+Test 3: fma.rn.f32 (2.5 * 4.0 + 1.5 = 11.5)
+  ✓ PASS: result = 11.5000
+
+Test 4: predicate max
+  ✓ PASS: max(10,20) = 20
+  ✓ PASS: max(30,5) = 30
+
+Test 5: special registers (%tid.x, %ctaid.x, %laneid)
+  ✓ PASS: tid.x = 0
+  INFO: ctaid.x = 1 (block index, not checked — scheduling dependent)
+  INFO: laneid = 0 (should be 0 since tid=0)
+
+Test 6: bitwise ops (a=0xFF00, b=0x0F0F)
+  ✓ PASS: and = 0x00F00
+  ✓ PASS: or = 0x0FF0F
+  ✓ PASS: xor = 0x0F00F
+  ✓ PASS: shl = 0xFF000
+  ✓ PASS: shr = 0x00FF0
+
+Test 7: early clobber — (7+3)*(7-3) = 40
+  ✓ PASS: result = 40
+
+Test 8: read-write operand — 100 + 3 = 103
+  ✓ PASS: result = 103
+
+Test 9: immediate operand template
+  ✓ PASS: 1 << 5 = 32
+  ✓ PASS: 7 << 3 = 56
+
+Test 10: volatile + memory clobber (store 0xDEADBEEF to SMEM)
+  ✓ PASS: loaded 0xDEADBEEF from SMEM
+
+Test 11: vote.ballot (even lanes → 0x55555555)
+  ✓ PASS: ballot = 0x55555555
+
+╔══════════════════════════════════════════════════════╗
+║  Results: 17/17 tests passed                          ║
+║  ✓ ALL PASS                                          ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex02_ptx_basics.cu -->
+
 
 <!-- validation:start:ex02_ptx_basics.cu -->
 **Captured output — ex02_ptx_basics.cu**
@@ -2752,6 +2775,42 @@ int main() {
     return (passed == tests) ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex03_state_spaces.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:15.678429+00:00`. Executed UTC: `2026-11-18T11:19:16.526377+00:00`.
+
+Source SHA-256: `1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex03_state_spaces/ex03_state_spaces.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex03_state_spaces/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex03_state_spaces/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex03_state_spaces.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  PTX State Spaces — Test Suite                        ║
+╚══════════════════════════════════════════════════════╝
+
+Test 2: .shared — Thread 0 reads thread 1's slot (expected 2.5)
+  ✓ PASS: thread 0 read 2.5 from thread 1's slot
+
+Test 3: .global — Multiply by 10 via explicit PTX
+  ✓ PASS: all 8 values multiplied by 10 correctly
+
+Test 4: .const — Read SCALE_FACTOR[0] = 2.0 via PTX and C++
+  ✓ PASS: PTX read = 2.0, C++ read = 2.0 (both = 2.0)
+
+Test 6: Combined — global→SMEM→compute with SCALE_FACTOR[0]=2.0
+  ✓ PASS: 128 elements scaled by 2.0 (sample: in=5 out=10)
+
+╔══════════════════════════════════════════════════════╗
+║  Results: 4/4 tests passed                            ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex03_state_spaces.cu -->
+
 
 <!-- validation:start:ex03_state_spaces.cu -->
 **Captured output — ex03_state_spaces.cu**
@@ -3838,6 +3897,48 @@ int main() {
 }
 ```
 
+<!-- revalidation:start:ex04_ptx_pointers.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:17.076551+00:00`. Executed UTC: `2026-11-18T11:19:18.162592+00:00`.
+
+Source SHA-256: `77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex04_ptx_pointers.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  ex04: PTX Pointers, State Spaces & Packed Types      ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: cvta + ld.shared (smem[0]=42, smem[1]=99)
+  ✓ PASS: loaded 42.0 and 99.0, SMEM offset=0x400
+
+Test 2: st.shared/ld.shared neighbor (expect 7.0 and 17.0)
+  ✓ PASS: my=7.0 neighbor=17.0
+
+Test 3: ld.global/st.global multiply by 2
+  ✓ PASS: all elements×2 correct
+
+Test 4: atom.shared.add (64 threads → counter=64)
+  ✓ PASS: counter=64
+
+Test 5: Packed FP16 add (1+3=4, 2+4=6)
+  ✓ PASS: slot0=4.0 slot1=6.0
+
+Test 6: mov.b32 bit reinterpret (float↔uint32)
+  ✓ PASS: pi bits=0x40490FD0, roundtrip matches
+
+╔══════════════════════════════════════════════════════╗
+║  6/6 tests passed   ✓ ALL PASS                    ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex04_ptx_pointers.cu -->
+
+
 <!-- validation:start:ex04_ptx_pointers.cu -->
 **Captured output — ex04_ptx_pointers.cu**
 
@@ -4124,6 +4225,45 @@ int main() {
     return (passed==tests)?0:1;
 }
 ```
+
+<!-- revalidation:start:ex05_ptx_datatypes.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:18.726938+00:00`. Executed UTC: `2026-11-18T11:19:20.021963+00:00`.
+
+Source SHA-256: `711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/ex05_ptx_datatypes.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex05_ptx_datatypes.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════╗
+║  ex05: PTX Data Types & Packed Operations             ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: cvt FP32→FP16 (1.5f → 0x3E00)
+  ✓ PASS: 0x3E00
+
+Test 2: FP16 pack/unpack (1.0f=0x3C00, 2.0f=0x4000)
+  ✓ PASS: packed=0x40003C00 lo=0x3C00 hi=0x4000
+
+Test 3: add.bf16x2 (2.0+3.0=5.0 in both slots)
+  ✓ PASS: lo=5.00 hi=5.00
+
+Test 4: add.f64 (1.23456789012345 + 9.87654321098765)
+  ✓ PASS: 11.111111101111101
+
+Test 5: mad hi+lo (0xFFFFFFFF * 0xFFFFFFFF)
+  ✓ PASS: lo=0x00000001 hi=0xFFFFFFFE
+
+╔══════════════════════════════════════════════════════╗
+║  5/5 tests passed   ✓ ALL PASS                    ║
+╚══════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex05_ptx_datatypes.cu -->
+
 
 <!-- validation:start:ex05_ptx_datatypes.cu -->
 **Captured output — ex05_ptx_datatypes.cu**
@@ -4656,6 +4796,66 @@ int main() {
     return (total_errors == 0) ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex06_comprehensive.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:20.571501+00:00`. Executed UTC: `2026-11-18T11:19:23.333448+00:00`.
+
+Source SHA-256: `4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex06_comprehensive.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+╔══════════════════════════════════════════════════════════╗
+║  ex06: Comprehensive Capstone — Clusters + PTX + DSMEM   ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+       ✓ Hopper/Blackwell GPU detected — clusters supported.
+
+Launch config:
+  Grid:    2 blocks
+  Block:   64 threads
+  Cluster: 2 blocks per cluster (1 cluster total)
+  N:       128 elements
+
+Verification (first 8 and last 4 elements):
+  Index    Input        Expected     Got          OK?
+  ------------------------------------------------------------
+  0        0.0          64.0         64.0         ✓
+  1        1.0          66.0         66.0         ✓
+  2        2.0          68.0         68.0         ✓
+  3        3.0          70.0         70.0         ✓
+  4        4.0          72.0         72.0         ✓
+  5        5.0          74.0         74.0         ✓
+  6        6.0          76.0         76.0         ✓
+  7        7.0          78.0         78.0         ✓
+  63       63.0         190.0        190.0        ✓
+  64       64.0         64.0         64.0         ✓
+  65       65.0         66.0         66.0         ✓
+  126      126.0        188.0        188.0        ✓
+  127      127.0        190.0        190.0        ✓
+
+  ✓ ALL 128 elements correct!
+
+  What just happened (review):
+  ├── Block 0 loaded input[0..63] into its SMEM (PTX ld.global)
+  ├── Block 1 loaded input[64..127] into its SMEM (PTX ld.global)
+  ├── cluster.sync() ensured both blocks' SMEM was ready
+  ├── Each block read the partner's SMEM via map_shared_rank (DSMEM)
+  ├── PTX fma.rn.f32 computed the pairwise sum
+  └── Results written back to global memory (PTX st.global)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED — Comprehensive example complete!     ║
+╚══════════════════════════════════════════════════════════╝
+```
+<!-- revalidation:end:ex06_comprehensive.cu -->
+
 
 <!-- validation:start:ex06_comprehensive.cu -->
 **Captured output — ex06_comprehensive.cu**

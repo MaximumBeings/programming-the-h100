@@ -1,0 +1,27 @@
+╔══════════════════════════════════════════════════════╗
+║  mbarrier Two-Barrier Handshake Demo                  ║
+║  3 rounds of producer→consumer using full/empty bars  ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Producer values: [42.00, 99.50, 7.25]
+Expected consumer outputs: [84.00, 199.00, 14.50]
+
+Handshake Results:
+  Round    Produced     Expected     Got          OK?     
+  ────────────────────────────────────────────────
+  0        42.00        84.00        84.00        ✓ PASS
+  1        99.50        199.00       199.00       ✓ PASS
+  2        7.25         14.50        14.50        ✓ PASS
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL 3 ROUNDS PASSED                               ║
+║                                                      ║
+║  WHAT HAPPENED:                                      ║
+║  1. empty_bar pre-signaled → producer starts freely  ║
+║  2. Producer writes SMEM → arrives on full_bar       ║
+║  3. Consumer waits full_bar → reads SMEM → doubles   ║
+║  4. Consumer arrives on empty_bar → stage recyclable  ║
+║  5. phase bits prevent stale barrier reads           ║
+╚══════════════════════════════════════════════════════╝

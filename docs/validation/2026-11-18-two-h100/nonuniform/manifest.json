@@ -1,0 +1,53 @@
+{
+  "timestamp_utc": "2026-11-18T11:26:56.221237+00:00",
+  "status": "PASSED",
+  "archived_source": "docs/validation/2026-11-17/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu",
+  "archived_sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790",
+  "variant": "ch07_nonuniform_epilogue.cu",
+  "variant_sha256": "e60560c4c5b3468076ce514785b6b5645249b602eb8bd6a3f4d1d3477aba7ce3",
+  "unchanged_device_source_sha256": "8cc626090b00519a4ee6155158c634588ac01526756b2e96587074e55c2db6cb",
+  "replacement_count": 3,
+  "cpu_pattern_check": {
+    "status": "PASS",
+    "unique_values": 4096,
+    "exact_binary16": true,
+    "nonzero_products_per_dot": 1,
+    "minimum": 1.0,
+    "maximum": 15.9921875
+  },
+  "scope": "Opt-in audit variant; not historical validation or a performance benchmark.",
+  "preflight": {
+    "command": [
+      "/usr/bin/python3",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/tools/h100_preflight.py",
+      "--json"
+    ],
+    "returncode": 0,
+    "log": "preflight.log",
+    "log_sha256": "bb103961917cc010e98439fc007aa8d2092474664a5f2b60be8f63cca560891c"
+  },
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/build/audit/20261118T112656221237Z-6d8be743/ch07_nonuniform_epilogue.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/build/audit/20261118T112656221237Z-6d8be743/ch07_nonuniform_epilogue"
+    ],
+    "returncode": 0,
+    "log": "compile.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "binary_sha256": "f85d6e1fdf281074124efee33fd5a1273c7e9e3a59a33aeb1e817c71e81f997e",
+  "run": {
+    "command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/build/audit/20261118T112656221237Z-6d8be743/ch07_nonuniform_epilogue"
+    ],
+    "returncode": 0,
+    "log": "run.log",
+    "log_sha256": "5165c3bd720a445a3d811702e26e9b4e4e87382b88dc63744729029ac27af151"
+  },
+  "finished_utc": "2026-11-18T11:26:58.839926+00:00"
+}

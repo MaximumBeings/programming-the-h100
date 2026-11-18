@@ -45,6 +45,9 @@ jobs:
       - name: Verify eight-A100 supplemental evidence
         run: python3 tools/verify_eight_gpu_audit.py
 
+      - name: Verify November 18 rerun
+        run: python3 tools/verify_revalidation.py
+
       - name: Verify SVG readability
         run: python3 tools/verify_svg_readability.py
 

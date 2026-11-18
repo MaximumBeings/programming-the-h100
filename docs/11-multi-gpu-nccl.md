@@ -881,6 +881,37 @@ int main() {
 }
 ```
 
+<!-- revalidation:start:ex11_nvlink_bandwidth.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:53.204677+00:00`. Executed UTC: `2026-11-18T11:19:54.198165+00:00`.
+
+Source SHA-256: `67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305`. [Exact source](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu) · [Compile log](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log) · [Run log](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex11_nvlink_bandwidth.cu -o ./example
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+GPUs detected: 2
+GPU 0: NVIDIA H100 80GB HBM3, SM 9.0, 132 SMs
+GPU 1: NVIDIA H100 80GB HBM3, SM 9.0, 132 SMs
+GPU 0 can access GPU 1 memory: YES (does not identify NVLink)
+Record topology with nvidia-smi topo -m. Payload: 134217728 bytes
+  Staged 0->1 full-buffer verification: PASS (0 byte errors)
+  Staged complete-transfer time: 4.860716 ms, payload 27.613 GB/s
+  Peer API 0->1 full-buffer verification: PASS (0 byte errors)
+  Peer API transfer time: 0.347011 ms, payload 386.782 GB/s (link unclassified)
+  Kernel 1->0 full-buffer verification: PASS (0 byte errors)
+  Kernel grid 1 blocks: 137.613831 ms, payload 0.975 GB/s
+  Kernel 1->0 full-buffer verification: PASS (0 byte errors)
+  Kernel grid 132 blocks: 1.070992 ms, payload 125.321 GB/s
+Full-buffer checks: PASS
+```
+<!-- revalidation:end:ex11_nvlink_bandwidth.cu -->
+
+
 !!! info "Corrected benchmark — two-GPU execution passed"
 
     The grid-stride benchmark compiled and passed every full-buffer check on two H100 GPUs. Its captured result is shown below; dated source and logs are downloadable with the result.
@@ -1694,6 +1725,46 @@ int main() {
     return all_ok ? 0 : 1;
 }
 ```
+
+<!-- revalidation:start:ex12_nccl_allreduce.cu -->
+> **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:56.952819+00:00`. Executed UTC: `2026-11-18T11:19:58.343801+00:00`.
+
+Source SHA-256: `f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889`. [Exact source](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu) · [Compile log](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log) · [Run log](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
+
+```bash
+nvcc -std=c++17 -arch=sm_90a -O2 ex12_nccl_allreduce.cu -o ./example -lnccl
+./example
+```
+
+**Sample output — November 18 rerun**
+
+```text
+═══════════════════════════════════════════════════════
+  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo
+═══════════════════════════════════════════════════════
+
+GPUs found: 2
+  GPU 0: NVIDIA H100 80GB HBM3
+  GPU 1: NVIDIA H100 80GB HBM3
+
+  AllReduce results:
+    N_GPUs:     2
+    Data size:  33.55 MB (8M elements × float)
+    Avg time:   0.149 ms
+    Alg BW:     224.92 GB/s  (bytes / time)
+    Bus BW:     224.92 GB/s  (2×(N-1)/N × alg BW)
+    Expected result per element: 3
+    First 8 values: 3 3 3 3 3 3 3 3
+  GPU 1: PASS ✓ (result[0]=3, expected=3)
+  GPU 0: PASS ✓ (result[0]=3, expected=3)
+
+═══════════════════════════════════════════════════════
+  Expected sum = 2 × (2 + 1) / 2 = 3
+═══════════════════════════════════════════════════════
+All-rank numerical verification: PASS
+```
+<!-- revalidation:end:ex12_nccl_allreduce.cu -->
+
 
 !!! info "Corrected result checks — two-GPU execution passed"
 

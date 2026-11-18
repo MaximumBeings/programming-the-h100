@@ -11,7 +11,7 @@ This guide takes you from a terminal to the book's first verified GPU result. Yo
 
     The SSH client instructions describe standard usage; the linked system records identify the exact execution configurations. [System record](validation/2026-11-17/system-information.txt) · [Execution manifest](validation/2026-11-17/results.json) · [Preflight JSON](validation/2026-11-17/preflight.json).
 
-The final review added required async-proxy publication fences to four examples in Chapters 3–5. **23 current revisions retain verified PASS records; four corrected revisions await GPU revalidation.** Earlier dated logs refer to their exact archived sources.
+The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **All 27 current revisions have verified workload records** across the H100 and eight-A100 hosts. The [additional H100 record](revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 
 Select a diagram to open its full-size SVG.
 
@@ -46,19 +46,171 @@ On the first connection, compare the server's host-key fingerprint with your pro
 
 ## 3 — Check the driver and toolkit separately
 
-Run these on the GPU host:
+
+### Choose the installation path
+
+The commands below target **Ubuntu 22.04 or 24.04, x86-64, on a Linux GPU host**, with CUDA **12.8**. Ubuntu 24.04 is the book's recorded host family. Run them in Bash on that host, not on an Apple Silicon laptop. For ARM/Grace, WSL, containers or another distribution, use the corresponding [NVIDIA CUDA installation instructions](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-installation-guide-linux/index.html); the repository and driver steps differ.
+
+| Starting point | Follow this path |
+| --- | --- |
+| Provider image already runs `nvidia-smi` and `nvcc --version` reports a suitable toolkit | Keep the provider's driver; install only missing libraries/tools and select the intended toolkit. |
+| Working driver, missing compiler | Install the CUDA toolkit below; a toolkit-only package does not replace the driver. |
+| Fresh Ubuntu GPU host without a driver | Install prerequisites, register the repository, install the driver, reboot, then install CUDA and libraries. |
+| Container | Install the driver on the host; use the provider's GPU-enabled container runtime and a CUDA **development** image. Do not install kernel drivers inside the container. |
+
+Record the starting environment:
+
+```bash
+cat /etc/os-release
+uname -m
+uname -r
+nvidia-smi
+command -v nvcc
+nvcc --version
+```
+
+On a fresh host, missing `nvidia-smi` or `nvcc` at this stage is the reason to continue installation. On a managed image, first check its documented environment modules/toolkit paths. Conda activation is not a universal CUDA installation step.
+
+### Install Ubuntu prerequisites
+
+On a fresh Ubuntu host:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential python3 python3-venv python3-pip \
+    git wget ca-certificates pciutils
+```
+
+`build-essential` supplies GCC/G++, Make and the basic linker toolchain. CUDA also constrains supported host-compiler versions: use the selected toolkit's [host compiler support table](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-installation-guide-linux/index.html#host-compiler-support-policy). The captured Ubuntu 24.04 runs used GCC 13.3. A generic Python CUDA wheel is not a replacement for this C++ build environment.
+
+### Register the matching NVIDIA repository
+
+Use this only if the matching NVIDIA APT repository is not already configured. It selects Ubuntu 22.04 versus 24.04 from the actual OS; it stops for other systems. The subshell keeps its temporary variables local.
+
+```bash
+(
+    set -eu
+    . /etc/os-release
+    case "$ID:$VERSION_ID:$(uname -m)" in
+        ubuntu:22.04:x86_64) cuda_repo=ubuntu2204 ;;
+        ubuntu:24.04:x86_64) cuda_repo=ubuntu2404 ;;
+        *) echo "Use NVIDIA's instructions for this OS/CPU." >&2; exit 1 ;;
+    esac
+    keyring_dir=$(mktemp -d)
+    trap 'rm -rf "$keyring_dir"' EXIT
+    wget -O "$keyring_dir/cuda-keyring.deb" \
+        "https://developer.download.nvidia.com/compute/cuda/repos/$cuda_repo/x86_64/cuda-keyring_1.1-1_all.deb"
+    sudo dpkg -i "$keyring_dir/cuda-keyring.deb"
+    sudo apt-get update
+)
+```
+
+Stop if this block fails. Do not continue with a repository for a different Ubuntu release, or mix a runfile driver installation with unrelated package-manager driver packages. NVIDIA documents the [keyring and repository setup](https://docs.nvidia.com/datacenter/tesla/driver-installation-guide/latest/ubuntu.html#network-repository-enablement-amd64).
+
+### Install a driver only when needed
+
+**Preconfigured cloud image:** retain its working, compatible driver. If it needs an upgrade, use the provider's supported procedure. The recorded driver was 580.105.08. For the CUDA 12.8 Update 1 toolchain, this guide uses a driver meeting the release's corresponding **570.124.06 or newer** requirement; do not assume the general CUDA 12.x minor-compatibility minimum supports every PTX/JIT feature used here. See [NVIDIA's release compatibility tables](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-toolkit-release-notes/index.html#cuda-driver).
+
+**Fresh Ubuntu host you administer:** after repository setup, install kernel headers and NVIDIA's open-module driver package. H100 and A100 are supported by the open-module driver family. These commands are for the host, not a container:
+
+```bash
+sudo apt-get install -y "linux-headers-$(uname -r)"
+sudo apt-get install -y nvidia-open
+sudo reboot
+```
+
+The reboot disconnects SSH. Reconnect with your original SSH command, then run:
 
 ```bash
 nvidia-smi
-nvcc --version
-python3 --version
-gcc --version
-git --version
+nvidia-smi --query-gpu=name,driver_version --format=csv
 ```
 
-`nvidia-smi` checks driver/device visibility. Its “CUDA Version” describes driver compatibility; it is not the installed compiler version. `nvcc --version` identifies the CUDA toolkit that will build your source. The validated host reported driver compatibility with CUDA 13.0 while its installed compiler was CUDA 12.8.93; that is not a contradiction.
+Continue only when the driver sees the intended GPU(s). A custom cloud kernel may need provider-specific headers. With Secure Boot, follow the distribution's module-signing/key-enrollment prompts, which can require console access; do not bypass a failed module load by blindly reinstalling CUDA. The `nvidia-open` package follows the repository's selected driver branch; it does not pin the recorded 580.105.08 patch. See [NVIDIA's driver installation and reboot steps](https://docs.nvidia.com/datacenter/tesla/driver-installation-guide/latest/ubuntu.html#driver-installation).
 
-If `nvcc` exists outside your `PATH`, use the toolkit location configured for your image or environment module. If the machine genuinely has no toolkit, use [NVIDIA's CUDA 12.8 Linux installation guide](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-installation-guide-linux/index.html) and select the actual distribution, version and architecture. A preconfigured cloud image may already have a working driver; installing another driver unnecessarily can break that setup. The book's example commands assume a Linux CUDA execution host.
+### Install CUDA 12.8 and cuBLAS
+
+Skip installation if this toolkit and its development libraries already work. Otherwise:
+
+```bash
+sudo apt-get install -y cuda-toolkit-12-8
+```
+
+This versioned **toolkit-only** package supplies `nvcc`, CUDA Runtime development files, the Driver API headers/link stubs, cuBLAS headers/libraries, Compute Sanitizer and CUDA tools. It does not install a kernel driver. NCCL is separate. Avoid the unversioned `cuda` meta-package when you intend to keep the 12.8 toolkit and the provider's driver. The distribution package `nvidia-cuda-toolkit` can be a different CUDA release; it is not this recipe.
+
+APT may install newer patches within the 12.8 line; inspect actual versions rather than expecting an exact historical environment. NVIDIA's [toolkit package definitions](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-installation-guide-linux/index.html#meta-packages) distinguish toolkit, runtime and driver bundles.
+
+### Select the toolkit and library paths
+
+Choose **one** layout; these are alternatives, not consecutive export blocks.
+
+=== "NVIDIA APT toolkit"
+
+    ```bash
+    export CUDA_HOME=/usr/local/cuda-12.8
+    export CUDA_INCDIR="$CUDA_HOME/include"
+    export CUDA_LIBDIR="$CUDA_HOME/lib64"
+    export PATH="$CUDA_HOME/bin:$PATH"
+    export LD_LIBRARY_PATH="$CUDA_LIBDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    hash -r
+    command -v nvcc
+    nvcc --version
+    ```
+
+=== "Provider toolkit under /usr"
+
+    Use this layout when the provider's working `nvcc` is `/usr/bin/nvcc` and its CUDA headers/libraries are under `/usr/include` and `/usr/lib/x86_64-linux-gnu`, as on the recorded Lambda image.
+
+    ```bash
+    export CUDA_HOME=/usr
+    export CUDA_INCDIR=/usr/include
+    export CUDA_LIBDIR=/usr/lib/x86_64-linux-gnu
+    export PATH="$CUDA_HOME/bin:$PATH"
+    export LD_LIBRARY_PATH="$CUDA_LIBDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    hash -r
+    command -v nvcc
+    nvcc --version
+    ```
+
+For another layout, use the site's module or its real install prefix. Confirm the selected headers and libraries belong to the intended compiler; the multi-GPU collector accepts `CUDA_HOME`, `CUDA_INCDIR` and `CUDA_LIBDIR` explicitly.
+
+APT normally registers its shared libraries with the loader; the explicit toolkit path above also makes the intended 12.8 libraries visible for this shell. For a custom install, substitute its real path. **Never add `$CUDA_HOME/lib64/stubs` to the runtime library path**: `libcuda.so.1` at execution time must come from the installed host driver, not a link-time stub.
+
+To persist this selection in interactive Bash sessions, add these exports once to `~/.bashrc`, then run `source ~/.bashrc` or open a new shell. In scheduler jobs and noninteractive SSH sessions, load the site's module or set these exports explicitly in the job script; those sessions may not read `~/.bashrc`. The conditional expansion avoids an empty trailing library-path entry.
+
+### Install NCCL runtime and development files
+
+NCCL is needed by the collective examples. Install **both** the runtime and development package with the same CUDA-compatible version. For the recorded NCCL 2.26.2/CUDA 12.8 combination, first confirm package availability:
+
+```bash
+apt-cache madison libnccl2 libnccl-dev
+```
+
+When both list `2.26.2-1+cuda12.8`:
+
+```bash
+sudo apt-get install -y \
+    libnccl2=2.26.2-1+cuda12.8 \
+    libnccl-dev=2.26.2-1+cuda12.8
+```
+
+These versions were present in NVIDIA's Ubuntu 22.04 and 24.04 x86-64 repositories when this guide was checked on **November 18, 2026**. If unavailable, select a matching pair built for CUDA 12.x from NVIDIA's repository/archive and record the actual version. Do not silently install the default CUDA 13 build or pass `--allow-downgrades` over a provider-managed stack. An existing compatible NCCL installation can be retained; its headers and runtime must resolve consistently. NVIDIA's [NCCL installation guide](https://docs.nvidia.com/deeplearning/nccl/install-guide/index.html#ubuntu) explains explicit package-version selection.
+
+### Verify files, versions and topology
+
+```bash
+nvcc --version
+gcc --version
+python3 --version
+nvidia-smi
+nvidia-smi topo -m
+ls "$CUDA_INCDIR/cuda_runtime.h" "$CUDA_INCDIR/cuda.h"
+ls "$CUDA_INCDIR/cublas_v2.h"
+dpkg-query -W libnccl2 libnccl-dev
+dpkg -L libnccl-dev | grep '/nccl.h$'
+```
+
+The driver supplies GPU access; the toolkit supplies compilation; cuBLAS and NCCL supply libraries. `nvidia-smi`'s “CUDA Version” is driver compatibility, not the installed `nvcc` version. A topology listing describes connectivity, not a measured bandwidth or a successful peer-transfer test. Finish with the book's actual compile, launch and numerical checks below.
 
 ## 4 — Download the source and run preflight
 
@@ -89,6 +241,14 @@ python3 tools/h100_preflight.py --minimum-gpus 8
 ```
 
 The eight-GPU training program passed on eight A100 GPUs, including comparisons of every final weight and per-step loss against an independent CPU reference. See the [captured execution and system record](eight-gpu-validation.md).
+
+For Chapter 4/11 development-library linkage, this optional check compiles the relevant current programs without launching their GPU workloads:
+
+```bash
+python3 tools/validate_examples.py --compile-only 04-cutensormap 11-multi-gpu
+```
+
+It checks Driver API, NCCL and cuBLAS links through the examples' complete commands. A successful compile/link is not an execution result. The eight-GPU training workload still requires eight suitable GPUs for its full run. MPI, NVSHMEM, PyTorch and cuDNN are not required to build the 27 named CUDA programs; the separate attention-reference script uses PyTorch.
 
 If you downloaded only the website, the [standalone preflight utility](assets/tools/h100_preflight.py) is also available. Save it, inspect it, then run it on your Linux GPU host.
 
@@ -138,14 +298,26 @@ compute-sanitizer --version
 cuobjdump --version
 ```
 
-On the tested Lambda Ubuntu image, its configured package repository supplied Nsight Compute with:
+For the CUDA 12.8 toolkit installed through the repository above, missing inspection tools can be installed with:
 
 ```bash
-sudo apt-get install -y nsight-compute
+sudo apt-get install -y cuda-nsight-compute-12-8 cuda-sanitizer-12-8
 ncu --version
 ```
 
-That produced Nsight Compute **2025.1.1.0**. The package command is a record of this image, not a guarantee about every Ubuntu repository. On another system use the vendor's supported installation procedure. The first ordinary-user profile reported `ERR_NVGPUCTRPERM`; profiling with elevated permissions succeeded on the instance we administered. [Chapter 13](13-nsight-compute.md) shows both logs and the exact successful invocation. Do not change system-wide counter permissions merely to imitate a screenshot.
+The earlier captured Lambda session installed the image's `nsight-compute` package and reported **2025.1.1.0**; the versioned toolkit package above can supply a newer 2025.1.x patch. Record `ncu --version` on your host. If `ncu` is outside `PATH`, inspect `dpkg -L cuda-nsight-compute-12-8` and its `nsight-compute-2025.1.1` dependency for the installed executable, then use its full path or add that directory to `PATH`. The first ordinary-user profile reported `ERR_NVGPUCTRPERM`; profiling with elevated permissions succeeded on the instance we administered. [Chapter 13](13-nsight-compute.md) shows both logs and the exact successful invocation. Do not change system-wide counter permissions merely to imitate a screenshot.
+
+### Optional attention-reference dependency
+
+The 27 named CUDA programs do not require PyTorch. To reproduce the separate Chapter 12 recurrence check from the repository root, use an isolated environment and the recorded CUDA-enabled PyTorch version:
+
+```bash
+python3 -m venv .venv-attention
+.venv-attention/bin/python -m pip install torch==2.7.0 --index-url https://download.pytorch.org/whl/cu128
+.venv-attention/bin/python tools/validate_attention.py
+```
+
+This script runs 12 GPU reference cases; it is not the FA3 skeleton or a performance benchmark. PyTorch's CUDA wheel does not replace the system compiler or driver. See the [official PyTorch 2.7 installation commands](https://pytorch.org/get-started/previous-versions/#v270).
 
 ## 7 — Build and read the website locally
 

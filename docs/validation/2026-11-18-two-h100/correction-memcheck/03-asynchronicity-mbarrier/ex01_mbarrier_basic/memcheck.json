@@ -1,0 +1,15 @@
+{
+  "command": [
+    "compute-sanitizer",
+    "--tool",
+    "memcheck",
+    "--error-exitcode",
+    "97",
+    "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+  ],
+  "started_utc": "2026-11-18T11:17:40.771587+00:00",
+  "exit_code": 0,
+  "finished_utc": "2026-11-18T11:17:41.790371+00:00",
+  "log_sha256": "5e7b408aa8026b9526c309da3659772499759d0c184a27a0488270cfec4c199c",
+  "zero_error_summaries": 1
+}

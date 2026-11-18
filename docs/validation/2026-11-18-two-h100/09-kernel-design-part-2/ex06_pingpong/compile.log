@@ -1,0 +1,12 @@
+/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu(32): warning #177-D: variable "N_STAGES" was declared but never referenced
+  constexpr int N_STAGES = 3;
+                ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu(32): warning #177-D: variable "N_STAGES" was declared but never referenced
+  constexpr int N_STAGES = 3;
+                ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+

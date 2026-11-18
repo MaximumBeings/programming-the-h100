@@ -2,7 +2,7 @@
 
 The recorded revisions of all 27 complete CUDA programs have successful execution records across the recorded hosts: 26 on H100 and the revised eight-GPU training program on A100. The [original raw archives](validation/2026-11-17/results.json) remain downloadable for provenance.
 
-Recorded revisions: **27 PASS** across the recorded hosts. Current revisions: **23 PASS** and **4 GPU revalidation pending**. The final review added required async-proxy publication fences in Chapters 3–5; earlier successful runs do not establish validation of these corrected revisions.
+Current revisions: **27 PASS** across the recorded hosts. All four barrier-ordering corrections passed the [November 18 two-H100 rerun](revalidation-2026-11-18.md), which compiled all 27 programs and executed 26. The separately verified eight-A100 training result supplies the remaining full workload record.
 
 [System and tool information](validation/2026-11-17-final-audit/system-info.log) · [Raw execution manifest](validation/2026-11-17-final-audit/results.json) · [Integrity inventory](validation/2026-11-17-final-audit/integrity.json). The system log records CUDA-visible discovery, GPU names, memory, driver, compiler, OS and topology.
 
@@ -115,35 +115,31 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex06_comprehensive.cu -o example
 
 ### ex01_mbarrier_basic.cu
 
-**GPU revalidation pending.** The chapter now includes the required barrier-initialization async-proxy fence. The PASS record below covers the archived pre-correction source, not the current revision. Current source SHA-256: `406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7`.
+**PASS** · UTC: `2026-11-18T11:19:23.992477+00:00` · compile exit: `0` · run exit: `0`.
 
-**PASS** · UTC: `2026-11-17T23:33:36.084170+00:00` · compile exit: `0` · run exit: `0`.
+Compile UTC: `2026-11-18T11:19:23.992648+00:00` · Run UTC: `2026-11-18T11:19:24.852132+00:00` · Finished UTC: `2026-11-18T11:19:25.400961+00:00`.
 
-Compile UTC: `2026-11-17T23:33:36.084382+00:00` · Run UTC: `2026-11-17T23:33:37.123884+00:00` · Finished UTC: `2026-11-17T23:33:37.686317+00:00`.
+Source SHA-256: `406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7`.
 
-Source SHA-256: `075961dac147dd0c2ef4a5a288af51c6cc6f0330364bb8fbf4b62cbf4c5aef92`.
-
-[Source](validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu) · [Compiler output](validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex01_mbarrier_basic/compile.log) · [Runtime output](validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex01_mbarrier_basic/run.log).
+The corrected barrier-initialization fence is included in this executed source. [Source](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu) · [Compiler output](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/compile.log) · [Runtime output](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/run.log) · [Dated sample output and memory check](revalidation-2026-11-18.md).
 
 ```bash
-nvcc -std=c++17 -arch=sm_90a -O2 ex01_mbarrier_basic.cu -o example
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_mbarrier_basic.cu -o ./example
 ./example
 ```
 
 ### ex02_war_prevention.cu
 
-**GPU revalidation pending.** The chapter now includes the required barrier-initialization async-proxy fence. The PASS record below covers the archived pre-correction source, not the current revision. Current source SHA-256: `d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395`.
+**PASS** · UTC: `2026-11-18T11:19:25.401214+00:00` · compile exit: `0` · run exit: `0`.
 
-**PASS** · UTC: `2026-11-17T23:33:37.686605+00:00` · compile exit: `0` · run exit: `0`.
+Compile UTC: `2026-11-18T11:19:25.401355+00:00` · Run UTC: `2026-11-18T11:19:26.237306+00:00` · Finished UTC: `2026-11-18T11:19:26.802580+00:00`.
 
-Compile UTC: `2026-11-17T23:33:37.686807+00:00` · Run UTC: `2026-11-17T23:33:38.711863+00:00` · Finished UTC: `2026-11-17T23:33:39.490572+00:00`.
+Source SHA-256: `d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395`.
 
-Source SHA-256: `852967b65c0f83348cffac11df0ed9fbbed40802aa730944f31564efda5eb2d0`.
-
-[Source](validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu) · [Compiler output](validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex02_war_prevention/compile.log) · [Runtime output](validation/2026-11-17-final-audit/03-asynchronicity-mbarrier/ex02_war_prevention/run.log).
+The corrected barrier-initialization fence is included in this executed source. [Source](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu) · [Compiler output](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/compile.log) · [Runtime output](validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/run.log) · [Dated sample output and memory check](revalidation-2026-11-18.md).
 
 ```bash
-nvcc -std=c++17 -arch=sm_90a -O2 ex02_war_prevention.cu -o example
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_war_prevention.cu -o ./example
 ./example
 ```
 
@@ -164,35 +160,31 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex01_tma_basic.cu -o example -lcuda
 
 ### ex02_tma_3d.cu
 
-**GPU revalidation pending.** The chapter now includes the required barrier-initialization async-proxy fence. The PASS record below covers the archived pre-correction source, not the current revision. Current source SHA-256: `ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173`.
+**PASS** · UTC: `2026-11-18T11:19:28.239977+00:00` · compile exit: `0` · run exit: `0`.
 
-**PASS** · UTC: `2026-11-17T23:33:41.213313+00:00` · compile exit: `0` · run exit: `0`.
+Compile UTC: `2026-11-18T11:19:28.240111+00:00` · Run UTC: `2026-11-18T11:19:29.363398+00:00` · Finished UTC: `2026-11-18T11:19:29.951688+00:00`.
 
-Compile UTC: `2026-11-17T23:33:41.213487+00:00` · Run UTC: `2026-11-17T23:33:42.549323+00:00` · Finished UTC: `2026-11-17T23:33:43.106113+00:00`.
+Source SHA-256: `ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173`.
 
-Source SHA-256: `b80719ce45119fa91323bc610a68e7aeb84945ccfa8864fc3f2ee06cc594cab3`.
-
-[Source](validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu) · [Compiler output](validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex02_tma_3d/compile.log) · [Runtime output](validation/2026-11-17-final-audit/04-cutensormap-tma-swizzling/ex02_tma_3d/run.log).
+The corrected barrier-initialization fence is included in this executed source. [Source](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu) · [Compiler output](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/compile.log) · [Runtime output](validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/run.log) · [Dated sample output and memory check](revalidation-2026-11-18.md).
 
 ```bash
-nvcc -std=c++17 -arch=sm_90a -O2 ex02_tma_3d.cu -o example -lcuda
+nvcc -std=c++17 -arch=sm_90a -O2 ex02_tma_3d.cu -o ./example -lcuda
 ./example
 ```
 
 ### ex01_bulk_raw.cu
 
-**GPU revalidation pending.** The chapter now includes the required barrier-initialization async-proxy fence. The PASS record below covers the archived pre-correction source, not the current revision. Current source SHA-256: `f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805`.
+**PASS** · UTC: `2026-11-18T11:19:29.951987+00:00` · compile exit: `0` · run exit: `0`.
 
-**PASS** · UTC: `2026-11-17T23:33:43.106426+00:00` · compile exit: `0` · run exit: `0`.
+Compile UTC: `2026-11-18T11:19:29.952145+00:00` · Run UTC: `2026-11-18T11:19:30.798016+00:00` · Finished UTC: `2026-11-18T11:19:31.350568+00:00`.
 
-Compile UTC: `2026-11-17T23:33:43.106625+00:00` · Run UTC: `2026-11-17T23:33:44.119713+00:00` · Finished UTC: `2026-11-17T23:33:44.680974+00:00`.
+Source SHA-256: `f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805`.
 
-Source SHA-256: `d3205e1cc28e486f95c1923b3d347bc08bb8f9e52ae4324a8171bef168f22fbd`.
-
-[Source](validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu) · [Compiler output](validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/compile.log) · [Runtime output](validation/2026-11-17-final-audit/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/run.log).
+The corrected barrier-initialization fence is included in this executed source. [Source](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu) · [Compiler output](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/compile.log) · [Runtime output](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/run.log) · [Dated sample output and memory check](revalidation-2026-11-18.md).
 
 ```bash
-nvcc -std=c++17 -arch=sm_90a -O2 ex01_bulk_raw.cu -o example
+nvcc -std=c++17 -arch=sm_90a -O2 ex01_bulk_raw.cu -o ./example
 ./example
 ```
 
@@ -452,4 +444,4 @@ All **12 cases passed** against PyTorch math SDPA, including causal masks and pa
 
 ## Verification scope
 
-CI verifies the successful H100/A100 records, captured logs and statuses, and separately pins the exact four pending source corrections. It rejects other source changes and requires visible pending notices. Raw archives retain their original host-specific results. CI checks evidence consistency without rerunning CUDA. Numerical claims remain limited to each program’s explicit oracle and tested inputs.
+CI verifies the successful H100/A100 records, captured logs and statuses, and verifies the four corrected revisions against the November 18 execution dataset. It rejects unregistered source changes. Raw archives retain their original host-specific results. CI checks evidence consistency without rerunning CUDA. Numerical claims remain limited to each program’s explicit oracle and tested inputs.

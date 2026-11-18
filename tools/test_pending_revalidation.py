@@ -18,7 +18,7 @@ class PendingTests(unittest.TestCase):
         for bad in ('0'*64, recorded[key]):
             changed = dict(current); changed[key] = bad
             with self.assertRaises(ValueError): pending(ROOT, changed, recorded)
-        changed = dict(recorded); changed[key] = current[key]
+        changed = dict(recorded); changed[key] = "f"*64
         with self.assertRaises(ValueError): pending(ROOT, current, changed)
 
 if __name__ == '__main__': unittest.main()

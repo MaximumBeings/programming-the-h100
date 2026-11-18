@@ -1,0 +1,14 @@
+GPUs detected: 2
+GPU 0: NVIDIA H100 80GB HBM3, SM 9.0, 132 SMs
+GPU 1: NVIDIA H100 80GB HBM3, SM 9.0, 132 SMs
+GPU 0 can access GPU 1 memory: YES (does not identify NVLink)
+Record topology with nvidia-smi topo -m. Payload: 134217728 bytes
+  Staged 0->1 full-buffer verification: PASS (0 byte errors)
+  Staged complete-transfer time: 4.860716 ms, payload 27.613 GB/s
+  Peer API 0->1 full-buffer verification: PASS (0 byte errors)
+  Peer API transfer time: 0.347011 ms, payload 386.782 GB/s (link unclassified)
+  Kernel 1->0 full-buffer verification: PASS (0 byte errors)
+  Kernel grid 1 blocks: 137.613831 ms, payload 0.975 GB/s
+  Kernel 1->0 full-buffer verification: PASS (0 byte errors)
+  Kernel grid 132 blocks: 1.070992 ms, payload 125.321 GB/s
+Full-buffer checks: PASS

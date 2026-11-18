@@ -143,7 +143,8 @@ def verify(root, date):
     if errors:
         return 1
     print(f'PASS: {len(rows)} archive records match their downloads and logs; current displays match verified executions, including {len(superseded)} superseding PASS records.')
-    print(f'Current coverage: {27 - len(revisions)} verified revisions; {len(revisions)} corrected revisions awaiting GPU revalidation.')
+    pending_count = sum(r['status'] == 'pending_gpu_revalidation' for r in revisions.values())
+    print(f'Current coverage: {27 - pending_count} verified revisions; {pending_count} awaiting GPU revalidation.')
     print('Scope: evidence consistency only; this command does not execute CUDA or prove numerical correctness.')
     return 0
 
