@@ -65,6 +65,7 @@ jobs:
           python3 docs/examples/advanced/attention_walkthrough.py
           python3 tools/verify_attention_walkthrough.py
           python3 tools/tests/test_cutlass_attention.py
+          python3 tools/tests/test_attention_evidence.py
           python3 -m py_compile tools/run_cutlass_attention.py
           python3 tools/run_cutlass_attention.py --help
 

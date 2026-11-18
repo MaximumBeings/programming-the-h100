@@ -6,7 +6,7 @@
 
 !!! abstract "Goal and prerequisites"
 
-    Connect Chapter 30's online-softmax arithmetic to a complete, pinned NVIDIA implementation. You will trace tensor layouts, TMA loads, WGMMA consumers, normalization, output/LSE stores and the verification boundary. Read the CuTe tensor, copy, MMA and pipeline chapters first; this chapter uses their objects rather than replacing them with pseudocode.
+    Connect [Chapter 30's online-softmax arithmetic](30-cutlass-attention-foundations.md) to a complete, pinned NVIDIA implementation. You will trace tensor layouts, TMA loads, WGMMA consumers, normalization, output/LSE stores and the verification boundary. Read [tensor views](18-cute-tensors-tiling.md), [copy ownership](20-tiled-copy.md), [MMA fragments](21-mma-atoms.md) and [pipeline lifetimes](25-cutlass-pipelines.md) first; this chapter uses their objects rather than replacing them with pseudocode.
 
 The implementation is [CUTLASS v4.3.6 example 88](https://github.com/NVIDIA/cutlass/tree/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha), pinned to commit `1afc6d355b8cb992398f17beb4425702f1d57ddd`. It supplies forward **and backward** FMHA implementations. The lab below starts with FP16 forward and can additionally collect two FP16 backward cases. This is an official CUTLASS C++ implementation using CuTe; it is neither a Triton kernel nor the separate FlashAttention-3 software package. The upstream README relates its design to the FlashAttention-3 paper, while explicitly qualifying backward performance.
 
@@ -35,6 +35,24 @@ Take `B=1,H=2,Q=K=128,D=64`:
 
     **Worked answer:** Q becomes 65536 bytes; LSE becomes 2048 bytes. A single query's softmax still ranges over 128 keys, not over all four heads.
 
+### Share KV heads without aliasing query outputs
+
+The pinned README explains that MHA, grouped-query attention (GQA) and multi-query attention (MQA) can be expressed through different tensor views. That does not make them command-line modes of the default runner. The collected baseline remains FP16 ordinary MHA; it has no GQA, MQA or BF16 CLI switch.
+
+As a **mathematical storage exercise**, choose four query heads and two KV heads, with group size `Hq/Hkv=2`. Query head h reads KV head `floor(h/2)`:
+
+| Query head h | 0 | 1 | 2 | 3 |
+| --- | ---: | ---: | ---: | ---: |
+| KV head | 0 | 0 | 1 | 1 |
+
+1. Q and O still have four distinct head outputs. Softmax is computed separately for each query head using its own Q values; sharing K/V does not average those queries together.
+2. For `Nq=2,Nk=3,D=4`, hypothetical packed FP16 Q uses `4*2*4*2=64` bytes. K and V each use `2*3*4*2=48` bytes, rather than the 96 bytes each needed for four independently stored KV heads.
+3. Write the K offset in half elements as `floor(h/2)*(Nk*D)+j*D+c`. At key j=2 and feature c=1, query heads 0 and 1 both read offset nine (byte 18); heads 2 and 3 both read offset 21 (byte 42). This is intentional read sharing.
+4. Output storage must retain the query-head identity. Reusing the shared-KV head index for O would cause two different query heads to overwrite the same output. Training also requires the appropriate accumulation of gradient contributions into shared K/V heads.
+5. MQA is the limiting one-KV-head case: all four queries read KV head zero. With the same Nk/D/type, each K or V allocation becomes 24 bytes; Q/O still retain four query heads.
+
+CuTe can represent the duplicated read view through hierarchical/broadcast layout modes. The exact head ordering, strides, query-to-KV grouping and derivative contract must agree between loader, reference and consumers. The offset formula above is a paper contract, not an implemented or executed GQA extension of this lab. Changing only H in the existing runner changes its MHA head count; it does not enable KV sharing.
+
 ## 31.2 Read the source in dependency order
 
 Use the pinned [runner](https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/88_hopper_fmha.cu) as the entry point, then follow this map:
@@ -62,6 +80,10 @@ The warp-specialized mainloop uses `PipelineTmaAsync` stage state for Q and K/V 
 3. **Apply fusion and update row state.** `before_softmax` can change scores using those coordinates. Softmax maintains row maxima and denominator state. When a later key block raises the maximum, both the old denominator and old PV accumulator must be rescaled. The implementation uses base-two exponential instructions with a converted `scale_softmax_log2`; this implements the same mathematical exponential as Chapter 30, subject to its numerical approximation and precision choices.
 4. **Multiply probabilities by V.** The second matrix product accumulates weighted value vectors. It shares the key-block progression with QK, but has different operand roles and fragment layouts. A QK fragment cannot be treated as an arbitrary row-major matrix without the associated CuTe mapping/conversion.
 5. **Normalize and store.** The softmax finalization normalizes the accumulated output and produces LSE. `FmhaFwdEpilogue` uses the output partition/store path for O and the corresponding row ownership for LSE. Storing a row statistic from every lane would create redundant or conflicting writers; the code selects the appropriate participants.
+
+**Keep the implementation's maximum in its actual units.** Chapter 30 defines mathematical scores `s=raw_QK/sqrt(D)` and tracks their maximum m. In the pinned default FP16 collective, `s_max` instead retains the **unscaled QK maximum**. The rescale is `exp2((old_s_max-new_s_max)*scale_softmax_log2)`, where `scale_softmax_log2=log2(e)/sqrt(D)`. Final natural-log LSE is `s_max*scale_softmax+log(sum)`, with `scale_softmax=1/sqrt(D)`. These are equivalent conventions when used consistently; copying only `m+log(l)` with an unscaled `s_max` is wrong.
+
+The `before_softmax` hook receives those raw QK accumulators. Zero/minus-infinity masking is invariant under the positive scale, but a finite additive bias is not. At D=64, scale is 1/8: a desired bias of two **after** scaling would require raw bias 16 if inserted before that scaling, or application at an appropriate later stage. Dropout, finite bias and absolute causal positions each change the operation contract; this baseline does not enable a dropout mask or implement such extensions automatically.
 
 **Expected check:** every logical output coordinate and its row's LSE correspond to the same query/head. A correct-looking O with a misplaced LSE can break backward even when a forward-only application never reads LSE. Pipeline stage release must follow the last operand consumer, not simply TMA issue or QK issue. The chapter explains dependencies; the figure is not a measured overlap timeline.
 
@@ -110,7 +132,7 @@ Pass `--verify`. Upstream `FwdRunner::verify` compares **O and LSE** to its devi
 
 The reference is a **GPU kernel**, not a CPU/FP64 oracle. It forms one query row's scores in dynamic shared memory and includes FP16 intermediate rounding; it does not materialize a complete global score matrix. Chapter 30's [CPU arithmetic walkthrough](30-cutlass-attention-foundations.md) independently checks the mathematical recurrence on tiny inputs. It does not consume this runner's random device inputs or independently certify the optimized kernel. A stronger new-input audit would export the exact Q/K/V and compare each O/LSE coordinate to a higher-precision reference under the identical mask/scale/layout contract.
 
-Upstream prints `[OK]` only for a passed **verified** variant; `[--]` means execution without verification, and `[FAIL]` indicates failure. Architecture guards and some failed paths can still leave the executable with exit status zero. The collector therefore requires the expected count of `[OK]` rows, a launch header, no failure diagnostics and successful process status. A skipped or missing kernel is **SKIP/INCOMPLETE**, never PASS; one successful variant cannot hide another variant's failure.
+Upstream prints `[OK]` only for a passed **verified** variant; `[--]` means execution without verification, and `[FAIL]` indicates failure. Architecture guards and some failed paths can still leave the executable with exit status zero. The collector therefore requires the expected count and exact names/order of `[OK]` variants, one launch header matching requested B/H/Q/K/D, direction and mask, finite reported rates and positive finite verbose timings, no failure diagnostics and successful process status. A duplicated success row, wrong problem header or nonfinite timing cannot become PASS merely because the row count matches. A skipped or missing kernel is **SKIP/INCOMPLETE**, never PASS; one successful variant cannot hide another variant's failure.
 
 Logs retain argv, UTC start/end, separate stdout/stderr, source hashes and system information in `results.json` and sibling files. Those timestamps become execution dates only after an actual run. The host parser tests exercise false-success cases without claiming GPU validation:
 

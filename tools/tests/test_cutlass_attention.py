@@ -44,6 +44,20 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(module.classify(0, HEADER.replace('Forward', 'Backward') + ROWS, 3), 'PASS')
         self.assertEqual(module.classify(1, HEADER + ROWS, 3), 'FAIL')
 
+    def test_runtime_rows_must_match_requested_case(self):
+        _, _, cases = module.commands(Path('/tmp/example-attention'), 1, 3, True)
+        command = next(cmd for name, cmd, _ in cases if name == 'd64-full')
+        rows = ''.join(line + '       t=0.1ms, smem=16384b\n' for line in ROWS.splitlines(keepends=True))
+        text = HEADER + rows
+        self.assertEqual(module.classify(0, text, 3, command), 'PASS')
+        for wrong in [text.replace('H 2', 'H 4'), text.replace('Forward', 'Backward'),
+                      text.replace('Full', 'Causal'), text.replace('128x64x64', '64x128x64'),
+                      text.replace('t=0.1ms', 't=nanms', 1),
+                      text.replace('1.23 TFLOPS/s', 'inf TFLOPS/s'),
+                      text + HEADER]:
+            self.assertEqual(module.classify(0, wrong, 3, command), 'INCOMPLETE', wrong)
+        self.assertEqual(module.classify(0, text, 3, [a for a in command if a != '--verify']), 'INCOMPLETE')
+
     @unittest.skipUnless(os.name == 'posix', 'process-group check requires POSIX')
     def test_timeout_stops_descendant_and_retains_logs(self):
         with tempfile.TemporaryDirectory() as tmp:

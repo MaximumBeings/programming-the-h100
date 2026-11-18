@@ -8,6 +8,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -61,8 +62,22 @@ def commands(output, jobs, iterations, backward=False):
     return configure, compile_, runs
 
 
-def classify(returncode, output, expected):
-    """Classify the *entire* case, including every instantiated variant."""
+# Exact FP16 variants printed by the pinned runner; this is not an arbitrary
+# count of success-looking rows from an unrelated case.
+VARIANTS = {
+    ('Forward', 32): ['tma 64x128x32', 'tma ws cooperative 128x64x32'],
+    ('Forward', 64): ['tma 64x128x64', 'tma ws cooperative 128x64x64',
+                      'tma ws ping-pong 128x64x64'],
+    ('Forward', 128): ['tma ws cooperative 128x128x128',
+                       'tma ws ping-pong 128x128x128'],
+    ('Forward', 256): ['tma ws cooperative 128x64x256'],
+    ('Backward', 64): ['tma ws cooperative 64x128x64',
+                       'tma ws cooperative 128x128x64'],
+}
+
+
+def classify(returncode, output, expected, command=None):
+    """Classify every variant; runtime collection also matches argv to output."""
     if returncode != 0:
         return 'FAIL'
     if re.search(r'failed (?:O|LSE|dQ|dK|dV):|Reference check failed|Failed to |Error running|returned an error:|cudaEvent\w*\(\) failed', output, re.I):
@@ -76,9 +91,36 @@ def classify(returncode, output, expected):
     markers = re.findall(r'^\s*\[(OK|FAIL|--)\]\s+', output, re.M)
     if 'FAIL' in markers:
         return 'FAIL'
-    # --verify is mandatory, and missing macro instantiations can emit no rows.
     if markers != ['OK'] * expected or not re.search(r' (?:Forward|Backward) ', output):
         return 'INCOMPLETE'
+    if command is not None:
+        options = dict(arg[2:].split('=', 1) for arg in command if arg.startswith('--') and '=' in arg)
+        try:
+            shape = tuple(int(options[key]) for key in ('b', 'h', 'q', 'k', 'd'))
+            direction = 'Backward' if '--bwd' in command else 'Forward'
+            mask = {'no': 'Full', 'causal': 'Causal'}[options['mask']]
+            names = VARIANTS[(direction, shape[-1])]
+        except (KeyError, ValueError):
+            return 'INCOMPLETE'
+        headers = re.findall(r'^###### B (\d+) H (\d+) Q (\d+) K (\d+) D (\d+) (Forward|Backward) (Causal|Full) #SM (\d+)\s*$', output, re.M)
+        if len(headers) != 1 or '--verify' not in command:
+            return 'INCOMPLETE'
+        header = headers[0]
+        if (tuple(map(int, header[:5])) != shape or header[5:7] != (direction, mask)
+                or int(header[7]) <= 0):
+            return 'INCOMPLETE'
+        rows = re.findall(r'^\s*\[OK\]\s+(.+?)\s+:\s+(\S+)\s+TFLOPS/s\s*$', output, re.M)
+        if len(names) != expected or [name for name, _ in rows] != names:
+            return 'INCOMPLETE'
+        try:
+            if any(not math.isfinite(float(rate)) or float(rate) < 0 for _, rate in rows):
+                return 'INCOMPLETE'
+            if '--verbose' in command:
+                times = re.findall(r'^\s*t=(\S+)ms,\s+smem=(\d+)b\s*$', output, re.M)
+                if len(times) != expected or any(not math.isfinite(float(t)) or float(t) <= 0 for t, _ in times):
+                    return 'INCOMPLETE'
+        except ValueError:
+            return 'INCOMPLETE'
     return 'PASS'
 
 
@@ -186,7 +228,7 @@ def main():
         for name, cmd, expected in runs:
             rec, text = record(cmd, output, name, args.timeout)
             rec.update(name=name, expected_verified_variants=expected,
-                       status=classify(rec['exit_code'], text, expected))
+                       status=classify(rec['exit_code'], text, expected, command=cmd))
             summary['cases'].append(rec)
             save()
         states = [case['status'] for case in summary['cases']]

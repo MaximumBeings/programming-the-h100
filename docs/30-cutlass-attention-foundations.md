@@ -146,7 +146,7 @@ query i=1          yes   yes   no
 3. Its weights are `[1/3,2/3,0]` and output is `[1/3,4/3]`.
 4. The corresponding natural-log LSE values are `ln(2)` and `ln(3)`.
 
-Mask logits before softmax: an excluded entry contributes zero weight and does not enter the row maximum or denominator. Setting an excluded logit to zero is wrong because `exp(0)=1`. Zero-filling an out-of-range K tile similarly does not automatically mask its score; it can create a false zero logit with positive softmax mass.
+Mask logits before softmax: an excluded entry contributes zero weight and does not enter the row maximum or denominator. Setting an excluded logit to zero is wrong because `exp(0)=1`. The CPU helper represents masking with a separate Boolean `allowed` list while retaining finite logits; it does not accept literal infinity/NaN score inputs. Thus the mathematical negative-infinity mask and the helper's input representation are different. An entirely masked block is skipped, and an entirely masked row is rejected under its stated contract. Zero-filling an out-of-range K tile similarly does not automatically mask its score; it can create a false zero logit with positive softmax mass.
 
 Rectangular attention makes the position convention visible. If the two queries represent the *last* two positions of a three-key sequence, use absolute query positions `i+1`. The valid test becomes `j<=i+1`, and the outputs are `[[2/3,2/3],[1.4,2.4]]`. This is a separate oracle contract, not what the pinned causal functor silently does. Its own comments explain where such an offset would be introduced. Head sharing, cached decode and unequal lengths require explicit positions and ownership, not merely `causal=true`.
 

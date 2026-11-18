@@ -62,10 +62,10 @@ def ownership():
     d.section('2  A tile dependency is not a physical time interval')
     d.flow([
         ('TMA: global operands to shared tiles', 'Observe the matching data-ready generation before reading Q/K/V storage. Which operand tile is reused depends on the selected schedule.', 'blue'),
-        ('QK: accumulate the score tile', 'WGMMA produces FP32 score accumulators. Apply score scaling and the selected mask before the row-state update.', 'violet'),
-        ('Online row update', 'Track m, l and the output numerator. If the row maximum changes, rescale the prior denominator and prior output contributions.', 'teal'),
+        ('QK: accumulate the score tile', 'WGMMA produces FP32 QK accumulators. Apply the selected logical-coordinate mask. The pinned row maximum stays in unscaled QK units; exponential evaluation applies the scale.', 'violet'),
+        ('Online row update', 'Track the raw QK maximum, denominator l and output numerator. Rescale prior contributions with exp2((old_max-new_max)*scale_softmax_log2) when the maximum changes.', 'teal'),
         ('PV: accumulate weighted values', 'Consume probability operands and V tiles with their required layout/precision. Keep each shared stage live until its asynchronous readers finish.', 'violet'),
-        ('Epilogue: normalized O and LSE', 'Normalize the output and store natural-log LSE = m + ln(l). These are outputs; no full Q-by-K score matrix is required as a global kernel buffer.', 'teal')])
+        ('Epilogue: normalized O and LSE', 'Normalize O and store natural-log LSE = raw_max*scale_softmax + ln(l). Raw maximum units differ from Chapter 30’s scaled-score m. No full global Q-by-K score buffer is required.', 'teal')])
     d.section('3  Compare schedules without inventing a timeline')
     d.table(['Variant', 'CTA tile M x N x D', 'Logical query rows'], [
         ('TMA', '64 x 128 x 64', '64 per tile'),
