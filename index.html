@@ -1400,7 +1400,7 @@
 <h1 id="programming-the-h100">Programming the H100<a class="headerlink" href="#programming-the-h100" title="Permanent link">&para;</a></h1>
 <p><a href="images/chapter-openers/00-cover.svg?v=173db23bc5de"><img alt="FIELD GUIDE: Programming the H100" src="images/chapter-openers/00-cover.svg?v=173db23bc5de" /></a></p>
 <blockquote>
-<p><strong>Validation — November 17–18, 2026.</strong> The <a href="final-audit/">final audit</a> records compilation of all 27 complete CUDA programs, execution of 26 workloads, the stronger Chapter 7 coordinate test, and 12 attention-reference cases. The revised portable Chapter 11 training program also passed an independent CPU-reference check on <a href="eight-gpu-validation/">eight A100 GPUs</a>, compiled for <code>sm_80</code>; this is separate from the H100 records.
+<p><strong>Validation — November 17–18, 2026.</strong> All <strong>27 complete CUDA programs compiled and executed successfully</strong> across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The <a href="final-audit/">complete validation summary</a> links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The <a href="eight-gpu-validation/">training record</a> targets <code>sm_80</code> and checks all final weights and per-step losses against an independent CPU reference.
 <strong>Follow-up system:</strong> 2× H100 80GB HBM3, 132 SMs each, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; <code>sm_90a</code>, C++17, <code>-O2</code>.
 The <a href="validation/2026-11-17/results.json">original single-GPU records</a> remain available as historical evidence. Each tested source and captured output is linked beside its example or in the follow-up audit. Diagrams open as original SVGs for zooming.</p>
 </blockquote>
@@ -1469,7 +1469,7 @@ have a slow kernel in front of you right now, start at Chapter 13.</p>
 <p><strong>Read an example in three passes.</strong> First trace where each value lives and which thread owns it. Then identify what makes it safe to read and safe to overwrite. Finally predict the reference output before looking at the captured result. Performance tuning comes after those three agree.</p>
 <details class="info">
 <summary>What the evidence labels mean</summary>
-<p><strong>Compiled</strong> means the complete listed translation unit built with the recorded command. <strong>Executed and passed</strong> means its actual workload ran and passed its stated checks. <strong>Hardware-blocked</strong> means only prerequisite/error handling was exercised; it is not a successful distributed test. <strong>Reference/skeleton</strong> means surrounding implementation is missing. A passing recurrence test does not validate a different handwritten kernel or reproduce a paper benchmark.</p>
+<p><strong>Compiled</strong> means the complete listed translation unit built with the recorded command. <strong>Executed and passed</strong> means its actual workload ran and passed its stated checks. <strong>Reference/skeleton</strong> means surrounding implementation is missing. A passing recurrence test does not validate a different handwritten kernel or reproduce a paper benchmark.</p>
 <p>Every chapter includes learning goals and two self-checks with expandable worked answers. These exercises are reasoning aids, not extra claims of measured hardware behavior.</p>
 </details>
 <details class="info">

@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#final-audit-two-h100-gpus" class="md-skip">
+        <a href="#complete-execution-validation-h100-and-a100" class="md-skip">
           Skip to content
         </a>
       
@@ -395,10 +395,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#execution-system" class="md-nav__link">
+  <a href="#h100-execution-system" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Execution system
+        H100 execution system
       
     </span>
   </a>
@@ -1645,10 +1645,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#execution-system" class="md-nav__link">
+  <a href="#h100-execution-system" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Execution system
+        H100 execution system
       
     </span>
   </a>
@@ -2027,12 +2027,12 @@
   
 
 
-<h1 id="final-audit-two-h100-gpus">Final audit — two H100 GPUs<a class="headerlink" href="#final-audit-two-h100-gpus" title="Permanent link">&para;</a></h1>
-<p>This fresh audit supplements the <a href="../validation/2026-11-17/results.json">original November 17 evidence</a>. Historical records and chapter transcripts are preserved.</p>
-<p>All <strong>27 complete CUDA programs compiled</strong>. Workload statuses: <strong>26 PASS</strong>, <strong>1 hardware-blocked</strong>. A prerequisite exit is not a successful workload.</p>
+<h1 id="complete-execution-validation-h100-and-a100">Complete execution validation — H100 and A100<a class="headerlink" href="#complete-execution-validation-h100-and-a100" title="Permanent link">&para;</a></h1>
+<p>All 27 complete CUDA programs have successful execution records across the recorded hosts: 26 on H100 and the revised eight-GPU training program on A100. The <a href="../validation/2026-11-17/results.json">original raw archives</a> remain downloadable for provenance.</p>
+<p>All <strong>27 complete CUDA programs compiled and executed</strong>. Current workload results: <strong>27 PASS</strong> across the recorded hosts.</p>
 <p><a href="../validation/2026-11-17-final-audit/system-info.log">System and tool information</a> · <a href="../validation/2026-11-17-final-audit/results.json">Raw execution manifest</a> · <a href="../validation/2026-11-17-final-audit/integrity.json">Integrity inventory</a>. The system log records CUDA-visible discovery, GPU names, memory, driver, compiler, OS and topology.</p>
 <p>Each command below is normalized to a local source filename and <code>example</code> executable. The raw manifest preserves the actual host paths, commands, stage exits and UTC timestamps. Run commands belong in the matching extracted source directory.</p>
-<h2 id="execution-system">Execution system<a class="headerlink" href="#execution-system" title="Permanent link">&para;</a></h2>
+<h2 id="h100-execution-system">H100 execution system<a class="headerlink" href="#h100-execution-system" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>UTC: 2026-11-17T23:33:18.920847+00:00
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>OS: Linux-6.8.0-1064-nvidia-x86_64-with-glibc2.39
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Python: 3.12.3
@@ -2252,11 +2252,12 @@
 </span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>./example
 </span></code></pre></div>
 <h3 id="ex13_hybrid_parallel_trainingcu">ex13_hybrid_parallel_training.cu<a class="headerlink" href="#ex13_hybrid_parallel_trainingcu" title="Permanent link">&para;</a></h3>
-<p><strong>BLOCKED_HARDWARE</strong> · UTC: <code>2026-11-17T23:34:15.805469+00:00</code> · compile exit: <code>0</code> · run exit: <code>unexecuted</code>.</p>
-<p>Compile UTC: <code>2026-11-17T23:34:15.805712+00:00</code> · Run UTC: <code>not executed</code> · Finished UTC: <code>2026-11-17T23:34:17.837357+00:00</code>.</p>
-<p>Source SHA-256: <code>99f1b0a3238b2833c49ed65171cba66cd446991a1be3e807a1645a7f408de9f3</code>.</p>
-<p><a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu">Source</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/compile.log">Compiler output</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/run.log">Runtime output</a>.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex13_hybrid_parallel_training.cu<span class="w"> </span>-o<span class="w"> </span>example<span class="w"> </span>-lnccl<span class="w"> </span>-lcublas<span class="w"> </span>-Xcompiler<span class="w"> </span>-pthread
+<p><strong>PASS</strong> · UTC: <code>2026-11-18T00:03:00.400131+00:00</code> · compile exit: <code>0</code> · run exit: <code>0</code>. Host: eight A100 GPUs, <code>sm_80</code>.</p>
+<p>Compile UTC: <code>2026-11-18T00:03:01.576145+00:00</code> · Run UTC: <code>2026-11-18T00:03:04.268589+00:00</code> · Finished UTC: <code>2026-11-18T00:03:13.511354+00:00</code>.</p>
+<p>Source SHA-256: <code>9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2</code>.</p>
+<p>All 16,384 final weights and 16 per-step replica losses match the independent CPU serial reference within tolerance; four DP replica-pair comparisons pass. This portable training test is separate from Hopper-specific WGMMA instructions.</p>
+<p><a href="../validation/2026-11-18-eight-a100/ex13_hybrid_parallel_training.cu">Source</a> · <a href="../validation/2026-11-18-eight-a100/compile.log">Compiler output</a> · <a href="../validation/2026-11-18-eight-a100/run.log">Runtime output</a> · <a href="../validation/2026-11-18-eight-a100/system-info.log">System/topology</a> · <a href="../eight-gpu-validation/">Full training validation</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_80<span class="w"> </span>-O2<span class="w"> </span>ex13_hybrid_parallel_training.cu<span class="w"> </span>-o<span class="w"> </span>example<span class="w"> </span>-lnccl<span class="w"> </span>-Xcompiler<span class="w"> </span>-pthread<span class="w"> </span>-lcublas
 </span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>./example
 </span></code></pre></div>
 <h2 id="nonuniform-epilogue-audit">Nonuniform epilogue audit<a class="headerlink" href="#nonuniform-epilogue-audit" title="Permanent link">&para;</a></h2>
@@ -2266,7 +2267,7 @@
 <h2 id="online-softmax-numerical-reference">Online-softmax numerical reference<a class="headerlink" href="#online-softmax-numerical-reference" title="Permanent link">&para;</a></h2>
 <p>All <strong>12 cases passed</strong> against PyTorch math SDPA, including causal masks and partial final tiles. Execution metadata is retained verbatim in the captured log. <a href="../validation/2026-11-17-final-audit/attention/run.log">Captured output</a> · <a href="../validation/2026-11-17-final-audit/attention/validate_attention.py">Executed reference source</a>. This verifies the recurrence for those cases, not the FA3 skeleton’s synchronization or published throughput.</p>
 <h2 id="verification-scope">Verification scope<a class="headerlink" href="#verification-scope" title="Permanent link">&para;</a></h2>
-<p>CI verifies source and evidence hashes, workload status consistency, captured-log presence and this summary. CI does not rerun CUDA or establish untested numerical coverage. The remaining eight-GPU workload requires the corresponding hardware.</p>
+<p>CI verifies all 27 current source hashes against the successful H100/A100 records, captured logs, statuses and this summary. Raw archives retain their original host-specific results. CI checks evidence consistency without rerunning CUDA. Numerical claims remain limited to each program’s explicit oracle and tested inputs.</p>
 
 
 
