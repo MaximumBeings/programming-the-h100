@@ -1011,10 +1011,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-how-the-warp-scheduler-fuses-warps" class="md-nav__link">
+  <a href="#22-how-the-warps-participate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 How the Warp Scheduler Fuses Warps
+        2.2 How the Warps Participate
       
     </span>
   </a>
@@ -2196,10 +2196,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#22-how-the-warp-scheduler-fuses-warps" class="md-nav__link">
+  <a href="#22-how-the-warps-participate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2.2 How the Warp Scheduler Fuses Warps
+        2.2 How the Warps Participate
       
     </span>
   </a>
@@ -2851,7 +2851,7 @@
 </div>
 <!-- learning:end -->
 
-<p><strong>What this covers:</strong> Everything from Lesson 6 — the four key innovations in Hopper's tensor core model, the paradigm shift from warp to warp group as the unit of execution, how wgmma.mma_async works and why it is non-blocking, the WGMMA pipeline (fence → load → compute → collect), the full instruction syntax and all qualifier meanings (.sync, .aligned, scale_d, imm-scale, imm-trans), operand location rules (A in registers vs SMEM, B always in SMEM, D always in registers), ldmatrix for loading A tiles (address phase, register phase, swizzle addressing, x1/x2/x4 vectorization), the 64-bit WGMMA descriptor (base address, LBO, SBO, matrix base offset, swizzle mode bits), all supported tile shapes for BF16/FP16/TF32/FP8/INT8, register layout and output accumulator structure, and stmatrix for writing results back. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.</p>
+<p><strong>What this covers:</strong> Everything from Lesson 6 — the four key innovations in Hopper's tensor core model, the paradigm shift from warp to warp group as the unit of execution, how wgmma.mma_async works and why it is non-blocking, the WGMMA pipeline (load → fence → compute → collect), the full instruction syntax and all qualifier meanings (.sync, .aligned, scale_d, imm-scale, imm-trans), operand location rules (A in registers vs SMEM, B always in SMEM, D always in registers), ldmatrix for loading A tiles (address phase, register phase, swizzle addressing, x1/x2/x4 vectorization), the 64-bit WGMMA descriptor (base address, LBO, SBO, matrix base offset, swizzle mode bits), all supported tile shapes for BF16/FP16/TF32/FP8/INT8, register layout and output accumulator structure, and stmatrix for writing results back. Every section includes ASCII diagrams, manual worked examples with concrete numbers, and compileable code with full test harnesses.</p>
 <p><strong>How to read this chapter.</strong> This is where the book stops moving data around
 and starts doing arithmetic with it. <code>wgmma</code> is the instruction that drives
 Hopper's tensor cores, and it is the single most demanding piece of the Hopper
@@ -2945,15 +2945,16 @@ and the <a href="https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-exe
 <p>The first and most disorienting of those four changes: the unit of execution
 gets bigger.</p>
 <p>For a decade the warp — 32 threads — was the atom of NVIDIA GPU execution. On
-Hopper, <code>wgmma</code> is issued by a <strong>warp group</strong>: four consecutive warps, 128
-threads, acting as a single instruction issuer. Not four cooperating warps —
-one instruction, issued once, on behalf of all of them.</p>
+Hopper, <code>wgmma</code> is a <strong>warpgroup collective</strong>: four consecutive warps, 128
+threads, execute the same aligned instruction with consistent operands. This
+is an ISA participation rule, not a claim that the hardware fuses four schedulers
+or performs a single physical instruction issue for the entire group.</p>
 <p>This has practical consequences you'll feel immediately. Block sizes want to be
 multiples of 128. Divergence between the four warps is not merely slow, it is
 illegal. And the output matrix is spread across all 128 threads rather than 32,
 which is what §8 is about.</p>
 <h3 id="21-what-is-a-warp-group">2.1 What Is a Warp Group?<a class="headerlink" href="#21-what-is-a-warp-group" title="Permanent link">&para;</a></h3>
-<p>A <strong>warp group</strong> is a set of 4 consecutive warps within a thread block that are fused together by the hardware for wgmma execution. A warp has 32 threads; a warp group has 4 × 32 = <strong>128 threads</strong>. The warp group is the new fundamental unit of tensor core computation on Hopper.</p>
+<p>A <strong>warp group</strong> is an aligned set of 4 consecutive warps within a thread block that collectively participate in WGMMA execution. A warp has 32 threads; a warp group has 4 × 32 = <strong>128 threads</strong>. The warp group is the new fundamental unit of tensor core computation on Hopper.</p>
 <p>This is a significant paradigm shift. For a decade, the warp (32 threads) was the unit of SIMT execution on NVIDIA GPUs. Every instruction — loads, math, branches — was issued per-warp. Hopper adds warp group as a higher-level concept specifically for tensor core operations.</p>
 <p><a href="../images/ch06/02-warp-group-structure.svg?v=0739fc2864b4"><img alt="Four consecutive warps form a warpgroup" src="../images/ch06/02-warp-group-structure.svg?v=0739fc2864b4" /></a></p>
 <p><em>A WGMMA collective has 128 participating threads, not 128 independent matrix operations.</em></p>
@@ -2971,18 +2972,15 @@ which is what §8 is about.</p>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  wg_id  = warp &gt;&gt; 2;                 // warp group ID (0 or 1)
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>  w_in_wg = warp &amp; 3;                 // warp index within group (0..3)
 </span></code></pre></div>
-<h3 id="22-how-the-warp-scheduler-fuses-warps">2.2 How the Warp Scheduler Fuses Warps<a class="headerlink" href="#22-how-the-warp-scheduler-fuses-warps" title="Permanent link">&para;</a></h3>
+<h3 id="22-how-the-warps-participate">2.2 How the Warps Participate<a class="headerlink" href="#22-how-the-warps-participate" title="Permanent link">&para;</a></h3>
 <p>A warpgroup is the logical collective of four consecutive warps required by WGMMA. All participating threads must execute the same aligned instruction, with consistent descriptors. The PTX contract does not describe a physical "fusion" of four warp schedulers or guarantee that they arrive in one cycle. Divergent participation is undefined behavior, not a supported way to wait for lagging warps.</p>
 <p><code>M=64</code> is an ISA shape constraint. For the smallest FP32 accumulator shape, <code>m64n8</code>, there are 512 outputs distributed over 128 threads, or four FP32 registers per thread. Larger N uses more registers; four registers is not a universal hardware limit. This arithmetic explains the layout, not NVIDIA's undisclosed circuit-design decisions.</p>
 <hr />
 <h2 id="3-the-wgmma-pipeline">3 — The WGMMA Pipeline<a class="headerlink" href="#3-the-wgmma-pipeline" title="Permanent link">&para;</a></h2>
-<p>Before any syntax, the shape. Every wgmma kernel ever written follows the same
-four stages: <strong>fence → load → compute → collect</strong>.</p>
-<p>Learn this sequence now, because the next four sections are each an expansion of
-one stage of it, and the ordering is not negotiable — the fence exists precisely
-to stop the compiler from rearranging what follows.</p>
+<p>Before any syntax, the dependencies. A useful first-kernel sequence is <strong>load → fence → compute → collect</strong>.</p>
+<p>Learn the dependencies in this sequence: stage and publish operands, order ordinary register accesses before WGMMA, issue arithmetic, then commit and wait before consuming its results. A register-ordering fence does not replace data readiness or operation completion.</p>
 <h3 id="31-the-four-stage-pipeline">3.1 The Four-Stage Pipeline<a class="headerlink" href="#31-the-four-stage-pipeline" title="Permanent link">&para;</a></h3>
-<p>Every wgmma-based kernel follows the same four-stage pipeline. Understanding this pipeline is the prerequisite for writing correct, high-performance GEMM kernels.</p>
+<p>This four-stage model separates operand readiness, register ordering, arithmetic issue and result completion. Optimized kernels may overlap or reorganize stages while preserving those dependencies.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>The WGMMA Pipeline — Four Stages
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -3019,7 +3017,7 @@ to stop the compiler from rearranging what follows.</p>
 <p><em>The next stage may load while the current stage supplies matrix operands.</em></p>
 <hr />
 <h2 id="4-wgmmafencesyncaligned-the-register-barrier">4 — wgmma.fence.sync.aligned — The Register Barrier<a class="headerlink" href="#4-wgmmafencesyncaligned-the-register-barrier" title="Permanent link">&para;</a></h2>
-<p>Stage one of the pipeline, and the instruction most often misunderstood.</p>
+<p>The register-ordering stage of the pipeline, and an instruction often misunderstood.</p>
 <p>The name suggests a general-purpose memory fence. It is not. <code>wgmma.fence</code>
 orders <strong>register</strong> access — it tells the hardware that the accumulator
 registers your threads have been writing are now finished with, and the tensor
@@ -3691,23 +3689,28 @@ wrote this tile — Chapter 4, §10 — and nothing checks that they do.</p>
 </span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>  and the second tile starts mid-pattern.
 </span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>
 </span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>  Computation:
-</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>    // For the standard pattern anchored to the allocation boundary:
-</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>    base_offset = (smem_addr / swizzle_bytes) % (swizzle_bytes / 16)
-</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>
-</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>    For 128B swizzle, period = 1024B:
-</span><span id="__span-17-21"><a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>    base_offset = (smem_addr % 1024) / 128
-</span><span id="__span-17-22"><a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>
-</span><span id="__span-17-23"><a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>  Swizzle Mode Bits (bits 62-63):
-</span><span id="__span-17-24"><a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-17-25"><a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>  00 = NO_SWIZZLE   (data in SMEM is in linear order — likely has bank conflicts)
-</span><span id="__span-17-26"><a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>  01 = SWIZZLE_128B (128-byte XOR swizzle — recommended for FP16/BF16)  ★
-</span><span id="__span-17-27"><a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>  10 = SWIZZLE_64B  (64-byte XOR swizzle)
-</span><span id="__span-17-28"><a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>  11 = SWIZZLE_32B  (32-byte XOR swizzle)
-</span><span id="__span-17-29"><a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>
-</span><span id="__span-17-30"><a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>  CRITICAL: The swizzle mode in the descriptor MUST MATCH the swizzle
-</span><span id="__span-17-31"><a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>  mode used when TMA wrote the data to SMEM (the cuTensorMap's swizzle).
-</span><span id="__span-17-32"><a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>  Mismatch → wgmma reads scrambled data → wrong math results.
-</span><span id="__span-17-33"><a id="__codelineno-17-33" name="__codelineno-17-33" href="#__codelineno-17-33"></a>  No runtime error; results are silently incorrect.
+</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>    // WGMMA descriptor field: use the start address of the swizzle pattern.
+</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>    // This is distinct from the tensor-copy swizzle-base calculation.
+</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>    base_offset = (pattern_start_addr &gt;&gt; 7) &amp; 7
+</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>
+</span><span id="__span-17-21"><a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>    Zero-offset pattern alignment depends on the mode:
+</span><span id="__span-17-22"><a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>      128B swizzle: 1024B boundary
+</span><span id="__span-17-23"><a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>       64B swizzle:  512B boundary
+</span><span id="__span-17-24"><a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>       32B swizzle:  256B boundary
+</span><span id="__span-17-25"><a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>    Derive the field from the actual staged layout and PTX descriptor rules;
+</span><span id="__span-17-26"><a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>    do not substitute a matrix pointer unless it is the pattern start.
+</span><span id="__span-17-27"><a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>
+</span><span id="__span-17-28"><a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>  Swizzle Mode Bits (bits 62-63):
+</span><span id="__span-17-29"><a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>  ─────────────────────────────────────────────────────────────────
+</span><span id="__span-17-30"><a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>  00 = NO_SWIZZLE   (data in SMEM is in linear order — likely has bank conflicts)
+</span><span id="__span-17-31"><a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>  01 = SWIZZLE_128B (128-byte XOR swizzle — recommended for FP16/BF16)  ★
+</span><span id="__span-17-32"><a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>  10 = SWIZZLE_64B  (64-byte XOR swizzle)
+</span><span id="__span-17-33"><a id="__codelineno-17-33" name="__codelineno-17-33" href="#__codelineno-17-33"></a>  11 = SWIZZLE_32B  (32-byte XOR swizzle)
+</span><span id="__span-17-34"><a id="__codelineno-17-34" name="__codelineno-17-34" href="#__codelineno-17-34"></a>
+</span><span id="__span-17-35"><a id="__codelineno-17-35" name="__codelineno-17-35" href="#__codelineno-17-35"></a>  CRITICAL: The swizzle mode in the descriptor MUST MATCH the swizzle
+</span><span id="__span-17-36"><a id="__codelineno-17-36" name="__codelineno-17-36" href="#__codelineno-17-36"></a>  mode used when TMA wrote the data to SMEM (the cuTensorMap's swizzle).
+</span><span id="__span-17-37"><a id="__codelineno-17-37" name="__codelineno-17-37" href="#__codelineno-17-37"></a>  Mismatch → wgmma reads scrambled data → wrong math results.
+</span><span id="__span-17-38"><a id="__codelineno-17-38" name="__codelineno-17-38" href="#__codelineno-17-38"></a>  No runtime error; results are silently incorrect.
 </span></code></pre></div>
 <hr />
 <h2 id="14-all-supported-tile-shapes">14 — All Supported Tile Shapes<a class="headerlink" href="#14-all-supported-tile-shapes" title="Permanent link">&para;</a></h2>
@@ -3907,7 +3910,7 @@ math.</p>
 </span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>  SMEM A tile: 64 rows × 16 cols BF16 = 2048 bytes.
 </span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>  SMEM B tile: 16 rows × 64 cols BF16 = 2048 bytes.
 </span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>Descriptor for B (K-major, 128B swizzle):
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>Separate descriptor-field illustration for B (K-major, 128B swizzle):
 </span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>  smem_B base at, say, offset 0x0400 in SMEM.
 </span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>  base_field = 0x0400 &gt;&gt; 4 = 0x040 = 64
 </span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>  LBO for K-major 128B = 1 (hardware ignores for K-major 128B)
@@ -3916,10 +3919,12 @@ math.</p>
 </span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>  swizzle = 01 (128B)
 </span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>
 </span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>  desc = (64) | (1 &lt;&lt; 16) | (16 &lt;&lt; 32) | (0 &lt;&lt; 49) | (1LL &lt;&lt; 62)
-</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>       = 0x4001000000010040
+</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>       = 0x4000001000010040
 </span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>
 </span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a>Verify: A[2][3] × B[3][5] should contribute to D[2][5].
-</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>After accumulation across K=16: D contains the correct dot products.
+</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>After accumulation across K=16: D should contain the correct dot products.
+</span><span id="__span-23-20"><a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a>The complete tested program below instead stages an unswizzled core-matrix
+</span><span id="__span-23-21"><a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a>layout and sets swizzle=0; do not combine its storage with this descriptor.
 </span></code></pre></div>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>═══════════════════════════════════════════════════════
 </span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>  FILE:    ex01_wgmma_basic.cu

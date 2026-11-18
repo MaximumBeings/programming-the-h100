@@ -3209,24 +3209,21 @@ stage right next to the compute).</p>
 </span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>Key Innovation:      Fully asynchronous execution via TMA
 </span></code></pre></div>
 <h3 id="12-the-generational-leap">1.2 The Generational Leap<a class="headerlink" href="#12-the-generational-leap" title="Permanent link">&para;</a></h3>
-<p>The single most important thing to understand about the H100 is that it represents a <strong>paradigm shift from synchronous to asynchronous execution</strong>. Every previous GPU architecture required the SM's threads to babysit data movement — issuing loads, waiting for them, then computing. The H100 introduces hardware that does the data movement <em>in the background</em> while the SM computes on previously loaded data.</p>
+<p>Hopper expands the asynchronous programming model with <strong>TMA bulk tensor transfers and warpgroup matrix arithmetic</strong>. Ampere already supported asynchronous global-to-shared copies with <code>cp.async</code>; overlap did not begin with Hopper. TMA lets an elected thread describe a multidimensional transfer while other threads compute on a previously completed tile. See the <a href="https://docs.nvidia.com/cuda/archive/12.8.0/ampere-tuning-guide/index.html#asynchronous-data-copy-from-global-memory-to-shared-memory">Ampere asynchronous-copy contract</a>.</p>
 <p><a href="../images/ch01/05-sync-vs-async-model.svg?v=698cdeaac277"><img alt="Serial work and pipelined overlap" src="../images/ch01/05-sync-vs-async-model.svg?v=698cdeaac277" /></a></p>
 <p><em>Figure 1.5 — Asynchronous copy is not unique to Hopper; TMA changes how bulk transfers are issued.</em></p>
 <p>This is why pipelined kernels (GEMMs, attention) can approach the theoretical roofline on the H100 — you fetch tile i+1 while computing tile i.</p>
 <hr />
 <h2 id="2-asynchronous-execution-the-tma">2 — Asynchronous Execution &amp; The TMA<a class="headerlink" href="#2-asynchronous-execution-the-tma" title="Permanent link">&para;</a></h2>
 <p>Section 1 claimed the H100 is asynchronous. This section makes that concrete.</p>
-<p>The idea in one sentence: on older GPUs, threads had to fetch their own data and
-then sit and wait for it; on the H100 a dedicated piece of hardware — the
-<strong>Tensor Memory Accelerator</strong>, or TMA — does the fetching while those threads
-keep computing.</p>
+<p>The idea in one sentence: <strong>Tensor Memory Accelerator (TMA)</strong> requests describe bulk tensor movement, reducing per-thread address generation and allowing computation to overlap a transfer. Earlier GPUs already offered overlap mechanisms, including Ampere asynchronous copies; Hopper adds tensor-aware bulk transfers and their completion protocols.</p>
 <p>We build up to it in four steps: what "asynchronous" means for a copy (§2.1),
-what the TMA actually is (§2.2), a worked example where one TMA instruction
-replaces roughly twenty thousand (§2.3), and the price you pay for all this —
+what the TMA actually is (§2.2), a worked comparison of per-thread copying
+with one tensor-transfer request (§2.3), and the price you pay for all this —
 bookkeeping (§2.4).</p>
 <h3 id="21-synchronous-vs-asynchronous-copies">2.1 Synchronous vs Asynchronous Copies<a class="headerlink" href="#21-synchronous-vs-asynchronous-copies" title="Permanent link">&para;</a></h3>
-<p>A <strong>synchronous copy</strong> blocks the issuing thread (or warp) until the data arrives. The thread cannot execute any other instruction until the copy completes. Simple mental model: after the instruction, the data is ready.</p>
-<p>An <strong>asynchronous copy</strong> only <em>starts</em> the transfer. The issuing thread can immediately continue doing other work — computing on previously loaded data, managing bookkeeping, etc. The thread later checks a barrier or fence to know when the copy has finished.</p>
+<p>A <strong>synchronous copy abstraction</strong> requires completion before its consumer proceeds. An ordinary global load is not a promise that every subsequent independent instruction stalls: dependency tracking and scheduling can overlap independent work. The distinction here is explicit asynchronous transfer/completion control, rather than a claim that older load instructions made overlap impossible.</p>
+<p>An <strong>asynchronous copy</strong> only <em>starts</em> the transfer. The issuing thread can immediately continue doing other work — computing on previously loaded data, managing bookkeeping, etc. The thread later uses the operation’s supported completion wait to know when the copy has finished; an ordering fence alone is not a completion wait.</p>
 <p><a href="../images/ch01/06-warp-timeline.svg?v=d5111026e4a0"><img alt="A warp can work while data moves" src="../images/ch01/06-warp-timeline.svg?v=d5111026e4a0" /></a></p>
 <p><em>Figure 2.1 — Illustrative scheduling, not a measured utilisation trace.</em></p>
 <h3 id="22-the-tma-unit">2.2 The TMA Unit<a class="headerlink" href="#22-the-tma-unit" title="Permanent link">&para;</a></h3>
@@ -3747,7 +3744,7 @@ chip was designed for machine learning, not for simulation.</p>
 </span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
 </span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>  Used for:
 </span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    ├── High-precision scientific simulations
-</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>    ├── Financial computations requiring exact precision
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>    ├── Numerical calculations requiring greater floating-point precision
 </span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>    └── Numerical methods where FP32 isn't sufficient
 </span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>
 </span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>  For comparison:
@@ -3756,38 +3753,23 @@ chip was designed for machine learning, not for simulation.</p>
 </span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>    The absolute FP64 throughput is higher because the clock is higher.
 </span></code></pre></div>
 <h3 id="124-special-function-units-sfus">12.4 Special Function Units (SFUs)<a class="headerlink" href="#124-special-function-units-sfus" title="Permanent link">&para;</a></h3>
-<p>When your code calls <code>exp()</code> or <code>sqrt()</code>, it does not run a software routine.
-These units approximate the answer in hardware, trading a little accuracy for a
-great deal of speed.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Special Function Units (SFUs)
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>══════════════════════════════════════════════════════════
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>  Per SM:     16 (4 per quadrant)
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>  Throughput: 1 instruction per cycle per SFU → 16 ops/cycle/SM
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>  Functions handled:
-</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    ├── sin(x), cos(x)           (trigonometric)
-</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    ├── exp(x), exp2(x)          (exponential)
-</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>    ├── log(x), log2(x)          (logarithmic)
-</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>    ├── sqrt(x), rsqrt(x)        (roots)
-</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>    ├── rcp(x)                    (reciprocal: 1/x)
-</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>    └── Other transcendental functions
-</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>
-</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>  Implementation:
-</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>    ├── Polynomial approximations (Chebyshev or minimax)
-</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>    ├── Lookup tables + interpolation
-</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    └── Sacrifice some precision for massive throughput
-</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>
-</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>  Precision: ~22 bits of mantissa accuracy (vs 23 for full FP32).
-</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>  For most ML workloads, this is more than sufficient.
-</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>
-</span><span id="__span-14-23"><a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>  WARNING: If ALL 32 threads in a warp call an SFU function,
-</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>  and there are only 4 SFUs per quadrant, the operation takes:
-</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>    32 threads / 4 SFUs = 8 cycles per warp (for one quadrant)
-</span><span id="__span-14-26"><a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>
-</span><span id="__span-14-27"><a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>  This is still much faster than computing sin() in software
-</span><span id="__span-14-28"><a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>  on the CUDA cores, which would take ~20+ instructions.
+<p>Special-function hardware accelerates selected elementary operations, but a
+CUDA source-level function call is not necessarily one SFU instruction. The
+compiler may combine approximate hardware operations with range reduction,
+correction and special-case handling. Double-precision functions, standard
+single-precision functions and fast intrinsics have different implementations
+and accuracy contracts; compiler flags can also change the lowering.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Source operation             What to verify
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>expf(x), sinf(x), sqrtf(x)    The documented function error bound and compiled code
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>__expf(x), __sinf(x)          Fast-intrinsic accuracy/range contract
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>exp(x) on double             The double-precision implementation, not an FP32 SFU model
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>--use_fast_math               Which functions and floating-point modes it changes
 </span></code></pre></div>
+<p>Do not assume a uniform "22-bit mantissa" accuracy or derive instruction latency
+from a physical unit count. Throughput, dependent latency and whole-function
+execution time are different measurements. Check the <a href="https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#mathematical-functions-appendix">CUDA mathematical-function
+accuracy tables</a>,
+inspect the generated code, and measure the actual input distribution and math mode.</p>
 <h3 id="125-loadstore-units-lsus">12.5 Load/Store Units (LSUs)<a class="headerlink" href="#125-loadstore-units-lsus" title="Permanent link">&para;</a></h3>
 <p>Read this one twice. Coalescing — how well the 32 addresses in a warp merge into
 cache-line requests — is the single biggest lever on memory performance in most
@@ -4069,61 +4051,25 @@ as to data. There are two levels.</p>
 aggressively can push your inner loop out of the tiny L0 cache and cost you more
 than the unrolling saved.</p>
 <h3 id="151-l0-instruction-cache">15.1 L0 Instruction Cache<a class="headerlink" href="#151-l0-instruction-cache" title="Permanent link">&para;</a></h3>
-<p>A very small buffer, private to each quadrant, whose entire job is to hold your
-inner loop so the scheduler never waits on an instruction fetch.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>L0 Instruction Cache — Per-Quadrant Micro-Buffer
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>══════════════════════════════════════════════════════════
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>  Purpose:    Feed the warp scheduler with instructions at wire speed
-</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>  Scope:      Private to each SMSP (quadrant 0 cannot use quadrant 1's L0)
-</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>  Size:       Very small (a few tight loops fit, not much more)
-</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>  Hit rate:   Extremely high for inner loops (GEMM, convolution)
-</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>
-</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>  Without L0:
-</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a>    Every cycle, the scheduler would have to fetch from L1.
-</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>    L1 is shared across all 4 quadrants → contention.
-</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>    L1 has higher latency → pipeline bubbles.
-</span><span id="__span-25-13"><a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a>
-</span><span id="__span-25-14"><a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a>  With L0:
-</span><span id="__span-25-15"><a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>    Tight loops are captured in L0 after first execution.
-</span><span id="__span-25-16"><a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a>    Subsequent iterations: instruction fetch = 1 cycle.
-</span><span id="__span-25-17"><a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a>    The scheduler issues at full speed without waiting.
-</span><span id="__span-25-18"><a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a>
-</span><span id="__span-25-19"><a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a>  What BREAKS the L0:
-</span><span id="__span-25-20"><a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>    ├── Aggressive loop unrolling (code doesn't fit in L0)
-</span><span id="__span-25-21"><a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a>    ├── Heavy function inlining (expanded code too large)
-</span><span id="__span-25-22"><a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a>    ├── Very branchy code (cache thrashing)
-</span><span id="__span-25-23"><a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a>    └── Solution: balance unrolling vs. L0 cache pressure
-</span></code></pre></div>
+<p>Hopper's SM diagram shows an L0 instruction cache for each SM partition, behind
+a shared L1 instruction cache. A compact hot loop can benefit from instruction
+reuse, but neither every first iteration nor every subsequent fetch is guaranteed
+to hit a particular level. Data-cache sizes must not be reused as instruction-cache
+capacities, and an instruction-cache hit is not an instruction-latency guarantee.</p>
+<p>The practical issue is code footprint. Unrolling and inlining can remove control
+or call overhead while expanding the instruction working set. Compare variants
+with the same workload and inspect instruction-fetch stalls instead of assuming
+that maximum unrolling is best.</p>
 <h3 id="152-l1-instruction-cache">15.2 L1 Instruction Cache<a class="headerlink" href="#152-l1-instruction-cache" title="Permanent link">&para;</a></h3>
-<p>The larger backstop behind L0, shared by all four quadrants.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>L1 Instruction Cache — Shared Across SM
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>══════════════════════════════════════════════════════════
-</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
-</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>  Size:     128 KB per SM
-</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>  Purpose:  Buffer SASS instructions for all 4 quadrants
-</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>
-</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>  Without L1 I-Cache:
-</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>    Every instruction would come from L2 cache or HBM3.
-</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>    L2 access: ~30-50 cycles
-</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a>    HBM3 access: ~300-500 cycles
-</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>    The pipeline would stall constantly.
-</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>
-</span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a>  With L1 I-Cache:
-</span><span id="__span-26-14"><a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a>    Kernel code is loaded once into L1.
-</span><span id="__span-26-15"><a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a>    All 4 quadrants fetch from the same L1.
-</span><span id="__span-26-16"><a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a>    Common loops served at ~5-10 cycle latency.
-</span><span id="__span-26-17"><a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a>
-</span><span id="__span-26-18"><a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a>  The L1 I-Cache also handles:
-</span><span id="__span-26-19"><a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a>    ├── Branch target buffering (jumps, loops)
-</span><span id="__span-26-20"><a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a>    ├── Function call/return target caching
-</span><span id="__span-26-21"><a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a>    └── Prefetching sequential instruction streams
-</span><span id="__span-26-22"><a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a>
-</span><span id="__span-26-23"><a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>  GEMM inner loop example:
-</span><span id="__span-26-24"><a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a>    The inner loop of a tiled GEMM is typically ~50-200 instructions.
-</span><span id="__span-26-25"><a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a>    This easily fits in the L1 I-Cache (128 KB).
-</span><span id="__span-26-26"><a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a>    After the first iteration, all instruction fetches hit L1.
-</span></code></pre></div>
+<p>The shared instruction-cache level backs the partition-local instruction caches.
+Capacity, associativity, replacement and timing details require an appropriate
+published measurement or specification; this guide does not assign an unsupported
+fixed capacity or latency to them.</p>
+<p>NVIDIA's <a href="https://developer.nvidia.com/blog/improving-gpu-performance-by-reducing-instruction-cache-misses-2/">H100 instruction-cache case study</a>
+shows how larger instruction working sets can degrade a real workload and how
+selective unrolling can improve it. Use the profiler to compare instruction-fetch
+stall evidence with register pressure, occupancy and executed instruction count.
+A reduction in code size is useful only if the complete kernel gets faster.</p>
 <hr />
 <h2 id="16-thread-block-distribution">16 — Thread Block Distribution<a class="headerlink" href="#16-thread-block-distribution" title="Permanent link">&para;</a></h2>
 <p>This section closes the loop between the code you write — <code>kernel&lt;&lt;&lt;grid,
@@ -4138,59 +4084,59 @@ number is what people mean when they say <em>occupancy</em>.</p>
 <h3 id="162-multiple-ctas-per-sm">16.2 Multiple CTAs Per SM<a class="headerlink" href="#162-multiple-ctas-per-sm" title="Permanent link">&para;</a></h3>
 <p>Occupancy in one worked example. Whichever resource runs out first — warp slots,
 registers, or shared memory — is the one that sets your limit.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>Multiple CTAs Running Concurrently on One SM
-</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>══════════════════════════════════════════════════════════
-</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>
-</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>  An SM can run MULTIPLE thread blocks simultaneously,
-</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>  as long as total resources don't exceed limits.
-</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>
-</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>  Example:
-</span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>    SM capacity: 64 warps, 256 KB registers, 228 KB shared mem
-</span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>
-</span><span id="__span-27-10"><a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>    Block A: 128 threads (4 warps), 64 regs/thread, 32 KB shared
-</span><span id="__span-27-11"><a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>      Resources: 4 warps, 32 KB regs, 32 KB shared
-</span><span id="__span-27-12"><a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>
-</span><span id="__span-27-13"><a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>    How many Block A's fit?
-</span><span id="__span-27-14"><a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a>      Warps:  64 / 4 = 16 blocks
-</span><span id="__span-27-15"><a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a>      Regs:   256 KB / 32 KB = 8 blocks
-</span><span id="__span-27-16"><a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>      Shared: 228 KB / 32 KB = 7 blocks
-</span><span id="__span-27-17"><a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a>      Answer: min(16, 8, 7) = 7 blocks per SM
-</span><span id="__span-27-18"><a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a>
-</span><span id="__span-27-19"><a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a>    With 7 blocks: 28 warps active, 224 KB regs, 224 KB shared
-</span><span id="__span-27-20"><a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>    That's 28/64 = 43.75% warp occupancy.
-</span><span id="__span-27-21"><a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a>
-</span><span id="__span-27-22"><a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a>  Higher occupancy → more warps to hide latency → usually better.
-</span><span id="__span-27-23"><a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a>  But diminishing returns after ~50-60% for compute-bound kernels.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>Multiple CTAs Running Concurrently on One SM
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>══════════════════════════════════════════════════════════
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>  An SM can run MULTIPLE thread blocks simultaneously,
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>  as long as total resources don't exceed limits.
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>
+</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>  Example:
+</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>    SM capacity: 64 warps, 256 KB registers, 228 KB shared mem
+</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>
+</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a>    Block A: 128 threads (4 warps), 64 regs/thread, 32 KB shared
+</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>      Resources: 4 warps, 32 KB regs, 32 KB shared
+</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>
+</span><span id="__span-25-13"><a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a>    How many Block A's fit?
+</span><span id="__span-25-14"><a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a>      Warps:  64 / 4 = 16 blocks
+</span><span id="__span-25-15"><a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>      Regs:   256 KB / 32 KB = 8 blocks
+</span><span id="__span-25-16"><a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a>      Shared: 228 KB / 32 KB = 7 blocks
+</span><span id="__span-25-17"><a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a>      Answer: min(16, 8, 7) = 7 blocks per SM
+</span><span id="__span-25-18"><a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a>
+</span><span id="__span-25-19"><a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a>    With 7 blocks: 28 warps active, 224 KB regs, 224 KB shared
+</span><span id="__span-25-20"><a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>    That's 28/64 = 43.75% warp occupancy.
+</span><span id="__span-25-21"><a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a>
+</span><span id="__span-25-22"><a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a>  Higher occupancy → more warps to hide latency → usually better.
+</span><span id="__span-25-23"><a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a>  But diminishing returns after ~50-60% for compute-bound kernels.
 </span></code></pre></div>
 <hr />
 <h2 id="17-pcie-50-host-interface">17 — PCIe 5.0 Host Interface<a class="headerlink" href="#17-pcie-50-host-interface" title="Permanent link">&para;</a></h2>
 <p>The last link, and by a wide margin the slowest: the connection back to the CPU.
 There is not much to design here, only one rule to internalise, and the
 bandwidth comparison below makes it obvious.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>PCIe 5.0 — CPU ↔ GPU Connection
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>══════════════════════════════════════════════════════════
-</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
-</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>  Bandwidth:     128 GB/s bidirectional (64 GB/s per direction)
-</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>  Generation:    PCIe Gen 5, x16 lanes
-</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
-</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>  Primary roles:
-</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>    1. Data highway: Transfer data between CPU memory and GPU memory
-</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>    2. Kernel launch: CPU sends kernel descriptors to GPU
-</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>    3. GPUDirect RDMA: Network cards (NICs) can read/write GPU
-</span><span id="__span-28-11"><a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>       memory directly without CPU involvement
-</span><span id="__span-28-12"><a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>
-</span><span id="__span-28-13"><a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>  Bandwidth comparison:
-</span><span id="__span-28-14"><a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a>    ├── HBM3:      3,350 GB/s (internal GPU memory bandwidth)
-</span><span id="__span-28-15"><a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a>    ├── NVLink:      900 GB/s (GPU-to-GPU)
-</span><span id="__span-28-16"><a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a>    ├── PCIe 5.0:    128 GB/s (CPU-to-GPU)
-</span><span id="__span-28-17"><a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a>    └── Ethernet:     50 GB/s (400GbE network)
-</span><span id="__span-28-18"><a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a>
-</span><span id="__span-28-19"><a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a>  PCIe is the SLOWEST link in the system.
-</span><span id="__span-28-20"><a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a>  This is why:
-</span><span id="__span-28-21"><a id="__codelineno-28-21" name="__codelineno-28-21" href="#__codelineno-28-21"></a>    ├── Model weights should be loaded once and stay on GPU
-</span><span id="__span-28-22"><a id="__codelineno-28-22" name="__codelineno-28-22" href="#__codelineno-28-22"></a>    ├── Minimize CPU↔GPU data transfers during inference
-</span><span id="__span-28-23"><a id="__codelineno-28-23" name="__codelineno-28-23" href="#__codelineno-28-23"></a>    ├── GPUDirect RDMA bypasses CPU for network → GPU transfers
-</span><span id="__span-28-24"><a id="__codelineno-28-24" name="__codelineno-28-24" href="#__codelineno-28-24"></a>    └── NVLink (not PCIe) is used for multi-GPU communication
+<div class="language-text highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>PCIe 5.0 — CPU ↔ GPU Connection
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>══════════════════════════════════════════════════════════
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>  Bandwidth:     128 GB/s bidirectional (64 GB/s per direction)
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>  Generation:    PCIe Gen 5, x16 lanes
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>  Primary roles:
+</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>    1. Data highway: Transfer data between CPU memory and GPU memory
+</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>    2. Kernel launch: CPU sends kernel descriptors to GPU
+</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a>    3. GPUDirect RDMA: Network cards (NICs) can read/write GPU
+</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>       memory directly without CPU involvement
+</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>
+</span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a>  Bandwidth comparison:
+</span><span id="__span-26-14"><a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a>    ├── HBM3:      3,350 GB/s (internal GPU memory bandwidth)
+</span><span id="__span-26-15"><a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a>    ├── NVLink:      900 GB/s (GPU-to-GPU)
+</span><span id="__span-26-16"><a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a>    ├── PCIe 5.0:    128 GB/s (CPU-to-GPU)
+</span><span id="__span-26-17"><a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a>    └── Ethernet:     50 GB/s (400GbE network)
+</span><span id="__span-26-18"><a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a>
+</span><span id="__span-26-19"><a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a>  PCIe is the SLOWEST link in the system.
+</span><span id="__span-26-20"><a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a>  This is why:
+</span><span id="__span-26-21"><a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a>    ├── Model weights should be loaded once and stay on GPU
+</span><span id="__span-26-22"><a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a>    ├── Minimize CPU↔GPU data transfers during inference
+</span><span id="__span-26-23"><a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>    ├── GPUDirect RDMA bypasses CPU for network → GPU transfers
+</span><span id="__span-26-24"><a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a>    └── NVLink (not PCIe) is used for multi-GPU communication
 </span></code></pre></div>
 <hr />
 <h2 id="18-putting-it-all-together">18 — Putting It All Together<a class="headerlink" href="#18-putting-it-all-together" title="Permanent link">&para;</a></h2>
@@ -4207,29 +4153,29 @@ is that steps 2 and 4 are happening at the same time, for different tiles.</p>
 <p>The hierarchy on one card. The right-hand columns are the ones worth
 internalising: each level down costs roughly an order of magnitude more latency
 and 10× more energy per access.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>H100 Memory Hierarchy — Bandwidth vs Capacity
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>══════════════════════════════════════════════════════════
-</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>
-</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>  Level          Size        Bandwidth/model       Latency (illustrative)
-</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>  ──────────────────────────────────────────────────────────────
-</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>  Registers     256 KB/SM    ~128 R/W/cycle   operand access; instruction-dependent
-</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>  Shared Mem    228 KB/SM    ~0.25 TB/s/SM      ~20 cycles, varies
-</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>  L1 Cache      28-224 KB    (part of shared) ~30 cycles, varies
-</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>  L2 Cache      50 MB        ~12 TB/s agg    ~200 cycles, varies
-</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>  HBM3          80 GB        3.35 TB/s       ~500 cycles, varies
-</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>  ──────────────────────────────────────────────────────────────
-</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>
-</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>  The ratio:
-</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>    HBM3 → L2:    ~3.5×  bandwidth amplification
-</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>    L2   → SMEM:  ~2.8× GPU-wide (modeled 33 TB/s SMEM vs illustrative 12 TB/s L2)
-</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>    SMEM → Regs: no universal bandwidth ratio; operand width and reuse matter
-</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>
-</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>  Each level filters traffic for the next:
-</span><span id="__span-29-19"><a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>    If L1 hits 90%, only 10% of requests reach L2.
-</span><span id="__span-29-20"><a id="__codelineno-29-20" name="__codelineno-29-20" href="#__codelineno-29-20"></a>    If L2 hits 80%, only 20% of L2 requests reach HBM.
-</span><span id="__span-29-21"><a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a>    Total HBM traffic = 10% × 20% = 2% of original requests.
-</span><span id="__span-29-22"><a id="__codelineno-29-22" name="__codelineno-29-22" href="#__codelineno-29-22"></a>
-</span><span id="__span-29-23"><a id="__codelineno-29-23" name="__codelineno-29-23" href="#__codelineno-29-23"></a>  This cascading filtering is what makes the hierarchy work.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>H100 Memory Hierarchy — Bandwidth vs Capacity
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>══════════════════════════════════════════════════════════
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>  Level          Size        Bandwidth/model       Latency (illustrative)
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>  ──────────────────────────────────────────────────────────────
+</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>  Registers     256 KB/SM    ~128 R/W/cycle   operand access; instruction-dependent
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>  Shared Mem    228 KB/SM    ~0.25 TB/s/SM      ~20 cycles, varies
+</span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>  L1 Cache      28-224 KB    (part of shared) ~30 cycles, varies
+</span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>  L2 Cache      50 MB        ~12 TB/s agg    ~200 cycles, varies
+</span><span id="__span-27-10"><a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>  HBM3          80 GB        3.35 TB/s       ~500 cycles, varies
+</span><span id="__span-27-11"><a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>  ──────────────────────────────────────────────────────────────
+</span><span id="__span-27-12"><a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>
+</span><span id="__span-27-13"><a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>  The ratio:
+</span><span id="__span-27-14"><a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a>    HBM3 → L2:    ~3.5×  bandwidth amplification
+</span><span id="__span-27-15"><a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a>    L2   → SMEM:  ~2.8× GPU-wide (modeled 33 TB/s SMEM vs illustrative 12 TB/s L2)
+</span><span id="__span-27-16"><a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>    SMEM → Regs: no universal bandwidth ratio; operand width and reuse matter
+</span><span id="__span-27-17"><a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a>
+</span><span id="__span-27-18"><a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a>  Each level filters traffic for the next:
+</span><span id="__span-27-19"><a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a>    If L1 hits 90%, only 10% of requests reach L2.
+</span><span id="__span-27-20"><a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>    If L2 hits 80%, only 20% of L2 requests reach HBM.
+</span><span id="__span-27-21"><a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a>    Total HBM traffic = 10% × 20% = 2% of original requests.
+</span><span id="__span-27-22"><a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a>
+</span><span id="__span-27-23"><a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a>  This cascading filtering is what makes the hierarchy work.
 </span></code></pre></div>
 <p><a href="../images/ch01/03-memory-hierarchy.svg?v=35179bf3c977"><img alt="Memory hierarchy: scope matters" src="../images/ch01/03-memory-hierarchy.svg?v=35179bf3c977" /></a></p>
 <p><em>Figure 1.4 — Capacity, product peak bandwidth and a bank-throughput model are different quantities.</em></p>
@@ -4239,63 +4185,63 @@ and 10× more energy per access.</p>
 so you can come back to them without re-reading. The last block, the three laws,
 is this entire chapter compressed to nine lines.</p>
 <h3 id="execution-unit-counts-sxm5-132-sms">Execution Unit Counts (SXM5, 132 SMs)<a class="headerlink" href="#execution-unit-counts-sxm5-132-sms" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Unit                Per Quadrant    Per SM     Total GPU
-</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>──────────────────────────────────────────────────────────
-</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>FP32 CUDA Cores         32          128        16,896
-</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>FP64 Units              16           64         8,448
-</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>INT32 Units             16           64         8,448
-</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>Tensor Cores             1            4           528
-</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>Load/Store Units         8           32         4,224
-</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>Special Function Units   4           16         2,112
-</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>Warp Schedulers          1            4           528
-</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>Max Warps               16           64         8,448
+<div class="language-text highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>Unit                Per Quadrant    Per SM     Total GPU
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>──────────────────────────────────────────────────────────
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>FP32 CUDA Cores         32          128        16,896
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>FP64 Units              16           64         8,448
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>INT32 Units             16           64         8,448
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>Tensor Cores             1            4           528
+</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>Load/Store Units         8           32         4,224
+</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>Special Function Units   4           16         2,112
+</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>Warp Schedulers          1            4           528
+</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>Max Warps               16           64         8,448
 </span></code></pre></div>
 <h3 id="memory-specifications">Memory Specifications<a class="headerlink" href="#memory-specifications" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>Component            Size        Bandwidth      Line/Sector
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>──────────────────────────────────────────────────────────────
-</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>HBM3                 80 GB       3.35 TB/s      —
-</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>L2 Cache             50 MB       ~12 TB/s       128B / 32B
-</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>Shared Mem (max)    228 KB/SM    ~0.25 TB/s/SM     32 banks × 4B
-</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>L1 Data Cache       28-224 KB    (part of shared) 128B / 32B
-</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>Register File       256 KB/SM    128 R/W/cycle   32-bit slots
-</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>L1 I-Cache          128 KB/SM    —               —
-</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>L0 I-Cache          tiny/SMSP    1 insn/cycle    —
+<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>Component            Size        Bandwidth      Line/Sector
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>──────────────────────────────────────────────────────────────
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>HBM3                 80 GB       3.35 TB/s      —
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>L2 Cache             50 MB       ~12 TB/s       128B / 32B
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>Shared Mem (max)    228 KB/SM    ~0.25 TB/s/SM     32 banks × 4B
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>L1 Data Cache       28-224 KB    (part of shared) 128B / 32B
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>Register File       256 KB/SM    128 R/W/cycle   32-bit slots
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>L1 I-Cache          Shared/SM    Not specified here; profile instruction-fetch stalls
+</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>L0 I-Cache          tiny/SMSP    1 insn/cycle    —
 </span></code></pre></div>
 <h3 id="key-formulas">Key Formulas<a class="headerlink" href="#key-formulas" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>Occupancy Limiters:
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>  Max warps from registers: floor(65536 / regs_per_thread) / 32
-</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>  Max warps from shared: floor(228 KB / shared_per_block) × warps_per_block
-</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>  Max warps from hardware: 64 per SM (16 per quadrant)
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>  Actual occupancy = min(all three) / 64
-</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>
-</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>Bank Conflict:
-</span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>  bank = (byte_address / 4) % 32
-</span><span id="__span-32-9"><a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>  Conflict: 2+ threads access different addresses in same bank
-</span><span id="__span-32-10"><a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>  No conflict: all threads access different banks OR same address
-</span><span id="__span-32-11"><a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>
-</span><span id="__span-32-12"><a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a>Swizzle:
-</span><span id="__span-32-13"><a id="__codelineno-32-13" name="__codelineno-32-13" href="#__codelineno-32-13"></a>  swizzled_bank = bank XOR (row_index % 32)
-</span><span id="__span-32-14"><a id="__codelineno-32-14" name="__codelineno-32-14" href="#__codelineno-32-14"></a>
-</span><span id="__span-32-15"><a id="__codelineno-32-15" name="__codelineno-32-15" href="#__codelineno-32-15"></a>Tensor Core throughput (SXM5, derived from published full-GPU totals):
-</span><span id="__span-32-16"><a id="__codelineno-32-16" name="__codelineno-32-16" href="#__codelineno-32-16"></a>  FP16/BF16: 4,096 FLOPS/cycle/SM (dense)
-</span><span id="__span-32-17"><a id="__codelineno-32-17" name="__codelineno-32-17" href="#__codelineno-32-17"></a>  FP8:       8,192 FLOPS/cycle/SM (dense)
-</span><span id="__span-32-18"><a id="__codelineno-32-18" name="__codelineno-32-18" href="#__codelineno-32-18"></a>  Sparse (2:4): 2× dense throughput
+<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Occupancy Limiters:
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>  Max warps from registers: floor(65536 / regs_per_thread) / 32
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>  Max warps from shared: floor(228 KB / shared_per_block) × warps_per_block
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>  Max warps from hardware: 64 per SM (16 per quadrant)
+</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>  Actual occupancy = min(all three) / 64
+</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>
+</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>Bank Conflict:
+</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>  bank = (byte_address / 4) % 32
+</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>  Conflict: 2+ threads access different addresses in same bank
+</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>  No conflict: all threads access different banks OR same address
+</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>
+</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>Swizzle:
+</span><span id="__span-30-13"><a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>  swizzled_bank = bank XOR (row_index % 32)
+</span><span id="__span-30-14"><a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>
+</span><span id="__span-30-15"><a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>Tensor Core throughput (SXM5, derived from published full-GPU totals):
+</span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>  FP16/BF16: 4,096 FLOPS/cycle/SM (dense)
+</span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a>  FP8:       8,192 FLOPS/cycle/SM (dense)
+</span><span id="__span-30-18"><a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a>  Sparse (2:4): 2× dense throughput
 </span></code></pre></div>
 <h3 id="the-three-laws-of-h100-performance">The Three Laws of H100 Performance<a class="headerlink" href="#the-three-laws-of-h100-performance" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>1. ASYNC EVERYTHING
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>   Use TMA for all bulk data movement.
-</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>   Overlap loads with compute via double-buffering.
-</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>   Never block an SM waiting for memory.
-</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>
-</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>2. FEED THE TENSOR CORES
-</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>   Tensor cores deliver 10-100× the throughput of CUDA cores.
-</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>   If your kernel isn't using tensor cores, you're leaving
-</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>   90%+ of the chip's capability on the table.
-</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a>
-</span><span id="__span-33-11"><a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>3. RESPECT THE HIERARCHY
-</span><span id="__span-33-12"><a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a>   Registers &gt; Shared Mem &gt; L2 &gt; HBM3
-</span><span id="__span-33-13"><a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>   Every access to a lower level is 10-1000× more expensive.
-</span><span id="__span-33-14"><a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a>   Design your data layout to maximize hits at each level.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>1. ASYNC EVERYTHING
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>   Use TMA for all bulk data movement.
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>   Overlap loads with compute via double-buffering.
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>   Never block an SM waiting for memory.
+</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>
+</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>2. FEED THE TENSOR CORES
+</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>   Tensor cores deliver 10-100× the throughput of CUDA cores.
+</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>   If your kernel isn't using tensor cores, you're leaving
+</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>   90%+ of the chip's capability on the table.
+</span><span id="__span-31-10"><a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a>
+</span><span id="__span-31-11"><a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a>3. RESPECT THE HIERARCHY
+</span><span id="__span-31-12"><a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a>   Registers &gt; Shared Mem &gt; L2 &gt; HBM3
+</span><span id="__span-31-13"><a id="__codelineno-31-13" name="__codelineno-31-13" href="#__codelineno-31-13"></a>   Every access to a lower level is 10-1000× more expensive.
+</span><span id="__span-31-14"><a id="__codelineno-31-14" name="__codelineno-31-14" href="#__codelineno-31-14"></a>   Design your data layout to maximize hits at each level.
 </span></code></pre></div>
 <!-- practice:start -->
 <p><strong>Pause and explain it.</strong> These are worked reasoning exercises, not additional hardware execution claims. Attempt each question before opening its answer.</p>

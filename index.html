@@ -1448,6 +1448,8 @@ read line by line.
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on Hopper hardware matching the compiled target. Use the complete per-example command, including any driver, NCCL or cuBLAS linker flags.</p>
 </blockquote>
 <h2 id="how-to-read-this">How to read this<a class="headerlink" href="#how-to-read-this" title="Permanent link">&para;</a></h2>
+<p><a href="images/book/overview.svg?v=e420cc30a908"><img alt="Book reading map: hardware and PTX lead to safe asynchronous data movement and Tensor Core computation, then kernel design, multi-GPU training, attention and profiling." src="images/book/overview.svg?v=e420cc30a908" /></a></p>
+<p><em>The whole book in one view. Read downward to build the dependencies; return to the relevant layer when profiling exposes a bottleneck.</em></p>
 <p><strong>CUDA prerequisites:</strong> Be comfortable with thread/block indexing, launch dimensions, shared-memory lifetime, block synchronisation and CUDA error checking. If these are new, first work through <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/index.html">NVIDIA’s CUDA programming introduction</a>, then follow this book’s <a href="getting-started/#5-compile-and-execute-your-first-verified-program">first verified run</a>.</p>
 <p>The chapters build on each other. Chapter 1 is pure architecture — no code,
 just the machine. Chapters 2–3 give you the instruction-level vocabulary
@@ -1652,7 +1654,7 @@ prefetching, and <code>cp.reduce.async</code>.</p>
 <hr />
 <p><strong><a href="06-wgmma-part-1/">6. WGMMA — Warp Group Matrix Multiply-Accumulate</a></strong></p>
 <p>The shift from warp to warp group, why <code>wgmma.mma_async</code> is non-blocking,
-the fence → load → compute → collect pipeline, every qualifier, operand
+the load → fence → compute → collect pipeline, every qualifier, operand
 location rules, <code>ldmatrix</code> and swizzle addressing, the 64-bit WGMMA
 descriptor field by field, and all supported tile shapes.</p>
 <p><strong><a href="07-wgmma-part-2/">7. WGMMA Part 2 — Groups, stmatrix, FP8 &amp; Sparse</a></strong></p>

@@ -3321,11 +3321,16 @@ address arithmetic.</p>
 </span><span id="__span-9-32"><a id="__codelineno-9-32" name="__codelineno-9-32" href="#__codelineno-9-32"></a>  Serialization for a 64×N output:
 </span><span id="__span-9-33"><a id="__codelineno-9-33" name="__codelineno-9-33" href="#__codelineno-9-33"></a>    Each thread owns N/2 result elements: N/2 scalar registers for FP32,
 </span><span id="__span-9-34"><a id="__codelineno-9-34" name="__codelineno-9-34" href="#__codelineno-9-34"></a>    or N/4 packed 32-bit registers for FP16 accumulators.
-</span><span id="__span-9-35"><a id="__codelineno-9-35" name="__codelineno-9-35" href="#__codelineno-9-35"></a>    Each warp stores its 16×N slice in N/16 stmatrix.x4.b16 calls.
-</span><span id="__span-9-36"><a id="__codelineno-9-36" name="__codelineno-9-36" href="#__codelineno-9-36"></a>    Each call consumes four packed registers per lane and writes 16×16 values.
-</span><span id="__span-9-37"><a id="__codelineno-9-37" name="__codelineno-9-37" href="#__codelineno-9-37"></a>    For N=128: eight calls per warp; for N=256: sixteen calls per warp.
-</span><span id="__span-9-38"><a id="__codelineno-9-38" name="__codelineno-9-38" href="#__codelineno-9-38"></a>    Source register selection and destination addresses must agree with
-</span><span id="__span-9-39"><a id="__codelineno-9-39" name="__codelineno-9-39" href="#__codelineno-9-39"></a>    the chosen WGMMA fragment layout and shared-memory layout.
+</span><span id="__span-9-35"><a id="__codelineno-9-35" name="__codelineno-9-35" href="#__codelineno-9-35"></a>    For N divisible by 16, each warp can store its 16×N slice in
+</span><span id="__span-9-36"><a id="__codelineno-9-36" name="__codelineno-9-36" href="#__codelineno-9-36"></a>    N/16 stmatrix.x4.b16 calls, with matching fragment selection.
+</span><span id="__span-9-37"><a id="__codelineno-9-37" name="__codelineno-9-37" href="#__codelineno-9-37"></a>    Each x4 call consumes four packed registers per lane and writes four
+</span><span id="__span-9-38"><a id="__codelineno-9-38" name="__codelineno-9-38" href="#__codelineno-9-38"></a>    8×8 matrices, arranged here as 16×16 values.
+</span><span id="__span-9-39"><a id="__codelineno-9-39" name="__codelineno-9-39" href="#__codelineno-9-39"></a>    For N=128: eight calls per warp; for N=256: sixteen calls per warp.
+</span><span id="__span-9-40"><a id="__codelineno-9-40" name="__codelineno-9-40" href="#__codelineno-9-40"></a>    N can also be 8 modulo 16: use a supported smaller composition
+</span><span id="__span-9-41"><a id="__codelineno-9-41" name="__codelineno-9-41" href="#__codelineno-9-41"></a>    (for example x2 for a 16×8 remainder) or ordinary stores; N/16
+</span><span id="__span-9-42"><a id="__codelineno-9-42" name="__codelineno-9-42" href="#__codelineno-9-42"></a>    is not an integral x4-only call count for those shapes.
+</span><span id="__span-9-43"><a id="__codelineno-9-43" name="__codelineno-9-43" href="#__codelineno-9-43"></a>    Source register selection and destination addresses must agree with
+</span><span id="__span-9-44"><a id="__codelineno-9-44" name="__codelineno-9-44" href="#__codelineno-9-44"></a>    the chosen WGMMA fragment layout and shared-memory layout.
 </span></code></pre></div>
 <hr />
 <h2 id="8-stmatrix-and-fp32-accumulators-the-conversion-requirement">8 — stmatrix and FP32 Accumulators — The Conversion Requirement<a class="headerlink" href="#8-stmatrix-and-fp32-accumulators-the-conversion-requirement" title="Permanent link">&para;</a></h2>
