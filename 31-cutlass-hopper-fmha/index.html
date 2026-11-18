@@ -2110,6 +2110,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="31.1 Establish the shape and storage contract">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#share-kv-heads-without-aliasing-query-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Share KV heads without aliasing query outputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2262,6 +2279,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="31.1 Establish the shape and storage contract">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#share-kv-heads-without-aliasing-query-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Share KV heads without aliasing query outputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2382,7 +2416,7 @@
 <p><a href="../images/chapter-openers/31-workshop.svg?v=143b46b04ad6"><img alt="CUTLASS Hopper fused-attention workshop" src="../images/chapter-openers/31-workshop.svg?v=143b46b04ad6" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">Goal and prerequisites</p>
-<p>Connect Chapter 30's online-softmax arithmetic to a complete, pinned NVIDIA implementation. You will trace tensor layouts, TMA loads, WGMMA consumers, normalization, output/LSE stores and the verification boundary. Read the CuTe tensor, copy, MMA and pipeline chapters first; this chapter uses their objects rather than replacing them with pseudocode.</p>
+<p>Connect <a href="../30-cutlass-attention-foundations/">Chapter 30's online-softmax arithmetic</a> to a complete, pinned NVIDIA implementation. You will trace tensor layouts, TMA loads, WGMMA consumers, normalization, output/LSE stores and the verification boundary. Read <a href="../18-cute-tensors-tiling/">tensor views</a>, <a href="../20-tiled-copy/">copy ownership</a>, <a href="../21-mma-atoms/">MMA fragments</a> and <a href="../25-cutlass-pipelines/">pipeline lifetimes</a> first; this chapter uses their objects rather than replacing them with pseudocode.</p>
 </div>
 <p>The implementation is <a href="https://github.com/NVIDIA/cutlass/tree/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha">CUTLASS v4.3.6 example 88</a>, pinned to commit <code>1afc6d355b8cb992398f17beb4425702f1d57ddd</code>. It supplies forward <strong>and backward</strong> FMHA implementations. The lab below starts with FP16 forward and can additionally collect two FP16 backward cases. This is an official CUTLASS C++ implementation using CuTe; it is neither a Triton kernel nor the separate FlashAttention-3 software package. The upstream README relates its design to the FlashAttention-3 paper, while explicitly qualifying backward performance.</p>
 <p><strong>Status of this new lab:</strong> source inspection, collection-plan checks and host-side parser tests are complete. The new example-88 kernels have no captured Hopper execution in this book yet. The existing workshop GPU records remain valid for their own sources; they are not evidence that this additional kernel has run. Commands below prepare that separate validation without inventing dates, outputs or performance numbers.</p>
@@ -2396,13 +2430,44 @@
 <li>LSE has one FP32 value per query/head: <code>1*2*128=256</code> values, <strong>1024 bytes</strong>, with view <code>(Q,(B,H))</code>. It records the natural-log normalizer <code>log(sum_j exp(score_ij))</code> under the applied mask.</li>
 <li>A hypothetical global FP32 score array would contain <code>B*H*Q*K=32768</code> values, or 131072 bytes. The fused kernel avoids materializing that full global intermediate. This is not the total memory footprint: inputs, outputs, reference allocations, shared memory, registers and any workspace remain real resources.</li>
 </ol>
-<p><a href="../images/worked/ch31-fmha-ownership.svg?v=d3fa1e882701"><img alt="Hopper FMHA shapes, storage bytes and dependency ownership" src="../images/worked/ch31-fmha-ownership.svg?v=d3fa1e882701" /></a></p>
+<p><a href="../images/worked/ch31-fmha-ownership.svg?v=7a261c27cb2a"><img alt="Hopper FMHA shapes, storage bytes and dependency ownership" src="../images/worked/ch31-fmha-ownership.svg?v=7a261c27cb2a" /></a></p>
 <p><strong>Check:</strong> reconstruct an address using the actual strides before changing layout. The FP8 target uses a different V stride orientation; copying these FP16 stride assumptions into FP8 is incorrect. Although the README describes broader FP16/BF16 building-block support, the default runner explicitly selects <code>cutlass::half_t</code>; it has no BF16 command-line switch.</p>
 <details class="question">
 <summary>Exercise: double the number of heads</summary>
 <p>Keep all other values fixed and set H=4. What happens to Q and LSE storage?</p>
 <p><strong>Worked answer:</strong> Q becomes 65536 bytes; LSE becomes 2048 bytes. A single query's softmax still ranges over 128 keys, not over all four heads.</p>
 </details>
+<h3 id="share-kv-heads-without-aliasing-query-outputs">Share KV heads without aliasing query outputs<a class="headerlink" href="#share-kv-heads-without-aliasing-query-outputs" title="Permanent link">&para;</a></h3>
+<p>The pinned README explains that MHA, grouped-query attention (GQA) and multi-query attention (MQA) can be expressed through different tensor views. That does not make them command-line modes of the default runner. The collected baseline remains FP16 ordinary MHA; it has no GQA, MQA or BF16 CLI switch.</p>
+<p>As a <strong>mathematical storage exercise</strong>, choose four query heads and two KV heads, with group size <code>Hq/Hkv=2</code>. Query head h reads KV head <code>floor(h/2)</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Query head h</th>
+<th style="text-align: right;">0</th>
+<th style="text-align: right;">1</th>
+<th style="text-align: right;">2</th>
+<th style="text-align: right;">3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KV head</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>Q and O still have four distinct head outputs. Softmax is computed separately for each query head using its own Q values; sharing K/V does not average those queries together.</li>
+<li>For <code>Nq=2,Nk=3,D=4</code>, hypothetical packed FP16 Q uses <code>4*2*4*2=64</code> bytes. K and V each use <code>2*3*4*2=48</code> bytes, rather than the 96 bytes each needed for four independently stored KV heads.</li>
+<li>Write the K offset in half elements as <code>floor(h/2)*(Nk*D)+j*D+c</code>. At key j=2 and feature c=1, query heads 0 and 1 both read offset nine (byte 18); heads 2 and 3 both read offset 21 (byte 42). This is intentional read sharing.</li>
+<li>Output storage must retain the query-head identity. Reusing the shared-KV head index for O would cause two different query heads to overwrite the same output. Training also requires the appropriate accumulation of gradient contributions into shared K/V heads.</li>
+<li>MQA is the limiting one-KV-head case: all four queries read KV head zero. With the same Nk/D/type, each K or V allocation becomes 24 bytes; Q/O still retain four query heads.</li>
+</ol>
+<p>CuTe can represent the duplicated read view through hierarchical/broadcast layout modes. The exact head ordering, strides, query-to-KV grouping and derivative contract must agree between loader, reference and consumers. The offset formula above is a paper contract, not an implemented or executed GQA extension of this lab. Changing only H in the existing runner changes its MHA head count; it does not enable KV sharing.</p>
 <h2 id="312-read-the-source-in-dependency-order">31.2 Read the source in dependency order<a class="headerlink" href="#312-read-the-source-in-dependency-order" title="Permanent link">&para;</a></h2>
 <p>Use the pinned <a href="https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/88_hopper_fmha.cu">runner</a> as the entry point, then follow this map:</p>
 <table>
@@ -2462,6 +2527,8 @@
 <li><strong>Multiply probabilities by V.</strong> The second matrix product accumulates weighted value vectors. It shares the key-block progression with QK, but has different operand roles and fragment layouts. A QK fragment cannot be treated as an arbitrary row-major matrix without the associated CuTe mapping/conversion.</li>
 <li><strong>Normalize and store.</strong> The softmax finalization normalizes the accumulated output and produces LSE. <code>FmhaFwdEpilogue</code> uses the output partition/store path for O and the corresponding row ownership for LSE. Storing a row statistic from every lane would create redundant or conflicting writers; the code selects the appropriate participants.</li>
 </ol>
+<p><strong>Keep the implementation's maximum in its actual units.</strong> Chapter 30 defines mathematical scores <code>s=raw_QK/sqrt(D)</code> and tracks their maximum m. In the pinned default FP16 collective, <code>s_max</code> instead retains the <strong>unscaled QK maximum</strong>. The rescale is <code>exp2((old_s_max-new_s_max)*scale_softmax_log2)</code>, where <code>scale_softmax_log2=log2(e)/sqrt(D)</code>. Final natural-log LSE is <code>s_max*scale_softmax+log(sum)</code>, with <code>scale_softmax=1/sqrt(D)</code>. These are equivalent conventions when used consistently; copying only <code>m+log(l)</code> with an unscaled <code>s_max</code> is wrong.</p>
+<p>The <code>before_softmax</code> hook receives those raw QK accumulators. Zero/minus-infinity masking is invariant under the positive scale, but a finite additive bias is not. At D=64, scale is 1/8: a desired bias of two <strong>after</strong> scaling would require raw bias 16 if inserted before that scaling, or application at an appropriate later stage. Dropout, finite bias and absolute causal positions each change the operation contract; this baseline does not enable a dropout mask or implement such extensions automatically.</p>
 <p><strong>Expected check:</strong> every logical output coordinate and its row's LSE correspond to the same query/head. A correct-looking O with a misplaced LSE can break backward even when a forward-only application never reads LSE. Pipeline stage release must follow the last operand consumer, not simply TMA issue or QK issue. The chapter explains dependencies; the figure is not a measured overlap timeline.</p>
 <h2 id="314-specify-masks-before-testing-tails-or-decoding">31.4 Specify masks before testing tails or decoding<a class="headerlink" href="#314-specify-masks-before-testing-tails-or-decoding" title="Permanent link">&para;</a></h2>
 <p>The pinned <code>CausalFusion</code> masks a score when <strong>query index &lt; key index</strong>. This is a <strong>top-left</strong> causal convention. With Q=2,K=3, allowed key sets are <code>{0}</code> and <code>{0,1}</code>. An incremental-decode interpretation placing these queries at the end of a three-token context instead needs an offset: allowed sets <code>{0,1}</code> and <code>{0,1,2}</code>. The source comments discuss this distinction; <code>--mask=causal</code> does not apply the offset automatically.</p>
@@ -2490,7 +2557,7 @@
 <h2 id="316-understand-exactly-what-verification-proves">31.6 Understand exactly what verification proves<a class="headerlink" href="#316-understand-exactly-what-verification-proves" title="Permanent link">&para;</a></h2>
 <p>Pass <code>--verify</code>. Upstream <code>FwdRunner::verify</code> compares <strong>O and LSE</strong> to its device reference. For FP16 it requires maximum absolute difference below <code>1e-2</code> and mean absolute difference below <code>1e-3</code>, separately for both outputs. These are the pinned example's absolute thresholds, not universally justified tolerances for every model distribution.</p>
 <p>The reference is a <strong>GPU kernel</strong>, not a CPU/FP64 oracle. It forms one query row's scores in dynamic shared memory and includes FP16 intermediate rounding; it does not materialize a complete global score matrix. Chapter 30's <a href="../30-cutlass-attention-foundations/">CPU arithmetic walkthrough</a> independently checks the mathematical recurrence on tiny inputs. It does not consume this runner's random device inputs or independently certify the optimized kernel. A stronger new-input audit would export the exact Q/K/V and compare each O/LSE coordinate to a higher-precision reference under the identical mask/scale/layout contract.</p>
-<p>Upstream prints <code>[OK]</code> only for a passed <strong>verified</strong> variant; <code>[--]</code> means execution without verification, and <code>[FAIL]</code> indicates failure. Architecture guards and some failed paths can still leave the executable with exit status zero. The collector therefore requires the expected count of <code>[OK]</code> rows, a launch header, no failure diagnostics and successful process status. A skipped or missing kernel is <strong>SKIP/INCOMPLETE</strong>, never PASS; one successful variant cannot hide another variant's failure.</p>
+<p>Upstream prints <code>[OK]</code> only for a passed <strong>verified</strong> variant; <code>[--]</code> means execution without verification, and <code>[FAIL]</code> indicates failure. Architecture guards and some failed paths can still leave the executable with exit status zero. The collector therefore requires the expected count and exact names/order of <code>[OK]</code> variants, one launch header matching requested B/H/Q/K/D, direction and mask, finite reported rates and positive finite verbose timings, no failure diagnostics and successful process status. A duplicated success row, wrong problem header or nonfinite timing cannot become PASS merely because the row count matches. A skipped or missing kernel is <strong>SKIP/INCOMPLETE</strong>, never PASS; one successful variant cannot hide another variant's failure.</p>
 <p>Logs retain argv, UTC start/end, separate stdout/stderr, source hashes and system information in <code>results.json</code> and sibling files. Those timestamps become execution dates only after an actual run. The host parser tests exercise false-success cases without claiming GPU validation:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>unittest<span class="w"> </span>discover<span class="w"> </span>-s<span class="w"> </span>tools/tests<span class="w"> </span>-p<span class="w"> </span>test_cutlass_attention.py<span class="w"> </span>-v
 </span></code></pre></div>
