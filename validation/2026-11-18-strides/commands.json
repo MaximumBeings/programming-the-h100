@@ -1,0 +1,28 @@
+[
+  {
+    "kind": "compile",
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "-m",
+      "py_compile",
+      "/private/tmp/h100-stride-validation/stride_walkthrough.py"
+    ],
+    "started_utc": "2026-11-18T14:52:18.284341+00:00",
+    "finished_utc": "2026-11-18T14:52:18.320141+00:00",
+    "exit_code": 0,
+    "log": "compile.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "kind": "run",
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "/private/tmp/h100-stride-validation/stride_walkthrough.py"
+    ],
+    "started_utc": "2026-11-18T14:52:18.320297+00:00",
+    "finished_utc": "2026-11-18T14:52:18.338470+00:00",
+    "exit_code": 0,
+    "log": "run.log",
+    "log_sha256": "7208b36067551b7b159100202c16048a140ee76271d8080c6e299f1ff53af6b3"
+  }
+]

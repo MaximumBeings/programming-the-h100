@@ -1595,6 +1595,8 @@
       
         
       
+        
+      
     
     
     
@@ -1677,14 +1679,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../16-cute-layout-algebra/" class="md-nav__link">
+      <a href="../16-cute-strides/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    16. Hierarchical Layout Algebra
+    16. Strides, Storage and Memory Addresses
   
 
     
@@ -1705,14 +1707,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../17-cute-tensors-tiling/" class="md-nav__link">
+      <a href="../17-cute-layout-algebra/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    17. Tensors, Slicing & Predication
+    17. Hierarchical Layout Algebra
   
 
     
@@ -1733,14 +1735,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../18-cta-indexing/" class="md-nav__link">
+      <a href="../18-cute-tensors-tiling/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    18. CTA and Byte-Address Indexing
+    18. Tensors, Slicing & Predication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../19-cta-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    19. CTA and Byte-Address Indexing
   
 
     
@@ -1834,14 +1864,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../19-tiled-copy/" class="md-nav__link">
+      <a href="../20-tiled-copy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    19. Thread Ownership & Tiled Copy
+    20. Thread Ownership & Tiled Copy
   
 
     
@@ -1862,14 +1892,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../20-mma-atoms/" class="md-nav__link">
+      <a href="../21-mma-atoms/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    20. MMA Atoms & Register Fragments
+    21. MMA Atoms & Register Fragments
   
 
     
@@ -1890,14 +1920,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../21-shared-layouts/" class="md-nav__link">
+      <a href="../22-shared-layouts/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    21. Shared Layouts, Banks & Swizzles
+    22. Shared Layouts, Banks & Swizzles
   
 
     
@@ -1918,14 +1948,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../22-gemm-construction/" class="md-nav__link">
+      <a href="../23-gemm-construction/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    22. Build a Complete Tiled GEMM
+    23. Build a Complete Tiled GEMM
   
 
     
@@ -1946,14 +1976,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../23-cutlass-gemm/" class="md-nav__link">
+      <a href="../24-cutlass-gemm/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    23. CUTLASS Collective-Builder GEMM
+    24. CUTLASS Collective-Builder GEMM
   
 
     
@@ -2047,14 +2077,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../24-cutlass-pipelines/" class="md-nav__link">
+      <a href="../25-cutlass-pipelines/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    24. Hopper Pipelines & Scheduling
+    25. Hopper Pipelines & Scheduling
   
 
     
@@ -2075,14 +2105,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../25-epilogue-fusion/" class="md-nav__link">
+      <a href="../26-epilogue-fusion/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    25. Epilogue Fusion
+    26. Epilogue Fusion
   
 
     
@@ -2103,14 +2133,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../26-precision-block-scaling/" class="md-nav__link">
+      <a href="../27-precision-block-scaling/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    26. Precision & Block Scaling
+    27. Precision & Block Scaling
   
 
     
@@ -2131,14 +2161,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../27-benchmarking-integration/" class="md-nav__link">
+      <a href="../28-benchmarking-integration/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    27. Benchmarking & Framework Integration
+    28. Benchmarking & Framework Integration
   
 
     
@@ -2159,14 +2189,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../28-workbook-capstone/" class="md-nav__link">
+      <a href="../29-workbook-capstone/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    28. Worked Labs & Capstone
+    29. Worked Labs & Capstone
   
 
     
@@ -2741,7 +2771,7 @@
 </span></code></pre></div>
 <p>The earlier captured Lambda session installed the image's <code>nsight-compute</code> package and reported <strong>2025.1.1.0</strong>; the versioned toolkit package above can supply a newer 2025.1.x patch. Record <code>ncu --version</code> on your host. If <code>ncu</code> is outside <code>PATH</code>, inspect <code>dpkg -L cuda-nsight-compute-12-8</code> and its <code>nsight-compute-2025.1.1</code> dependency for the installed executable, then use its full path or add that directory to <code>PATH</code>. The first ordinary-user profile reported <code>ERR_NVGPUCTRPERM</code>; profiling with elevated permissions succeeded on the instance we administered. <a href="../13-nsight-compute/">Chapter 13</a> shows both logs and the exact successful invocation. Do not change system-wide counter permissions merely to imitate a screenshot.</p>
 <h3 id="optional-systems-and-cutlass-extension">Optional Systems and CUTLASS extension<a class="headerlink" href="#optional-systems-and-cutlass-extension" title="Permanent link">&para;</a></h3>
-<p><a href="../14-nsight-systems/">Chapter 14</a> adds Nsight Systems CLI capture and timeline analysis; record <code>nsys --version</code> separately from <code>ncu --version</code>. <a href="../23-cutlass-gemm/">Chapter 23</a> pins CUTLASS v4.3.6 and supplies a separate collector for the new layout, GEMM and overlap exercises. Follow those chapters for their additional setup and current validation scope.</p>
+<p><a href="../14-nsight-systems/">Chapter 14</a> adds Nsight Systems CLI capture and timeline analysis; record <code>nsys --version</code> separately from <code>ncu --version</code>. <a href="../24-cutlass-gemm/">Chapter 24</a> pins CUTLASS v4.3.6 and supplies a separate collector for the new layout, GEMM and overlap exercises. Follow those chapters for their additional setup and current validation scope.</p>
 <h3 id="optional-attention-reference-dependency">Optional attention-reference dependency<a class="headerlink" href="#optional-attention-reference-dependency" title="Permanent link">&para;</a></h3>
 <p>The 27 named CUDA programs do not require PyTorch. To reproduce the separate Chapter 12 recurrence check from the repository root, use an isolated environment and the recorded CUDA-enabled PyTorch version:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv-attention
