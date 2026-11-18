@@ -1,0 +1,16 @@
+╔══════════════════════════════════════════════════════════╗
+║  ex01: wgmma.mma_async — m64n64k16 BF16→FP32            ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+Shape: m64n64k16, D_REGS=32 per thread, 128 threads total
+Patterned BF16 inputs; every accumulator checked against CPU GEMM.
+
+Threads with finite accumulators: 128 / 128
+D register values correct: 4096 / 4096
+Max absolute error: 0.00000000
+Sample d[0] = -0.246094 (expected -0.246094)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — wgmma computes correct BF16→FP32 result!  ║
+╚══════════════════════════════════════════════════════════╝

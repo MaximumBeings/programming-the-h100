@@ -1,0 +1,33 @@
+{
+  "timestamp_utc": "2026-11-18T11:26:56.695152+00:00",
+  "os": "Linux",
+  "python": "3.12.3",
+  "gpu_count": 2,
+  "devices": [
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "compute_capability": "9.0",
+      "memory_mib": 81079.125
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "compute_capability": "9.0",
+      "memory_mib": 81079.125
+    }
+  ],
+  "driver": "580.105.08",
+  "nvcc": "12.8.93",
+  "tools": {
+    "ncu": false,
+    "compute-sanitizer": true,
+    "cuobjdump": true,
+    "nvdisasm": true
+  },
+  "status": "PASS",
+  "errors": [],
+  "notes": [
+    "Device discovery uses the CUDA Driver API and respects CUDA_VISIBLE_DEVICES.",
+    "Driver compatibility, compiler version and the compiled architecture target are separate checks.",
+    "This checks prerequisites, not kernel correctness, GPU interconnects or profiler permissions."
+  ]
+}

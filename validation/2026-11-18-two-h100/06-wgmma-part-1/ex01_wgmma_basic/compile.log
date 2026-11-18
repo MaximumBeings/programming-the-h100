@@ -1,0 +1,20 @@
+/home/ubuntu/full-gpu-rerun-20261118/h100/results/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu(170): warning #550-D: variable "warp" was set but never used
+      int warp = tid >> 5;
+          ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/full-gpu-rerun-20261118/h100/results/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu(171): warning #550-D: variable "lane" was set but never used
+      int lane = tid & 31;
+          ^
+
+/home/ubuntu/full-gpu-rerun-20261118/h100/results/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu(170): warning #550-D: variable "warp" was set but never used
+      int warp = tid >> 5;
+          ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/full-gpu-rerun-20261118/h100/results/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu(171): warning #550-D: variable "lane" was set but never used
+      int lane = tid & 31;
+          ^
+

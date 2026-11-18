@@ -1,0 +1,43 @@
+╔══════════════════════════════════════════════════════════╗
+║  ex06: Comprehensive Capstone — Clusters + PTX + DSMEM   ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+       ✓ Hopper/Blackwell GPU detected — clusters supported.
+
+Launch config:
+  Grid:    2 blocks
+  Block:   64 threads
+  Cluster: 2 blocks per cluster (1 cluster total)
+  N:       128 elements
+
+Verification (first 8 and last 4 elements):
+  Index    Input        Expected     Got          OK?
+  ------------------------------------------------------------
+  0        0.0          64.0         64.0         ✓
+  1        1.0          66.0         66.0         ✓
+  2        2.0          68.0         68.0         ✓
+  3        3.0          70.0         70.0         ✓
+  4        4.0          72.0         72.0         ✓
+  5        5.0          74.0         74.0         ✓
+  6        6.0          76.0         76.0         ✓
+  7        7.0          78.0         78.0         ✓
+  63       63.0         190.0        190.0        ✓
+  64       64.0         64.0         64.0         ✓
+  65       65.0         66.0         66.0         ✓
+  126      126.0        188.0        188.0        ✓
+  127      127.0        190.0        190.0        ✓
+
+  ✓ ALL 128 elements correct!
+
+  What just happened (review):
+  ├── Block 0 loaded input[0..63] into its SMEM (PTX ld.global)
+  ├── Block 1 loaded input[64..127] into its SMEM (PTX ld.global)
+  ├── cluster.sync() ensured both blocks' SMEM was ready
+  ├── Each block read the partner's SMEM via map_shared_rank (DSMEM)
+  ├── PTX fma.rn.f32 computed the pairwise sum
+  └── Results written back to global memory (PTX st.global)
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED — Comprehensive example complete!     ║
+╚══════════════════════════════════════════════════════════╝

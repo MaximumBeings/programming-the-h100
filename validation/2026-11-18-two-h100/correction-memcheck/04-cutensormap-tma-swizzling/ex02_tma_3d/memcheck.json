@@ -1,0 +1,15 @@
+{
+  "command": [
+    "compute-sanitizer",
+    "--tool",
+    "memcheck",
+    "--error-exitcode",
+    "97",
+    "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex02_tma_3d/example"
+  ],
+  "started_utc": "2026-11-18T11:17:42.471667+00:00",
+  "exit_code": 0,
+  "finished_utc": "2026-11-18T11:17:43.090008+00:00",
+  "log_sha256": "135a0cddb20eb6b550c6058c692a2fb0315e3686324acc23da3cc27f867296da",
+  "zero_error_summaries": 1
+}

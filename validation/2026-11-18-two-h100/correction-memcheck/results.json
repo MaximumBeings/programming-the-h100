@@ -1,0 +1,107 @@
+[
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 1,
+    "example": "ex01_mbarrier_basic.cu",
+    "sha256": "406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7",
+    "timestamp": "2026-11-18T11:17:04.712065+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu",
+      "-o",
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:17:04.712255+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:17:05.707479+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:17:06.368278+00:00"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 235,
+    "example": "ex02_war_prevention.cu",
+    "sha256": "d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395",
+    "timestamp": "2026-11-18T11:17:06.368418+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu",
+      "-o",
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:17:06.368550+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:17:07.202629+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:17:07.755380+00:00"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1,
+    "example": "ex02_tma_3d.cu",
+    "sha256": "ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173",
+    "timestamp": "2026-11-18T11:17:07.755557+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu",
+      "-o",
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex02_tma_3d/example",
+      "-lcuda"
+    ],
+    "run_command": [
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex02_tma_3d/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:17:07.755744+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:17:08.849913+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:17:09.396747+00:00"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1,
+    "example": "ex01_bulk_raw.cu",
+    "sha256": "f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805",
+    "timestamp": "2026-11-18T11:17:09.396944+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu",
+      "-o",
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/pending-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:17:09.397102+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:17:10.268148+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:17:10.816271+00:00"
+  }
+]

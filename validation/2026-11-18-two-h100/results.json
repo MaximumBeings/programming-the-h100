@@ -1,0 +1,710 @@
+[
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 1,
+    "example": "ex01_cluster_inspect.cu",
+    "sha256": "ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3",
+    "timestamp": "2026-11-18T11:19:10.753033+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:10.753247+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:13.520596+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:14.174831+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 249,
+    "example": "ex02_ptx_basics.cu",
+    "sha256": "50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f",
+    "timestamp": "2026-11-18T11:19:14.174975+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:14.175173+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:15.109469+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:15.677984+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 918,
+    "example": "ex03_state_spaces.cu",
+    "sha256": "1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8",
+    "timestamp": "2026-11-18T11:19:15.678269+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex03_state_spaces/ex03_state_spaces.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex03_state_spaces/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex03_state_spaces/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:15.678429+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:16.526377+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:17.076211+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 1267,
+    "example": "ex04_ptx_pointers.cu",
+    "sha256": "77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c",
+    "timestamp": "2026-11-18T11:19:17.076410+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex04_ptx_pointers/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex04_ptx_pointers/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:17.076551+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:18.162592+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:18.726578+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 1533,
+    "example": "ex05_ptx_datatypes.cu",
+    "sha256": "711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220",
+    "timestamp": "2026-11-18T11:19:18.726806+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex05_ptx_datatypes/ex05_ptx_datatypes.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex05_ptx_datatypes/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex05_ptx_datatypes/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:18.726938+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:20.021963+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:20.571139+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 1738,
+    "example": "ex06_comprehensive.cu",
+    "sha256": "4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d",
+    "timestamp": "2026-11-18T11:19:20.571356+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:20.571501+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:23.333448+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:23.992244+00:00"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 1,
+    "example": "ex01_mbarrier_basic.cu",
+    "sha256": "406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7",
+    "timestamp": "2026-11-18T11:19:23.992477+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:23.992648+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:24.852132+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:25.400961+00:00"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 235,
+    "example": "ex02_war_prevention.cu",
+    "sha256": "d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395",
+    "timestamp": "2026-11-18T11:19:25.401214+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:25.401355+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:26.237306+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:26.802580+00:00"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1,
+    "example": "ex01_tma_basic.cu",
+    "sha256": "c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa",
+    "timestamp": "2026-11-18T11:19:26.802861+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex01_tma_basic/example",
+      "-lcuda"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex01_tma_basic/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:26.803033+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:27.695435+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:28.239677+00:00"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 269,
+    "example": "ex02_tma_3d.cu",
+    "sha256": "ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173",
+    "timestamp": "2026-11-18T11:19:28.239977+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex02_tma_3d/example",
+      "-lcuda"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/04-cutensormap-tma-swizzling/ex02_tma_3d/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:28.240111+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:29.363398+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:29.951688+00:00"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1,
+    "example": "ex01_bulk_raw.cu",
+    "sha256": "f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805",
+    "timestamp": "2026-11-18T11:19:29.951987+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:29.952145+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:30.798016+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:31.350568+00:00"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 163,
+    "example": "ex02_reduce_async.cu",
+    "sha256": "52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a",
+    "timestamp": "2026-11-18T11:19:31.350895+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:31.351016+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:32.175941+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:32.742760+00:00"
+  },
+  {
+    "page": "docs/06-wgmma-part-1.md",
+    "line": 1,
+    "example": "ex01_wgmma_basic.cu",
+    "sha256": "282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04",
+    "timestamp": "2026-11-18T11:19:32.743055+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/06-wgmma-part-1/ex01_wgmma_basic/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/06-wgmma-part-1/ex01_wgmma_basic/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:32.743235+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:34.146676+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:34.696826+00:00"
+  },
+  {
+    "page": "docs/07-wgmma-part-2.md",
+    "line": 1,
+    "example": "ex01_wgmma_pipeline.cu",
+    "sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790",
+    "timestamp": "2026-11-18T11:19:34.697135+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/07-wgmma-part-2/ex01_wgmma_pipeline/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/07-wgmma-part-2/ex01_wgmma_pipeline/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:34.697322+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:36.086020+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:36.641606+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1,
+    "example": "ex01_roofline.cu",
+    "sha256": "d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449",
+    "timestamp": "2026-11-18T11:19:36.641975+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex01_roofline/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex01_roofline/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:36.642155+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:37.502670+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:38.057597+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 275,
+    "example": "ex02_warp_spec.cu",
+    "sha256": "fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675",
+    "timestamp": "2026-11-18T11:19:38.057968+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex02_warp_spec/ex02_warp_spec.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex02_warp_spec/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex02_warp_spec/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:38.058112+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:38.924950+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:39.475887+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 501,
+    "example": "ex03_setmaxnreg.cu",
+    "sha256": "c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292",
+    "timestamp": "2026-11-18T11:19:39.476238+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex03_setmaxnreg/ex03_setmaxnreg.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex03_setmaxnreg/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex03_setmaxnreg/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:39.476370+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:40.281281+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:40.842629+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 691,
+    "example": "ex04_circular_buffer.cu",
+    "sha256": "3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665",
+    "timestamp": "2026-11-18T11:19:40.843010+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex04_circular_buffer/ex04_circular_buffer.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex04_circular_buffer/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/08-kernel-design-part-1/ex04_circular_buffer/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:40.843154+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:41.816510+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:42.374475+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 1,
+    "example": "ex05_mbarrier.cu",
+    "sha256": "c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046",
+    "timestamp": "2026-11-18T11:19:42.374879+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex05_mbarrier/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex05_mbarrier/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:42.375062+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:43.203635+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:43.757486+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 250,
+    "example": "ex06_pingpong.cu",
+    "sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd",
+    "timestamp": "2026-11-18T11:19:43.757909+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex06_pingpong/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex06_pingpong/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:43.758040+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:44.640676+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:45.193094+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 443,
+    "example": "ex07_epilogue.cu",
+    "sha256": "bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff",
+    "timestamp": "2026-11-18T11:19:45.193507+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex07_epilogue/ex07_epilogue.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex07_epilogue/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex07_epilogue/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:45.193648+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:46.042302+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:46.577179+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 685,
+    "example": "ex08_comprehensive.cu",
+    "sha256": "7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964",
+    "timestamp": "2026-11-18T11:19:46.577586+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex08_comprehensive/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/09-kernel-design-part-2/ex08_comprehensive/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:46.577755+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:47.903815+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:48.472622+00:00"
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 1,
+    "example": "ex09_streamk_roles.cu",
+    "sha256": "fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf",
+    "timestamp": "2026-11-18T11:19:48.473067+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/10-stream-k-scheduling/ex09_streamk_roles/ex09_streamk_roles.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/10-stream-k-scheduling/ex09_streamk_roles/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/10-stream-k-scheduling/ex09_streamk_roles/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:48.473250+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:51.172405+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:51.829070+00:00"
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 262,
+    "example": "ex10_dependent_launch.cu",
+    "sha256": "36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640",
+    "timestamp": "2026-11-18T11:19:51.829504+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/10-stream-k-scheduling/ex10_dependent_launch/ex10_dependent_launch.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/10-stream-k-scheduling/ex10_dependent_launch/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/10-stream-k-scheduling/ex10_dependent_launch/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:51.829636+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:52.650956+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:53.204107+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 1,
+    "example": "ex11_nvlink_bandwidth.cu",
+    "sha256": "67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305",
+    "timestamp": "2026-11-18T11:19:53.204514+00:00",
+    "required_gpus": 2,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:53.204677+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:54.198165+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:56.952277+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 170,
+    "example": "ex12_nccl_allreduce.cu",
+    "sha256": "f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889",
+    "timestamp": "2026-11-18T11:19:56.952665+00:00",
+    "required_gpus": 2,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex12_nccl_allreduce/example",
+      "-lnccl"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex12_nccl_allreduce/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:56.952819+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-18T11:19:58.343801+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-18T11:19:59.944024+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 443,
+    "example": "ex13_hybrid_parallel_training.cu",
+    "sha256": "9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2",
+    "timestamp": "2026-11-18T11:19:59.944491+00:00",
+    "required_gpus": 8,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu",
+      "-o",
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex13_hybrid_parallel_training/example",
+      "-lnccl",
+      "-lcublas",
+      "-Xcompiler",
+      "-pthread"
+    ],
+    "run_command": [
+      "/home/ubuntu/full-gpu-rerun-20261118/h100/results/11-multi-gpu-nccl/ex13_hybrid_parallel_training/example"
+    ],
+    "compile_timestamp": "2026-11-18T11:19:59.944693+00:00",
+    "compile_exit": 0,
+    "run_exit": "unexecuted",
+    "status": "BLOCKED_HARDWARE",
+    "finished_timestamp": "2026-11-18T11:20:01.944510+00:00"
+  }
+]

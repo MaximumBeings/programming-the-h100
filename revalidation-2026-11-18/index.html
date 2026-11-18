@@ -1,0 +1,3046 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design and multi-GPU NCCL.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/revalidation-2026-11-18/">
+      
+      
+        <link rel="prev" href="../getting-started/">
+      
+      
+        <link rel="next" href="../final-audit/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>November 18 H100 Rerun - Programming the H100 - Under Development</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#november-18-rerun-two-h100-gpus" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100 - Under Development" class="md-header__button md-logo" aria-label="Programming the H100 - Under Development" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100 - Under Development
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              November 18 H100 Rerun
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100 - Under Development" class="md-nav__button md-logo" aria-label="Programming the H100 - Under Development" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100 - Under Development
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#program-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Program results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Program results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ex01_cluster_inspectcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_cluster_inspect.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_ptx_basicscu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_ptx_basics.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex03_state_spacescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex03_state_spaces.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex04_ptx_pointerscu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex04_ptx_pointers.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex05_ptx_datatypescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex05_ptx_datatypes.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex06_comprehensivecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex06_comprehensive.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_mbarrier_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_mbarrier_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_war_preventioncu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_war_prevention.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_tma_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_tma_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_tma_3dcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_tma_3d.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_bulk_rawcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_bulk_raw.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_reduce_asynccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_reduce_async.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_wgmma_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_wgmma_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_wgmma_pipelinecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_wgmma_pipeline.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_rooflinecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_roofline.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_warp_speccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_warp_spec.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex03_setmaxnregcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex03_setmaxnreg.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex04_circular_buffercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex04_circular_buffer.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex05_mbarriercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex05_mbarrier.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex06_pingpongcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex06_pingpong.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex07_epiloguecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex07_epilogue.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex08_comprehensivecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex08_comprehensive.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex09_streamk_rolescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex09_streamk_roles.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex10_dependent_launchcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex10_dependent_launch.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex11_nvlink_bandwidthcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex11_nvlink_bandwidth.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex12_nccl_allreducecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex12_nccl_allreduce.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex13_hybrid_parallel_trainingcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex13_hybrid_parallel_training.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-numerical-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional numerical checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eight-gpu-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eight-A100 Training Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#program-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Program results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Program results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ex01_cluster_inspectcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_cluster_inspect.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_ptx_basicscu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_ptx_basics.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex03_state_spacescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex03_state_spaces.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex04_ptx_pointerscu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex04_ptx_pointers.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex05_ptx_datatypescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex05_ptx_datatypes.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex06_comprehensivecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex06_comprehensive.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_mbarrier_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_mbarrier_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_war_preventioncu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_war_prevention.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_tma_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_tma_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_tma_3dcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_tma_3d.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_bulk_rawcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_bulk_raw.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_reduce_asynccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_reduce_async.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_wgmma_basiccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_wgmma_basic.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_wgmma_pipelinecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_wgmma_pipeline.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex01_rooflinecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex01_roofline.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex02_warp_speccu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex02_warp_spec.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex03_setmaxnregcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex03_setmaxnreg.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex04_circular_buffercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex04_circular_buffer.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex05_mbarriercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex05_mbarrier.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex06_pingpongcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex06_pingpong.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex07_epiloguecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex07_epilogue.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex08_comprehensivecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex08_comprehensive.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex09_streamk_rolescu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex09_streamk_roles.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex10_dependent_launchcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex10_dependent_launch.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex11_nvlink_bandwidthcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex11_nvlink_bandwidth.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex12_nccl_allreducecu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex12_nccl_allreduce.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ex13_hybrid_parallel_trainingcu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ex13_hybrid_parallel_training.cu
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-numerical-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional numerical checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/revalidation-2026-11-18.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="november-18-rerun-two-h100-gpus">November 18 rerun — two H100 GPUs<a class="headerlink" href="#november-18-rerun-two-h100-gpus" title="Permanent link">&para;</a></h1>
+<p><strong>27 programs compiled; 26 workloads passed.</strong> The eight-GPU training program compiled but its workload requires eight visible GPUs, so it was not executed on this two-GPU host. Its separately captured <a href="../eight-gpu-validation/">eight-A100 numerical result</a> remains valid.</p>
+<p>The four corrected barrier-ordering programs passed, with zero-error memcheck records. The attention recurrence passed all 12 cases, and the stronger Chapter 7 nonuniform-coordinate variant passed again. This is an additional execution date; earlier raw records remain unchanged.</p>
+<p><a href="../validation/2026-11-18-two-h100/system-info.log">System information</a> · <a href="../validation/2026-11-18-two-h100/results.json">Execution manifest</a> · <a href="../validation/2026-11-18-two-h100/integrity.json">Integrity inventory</a>.</p>
+<p><strong>System:</strong> 2× H100 80GB HBM3, CC 9.0, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA compiler 12.8.93; GCC 13.3.0; C++17, <code>-O2</code>, <code>sm_90a</code>. All timestamps below are UTC.</p>
+<h2 id="program-results">Program results<a class="headerlink" href="#program-results" title="Permanent link">&para;</a></h2>
+<h3 id="ex01_cluster_inspectcu">ex01_cluster_inspect.cu<a class="headerlink" href="#ex01_cluster_inspectcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:10.753247+00:00</code> · Executed UTC: <code>2026-11-18T11:19:13.520596+00:00</code>.</p>
+<p>Source SHA-256: <code>ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_cluster_inspect.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>║  Thread Block Cluster Inspection — H100 Demo         ║
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>Per-Block Report:
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>Block(global) Cluster Rank   Cluster Size   My SMEM Val  Partner Val  Exchange OK?
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>--------------------------------------------------------------------------------
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  0            0              2              0            100          ✓ PASS
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>  1            1              2              100          0            ✓ PASS
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>  2            0              2              200          300          ✓ PASS
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>  3            1              2              300          200          ✓ PASS
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>DSMEM Exchange Tests: 4/4 passed
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>Cluster Metadata Verification:
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>  ✓ All cluster metadata correct
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>════════════════════════════════════════════════
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>ALL TESTS PASSED — Clusters working correctly!
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>════════════════════════════════════════════════
+</span></code></pre></div>
+<h3 id="ex02_ptx_basicscu">ex02_ptx_basics.cu<a class="headerlink" href="#ex02_ptx_basicscu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:14.175173+00:00</code> · Executed UTC: <code>2026-11-18T11:19:15.109469+00:00</code>.</p>
+<p>Source SHA-256: <code>50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_ptx_basics.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>║  Inline PTX Basics — Full Test Suite                  ║
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Test 1: add.u32 (42 + 10 = 52)
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  ✓ PASS: result = 52
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>Test 2: mad.lo.u32 (5*7+3 = 38)
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>  ✓ PASS: result = 38
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>Test 3: fma.rn.f32 (2.5 * 4.0 + 1.5 = 11.5)
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>  ✓ PASS: result = 11.5000
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>Test 4: predicate max
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>  ✓ PASS: max(10,20) = 20
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>  ✓ PASS: max(30,5) = 30
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>Test 5: special registers (%tid.x, %ctaid.x, %laneid)
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>  ✓ PASS: tid.x = 0
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>  INFO: ctaid.x = 1 (block index, not checked — scheduling dependent)
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>  INFO: laneid = 0 (should be 0 since tid=0)
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>Test 6: bitwise ops (a=0xFF00, b=0x0F0F)
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>  ✓ PASS: and = 0x00F00
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>  ✓ PASS: or = 0x0FF0F
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>  ✓ PASS: xor = 0x0F00F
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>  ✓ PASS: shl = 0xFF000
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>  ✓ PASS: shr = 0x00FF0
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>Test 7: early clobber — (7+3)*(7-3) = 40
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>  ✓ PASS: result = 40
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>Test 8: read-write operand — 100 + 3 = 103
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>  ✓ PASS: result = 103
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>Test 9: immediate operand template
+</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>  ✓ PASS: 1 &lt;&lt; 5 = 32
+</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>  ✓ PASS: 7 &lt;&lt; 3 = 56
+</span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>
+</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>Test 10: volatile + memory clobber (store 0xDEADBEEF to SMEM)
+</span><span id="__span-3-41"><a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a>  ✓ PASS: loaded 0xDEADBEEF from SMEM
+</span><span id="__span-3-42"><a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a>
+</span><span id="__span-3-43"><a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a>Test 11: vote.ballot (even lanes → 0x55555555)
+</span><span id="__span-3-44"><a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a>  ✓ PASS: ballot = 0x55555555
+</span><span id="__span-3-45"><a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a>
+</span><span id="__span-3-46"><a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-3-47"><a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a>║  Results: 17/17 tests passed                          ║
+</span><span id="__span-3-48"><a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a>║  ✓ ALL PASS                                          ║
+</span><span id="__span-3-49"><a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex03_state_spacescu">ex03_state_spaces.cu<a class="headerlink" href="#ex03_state_spacescu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:15.678429+00:00</code> · Executed UTC: <code>2026-11-18T11:19:16.526377+00:00</code>.</p>
+<p>Source SHA-256: <code>1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex03_state_spaces/ex03_state_spaces.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex03_state_spaces/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex03_state_spaces/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex03_state_spaces.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>║  PTX State Spaces — Test Suite                        ║
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>Test 2: .shared — Thread 0 reads thread 1's slot (expected 2.5)
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  ✓ PASS: thread 0 read 2.5 from thread 1's slot
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>Test 3: .global — Multiply by 10 via explicit PTX
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>  ✓ PASS: all 8 values multiplied by 10 correctly
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>Test 4: .const — Read SCALE_FACTOR[0] = 2.0 via PTX and C++
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>  ✓ PASS: PTX read = 2.0, C++ read = 2.0 (both = 2.0)
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>Test 6: Combined — global→SMEM→compute with SCALE_FACTOR[0]=2.0
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>  ✓ PASS: 128 elements scaled by 2.0 (sample: in=5 out=10)
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>║  Results: 4/4 tests passed                            ║
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex04_ptx_pointerscu">ex04_ptx_pointers.cu<a class="headerlink" href="#ex04_ptx_pointerscu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:17.076551+00:00</code> · Executed UTC: <code>2026-11-18T11:19:18.162592+00:00</code>.</p>
+<p>Source SHA-256: <code>77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex04_ptx_pointers/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex04_ptx_pointers.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>║  ex04: PTX Pointers, State Spaces &amp; Packed Types      ║
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>Test 1: cvta + ld.shared (smem[0]=42, smem[1]=99)
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>  ✓ PASS: loaded 42.0 and 99.0, SMEM offset=0x400
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>Test 2: st.shared/ld.shared neighbor (expect 7.0 and 17.0)
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>  ✓ PASS: my=7.0 neighbor=17.0
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>Test 3: ld.global/st.global multiply by 2
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>  ✓ PASS: all elements×2 correct
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>Test 4: atom.shared.add (64 threads → counter=64)
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>  ✓ PASS: counter=64
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>Test 5: Packed FP16 add (1+3=4, 2+4=6)
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>  ✓ PASS: slot0=4.0 slot1=6.0
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>Test 6: mov.b32 bit reinterpret (float↔uint32)
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>  ✓ PASS: pi bits=0x40490FD0, roundtrip matches
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>║  6/6 tests passed   ✓ ALL PASS                    ║
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex05_ptx_datatypescu">ex05_ptx_datatypes.cu<a class="headerlink" href="#ex05_ptx_datatypescu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:18.726938+00:00</code> · Executed UTC: <code>2026-11-18T11:19:20.021963+00:00</code>.</p>
+<p>Source SHA-256: <code>711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/ex05_ptx_datatypes.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex05_ptx_datatypes/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex05_ptx_datatypes.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>║  ex05: PTX Data Types &amp; Packed Operations             ║
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>Test 1: cvt FP32→FP16 (1.5f → 0x3E00)
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>  ✓ PASS: 0x3E00
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>Test 2: FP16 pack/unpack (1.0f=0x3C00, 2.0f=0x4000)
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>  ✓ PASS: packed=0x40003C00 lo=0x3C00 hi=0x4000
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>Test 3: add.bf16x2 (2.0+3.0=5.0 in both slots)
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>  ✓ PASS: lo=5.00 hi=5.00
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>Test 4: add.f64 (1.23456789012345 + 9.87654321098765)
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>  ✓ PASS: 11.111111101111101
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>Test 5: mad hi+lo (0xFFFFFFFF * 0xFFFFFFFF)
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>  ✓ PASS: lo=0x00000001 hi=0xFFFFFFFE
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>║  5/5 tests passed   ✓ ALL PASS                    ║
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex06_comprehensivecu">ex06_comprehensive.cu<a class="headerlink" href="#ex06_comprehensivecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:20.571501+00:00</code> · Executed UTC: <code>2026-11-18T11:19:23.333448+00:00</code>.</p>
+<p>Source SHA-256: <code>4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex06_comprehensive.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>║  ex06: Comprehensive Capstone — Clusters + PTX + DSMEM   ║
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>       ✓ Hopper/Blackwell GPU detected — clusters supported.
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>Launch config:
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>  Grid:    2 blocks
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>  Block:   64 threads
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>  Cluster: 2 blocks per cluster (1 cluster total)
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>  N:       128 elements
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>Verification (first 8 and last 4 elements):
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>  Index    Input        Expected     Got          OK?
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>  ------------------------------------------------------------
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>  0        0.0          64.0         64.0         ✓
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>  1        1.0          66.0         66.0         ✓
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>  2        2.0          68.0         68.0         ✓
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>  3        3.0          70.0         70.0         ✓
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>  4        4.0          72.0         72.0         ✓
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>  5        5.0          74.0         74.0         ✓
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>  6        6.0          76.0         76.0         ✓
+</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>  7        7.0          78.0         78.0         ✓
+</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a>  63       63.0         190.0        190.0        ✓
+</span><span id="__span-11-26"><a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>  64       64.0         64.0         64.0         ✓
+</span><span id="__span-11-27"><a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>  65       65.0         66.0         66.0         ✓
+</span><span id="__span-11-28"><a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a>  126      126.0        188.0        188.0        ✓
+</span><span id="__span-11-29"><a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a>  127      127.0        190.0        190.0        ✓
+</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a>
+</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a>  ✓ ALL 128 elements correct!
+</span><span id="__span-11-32"><a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a>
+</span><span id="__span-11-33"><a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a>  What just happened (review):
+</span><span id="__span-11-34"><a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a>  ├── Block 0 loaded input[0..63] into its SMEM (PTX ld.global)
+</span><span id="__span-11-35"><a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a>  ├── Block 1 loaded input[64..127] into its SMEM (PTX ld.global)
+</span><span id="__span-11-36"><a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a>  ├── cluster.sync() ensured both blocks' SMEM was ready
+</span><span id="__span-11-37"><a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a>  ├── Each block read the partner's SMEM via map_shared_rank (DSMEM)
+</span><span id="__span-11-38"><a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a>  ├── PTX fma.rn.f32 computed the pairwise sum
+</span><span id="__span-11-39"><a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a>  └── Results written back to global memory (PTX st.global)
+</span><span id="__span-11-40"><a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a>
+</span><span id="__span-11-41"><a id="__codelineno-11-41" name="__codelineno-11-41" href="#__codelineno-11-41"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-11-42"><a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a>║  ✓ ALL TESTS PASSED — Comprehensive example complete!     ║
+</span><span id="__span-11-43"><a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex01_mbarrier_basiccu">ex01_mbarrier_basic.cu<a class="headerlink" href="#ex01_mbarrier_basiccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:23.992648+00:00</code> · Executed UTC: <code>2026-11-18T11:19:24.852132+00:00</code>.</p>
+<p>Source SHA-256: <code>406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex01_mbarrier_basic/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_mbarrier_basic.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>║  ex01: mbarrier Pipeline — Init/Arrive/Wait/Reuse        ║
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>Config: K=4 tiles, 256 elements/tile, 64 threads/block
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>Element checks: 1024 / 1024 passed
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>║  ✓ ALL PASS — mbarrier pipeline working correctly!     ║
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<p>Compute Sanitizer: <strong>ERROR SUMMARY: 0 errors</strong>. <a href="../validation/2026-11-18-two-h100/correction-memcheck/03-asynchronicity-mbarrier/ex01_mbarrier_basic/memcheck.log">Memcheck log</a> · <a href="../validation/2026-11-18-two-h100/correction-memcheck/03-asynchronicity-mbarrier/ex01_mbarrier_basic/memcheck.json">Command and timestamps</a>.</p>
+<h3 id="ex02_war_preventioncu">ex02_war_prevention.cu<a class="headerlink" href="#ex02_war_preventioncu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:25.401355+00:00</code> · Executed UTC: <code>2026-11-18T11:19:26.237306+00:00</code>.</p>
+<p>Source SHA-256: <code>d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/03-asynchronicity-mbarrier/ex02_war_prevention/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_war_prevention.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>║  ex02: WAR Prevention — Two-Barrier Pipeline             ║
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>Config: 8 tiles × 128 elements = 1024 total
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>Element errors: 0 / 1024
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>Sample: in=7 → out=14 (expected 14)
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>║  ✓ ALL PASS — WAR hazard correctly prevented!          ║
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<p>Compute Sanitizer: <strong>ERROR SUMMARY: 0 errors</strong>. <a href="../validation/2026-11-18-two-h100/correction-memcheck/03-asynchronicity-mbarrier/ex02_war_prevention/memcheck.log">Memcheck log</a> · <a href="../validation/2026-11-18-two-h100/correction-memcheck/03-asynchronicity-mbarrier/ex02_war_prevention/memcheck.json">Command and timestamps</a>.</p>
+<h3 id="ex01_tma_basiccu">ex01_tma_basic.cu<a class="headerlink" href="#ex01_tma_basiccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:26.803033+00:00</code> · Executed UTC: <code>2026-11-18T11:19:27.695435+00:00</code>.</p>
+<p>Source SHA-256: <code>c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex01_tma_basic/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_tma_basic.cu<span class="w"> </span>-o<span class="w"> </span>./example<span class="w"> </span>-lcuda
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>║  ex01: cuTensorMap Setup + TMA Load + Verify             ║
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>Descriptor setup:
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>  Matrix:       256 × 128 FP32
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>  Tile:         32 × 32 = 1024 elements = 4096 bytes
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>  globalDim:    {256, 128}
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>  globalStride: {1024} bytes
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>  boxDim:       {32, 32}
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>  swizzle:      128B
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>  l2Promotion:  128B
+</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>
+</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>cuTensorMapEncodeTiled: SUCCESS
+</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>
+</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>Launching 32 tile blocks (8×4 tiles)...
+</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>Element checks: 32768 / 32768 passed
+</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>
+</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-17-21"><a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>║  ✓ ALL PASS — TMA loaded all tiles correctly!          ║
+</span><span id="__span-17-22"><a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex02_tma_3dcu">ex02_tma_3d.cu<a class="headerlink" href="#ex02_tma_3dcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:28.240111+00:00</code> · Executed UTC: <code>2026-11-18T11:19:29.363398+00:00</code>.</p>
+<p>Source SHA-256: <code>ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/04-cutensormap-tma-swizzling/ex02_tma_3d/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_tma_3d.cu<span class="w"> </span>-o<span class="w"> </span>./example<span class="w"> </span>-lcuda
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>║  ex02: 3D TMA — Attention Tensor [B][S][D] Tile Load     ║
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>3D Tensor: [4][128][64] FP16
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>Tile:      [1][32][64] = 2048 elements = 4096 bytes
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>Descriptor created successfully.
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>Launching 16 blocks (4 seq_tiles × 4 batches)...
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>Element checks: 32768 / 32768 passed
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>║  ✓ ALL PASS                                              ║
+</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<p>Compute Sanitizer: <strong>ERROR SUMMARY: 0 errors</strong>. <a href="../validation/2026-11-18-two-h100/correction-memcheck/04-cutensormap-tma-swizzling/ex02_tma_3d/memcheck.log">Memcheck log</a> · <a href="../validation/2026-11-18-two-h100/correction-memcheck/04-cutensormap-tma-swizzling/ex02_tma_3d/memcheck.json">Command and timestamps</a>.</p>
+<h3 id="ex01_bulk_rawcu">ex01_bulk_raw.cu<a class="headerlink" href="#ex01_bulk_rawcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:29.952145+00:00</code> · Executed UTC: <code>2026-11-18T11:19:30.798016+00:00</code>.</p>
+<p>Source SHA-256: <code>f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_bulk_raw.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>║  ex01: Raw cp.async.bulk + mbarrier + L2 evict_last      ║
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>Config: 6 tiles × 1024 FP32 = 4096 bytes per tile
+</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>
+</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>Checks: 6144 / 6144 passed
+</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>
+</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>║  ✓ ALL PASS                                              ║
+</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<p>Compute Sanitizer: <strong>ERROR SUMMARY: 0 errors</strong>. <a href="../validation/2026-11-18-two-h100/correction-memcheck/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/memcheck.log">Memcheck log</a> · <a href="../validation/2026-11-18-two-h100/correction-memcheck/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/memcheck.json">Command and timestamps</a>.</p>
+<h3 id="ex02_reduce_asynccu">ex02_reduce_async.cu<a class="headerlink" href="#ex02_reduce_asynccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:31.351016+00:00</code> · Executed UTC: <code>2026-11-18T11:19:32.175941+00:00</code>.</p>
+<p>Source SHA-256: <code>52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_reduce_async.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>║  ex02: cp.reduce.async — Atomic Tile Reduction           ║
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>Config: 4 blocks each adding their value (1,2,3,4) to 256 elements
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>Expected result: every element = 1+2+3+4 = 10.0
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>
+</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>Errors: 0 / 256 elements
+</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
+</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>
+</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>║  ✓ ALL PASS — cp.reduce.async works correctly!         ║
+</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex01_wgmma_basiccu">ex01_wgmma_basic.cu<a class="headerlink" href="#ex01_wgmma_basiccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:32.743235+00:00</code> · Executed UTC: <code>2026-11-18T11:19:34.146676+00:00</code>.</p>
+<p>Source SHA-256: <code>282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/06-wgmma-part-1/ex01_wgmma_basic/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/06-wgmma-part-1/ex01_wgmma_basic/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_wgmma_basic.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>║  ex01: wgmma.mma_async — m64n64k16 BF16→FP32            ║
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>Shape: m64n64k16, D_REGS=32 per thread, 128 threads total
+</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>Patterned BF16 inputs; every accumulator checked against CPU GEMM.
+</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>
+</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>Threads with finite accumulators: 128 / 128
+</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a>D register values correct: 4096 / 4096
+</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>Max absolute error: 0.00000000
+</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>Sample d[0] = -0.246094 (expected -0.246094)
+</span><span id="__span-25-13"><a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a>
+</span><span id="__span-25-14"><a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-25-15"><a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>║  ✓ ALL PASS — wgmma computes correct BF16→FP32 result!  ║
+</span><span id="__span-25-16"><a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex01_wgmma_pipelinecu">ex01_wgmma_pipeline.cu<a class="headerlink" href="#ex01_wgmma_pipelinecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:34.697322+00:00</code> · Executed UTC: <code>2026-11-18T11:19:36.086020+00:00</code>.</p>
+<p>Source SHA-256: <code>76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/07-wgmma-part-2/ex01_wgmma_pipeline/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_wgmma_pipeline.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>║  ex01: wgmma commit/wait pipeline + stmatrix epilogue    ║
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>Shape: m64n64k16, FP16 accumulator, 2 tiles pipelined
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>Expected: all acc values = K×0.01² = 0.001600
+</span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>
+</span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>Threads with non-zero sums in BOTH tiles: 128 / 128
+</span><span id="__span-27-10"><a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>Sample out_A[0] = 0.001600
+</span><span id="__span-27-11"><a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>Output verification: 0 errors across both 64×64 tiles
+</span><span id="__span-27-12"><a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>
+</span><span id="__span-27-13"><a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-27-14"><a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a>║  ✓ ALL PASS — commit/wait pipeline + stmatrix working!  ║
+</span><span id="__span-27-15"><a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex01_rooflinecu">ex01_roofline.cu<a class="headerlink" href="#ex01_rooflinecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:36.642155+00:00</code> · Executed UTC: <code>2026-11-18T11:19:37.502670+00:00</code>.</p>
+<p>Source SHA-256: <code>d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_roofline.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>║  Roofline Model Demo — Memory vs Compute Bound        ║
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>     Peak memory bandwidth (theoretical): 3352.3 GB/s
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>     SM count: 132
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>
+</span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>════════════════════════════════════════════════════════
+</span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>KERNEL A: elementwise_scale (expected: MEMORY-BOUND)
+</span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>════════════════════════════════════════════════════════
+</span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>  Elements: 64M    Bytes moved: 537 MB    AI: 0.125 FLOP/Byte
+</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>  (Ridge point for FP32 CUDA cores ≈ 20 FLOP/Byte)
+</span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>  → AI=0.125 &lt;&lt; 20 → MEMORY-BOUND ✓
+</span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>
+</span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>  Time: 0.226 ms
+</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>  Bandwidth achieved: 2375.9 GB/s
+</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>  GFLOPS achieved:    297.0
+</span><span id="__span-29-19"><a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>  → Kernel is BANDWIDTH limited (not compute limited)
+</span><span id="__span-29-20"><a id="__codelineno-29-20" name="__codelineno-29-20" href="#__codelineno-29-20"></a>
+</span><span id="__span-29-21"><a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a>════════════════════════════════════════════════════════
+</span><span id="__span-29-22"><a id="__codelineno-29-22" name="__codelineno-29-22" href="#__codelineno-29-22"></a>KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
+</span><span id="__span-29-23"><a id="__codelineno-29-23" name="__codelineno-29-23" href="#__codelineno-29-23"></a>════════════════════════════════════════════════════════
+</span><span id="__span-29-24"><a id="__codelineno-29-24" name="__codelineno-29-24" href="#__codelineno-29-24"></a>  M=N=K=512    FLOPs: 268.4 M    Bytes: 3.1 MB    AI: 85.3 FLOP/Byte
+</span><span id="__span-29-25"><a id="__codelineno-29-25" name="__codelineno-29-25" href="#__codelineno-29-25"></a>  → AI=85.3 &gt;&gt; 20 → COMPUTE-BOUND ✓
+</span><span id="__span-29-26"><a id="__codelineno-29-26" name="__codelineno-29-26" href="#__codelineno-29-26"></a>
+</span><span id="__span-29-27"><a id="__codelineno-29-27" name="__codelineno-29-27" href="#__codelineno-29-27"></a>  Time: 0.033 ms
+</span><span id="__span-29-28"><a id="__codelineno-29-28" name="__codelineno-29-28" href="#__codelineno-29-28"></a>  GFLOPS achieved: 8019.7
+</span><span id="__span-29-29"><a id="__codelineno-29-29" name="__codelineno-29-29" href="#__codelineno-29-29"></a>  Effective BW:    94.0 GB/s (not the bottleneck)
+</span><span id="__span-29-30"><a id="__codelineno-29-30" name="__codelineno-29-30" href="#__codelineno-29-30"></a>  → Kernel is COMPUTE limited (bandwidth not saturated)
+</span><span id="__span-29-31"><a id="__codelineno-29-31" name="__codelineno-29-31" href="#__codelineno-29-31"></a>
+</span><span id="__span-29-32"><a id="__codelineno-29-32" name="__codelineno-29-32" href="#__codelineno-29-32"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-29-33"><a id="__codelineno-29-33" name="__codelineno-29-33" href="#__codelineno-29-33"></a>║  KEY TAKEAWAY:                                        ║
+</span><span id="__span-29-34"><a id="__codelineno-29-34" name="__codelineno-29-34" href="#__codelineno-29-34"></a>║  • elementwise_scale: optimize bandwidth, not FLOPs   ║
+</span><span id="__span-29-35"><a id="__codelineno-29-35" name="__codelineno-29-35" href="#__codelineno-29-35"></a>║  • tile_matmul: optimize FLOPs, pipeline depth        ║
+</span><span id="__span-29-36"><a id="__codelineno-29-36" name="__codelineno-29-36" href="#__codelineno-29-36"></a>║  • Wrong optimization → wrong results → wasted time   ║
+</span><span id="__span-29-37"><a id="__codelineno-29-37" name="__codelineno-29-37" href="#__codelineno-29-37"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex02_warp_speccu">ex02_warp_spec.cu<a class="headerlink" href="#ex02_warp_speccu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:38.058112+00:00</code> · Executed UTC: <code>2026-11-18T11:19:38.924950+00:00</code>.</p>
+<p>Source SHA-256: <code>fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex02_warp_spec/ex02_warp_spec.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex02_warp_spec/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex02_warp_spec/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex02_warp_spec.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>║  Warp Specialization Demo                             ║
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>║  256 threads = WG0 (producer) + WG1 (consumer)       ║
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>
+</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>Launch: 1 block × 256 threads
+</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>  WG0 (threads   0-127): PRODUCER role
+</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>  WG1 (threads 128-255): CONSUMER role
+</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>
+</span><span id="__span-31-10"><a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a>Role Assignment Check:
+</span><span id="__span-31-11"><a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a>  WG0 role recorded: 0 (expected 0 = producer)
+</span><span id="__span-31-12"><a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a>  WG1 role recorded: 1 (expected 1 = consumer)
+</span><span id="__span-31-13"><a id="__codelineno-31-13" name="__codelineno-31-13" href="#__codelineno-31-13"></a>  Role assignment: ✓ CORRECT
+</span><span id="__span-31-14"><a id="__codelineno-31-14" name="__codelineno-31-14" href="#__codelineno-31-14"></a>
+</span><span id="__span-31-15"><a id="__codelineno-31-15" name="__codelineno-31-15" href="#__codelineno-31-15"></a>Consumer Output Verification:
+</span><span id="__span-31-16"><a id="__codelineno-31-16" name="__codelineno-31-16" href="#__codelineno-31-16"></a>  Expected formula: output[i] = 2 × (3×i + 7) = 6i + 14
+</span><span id="__span-31-17"><a id="__codelineno-31-17" name="__codelineno-31-17" href="#__codelineno-31-17"></a>  Checking all 128 outputs...
+</span><span id="__span-31-18"><a id="__codelineno-31-18" name="__codelineno-31-18" href="#__codelineno-31-18"></a>
+</span><span id="__span-31-19"><a id="__codelineno-31-19" name="__codelineno-31-19" href="#__codelineno-31-19"></a>  Index    Expected     Got          OK?
+</span><span id="__span-31-20"><a id="__codelineno-31-20" name="__codelineno-31-20" href="#__codelineno-31-20"></a>  ────────────────────────────────────────
+</span><span id="__span-31-21"><a id="__codelineno-31-21" name="__codelineno-31-21" href="#__codelineno-31-21"></a>  0        14.0         14.0         ✓
+</span><span id="__span-31-22"><a id="__codelineno-31-22" name="__codelineno-31-22" href="#__codelineno-31-22"></a>  1        20.0         20.0         ✓
+</span><span id="__span-31-23"><a id="__codelineno-31-23" name="__codelineno-31-23" href="#__codelineno-31-23"></a>  2        26.0         26.0         ✓
+</span><span id="__span-31-24"><a id="__codelineno-31-24" name="__codelineno-31-24" href="#__codelineno-31-24"></a>  3        32.0         32.0         ✓
+</span><span id="__span-31-25"><a id="__codelineno-31-25" name="__codelineno-31-25" href="#__codelineno-31-25"></a>  4        38.0         38.0         ✓
+</span><span id="__span-31-26"><a id="__codelineno-31-26" name="__codelineno-31-26" href="#__codelineno-31-26"></a>  ... (checking all 128, showing first 5 and last 3) ...
+</span><span id="__span-31-27"><a id="__codelineno-31-27" name="__codelineno-31-27" href="#__codelineno-31-27"></a>  125      764.0        764.0        ✓
+</span><span id="__span-31-28"><a id="__codelineno-31-28" name="__codelineno-31-28" href="#__codelineno-31-28"></a>  126      770.0        770.0        ✓
+</span><span id="__span-31-29"><a id="__codelineno-31-29" name="__codelineno-31-29" href="#__codelineno-31-29"></a>  127      776.0        776.0        ✓
+</span><span id="__span-31-30"><a id="__codelineno-31-30" name="__codelineno-31-30" href="#__codelineno-31-30"></a>
+</span><span id="__span-31-31"><a id="__codelineno-31-31" name="__codelineno-31-31" href="#__codelineno-31-31"></a>════════════════════════════════════════════════════════
+</span><span id="__span-31-32"><a id="__codelineno-31-32" name="__codelineno-31-32" href="#__codelineno-31-32"></a>Results: 128/128 output values correct
+</span><span id="__span-31-33"><a id="__codelineno-31-33" name="__codelineno-31-33" href="#__codelineno-31-33"></a>Role assignment: CORRECT
+</span><span id="__span-31-34"><a id="__codelineno-31-34" name="__codelineno-31-34" href="#__codelineno-31-34"></a>
+</span><span id="__span-31-35"><a id="__codelineno-31-35" name="__codelineno-31-35" href="#__codelineno-31-35"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-31-36"><a id="__codelineno-31-36" name="__codelineno-31-36" href="#__codelineno-31-36"></a>║  ✓ ALL TESTS PASSED                                  ║
+</span><span id="__span-31-37"><a id="__codelineno-31-37" name="__codelineno-31-37" href="#__codelineno-31-37"></a>║                                                      ║
+</span><span id="__span-31-38"><a id="__codelineno-31-38" name="__codelineno-31-38" href="#__codelineno-31-38"></a>║  KEY OBSERVATIONS:                                   ║
+</span><span id="__span-31-39"><a id="__codelineno-31-39" name="__codelineno-31-39" href="#__codelineno-31-39"></a>║  • WG0 (threads 0-127) executed ONLY producer code   ║
+</span><span id="__span-31-40"><a id="__codelineno-31-40" name="__codelineno-31-40" href="#__codelineno-31-40"></a>║  • WG1 (threads 128-255) executed ONLY consumer code  ║
+</span><span id="__span-31-41"><a id="__codelineno-31-41" name="__codelineno-31-41" href="#__codelineno-31-41"></a>║  • No warp divergence within either warpgroup        ║
+</span><span id="__span-31-42"><a id="__codelineno-31-42" name="__codelineno-31-42" href="#__codelineno-31-42"></a>║  • __syncthreads() ensured safe handoff              ║
+</span><span id="__span-31-43"><a id="__codelineno-31-43" name="__codelineno-31-43" href="#__codelineno-31-43"></a>║  • In production: replace sync with mbarrier (§9)    ║
+</span><span id="__span-31-44"><a id="__codelineno-31-44" name="__codelineno-31-44" href="#__codelineno-31-44"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex03_setmaxnregcu">ex03_setmaxnreg.cu<a class="headerlink" href="#ex03_setmaxnregcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:39.476370+00:00</code> · Executed UTC: <code>2026-11-18T11:19:40.281281+00:00</code>.</p>
+<p>Source SHA-256: <code>c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/ex03_setmaxnreg.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex03_setmaxnreg/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex03_setmaxnreg.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>║  setmaxnreg Demo — Dynamic Register Resizing         ║
+</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>
+</span><span id="__span-33-5"><a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-33-6"><a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>
+</span><span id="__span-33-7"><a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>Register Plan:
+</span><span id="__span-33-8"><a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>  WG0 (threads   0-127): setmaxnreg.dec → 32 regs (producer)
+</span><span id="__span-33-9"><a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>  WG1 (threads 128-255): setmaxnreg.inc → 128 regs (consumer)
+</span><span id="__span-33-10"><a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a>
+</span><span id="__span-33-11"><a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>WG0 (PRODUCER, 32 regs after resize):
+</span><span id="__span-33-12"><a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a>  ✓ All 128 values correct (registers NOT corrupted by setmaxnreg)
+</span><span id="__span-33-13"><a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>  Sample: output[0]=1.0 (expect 1.0), output[1]=3.5 (expect 3.5)
+</span><span id="__span-33-14"><a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a>
+</span><span id="__span-33-15"><a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a>WG1 (CONSUMER, 128 regs after resize):
+</span><span id="__span-33-16"><a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a>  ✓ All 128 values correct (registers NOT corrupted by setmaxnreg)
+</span><span id="__span-33-17"><a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a>  Sample: output[0]=2.0 (expect 2.0), output[1]=6.5 (expect 6.5)
+</span><span id="__span-33-18"><a id="__codelineno-33-18" name="__codelineno-33-18" href="#__codelineno-33-18"></a>
+</span><span id="__span-33-19"><a id="__codelineno-33-19" name="__codelineno-33-19" href="#__codelineno-33-19"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-33-20"><a id="__codelineno-33-20" name="__codelineno-33-20" href="#__codelineno-33-20"></a>║  ✓ ALL TESTS PASSED                                  ║
+</span><span id="__span-33-21"><a id="__codelineno-33-21" name="__codelineno-33-21" href="#__codelineno-33-21"></a>║  setmaxnreg correctly resized registers without      ║
+</span><span id="__span-33-22"><a id="__codelineno-33-22" name="__codelineno-33-22" href="#__codelineno-33-22"></a>║  corrupting existing register state.                 ║
+</span><span id="__span-33-23"><a id="__codelineno-33-23" name="__codelineno-33-23" href="#__codelineno-33-23"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex04_circular_buffercu">ex04_circular_buffer.cu<a class="headerlink" href="#ex04_circular_buffercu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:40.843154+00:00</code> · Executed UTC: <code>2026-11-18T11:19:41.816510+00:00</code>.</p>
+<p>Source SHA-256: <code>3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex04_circular_buffer/ex04_circular_buffer.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex04_circular_buffer/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/08-kernel-design-part-1/ex04_circular_buffer/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex04_circular_buffer.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>║  Circular Pipeline Buffer Simulation                  ║
+</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>║  N_STAGES=4, DEPTH=2, K_TILES=8                    ║
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>
+</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>[Prologue]: filling first 2 stages
+</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>  k=0: Producer writes stage 0  |  Consumer: waiting
+</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>  k=1: Producer writes stage 1  |  Consumer: waiting
+</span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>
+</span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>[Steady State]: producer and consumer overlap
+</span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>  k=2: Producer writes stage 2  |  Consumer reads stage 0
+</span><span id="__span-35-12"><a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a>  k=3: Producer writes stage 3  |  Consumer reads stage 1
+</span><span id="__span-35-13"><a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>  k=4: Producer writes stage 0  |  Consumer reads stage 2
+</span><span id="__span-35-14"><a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a>  k=5: Producer writes stage 1  |  Consumer reads stage 3
+</span><span id="__span-35-15"><a id="__codelineno-35-15" name="__codelineno-35-15" href="#__codelineno-35-15"></a>  k=6: Producer writes stage 2  |  Consumer reads stage 0
+</span><span id="__span-35-16"><a id="__codelineno-35-16" name="__codelineno-35-16" href="#__codelineno-35-16"></a>  k=7: Producer writes stage 3  |  Consumer reads stage 1
+</span><span id="__span-35-17"><a id="__codelineno-35-17" name="__codelineno-35-17" href="#__codelineno-35-17"></a>
+</span><span id="__span-35-18"><a id="__codelineno-35-18" name="__codelineno-35-18" href="#__codelineno-35-18"></a>[Drain]: flushing 2 remaining stages
+</span><span id="__span-35-19"><a id="__codelineno-35-19" name="__codelineno-35-19" href="#__codelineno-35-19"></a>  drain 0: Consumer reads stage 2  |  Producer: done
+</span><span id="__span-35-20"><a id="__codelineno-35-20" name="__codelineno-35-20" href="#__codelineno-35-20"></a>  drain 1: Consumer reads stage 3  |  Producer: done
+</span><span id="__span-35-21"><a id="__codelineno-35-21" name="__codelineno-35-21" href="#__codelineno-35-21"></a>
+</span><span id="__span-35-22"><a id="__codelineno-35-22" name="__codelineno-35-22" href="#__codelineno-35-22"></a>════════════════════════════════════════════════════════
+</span><span id="__span-35-23"><a id="__codelineno-35-23" name="__codelineno-35-23" href="#__codelineno-35-23"></a>Stage Assignment Verification:
+</span><span id="__span-35-24"><a id="__codelineno-35-24" name="__codelineno-35-24" href="#__codelineno-35-24"></a>  Expected producer: 0,1,2,3,0,1,2,3,-1,-1 (then drain)
+</span><span id="__span-35-25"><a id="__codelineno-35-25" name="__codelineno-35-25" href="#__codelineno-35-25"></a>  Expected consumer: -1,-1,0,1,2,3,0,1,2,3
+</span><span id="__span-35-26"><a id="__codelineno-35-26" name="__codelineno-35-26" href="#__codelineno-35-26"></a>
+</span><span id="__span-35-27"><a id="__codelineno-35-27" name="__codelineno-35-27" href="#__codelineno-35-27"></a>  Iter    Prod    Cons
+</span><span id="__span-35-28"><a id="__codelineno-35-28" name="__codelineno-35-28" href="#__codelineno-35-28"></a>  ────────────────────
+</span><span id="__span-35-29"><a id="__codelineno-35-29" name="__codelineno-35-29" href="#__codelineno-35-29"></a>     0       0      -1 ✓
+</span><span id="__span-35-30"><a id="__codelineno-35-30" name="__codelineno-35-30" href="#__codelineno-35-30"></a>     1       1      -1 ✓
+</span><span id="__span-35-31"><a id="__codelineno-35-31" name="__codelineno-35-31" href="#__codelineno-35-31"></a>     2       2       0 ✓
+</span><span id="__span-35-32"><a id="__codelineno-35-32" name="__codelineno-35-32" href="#__codelineno-35-32"></a>     3       3       1 ✓
+</span><span id="__span-35-33"><a id="__codelineno-35-33" name="__codelineno-35-33" href="#__codelineno-35-33"></a>     4       0       2 ✓
+</span><span id="__span-35-34"><a id="__codelineno-35-34" name="__codelineno-35-34" href="#__codelineno-35-34"></a>     5       1       3 ✓
+</span><span id="__span-35-35"><a id="__codelineno-35-35" name="__codelineno-35-35" href="#__codelineno-35-35"></a>     6       2       0 ✓
+</span><span id="__span-35-36"><a id="__codelineno-35-36" name="__codelineno-35-36" href="#__codelineno-35-36"></a>     7       3       1 ✓
+</span><span id="__span-35-37"><a id="__codelineno-35-37" name="__codelineno-35-37" href="#__codelineno-35-37"></a>     8      -1       2 ✓
+</span><span id="__span-35-38"><a id="__codelineno-35-38" name="__codelineno-35-38" href="#__codelineno-35-38"></a>     9      -1       3 ✓
+</span><span id="__span-35-39"><a id="__codelineno-35-39" name="__codelineno-35-39" href="#__codelineno-35-39"></a>
+</span><span id="__span-35-40"><a id="__codelineno-35-40" name="__codelineno-35-40" href="#__codelineno-35-40"></a>Output Verification (element 0 and element 10):
+</span><span id="__span-35-41"><a id="__codelineno-35-41" name="__codelineno-35-41" href="#__codelineno-35-41"></a>  output[0]  = 280.000 (expected 280.000) ✓
+</span><span id="__span-35-42"><a id="__codelineno-35-42" name="__codelineno-35-42" href="#__codelineno-35-42"></a>  output[10] = 280.800 (expected 280.800) ✓
+</span><span id="__span-35-43"><a id="__codelineno-35-43" name="__codelineno-35-43" href="#__codelineno-35-43"></a>
+</span><span id="__span-35-44"><a id="__codelineno-35-44" name="__codelineno-35-44" href="#__codelineno-35-44"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-35-45"><a id="__codelineno-35-45" name="__codelineno-35-45" href="#__codelineno-35-45"></a>║  Stage assignment errors: 0                           ║
+</span><span id="__span-35-46"><a id="__codelineno-35-46" name="__codelineno-35-46" href="#__codelineno-35-46"></a>║  Runtime barrier errors:  0                           ║
+</span><span id="__span-35-47"><a id="__codelineno-35-47" name="__codelineno-35-47" href="#__codelineno-35-47"></a>║  ✓ ALL TESTS PASSED — circular buffer correct        ║
+</span><span id="__span-35-48"><a id="__codelineno-35-48" name="__codelineno-35-48" href="#__codelineno-35-48"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex05_mbarriercu">ex05_mbarrier.cu<a class="headerlink" href="#ex05_mbarriercu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:42.375062+00:00</code> · Executed UTC: <code>2026-11-18T11:19:43.203635+00:00</code>.</p>
+<p>Source SHA-256: <code>c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex05_mbarrier.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>║  mbarrier Two-Barrier Handshake Demo                  ║
+</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>║  3 rounds of producer→consumer using full/empty bars  ║
+</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-37-5"><a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>
+</span><span id="__span-37-6"><a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-37-7"><a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>
+</span><span id="__span-37-8"><a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>Producer values: [42.00, 99.50, 7.25]
+</span><span id="__span-37-9"><a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>Expected consumer outputs: [84.00, 199.00, 14.50]
+</span><span id="__span-37-10"><a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a>
+</span><span id="__span-37-11"><a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a>Handshake Results:
+</span><span id="__span-37-12"><a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a>  Round    Produced     Expected     Got          OK?
+</span><span id="__span-37-13"><a id="__codelineno-37-13" name="__codelineno-37-13" href="#__codelineno-37-13"></a>  ────────────────────────────────────────────────
+</span><span id="__span-37-14"><a id="__codelineno-37-14" name="__codelineno-37-14" href="#__codelineno-37-14"></a>  0        42.00        84.00        84.00        ✓ PASS
+</span><span id="__span-37-15"><a id="__codelineno-37-15" name="__codelineno-37-15" href="#__codelineno-37-15"></a>  1        99.50        199.00       199.00       ✓ PASS
+</span><span id="__span-37-16"><a id="__codelineno-37-16" name="__codelineno-37-16" href="#__codelineno-37-16"></a>  2        7.25         14.50        14.50        ✓ PASS
+</span><span id="__span-37-17"><a id="__codelineno-37-17" name="__codelineno-37-17" href="#__codelineno-37-17"></a>
+</span><span id="__span-37-18"><a id="__codelineno-37-18" name="__codelineno-37-18" href="#__codelineno-37-18"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-37-19"><a id="__codelineno-37-19" name="__codelineno-37-19" href="#__codelineno-37-19"></a>║  ✓ ALL 3 ROUNDS PASSED                               ║
+</span><span id="__span-37-20"><a id="__codelineno-37-20" name="__codelineno-37-20" href="#__codelineno-37-20"></a>║                                                      ║
+</span><span id="__span-37-21"><a id="__codelineno-37-21" name="__codelineno-37-21" href="#__codelineno-37-21"></a>║  WHAT HAPPENED:                                      ║
+</span><span id="__span-37-22"><a id="__codelineno-37-22" name="__codelineno-37-22" href="#__codelineno-37-22"></a>║  1. empty_bar pre-signaled → producer starts freely  ║
+</span><span id="__span-37-23"><a id="__codelineno-37-23" name="__codelineno-37-23" href="#__codelineno-37-23"></a>║  2. Producer writes SMEM → arrives on full_bar       ║
+</span><span id="__span-37-24"><a id="__codelineno-37-24" name="__codelineno-37-24" href="#__codelineno-37-24"></a>║  3. Consumer waits full_bar → reads SMEM → doubles   ║
+</span><span id="__span-37-25"><a id="__codelineno-37-25" name="__codelineno-37-25" href="#__codelineno-37-25"></a>║  4. Consumer arrives on empty_bar → stage recyclable  ║
+</span><span id="__span-37-26"><a id="__codelineno-37-26" name="__codelineno-37-26" href="#__codelineno-37-26"></a>║  5. phase bits prevent stale barrier reads           ║
+</span><span id="__span-37-27"><a id="__codelineno-37-27" name="__codelineno-37-27" href="#__codelineno-37-27"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex06_pingpongcu">ex06_pingpong.cu<a class="headerlink" href="#ex06_pingpongcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:43.758040+00:00</code> · Executed UTC: <code>2026-11-18T11:19:44.640676+00:00</code>.</p>
+<p>Source SHA-256: <code>d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex06_pingpong.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>║  Ping-Pong Pipeline Simulation                        ║
+</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>║  6 tiles, C0=even, C1=odd, K_TILES=4 per tile      ║
+</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a>
+</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>Tile Assignment and Output Verification:
+</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>  MMA formula: accumulate k*100+tile_id for k=0..4-1
+</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>  sum per tile = sum(k=0..3 of k*100) + tile_id × 4
+</span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a>  = 600 + tile_id × 4
+</span><span id="__span-39-10"><a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a>  After epilogue (×2):
+</span><span id="__span-39-11"><a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a>
+</span><span id="__span-39-12"><a id="__codelineno-39-12" name="__codelineno-39-12" href="#__codelineno-39-12"></a>  Tile   Consumer   Expected     Got          OK?
+</span><span id="__span-39-13"><a id="__codelineno-39-13" name="__codelineno-39-13" href="#__codelineno-39-13"></a>  ──────────────────────────────────────────────
+</span><span id="__span-39-14"><a id="__codelineno-39-14" name="__codelineno-39-14" href="#__codelineno-39-14"></a>  0      C0         1200         1200         ✓ PASS
+</span><span id="__span-39-15"><a id="__codelineno-39-15" name="__codelineno-39-15" href="#__codelineno-39-15"></a>  1      C1         1208         1208         ✓ PASS
+</span><span id="__span-39-16"><a id="__codelineno-39-16" name="__codelineno-39-16" href="#__codelineno-39-16"></a>  2      C0         1216         1216         ✓ PASS
+</span><span id="__span-39-17"><a id="__codelineno-39-17" name="__codelineno-39-17" href="#__codelineno-39-17"></a>  3      C1         1224         1224         ✓ PASS
+</span><span id="__span-39-18"><a id="__codelineno-39-18" name="__codelineno-39-18" href="#__codelineno-39-18"></a>  4      C0         1232         1232         ✓ PASS
+</span><span id="__span-39-19"><a id="__codelineno-39-19" name="__codelineno-39-19" href="#__codelineno-39-19"></a>  5      C1         1240         1240         ✓ PASS
+</span><span id="__span-39-20"><a id="__codelineno-39-20" name="__codelineno-39-20" href="#__codelineno-39-20"></a>
+</span><span id="__span-39-21"><a id="__codelineno-39-21" name="__codelineno-39-21" href="#__codelineno-39-21"></a>Ping-Pong Behavior Check:
+</span><span id="__span-39-22"><a id="__codelineno-39-22" name="__codelineno-39-22" href="#__codelineno-39-22"></a>  Even tiles processed by Consumer 0: ✓ ALL CORRECT
+</span><span id="__span-39-23"><a id="__codelineno-39-23" name="__codelineno-39-23" href="#__codelineno-39-23"></a>  Odd tiles processed by Consumer 1:  ✓ ALL CORRECT
+</span><span id="__span-39-24"><a id="__codelineno-39-24" name="__codelineno-39-24" href="#__codelineno-39-24"></a>
+</span><span id="__span-39-25"><a id="__codelineno-39-25" name="__codelineno-39-25" href="#__codelineno-39-25"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-39-26"><a id="__codelineno-39-26" name="__codelineno-39-26" href="#__codelineno-39-26"></a>║  ✓ ALL TESTS PASSED                                  ║
+</span><span id="__span-39-27"><a id="__codelineno-39-27" name="__codelineno-39-27" href="#__codelineno-39-27"></a>║                                                      ║
+</span><span id="__span-39-28"><a id="__codelineno-39-28" name="__codelineno-39-28" href="#__codelineno-39-28"></a>║  In production, C0's epilogue overlaps C1's MMA:     ║
+</span><span id="__span-39-29"><a id="__codelineno-39-29" name="__codelineno-39-29" href="#__codelineno-39-29"></a>║  C0: [MMA T0][EPI T0][MMA T2][EPI T2]               ║
+</span><span id="__span-39-30"><a id="__codelineno-39-30" name="__codelineno-39-30" href="#__codelineno-39-30"></a>║  C1:    [MMA T1][EPI T1][MMA T3][EPI T3]            ║
+</span><span id="__span-39-31"><a id="__codelineno-39-31" name="__codelineno-39-31" href="#__codelineno-39-31"></a>║  Tensor cores: NEVER idle (perfect overlap)          ║
+</span><span id="__span-39-32"><a id="__codelineno-39-32" name="__codelineno-39-32" href="#__codelineno-39-32"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex07_epiloguecu">ex07_epilogue.cu<a class="headerlink" href="#ex07_epiloguecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:45.193648+00:00</code> · Executed UTC: <code>2026-11-18T11:19:46.042302+00:00</code>.</p>
+<p>Source SHA-256: <code>bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex07_epilogue/ex07_epilogue.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex07_epilogue/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex07_epilogue/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex07_epilogue.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>║  Epilogue Fusion Demo                                 ║
+</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>║  D = ReLU( α×acc + β×C + bias[row] )                 ║
+</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a>╚══════════════════════════════════════════════════════╝
+</span><span id="__span-41-5"><a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a>
+</span><span id="__span-41-6"><a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a>Input tile: 64×64, alpha=1.0, beta=0.5
+</span><span id="__span-41-7"><a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a>Bias: bias[m] = m * 0.1
+</span><span id="__span-41-8"><a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>Expected ReLU clamped to 0: 1965/4096 elements
+</span><span id="__span-41-9"><a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>
+</span><span id="__span-41-10"><a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a>Verification:
+</span><span id="__span-41-11"><a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a>  Total elements: 4096
+</span><span id="__span-41-12"><a id="__codelineno-41-12" name="__codelineno-41-12" href="#__codelineno-41-12"></a>  Errors: 0
+</span><span id="__span-41-13"><a id="__codelineno-41-13" name="__codelineno-41-13" href="#__codelineno-41-13"></a>  Max absolute error: 0.000000 (threshold: 1e-4)
+</span><span id="__span-41-14"><a id="__codelineno-41-14" name="__codelineno-41-14" href="#__codelineno-41-14"></a>
+</span><span id="__span-41-15"><a id="__codelineno-41-15" name="__codelineno-41-15" href="#__codelineno-41-15"></a>Sample outputs:
+</span><span id="__span-41-16"><a id="__codelineno-41-16" name="__codelineno-41-16" href="#__codelineno-41-16"></a>  D[0][0] = 0.0000 (expected 0.0000)
+</span><span id="__span-41-17"><a id="__codelineno-41-17" name="__codelineno-41-17" href="#__codelineno-41-17"></a>  D[2][5] = 0.0000 (expected 0.0000)
+</span><span id="__span-41-18"><a id="__codelineno-41-18" name="__codelineno-41-18" href="#__codelineno-41-18"></a>  D[3][2] = 0.0000 (expected 0.0000, should be 0 if pre-ReLU &lt; 0)
+</span><span id="__span-41-19"><a id="__codelineno-41-19" name="__codelineno-41-19" href="#__codelineno-41-19"></a>
+</span><span id="__span-41-20"><a id="__codelineno-41-20" name="__codelineno-41-20" href="#__codelineno-41-20"></a>FP8 amax reduction result: 44.6000
+</span><span id="__span-41-21"><a id="__codelineno-41-21" name="__codelineno-41-21" href="#__codelineno-41-21"></a>  (This is max|D[m][n]| across the tile, used for FP8 scaling)
+</span><span id="__span-41-22"><a id="__codelineno-41-22" name="__codelineno-41-22" href="#__codelineno-41-22"></a>
+</span><span id="__span-41-23"><a id="__codelineno-41-23" name="__codelineno-41-23" href="#__codelineno-41-23"></a>╔══════════════════════════════════════════════════════╗
+</span><span id="__span-41-24"><a id="__codelineno-41-24" name="__codelineno-41-24" href="#__codelineno-41-24"></a>║  ✓ ALL 4096 ELEMENTS CORRECT — epilogue fusion works!   ║
+</span><span id="__span-41-25"><a id="__codelineno-41-25" name="__codelineno-41-25" href="#__codelineno-41-25"></a>╚══════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex08_comprehensivecu">ex08_comprehensive.cu<a class="headerlink" href="#ex08_comprehensivecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:46.577755+00:00</code> · Executed UTC: <code>2026-11-18T11:19:47.903815+00:00</code>.</p>
+<p>Source SHA-256: <code>7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex08_comprehensive.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>║  ex08: Comprehensive — Persistent Warp-Spec GEMM+ReLU   ║
+</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>╚══════════════════════════════════════════════════════════╝
+</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a>
+</span><span id="__span-43-5"><a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a>GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+</span><span id="__span-43-6"><a id="__codelineno-43-6" name="__codelineno-43-6" href="#__codelineno-43-6"></a>
+</span><span id="__span-43-7"><a id="__codelineno-43-7" name="__codelineno-43-7" href="#__codelineno-43-7"></a>Problem: M=256, N=256, K=256
+</span><span id="__span-43-8"><a id="__codelineno-43-8" name="__codelineno-43-8" href="#__codelineno-43-8"></a>Tile:    64×64 (K-step=16, stages=3)
+</span><span id="__span-43-9"><a id="__codelineno-43-9" name="__codelineno-43-9" href="#__codelineno-43-9"></a>Tiles:   16 (tiles_m=4 × tiles_n=4)
+</span><span id="__span-43-10"><a id="__codelineno-43-10" name="__codelineno-43-10" href="#__codelineno-43-10"></a>AI:      42.7 FLOP/Byte (COMPUTE-BOUND ✓)
+</span><span id="__span-43-11"><a id="__codelineno-43-11" name="__codelineno-43-11" href="#__codelineno-43-11"></a>
+</span><span id="__span-43-12"><a id="__codelineno-43-12" name="__codelineno-43-12" href="#__codelineno-43-12"></a>Launch: 1 CTA × 256 threads (WG0=producer, WG1=consumer)
+</span><span id="__span-43-13"><a id="__codelineno-43-13" name="__codelineno-43-13" href="#__codelineno-43-13"></a>Persistent loop: processes all 16 tiles sequentially.
+</span><span id="__span-43-14"><a id="__codelineno-43-14" name="__codelineno-43-14" href="#__codelineno-43-14"></a>
+</span><span id="__span-43-15"><a id="__codelineno-43-15" name="__codelineno-43-15" href="#__codelineno-43-15"></a>Runtime: 0.981 ms
+</span><span id="__span-43-16"><a id="__codelineno-43-16" name="__codelineno-43-16" href="#__codelineno-43-16"></a>GFLOPS: 34.19
+</span><span id="__span-43-17"><a id="__codelineno-43-17" name="__codelineno-43-17" href="#__codelineno-43-17"></a>
+</span><span id="__span-43-18"><a id="__codelineno-43-18" name="__codelineno-43-18" href="#__codelineno-43-18"></a>Verification:
+</span><span id="__span-43-19"><a id="__codelineno-43-19" name="__codelineno-43-19" href="#__codelineno-43-19"></a>  Total elements: 65536
+</span><span id="__span-43-20"><a id="__codelineno-43-20" name="__codelineno-43-20" href="#__codelineno-43-20"></a>  Errors: 0 (threshold: 1e-3)
+</span><span id="__span-43-21"><a id="__codelineno-43-21" name="__codelineno-43-21" href="#__codelineno-43-21"></a>  Max abs error: 0.000000
+</span><span id="__span-43-22"><a id="__codelineno-43-22" name="__codelineno-43-22" href="#__codelineno-43-22"></a>  Sample: C[0][0]=0.0000 ref=0.0000
+</span><span id="__span-43-23"><a id="__codelineno-43-23" name="__codelineno-43-23" href="#__codelineno-43-23"></a>  Sample: C[5][7]=0.0273 ref=0.0273
+</span><span id="__span-43-24"><a id="__codelineno-43-24" name="__codelineno-43-24" href="#__codelineno-43-24"></a>
+</span><span id="__span-43-25"><a id="__codelineno-43-25" name="__codelineno-43-25" href="#__codelineno-43-25"></a>Design Summary:
+</span><span id="__span-43-26"><a id="__codelineno-43-26" name="__codelineno-43-26" href="#__codelineno-43-26"></a>  Kernel model:    Arithmetic intensity (AI=43 FLOP/Byte)
+</span><span id="__span-43-27"><a id="__codelineno-43-27" name="__codelineno-43-27" href="#__codelineno-43-27"></a>  Warp spec:       WG0=producer (loads), WG1=consumer (computes)
+</span><span id="__span-43-28"><a id="__codelineno-43-28" name="__codelineno-43-28" href="#__codelineno-43-28"></a>  Pipeline stages: 3 (circular buffer in shared memory)
+</span><span id="__span-43-29"><a id="__codelineno-43-29" name="__codelineno-43-29" href="#__codelineno-43-29"></a>  Scheduling:      Persistent (1 CTA, processes 16 tiles)
+</span><span id="__span-43-30"><a id="__codelineno-43-30" name="__codelineno-43-30" href="#__codelineno-43-30"></a>  Rasterization:   Swizzle=2 (M-dimension locality)
+</span><span id="__span-43-31"><a id="__codelineno-43-31" name="__codelineno-43-31" href="#__codelineno-43-31"></a>  Epilogue:        ReLU fused (register-level, zero extra HBM)
+</span><span id="__span-43-32"><a id="__codelineno-43-32" name="__codelineno-43-32" href="#__codelineno-43-32"></a>  Production TODO: Replace __syncthreads() with mbarrier,
+</span><span id="__span-43-33"><a id="__codelineno-43-33" name="__codelineno-43-33" href="#__codelineno-43-33"></a>                   replace manual loads with TMA,
+</span><span id="__span-43-34"><a id="__codelineno-43-34" name="__codelineno-43-34" href="#__codelineno-43-34"></a>                   replace st.global with TMA store,
+</span><span id="__span-43-35"><a id="__codelineno-43-35" name="__codelineno-43-35" href="#__codelineno-43-35"></a>                   add setmaxnreg for true WS benefit.
+</span><span id="__span-43-36"><a id="__codelineno-43-36" name="__codelineno-43-36" href="#__codelineno-43-36"></a>
+</span><span id="__span-43-37"><a id="__codelineno-43-37" name="__codelineno-43-37" href="#__codelineno-43-37"></a>╔══════════════════════════════════════════════════════════╗
+</span><span id="__span-43-38"><a id="__codelineno-43-38" name="__codelineno-43-38" href="#__codelineno-43-38"></a>║  ✓ ALL 65536 ELEMENTS CORRECT                              ║
+</span><span id="__span-43-39"><a id="__codelineno-43-39" name="__codelineno-43-39" href="#__codelineno-43-39"></a>║                                                        ║
+</span><span id="__span-43-40"><a id="__codelineno-43-40" name="__codelineno-43-40" href="#__codelineno-43-40"></a>║  ALL LESSON 3 CONCEPTS DEMONSTRATED:                   ║
+</span><span id="__span-43-41"><a id="__codelineno-43-41" name="__codelineno-43-41" href="#__codelineno-43-41"></a>║  ✓ Roofline classification (compute-bound)             ║
+</span><span id="__span-43-42"><a id="__codelineno-43-42" name="__codelineno-43-42" href="#__codelineno-43-42"></a>║  ✓ Warp specialization (producer + consumer)           ║
+</span><span id="__span-43-43"><a id="__codelineno-43-43" name="__codelineno-43-43" href="#__codelineno-43-43"></a>║  ✓ Circular pipeline buffer (N_STAGES=3)              ║
+</span><span id="__span-43-44"><a id="__codelineno-43-44" name="__codelineno-43-44" href="#__codelineno-43-44"></a>║  ✓ Persistent scheduling (all tiles in one kernel)     ║
+</span><span id="__span-43-45"><a id="__codelineno-43-45" name="__codelineno-43-45" href="#__codelineno-43-45"></a>║  ✓ Swizzled rasterization (L2 locality)                ║
+</span><span id="__span-43-46"><a id="__codelineno-43-46" name="__codelineno-43-46" href="#__codelineno-43-46"></a>║  ✓ Fused epilogue (ReLU in registers)                  ║
+</span><span id="__span-43-47"><a id="__codelineno-43-47" name="__codelineno-43-47" href="#__codelineno-43-47"></a>╚══════════════════════════════════════════════════════════╝
+</span></code></pre></div>
+<h3 id="ex09_streamk_rolescu">ex09_streamk_roles.cu<a class="headerlink" href="#ex09_streamk_rolescu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:48.473250+00:00</code> · Executed UTC: <code>2026-11-18T11:19:51.172405+00:00</code>.</p>
+<p>Source SHA-256: <code>fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/10-stream-k-scheduling/ex09_streamk_roles/ex09_streamk_roles.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/10-stream-k-scheduling/ex09_streamk_roles/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/10-stream-k-scheduling/ex09_streamk_roles/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex09_streamk_roles.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>═══════════════════════════════════════════════════════
+</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>  ex09_streamk_roles — Stream-K Split Role Demo
+</span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a>  3 output tiles × 90 K-tiles/tile = 270 total iters
+</span><span id="__span-45-4"><a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a>  4 CTAs
+</span><span id="__span-45-5"><a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a>═══════════════════════════════════════════════════════
+</span><span id="__span-45-6"><a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a>
+</span><span id="__span-45-7"><a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a>Split assignment:
+</span><span id="__span-45-8"><a id="__codelineno-45-8" name="__codelineno-45-8" href="#__codelineno-45-8"></a>  Split 0: tile=0 K_idx= 0 k_tile_count=67 role=FIRST
+</span><span id="__span-45-9"><a id="__codelineno-45-9" name="__codelineno-45-9" href="#__codelineno-45-9"></a>  Split 1: tile=0 K_idx=67 k_tile_count=23 role=FINAL
+</span><span id="__span-45-10"><a id="__codelineno-45-10" name="__codelineno-45-10" href="#__codelineno-45-10"></a>  Split 2: tile=1 K_idx= 0 k_tile_count=44 role=FIRST
+</span><span id="__span-45-11"><a id="__codelineno-45-11" name="__codelineno-45-11" href="#__codelineno-45-11"></a>  Split 3: tile=1 K_idx=44 k_tile_count=46 role=FINAL
+</span><span id="__span-45-12"><a id="__codelineno-45-12" name="__codelineno-45-12" href="#__codelineno-45-12"></a>  Split 4: tile=2 K_idx= 0 k_tile_count=22 role=FIRST
+</span><span id="__span-45-13"><a id="__codelineno-45-13" name="__codelineno-45-13" href="#__codelineno-45-13"></a>  Split 5: tile=2 K_idx=22 k_tile_count=68 role=FINAL
+</span><span id="__span-45-14"><a id="__codelineno-45-14" name="__codelineno-45-14" href="#__codelineno-45-14"></a>
+</span><span id="__span-45-15"><a id="__codelineno-45-15" name="__codelineno-45-15" href="#__codelineno-45-15"></a>Kernel output:
+</span><span id="__span-45-16"><a id="__codelineno-45-16" name="__codelineno-45-16" href="#__codelineno-45-16"></a>  CTA 0 → tile 0: FIRST SPLIT [0,67), partial=2278
+</span><span id="__span-45-17"><a id="__codelineno-45-17" name="__codelineno-45-17" href="#__codelineno-45-17"></a>  CTA 2 → tile 1: FIRST SPLIT [0,44), partial=4950
+</span><span id="__span-45-18"><a id="__codelineno-45-18" name="__codelineno-45-18" href="#__codelineno-45-18"></a>  CTA 4 → tile 2: FIRST SPLIT [0,22), partial=4213
+</span><span id="__span-45-19"><a id="__codelineno-45-19" name="__codelineno-45-19" href="#__codelineno-45-19"></a>  CTA 3 → tile 1: FINAL SPLIT [44,90), waiting for lock&gt;=44
+</span><span id="__span-45-20"><a id="__codelineno-45-20" name="__codelineno-45-20" href="#__codelineno-45-20"></a>  CTA 5 → tile 2: FINAL SPLIT [22,90), waiting for lock&gt;=22
+</span><span id="__span-45-21"><a id="__codelineno-45-21" name="__codelineno-45-21" href="#__codelineno-45-21"></a>  CTA 1 → tile 0: FINAL SPLIT [67,90), waiting for lock&gt;=67
+</span><span id="__span-45-22"><a id="__codelineno-45-22" name="__codelineno-45-22" href="#__codelineno-45-22"></a>  CTA 3 → tile 1: FINAL SPLIT merged: prior=4950 + mine=7245 = 12195
+</span><span id="__span-45-23"><a id="__codelineno-45-23" name="__codelineno-45-23" href="#__codelineno-45-23"></a>  CTA 5 → tile 2: FINAL SPLIT merged: prior=4213 + mine=16082 = 20295
+</span><span id="__span-45-24"><a id="__codelineno-45-24" name="__codelineno-45-24" href="#__codelineno-45-24"></a>  CTA 1 → tile 0: FINAL SPLIT merged: prior=2278 + mine=1817 = 4095
+</span><span id="__span-45-25"><a id="__codelineno-45-25" name="__codelineno-45-25" href="#__codelineno-45-25"></a>
+</span><span id="__span-45-26"><a id="__codelineno-45-26" name="__codelineno-45-26" href="#__codelineno-45-26"></a>Verification:
+</span><span id="__span-45-27"><a id="__codelineno-45-27" name="__codelineno-45-27" href="#__codelineno-45-27"></a>  Tile 0: got=4095  expected=4095  PASS ✓
+</span><span id="__span-45-28"><a id="__codelineno-45-28" name="__codelineno-45-28" href="#__codelineno-45-28"></a>  Tile 1: got=12195  expected=12195  PASS ✓
+</span><span id="__span-45-29"><a id="__codelineno-45-29" name="__codelineno-45-29" href="#__codelineno-45-29"></a>  Tile 2: got=20295  expected=20295  PASS ✓
+</span><span id="__span-45-30"><a id="__codelineno-45-30" name="__codelineno-45-30" href="#__codelineno-45-30"></a>
+</span><span id="__span-45-31"><a id="__codelineno-45-31" name="__codelineno-45-31" href="#__codelineno-45-31"></a>ALL PASS ✓
+</span></code></pre></div>
+<h3 id="ex10_dependent_launchcu">ex10_dependent_launch.cu<a class="headerlink" href="#ex10_dependent_launchcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:51.829636+00:00</code> · Executed UTC: <code>2026-11-18T11:19:52.650956+00:00</code>.</p>
+<p>Source SHA-256: <code>36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/10-stream-k-scheduling/ex10_dependent_launch/ex10_dependent_launch.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/10-stream-k-scheduling/ex10_dependent_launch/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/10-stream-k-scheduling/ex10_dependent_launch/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex10_dependent_launch.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>═══════════════════════════════════════════════════════
+</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>  ex10_dependent_launch — GDC Dependent Grid Protocol
+</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>  N=256 elements
+</span><span id="__span-47-4"><a id="__codelineno-47-4" name="__codelineno-47-4" href="#__codelineno-47-4"></a>═══════════════════════════════════════════════════════
+</span><span id="__span-47-5"><a id="__codelineno-47-5" name="__codelineno-47-5" href="#__codelineno-47-5"></a>
+</span><span id="__span-47-6"><a id="__codelineno-47-6" name="__codelineno-47-6" href="#__codelineno-47-6"></a>Launching Kernel A (producer)...
+</span><span id="__span-47-7"><a id="__codelineno-47-7" name="__codelineno-47-7" href="#__codelineno-47-7"></a>Launching Kernel B (consumer) with programmatic serialization...
+</span><span id="__span-47-8"><a id="__codelineno-47-8" name="__codelineno-47-8" href="#__codelineno-47-8"></a>
+</span><span id="__span-47-9"><a id="__codelineno-47-9" name="__codelineno-47-9" href="#__codelineno-47-9"></a>Verification (first 8 elements):
+</span><span id="__span-47-10"><a id="__codelineno-47-10" name="__codelineno-47-10" href="#__codelineno-47-10"></a>  [  0] A wrote    1 (exp    1) ✓  B result 1001 (exp 1001) ✓
+</span><span id="__span-47-11"><a id="__codelineno-47-11" name="__codelineno-47-11" href="#__codelineno-47-11"></a>  [  1] A wrote    4 (exp    4) ✓  B result 1004 (exp 1004) ✓
+</span><span id="__span-47-12"><a id="__codelineno-47-12" name="__codelineno-47-12" href="#__codelineno-47-12"></a>  [  2] A wrote    7 (exp    7) ✓  B result 1007 (exp 1007) ✓
+</span><span id="__span-47-13"><a id="__codelineno-47-13" name="__codelineno-47-13" href="#__codelineno-47-13"></a>  [  3] A wrote   10 (exp   10) ✓  B result 1010 (exp 1010) ✓
+</span><span id="__span-47-14"><a id="__codelineno-47-14" name="__codelineno-47-14" href="#__codelineno-47-14"></a>  [  4] A wrote   13 (exp   13) ✓  B result 1013 (exp 1013) ✓
+</span><span id="__span-47-15"><a id="__codelineno-47-15" name="__codelineno-47-15" href="#__codelineno-47-15"></a>  [  5] A wrote   16 (exp   16) ✓  B result 1016 (exp 1016) ✓
+</span><span id="__span-47-16"><a id="__codelineno-47-16" name="__codelineno-47-16" href="#__codelineno-47-16"></a>  [  6] A wrote   19 (exp   19) ✓  B result 1019 (exp 1019) ✓
+</span><span id="__span-47-17"><a id="__codelineno-47-17" name="__codelineno-47-17" href="#__codelineno-47-17"></a>  [  7] A wrote   22 (exp   22) ✓  B result 1022 (exp 1022) ✓
+</span><span id="__span-47-18"><a id="__codelineno-47-18" name="__codelineno-47-18" href="#__codelineno-47-18"></a>  ... (248 more elements)
+</span><span id="__span-47-19"><a id="__codelineno-47-19" name="__codelineno-47-19" href="#__codelineno-47-19"></a>
+</span><span id="__span-47-20"><a id="__codelineno-47-20" name="__codelineno-47-20" href="#__codelineno-47-20"></a>ALL PASS ✓
+</span></code></pre></div>
+<h3 id="ex11_nvlink_bandwidthcu">ex11_nvlink_bandwidth.cu<a class="headerlink" href="#ex11_nvlink_bandwidthcu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:53.204677+00:00</code> · Executed UTC: <code>2026-11-18T11:19:54.198165+00:00</code>.</p>
+<p>Source SHA-256: <code>67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex11_nvlink_bandwidth.cu<span class="w"> </span>-o<span class="w"> </span>./example
+</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>GPUs detected: 2
+</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>GPU 0: NVIDIA H100 80GB HBM3, SM 9.0, 132 SMs
+</span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a>GPU 1: NVIDIA H100 80GB HBM3, SM 9.0, 132 SMs
+</span><span id="__span-49-4"><a id="__codelineno-49-4" name="__codelineno-49-4" href="#__codelineno-49-4"></a>GPU 0 can access GPU 1 memory: YES (does not identify NVLink)
+</span><span id="__span-49-5"><a id="__codelineno-49-5" name="__codelineno-49-5" href="#__codelineno-49-5"></a>Record topology with nvidia-smi topo -m. Payload: 134217728 bytes
+</span><span id="__span-49-6"><a id="__codelineno-49-6" name="__codelineno-49-6" href="#__codelineno-49-6"></a>  Staged 0-&gt;1 full-buffer verification: PASS (0 byte errors)
+</span><span id="__span-49-7"><a id="__codelineno-49-7" name="__codelineno-49-7" href="#__codelineno-49-7"></a>  Staged complete-transfer time: 4.860716 ms, payload 27.613 GB/s
+</span><span id="__span-49-8"><a id="__codelineno-49-8" name="__codelineno-49-8" href="#__codelineno-49-8"></a>  Peer API 0-&gt;1 full-buffer verification: PASS (0 byte errors)
+</span><span id="__span-49-9"><a id="__codelineno-49-9" name="__codelineno-49-9" href="#__codelineno-49-9"></a>  Peer API transfer time: 0.347011 ms, payload 386.782 GB/s (link unclassified)
+</span><span id="__span-49-10"><a id="__codelineno-49-10" name="__codelineno-49-10" href="#__codelineno-49-10"></a>  Kernel 1-&gt;0 full-buffer verification: PASS (0 byte errors)
+</span><span id="__span-49-11"><a id="__codelineno-49-11" name="__codelineno-49-11" href="#__codelineno-49-11"></a>  Kernel grid 1 blocks: 137.613831 ms, payload 0.975 GB/s
+</span><span id="__span-49-12"><a id="__codelineno-49-12" name="__codelineno-49-12" href="#__codelineno-49-12"></a>  Kernel 1-&gt;0 full-buffer verification: PASS (0 byte errors)
+</span><span id="__span-49-13"><a id="__codelineno-49-13" name="__codelineno-49-13" href="#__codelineno-49-13"></a>  Kernel grid 132 blocks: 1.070992 ms, payload 125.321 GB/s
+</span><span id="__span-49-14"><a id="__codelineno-49-14" name="__codelineno-49-14" href="#__codelineno-49-14"></a>Full-buffer checks: PASS
+</span></code></pre></div>
+<h3 id="ex12_nccl_allreducecu">ex12_nccl_allreduce.cu<a class="headerlink" href="#ex12_nccl_allreducecu" title="Permanent link">&para;</a></h3>
+<p><strong>PASS</strong> · Compile UTC: <code>2026-11-18T11:19:56.952819+00:00</code> · Executed UTC: <code>2026-11-18T11:19:58.343801+00:00</code>.</p>
+<p>Source SHA-256: <code>f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex12_nccl_allreduce.cu<span class="w"> </span>-o<span class="w"> </span>./example<span class="w"> </span>-lnccl
+</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>./example
+</span></code></pre></div>
+<p><strong>Captured output</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>═══════════════════════════════════════════════════════
+</span><span id="__span-51-2"><a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo
+</span><span id="__span-51-3"><a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a>═══════════════════════════════════════════════════════
+</span><span id="__span-51-4"><a id="__codelineno-51-4" name="__codelineno-51-4" href="#__codelineno-51-4"></a>
+</span><span id="__span-51-5"><a id="__codelineno-51-5" name="__codelineno-51-5" href="#__codelineno-51-5"></a>GPUs found: 2
+</span><span id="__span-51-6"><a id="__codelineno-51-6" name="__codelineno-51-6" href="#__codelineno-51-6"></a>  GPU 0: NVIDIA H100 80GB HBM3
+</span><span id="__span-51-7"><a id="__codelineno-51-7" name="__codelineno-51-7" href="#__codelineno-51-7"></a>  GPU 1: NVIDIA H100 80GB HBM3
+</span><span id="__span-51-8"><a id="__codelineno-51-8" name="__codelineno-51-8" href="#__codelineno-51-8"></a>
+</span><span id="__span-51-9"><a id="__codelineno-51-9" name="__codelineno-51-9" href="#__codelineno-51-9"></a>  AllReduce results:
+</span><span id="__span-51-10"><a id="__codelineno-51-10" name="__codelineno-51-10" href="#__codelineno-51-10"></a>    N_GPUs:     2
+</span><span id="__span-51-11"><a id="__codelineno-51-11" name="__codelineno-51-11" href="#__codelineno-51-11"></a>    Data size:  33.55 MB (8M elements × float)
+</span><span id="__span-51-12"><a id="__codelineno-51-12" name="__codelineno-51-12" href="#__codelineno-51-12"></a>    Avg time:   0.149 ms
+</span><span id="__span-51-13"><a id="__codelineno-51-13" name="__codelineno-51-13" href="#__codelineno-51-13"></a>    Alg BW:     224.92 GB/s  (bytes / time)
+</span><span id="__span-51-14"><a id="__codelineno-51-14" name="__codelineno-51-14" href="#__codelineno-51-14"></a>    Bus BW:     224.92 GB/s  (2×(N-1)/N × alg BW)
+</span><span id="__span-51-15"><a id="__codelineno-51-15" name="__codelineno-51-15" href="#__codelineno-51-15"></a>    Expected result per element: 3
+</span><span id="__span-51-16"><a id="__codelineno-51-16" name="__codelineno-51-16" href="#__codelineno-51-16"></a>    First 8 values: 3 3 3 3 3 3 3 3
+</span><span id="__span-51-17"><a id="__codelineno-51-17" name="__codelineno-51-17" href="#__codelineno-51-17"></a>  GPU 1: PASS ✓ (result[0]=3, expected=3)
+</span><span id="__span-51-18"><a id="__codelineno-51-18" name="__codelineno-51-18" href="#__codelineno-51-18"></a>  GPU 0: PASS ✓ (result[0]=3, expected=3)
+</span><span id="__span-51-19"><a id="__codelineno-51-19" name="__codelineno-51-19" href="#__codelineno-51-19"></a>
+</span><span id="__span-51-20"><a id="__codelineno-51-20" name="__codelineno-51-20" href="#__codelineno-51-20"></a>═══════════════════════════════════════════════════════
+</span><span id="__span-51-21"><a id="__codelineno-51-21" name="__codelineno-51-21" href="#__codelineno-51-21"></a>  Expected sum = 2 × (2 + 1) / 2 = 3
+</span><span id="__span-51-22"><a id="__codelineno-51-22" name="__codelineno-51-22" href="#__codelineno-51-22"></a>═══════════════════════════════════════════════════════
+</span><span id="__span-51-23"><a id="__codelineno-51-23" name="__codelineno-51-23" href="#__codelineno-51-23"></a>All-rank numerical verification: PASS
+</span></code></pre></div>
+<h3 id="ex13_hybrid_parallel_trainingcu">ex13_hybrid_parallel_training.cu<a class="headerlink" href="#ex13_hybrid_parallel_trainingcu" title="Permanent link">&para;</a></h3>
+<p><strong>Compiled; eight GPUs required</strong> · Compile UTC: <code>2026-11-18T11:19:59.944693+00:00</code> · Workload not launched on this two-GPU host.</p>
+<p>Source SHA-256: <code>9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2</code>.</p>
+<p><a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex13_hybrid_parallel_training/run.log">Run log</a>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex13_hybrid_parallel_training.cu<span class="w"> </span>-o<span class="w"> </span>./example<span class="w"> </span>-lnccl<span class="w"> </span>-lcublas<span class="w"> </span>-Xcompiler<span class="w"> </span>-pthread
+</span></code></pre></div>
+<p><strong>Collector prerequisite diagnostic — workload not launched</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a>Requires 8 visible GPU(s); discovered 2. Workload not executed.
+</span></code></pre></div>
+<h2 id="additional-numerical-checks">Additional numerical checks<a class="headerlink" href="#additional-numerical-checks" title="Permanent link">&para;</a></h2>
+<p><a href="../validation/2026-11-18-two-h100/attention/run.log">Attention output</a>: <strong>12 cases passed</strong> against PyTorch 2.7.0 math SDPA, including partial tiles and causal masks. <a href="../validation/2026-11-18-two-h100/attention/validate_attention.py">Executed Python source</a>.</p>
+<p><a href="../validation/2026-11-18-two-h100/nonuniform/manifest.json">Nonuniform Chapter 7 manifest</a> · <a href="../validation/2026-11-18-two-h100/nonuniform/run.log">Captured output</a>. The variant checks 4,096 distinct exactly representable coordinates per tile; its device implementation is unchanged from the pinned archived baseline.</p>
+<p>A successful sanitizer run checks the recorded memory accesses; it does not prove every asynchronous protocol or measure ordinary performance.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../getting-started/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started &amp; Installation">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Getting Started & Installation
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../final-audit/" class="md-footer__link md-footer__link--next" aria-label="Next: Validation &amp; Final Audit">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Validation & Final Audit
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>
