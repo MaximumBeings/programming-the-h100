@@ -87,7 +87,7 @@ Take the actual ragged case `M=37,N=29,K=41,L=2`. Let batch `l=1`, block `(block
 4. **Consume the shared tile collectively.** To compute its output, it reads `As[4][q]` and `Bs[q][12]` for `q=0..15`. The nine positions `q=0..8` represent valid `k=32..40`; `q=9..15` are zero-filled. Other threads supplied many of those inputs. The previous tiles supplied `k=0..31`.
 5. **Apply the epilogue once.** After all three tiles, write `D[2656]=0.5*acc+0.25*C[2656]`. A thread at `(tx,ty)=(13,4)` owns `n=29`, so it skips this store but still joins both barriers in every tile.
 
-**Check:** the block contains 256 threads but only `5*13=65` valid output owners, because rows 32–36 and columns 17–29 remain. Every valid owner must see all 41 reduction terms. Using the actual initialization formulas gives `acc=1.125`, `C=0.5` and `D=0.6875` at this coordinate. This hand calculation complements the independently captured executable, which checks every output.
+**Check:** the block contains 256 threads but only `5*13=65` valid output owners, because rows 32–36 and columns 16–28 remain. Every valid owner must see all 41 reduction terms. Using the actual initialization formulas gives `acc=1.125`, `C=0.5` and `D=0.6875` at this coordinate. This hand calculation complements the independently captured executable, which checks every output.
 
 ### See the ragged reduction and the final store together
 
@@ -115,6 +115,43 @@ acc starts 0 ---> 0.625 ---> 0.84375 ---> 1.125
 Offsets 2656 are **FP32 element offsets relative to the guarded kernel view**, not offsets from the raw allocation base. In source, this chapter's `k0` is named `base`, and `q` is named `inner`. The variable `sum` persists across the outer `base` loop, while the inner loop consumes `a_tile[ty][inner] * b_tile[inner][tx]`. The two barriers bracket each shared tile's ready/read/reuse lifetime.
 
 This owner's cooperative A load at `k0=32` uses `k=44` and is zero-filled, yet its output still receives nine real final-tile products loaded by the whole block. The diagram distinguishes **one thread's load ownership** from **the operands it consumes for its output**. Resetting `sum` at each arrow would leave only 0.28125 and produce the wrong final value 0.265625.
+
+### Reproduce the partial sums from the actual initializer
+
+[![One ragged GEMM output traced through three K tiles and its epilogue](images/worked/kernel-gemm-ragged.svg)](images/worked/kernel-gemm-ragged.svg)
+
+The numeric figure can be reproduced without a GPU or a second tiling implementation. For the chosen batch `l=1`, row `m=36` and column `n=28`, the source initializer defines
+
+`A_k = ((36*3 + k*5 + 1*7)%9 - 4)/8`
+
+`B_k = ((k*2 + 28*3 + 1*5)%7 - 3)/4`.
+
+Here k is the reduction coordinate, not a memory offset. All modulo inputs are nonnegative integers, so the formulas have unambiguous ordinary integer remainders. The fractions are binary-exact. A standalone CPU arithmetic check is:
+
+```python
+parts = []
+for k0 in (0, 16, 32):
+    partial = 0.0
+    for k in range(k0, min(k0 + 16, 41)):
+        a = ((36*3 + k*5 + 7) % 9 - 4) / 8
+        b = ((k*2 + 28*3 + 5) % 7 - 3) / 4
+        partial += a * b
+    parts.append(partial)
+assert parts == [0.625, 0.21875, 0.28125]
+assert sum(parts) == 1.125
+c = ((36 + 28*2 + 1) % 5 - 2) / 2
+assert c == 0.5 and 0.5*sum(parts) + 0.25*c == 0.6875
+```
+
+This snippet reconstructs one known coordinate from the published input contract. It is not a new numerical workload capture and cannot replace the full oracle, which independently checks every output. It does let you connect every intermediate number in the figure to the source rather than accepting a plausible final answer.
+
+To inspect a single product, choose k=32: A is `((275%9)-4)/8=(5-4)/8=0.125`; B is `((153%7)-3)/4=(6-3)/4=0.75`; their product is 0.09375. Eight other real terms complete the last partial 0.28125. The remaining seven tile positions contribute zeros; they do not create reduction coordinates beyond K=41.
+
+??? question "Exercise: diagnose a misplaced accumulator reset"
+
+    A modified kernel resets `sum` before every K tile and otherwise uses the same epilogue. What does this output become? What if it instead adds `beta*C` after each of three tiles while retaining the correct reduction sum?
+
+    **Answer:** Resetting keeps only 0.28125, yielding `0.5*0.28125+0.25*0.5=0.265625`. Adding the C term three times yields `0.5*1.125+3*0.25*0.5=0.9375`. Both differ from 0.6875, so this nonzero early-tile/nonzero-beta example distinguishes the two bugs.
 
 ## 7 — Store only valid output coordinates
 

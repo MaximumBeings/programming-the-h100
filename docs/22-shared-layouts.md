@@ -140,6 +140,28 @@ auto offset = bank_unchanged(cute::make_coord(3, 20)); // 212
 
 This distinction is a useful review habit: ask **which address bits select the resource you are trying to distribute?** Then enumerate those bits for the actual participating lanes.
 
+### Compare all three maps with the same lane request
+
+[![Scalar fixed-column requests compared across plain, padded and XOR shared layouts](images/worked/kernel-shared-banks.svg)](images/worked/kernel-shared-banks.svg)
+
+The scalar model has logical coordinates `(i,j)` in a 32×32 FP32 tile. Lane t requests `(i,j)=(t,0)`. Define **word offset** w as a count of aligned four-byte words from the shared allocation origin, and bank as `w%32`. A different origin shifts bank numbers; the conflict relationship still needs the actual effective word addresses.
+
+1. **Plain storage:** `w=32*i+j`. Lane 7 requests `32*7=224`, byte offset 896, bank zero. Lane 0 requests a different word zero in that same bank.
+2. **Padded storage:** `w=33*i+j`. Lane 7 requests 231, byte offset 924, bank seven. The thirty-two lanes visit distinct banks for this fixed-column request.
+3. **XOR storage:** `w=32*i+(j^i)`. With j zero, lane 7 also requests 231 and bank seven. This agreement at column zero does not mean the complete padded and XOR layouts are identical.
+4. **Distinguish them at `(3,5)`.** Plain gives `96+5=101` and bank five. Padding gives `99+5=104` and bank eight. XOR gives `96+(5^3)=96+6=102` and bank six. One coordinate is enough to reject equality of the three maps.
+5. **Check storage span and producer agreement.** Plain and this XOR permutation use 1024 words. Padded storage's logical view spans 1055 words, or 1056 when reserving complete padded rows. A producer writing plain offsets and a consumer reading XOR offsets disagree even though both stay in bounds.
+
+The actual CuTe composition shown earlier applies `Swizzle<5,0,5>` to a linear **word-index** layout. Its input bits 5–9 encode the row for this compact map, and XOR into bits 0–4 changes the stored column. Reusing those parameters on byte offsets mixes different bit positions and defines a different map.
+
+**Expected check:** enumerate all 1024 logical coordinates and require 1024 unique in-range locations for the XOR map, then compare each against `32*i+(j^i)`. Separately, enumerate one lane request pattern and count distinct banks. Bijective storage is necessary for independent writes but does not itself establish conflict freedom or a supported matrix-instruction operand.
+
+??? question "Exercise: a nonzero fixed column"
+
+    A warp requests `(t,5)` for t=0 through 31. Which banks does the XOR map visit? Compare lane 3 with padding.
+
+    **Answer:** XOR visits banks `5^t`, a permutation of 0 through 31, so all are distinct in this scalar model. Lane 3 reaches word 102, bank six. Padding reaches word 104, bank eight. Both patterns distribute this request, but use different addresses. This calculation predicts a bank property, not measured latency.
+
 ## 6 — Use the supported Hopper layout atoms
 
 A production WGMMA operand should begin with the pinned type-aware GMMA layout atoms, rather than an invented XOR formula:

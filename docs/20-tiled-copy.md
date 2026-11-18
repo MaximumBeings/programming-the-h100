@@ -131,6 +131,29 @@ Only six owners copy:
 
 For vectorized instructions, the validity and alignment contract applies to the instruction’s whole accessed segment. Per-element predicates do not make an arbitrary partially valid 16-byte access safe. Handle tails with a supported predicated atom, a separate scalar path, or an explicitly padded allocation whose semantics permit the access.
 
+### Walk from the logical owner to two different physical addresses
+
+[![Six valid tail owners mapped to separate padded source and destination offsets](images/worked/kernel-copy-tail.svg)](images/worked/kernel-copy-tail.svg)
+
+The figure's numbers come from the executed lab's row-pitch and initialization formulas. A **pitch** here counts FP32 elements, while `threadIdx.x` is an integer thread identifier. Define source pitch `ps=N+3=73` and destination pitch `pd=N+5=75`. The base pointers in the tensor views already skip the sixteen-element leading guards.
+
+1. **Choose an owner.** Thread 5 in tile `(9,2)` owns `(row,column)=(36,69)`. The thread/value assignment determines this coordinate before either storage layout is consulted.
+2. **Check the coordinate.** `36<37` and `69<70`, so the lazy predicate is true. The same Boolean governs the source load and destination store in `copy_if`.
+3. **Apply the source map.** Element offset is `36*73+69=2697`. In the actual source initializer, value is `row*N+column+1=36*70+69+1=2590`. Notice the initializer uses logical width 70 for the value pattern but physical pitch 73 for its storage address.
+4. **Apply the destination map.** The same coordinate maps to `36*75+69=2769`. Copy the number 2590 there. Reusing source offset 2697 as the destination offset would place a correct value at the wrong location.
+5. **Update the logical ownership count.** The lab counts writers at compact logical index `36*70+69=2589`, not at padded destination offset 2769. That counter must become one. Its purpose is to count ownership, not mimic the data allocation's padding.
+6. **Check a false neighbor.** Thread 6 owns column 70. Source offset 2698 and destination offset 2770 happen to be allocated padding, but the logical predicate is false. Neither data operation nor ownership increment should occur.
+
+The byte offsets for the valid copy are `4*2697=10788` and `4*2769=11076`, relative to the guarded tensor origins. Add another `16*4=64` bytes only when comparing against the raw allocation base. Writing down the origin prevents a guard offset from being counted twice.
+
+**Expected check:** the final tile copies six values and contributes six ownership increments. The whole matrix contributes `37*70=2590`. The rounded grid has thirty tiles, each with 128 potential owners, so `3840-2590=1250` positions must not copy. Both the global total and the final-tile local total should agree with the coordinate model.
+
+??? question "Exercise: thread 4, then a different destination pitch"
+
+    Find thread 4's source offset, destination offset and copied value in this tile. If destination pitch becomes 80, does ownership change?
+
+    **Answer:** Coordinate `(36,68)` gives source `36*73+68=2696`, destination `36*75+68=2768` and value `36*70+68+1=2589`. With pitch 80, destination offset becomes 2948; the coordinate, source offset, predicate and logical owner counter remain unchanged. A modified executable still needs its own allocation checks and rerun.
+
 ## 5 — Prove both values and ownership
 
 The executable does more than compare a checksum. It initializes distinct logical values, launches the copy and validates every output. An instrumented owner count records the number of writers for each valid destination; it must be exactly one. Guards and row padding remain unchanged, and the source allocation is checked after the operation.

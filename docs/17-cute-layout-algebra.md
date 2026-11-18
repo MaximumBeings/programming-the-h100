@@ -62,6 +62,21 @@ There are 24 coordinates and 24 distinct referenced elements. For this positive-
 
 Do not allocate only 24 elements and assume that a 24-coordinate view must fit. Conversely, holes need not be read or initialized merely because they lie inside the storage span. Copy and initialization loops should follow the actual ownership contract.
 
+### Decode a nested scalar index before applying strides
+
+The nested `((3,4),2)` layout has 12 positions in its first outer mode. For scalar logical index 20:
+
+1. Split outer modes first: inner index `20%12=8`, outer coordinate `c=20/12=1`.
+2. Split the inner index by its first-mode-fast sizes: `a=8%3=2`, `b=8/3=2`.
+3. Rebuild the nested coordinate `((2,2),1)`.
+4. Apply strides: `2×1+2×3+1×40=48` elements.
+
+The real API calls `nested(20)` and `nested(make_coord(make_coord(2,2),1))` describe the same mapping. **Check:** the logical reconstruction is `a+3*b+12*c=2+6+12=20`, while the physical offset is 48. The two numbers answer different questions.
+
+**Guided exercise.** Decode scalar index 17 without using a physical stride.
+
+**Worked answer:** `17%12=5`, `c=1`, then `a=5%3=2`, `b=5/3=1`. Coordinate `((2,1),1)` maps physically to `2+3+40=45`. Using 40 to decompose the logical index would mix storage placement with domain enumeration.
+
 ## 3 — Coalescing simplifies representation, not storage
 
 `coalesce` combines compatible factors and removes static size-one factors while preserving the represented scalar-index-to-offset function. In the nested example, the contiguous factors `(3,4):(1,3)` can combine into `12:1`; the gap before the second region prevents combining everything into a single compact contiguous mode.
@@ -105,6 +120,24 @@ auto composed = composition(twice, every_third);
 ```
 
 For `x=0,1,2,3`, B selects intermediate indices `0,3,6,9`; A maps them to `0,6,12,18`. All intermediate indices fit A's 16-element domain. The resulting offset function is `6x` on this four-element domain.
+
+### Trace composition as a complete address selection
+
+[![Four logical indices pass through the inner and outer layouts to distinct physical values](images/worked/composition-index-to-value.svg)](images/worked/composition-index-to-value.svg)
+
+Here A and B are **layout functions**, not GEMM operands. Give physical word s the value `100+s` so offsets and values cannot be confused:
+
+1. Select logical input `x=2` from B's four-element domain.
+2. Apply the inner layout: `every_third(2)=6`. This is an intermediate **logical index into A**.
+3. Apply the outer layout: `twice(6)=12`. This is the resulting **physical element offset**.
+4. A tensor using the composition would read value `100+12=112`. Constructing `composed` alone reads nothing.
+5. Repeat for all inputs: offsets are `0,6,12,18`; selected values are `100,106,112,118`.
+
+**Check:** compare `composed(x)` with `twice(every_third(x))` for each valid x. A correct printed output shape alone cannot establish that the intermediate indices fit the outer domain.
+
+**Guided exercise.** Why is blindly reversing these particular operands invalid at x=3?
+
+**Worked answer:** `twice(3)=6`, but `every_third` has only valid input indices 0 through 3. The fact that both functions individually return integers does not make this reverse-domain composition a valid use of the chosen layouts.
 
 Composition is not arbitrary pointer arithmetic disguised as a template. Check the inner image, outer domain, resulting hierarchy and divisibility constraints. Reversing the argument order need not even define the same valid domain. Neither composing a tensor layout nor creating an intermediate layout moves existing values into the composed order.
 
@@ -221,6 +254,31 @@ auto offset = divided(make_coord(2, 1));  // 6
 ```
 
 The first coordinate selects an element inside a tile; the second selects its repetition. Tiles reference `0..3`, `4..7` and `8..11`. With several original modes, `logical_divide` retains the per-mode tile/remainder relationship; `zipped_divide` groups tile modes together and remainder modes together. `tiled_divide` and `flat_divide` provide other groupings. These are distinct result shapes, not interchangeable names for the same tuple interface.
+
+### Keep hierarchical division modes visible
+
+For shape `(8,24)` and per-mode tiles `(4,8)`, the two per-mode divisions are `(4,2)` and `(8,3)`. Thus a logical divided coordinate retains the relationship `((within_m,tile_m),(within_n,tile_n))`. A zipped division regroups it as `((within_m,within_n),(tile_m,tile_n))`.
+
+```cpp
+auto matrix_layout = cute::make_layout(
+    cute::make_shape(cute::Int<8>{}, cute::Int<24>{}),
+    cute::make_stride(cute::Int<24>{}, cute::Int<1>{}));
+auto zipped = cute::zipped_divide(
+    matrix_layout, cute::make_tile(cute::Int<4>{}, cute::Int<8>{}));
+auto offset = zipped(cute::make_coord(
+    cute::make_coord(1, 2), cute::make_coord(1, 2)));
+```
+
+1. The first pair `(1,2)` selects within-tile row one and column two.
+2. The second pair `(1,2)` selects tile row one and tile column two.
+3. Recover global row `1+4×1=5` and global column `2+8×2=18`.
+4. Apply the original row-major stride: `5×24+18=138` elements.
+
+**Expected result:** offset 138. **Pitfall:** the numerically identical pairs make this one coordinate easy to read but cannot alone detect swapped tile/within roles; exercise a different pair too.
+
+**Guided exercise.** Within coordinate `(3,6)`, tile coordinate `(0,1)`: what is the result?
+
+**Worked answer:** global `(3,14)`, offset `3×24+14=86`. The zipped coordinate is `make_coord(make_coord(3,6),make_coord(0,1))`; do not pass a logical-divide grouping to an interface expecting zipped modes.
 
 ### Build a product and calculate its coordinate map
 

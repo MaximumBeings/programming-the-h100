@@ -152,6 +152,35 @@ apply s_A*s_B           1*2*(-5)=-10               1*8*(-5)=-40
 
 Each column's scale belongs to its reduction-axis K block. Keeping identical packed bytes but swapping the scales changes the outputs. This concrete panel models exact Python-float scales; it does not model E4M3 scale rounding, Blackwell's physical scale layout or native low-bit multiplication.
 
+[![A values 1,2,3,4,0,6 encode as E2M1 codes 2,4,5,6,0,7 and bytes 42,65,70; identical B bytes with scales two and eight yield minus ten and minus forty.](images/worked/ch27-nibbles-scales-dot.svg)](images/worked/ch27-nibbles-scales-dot.svg)
+
+### Reproduce one nibble extraction with the actual reference API
+
+Run this complete CPU snippet from the repository root with Python's standard library and the supplied reference module. It allocates only Python objects and launches no CUDA work:
+
+```python
+import sys
+sys.path.insert(0, "docs/examples/advanced")
+from fp4_reference import pack, unpack, decode
+
+codes = [0x2, 0x4, 0x5, 0x6, 0x0, 0x7]
+payload = pack(codes)
+k = 3
+byte_index, high_nibble = divmod(k, 2)
+code = (payload[byte_index] >> (4 * high_nibble)) & 0xF
+assert payload == bytes.fromhex("42 65 70")
+assert code == 0x6 and decode(code) == 4.0
+assert unpack(payload) == codes
+print("byte=1 high=1 code=0x6 decoded=4.0")
+```
+
+1. `divmod(3,2)` gives byte index one and nibble selector one. The selector is a position, not the sign bit.
+2. Byte one is `0x65`. Shifting right by four discards low code `0x5`, leaving high code `0x6`.
+3. Masking with `0xF` keeps the nibble. The decoder interprets code six as E2M1 value four; it does not return integer six.
+4. This A example has scale one. A different scale multiplies decoded four before the reconstructed value participates in a reference dot product.
+
+**Pitfall:** reversing the high/low convention still creates valid nibbles, so a code-range check alone cannot detect the permutation. Compare reconstructed values at their original K coordinates.
+
 ## 6 — Keep error sources distinguishable
 
 Let `D_ref = A @ B` and `D_repr = A_hat @ B_hat`, both evaluated by the reference arithmetic. Then `D_repr - D_ref` measures representation effects. `D_kernel - D_repr` includes implementation and accumulation differences. A correct kernel need not reproduce the unquantized matrix exactly, and a plausible total error does not prove its indexing is correct.
@@ -169,6 +198,12 @@ Now let a dot product have two K blocks, with normalized partial dots `p0=3` and
 `D_repr = (1*2)*3 + (8*4)*(-2) = 6-64 = -58`.
 
 The general scalar formula is `sum_b (S_A[m,b]*S_B[b,n])*p_b`, where `p_b` reduces decoded codes **only inside block b**. Factoring out the first scale pair would give `2*(3-2)=2`, a different result. This is why the scale coordinate must travel with every block contribution. These algebraic partial dots illustrate the contract; they are not an additional captured native GPU execution.
+
+### Exercise: zero reference values and output overflow
+
+Suppose one hypothetical reference output is zero and a kernel returns `1e-5`. Dividing the error by the reference produces an undefined relative comparison. If the declared absolute tolerance is `1e-6`, this element fails: `abs(1e-5−0)>1e-6`. The example's tolerance is a stated exercise choice, not a recommended universal threshold.
+
+Now use exactly representable FP16 inputs A=`[400,400]`, B=`[100,100]`. Their mathematical dot is 80000, which fits FP32 but exceeds FP16's largest finite magnitude 65504. Well-scaled finite inputs therefore do not guarantee finite FP16 output. A contract that requires finite output must reject or otherwise handle this case; a contract allowing infinity needs the reference and comparison to recognize it deliberately. The finite exact-scale CPU model and the H100 FP32-output lab do not establish a different format's overflow policy.
 
 ## 7 — Run the CPU representation oracle
 

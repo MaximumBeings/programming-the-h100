@@ -140,6 +140,38 @@ A full event answers “have this generation's operand bytes arrived?” A safe 
 
 For eight K tiles, tile 7 still uses slot 1 of generation 2; slot 2 has no generation-2 tile. Drain the actual operations instead of waiting on a third transfer that never existed. Locate `producer_acquire`, TMA issue, `consumer_wait`, the asynchronous-reader completion and `consumer_release` in the **selected** pinned mainloop; this panel is a lifetime model, not replacement pipeline code.
 
+### Turn the picture into an explicit lifetime model
+
+[![Three shared slots hold tiles 0 through 7 across three generations; slot 2 has no tile 8. Each raw operand tile uses 32768 bytes.](images/worked/ch25-stage-generations.svg)](images/worked/ch25-stage-generations.svg)
+
+Name the model's variables before reading it: `S=3` is the number of allocated slots, `T=8` is the number of actual K tiles, `t` is a tile index, `s=t%S` is a slot index, and `g=t//S` is its generation. Each slot retains its identity while its contents change. **The following is a sequential ownership model, not compilable CUTLASS code or a simulation of the GPU memory model.** Its descriptive verbs are not additional API names:
+
+```text
+MODEL: each slot begins EMPTY, with next generation 0
+for each actual tile t from 0 through T-1:
+    s = t modulo S; g = floor(t / S)
+    require slot s is EMPTY and belongs to generation g
+    acquire s; issue the real transfer for tile t
+    wait until this tile's transfer is complete; mark s FULL
+    read s for the matrix operation; mark s READING
+    wait until every asynchronous reader of s is safe
+    release s; mark s EMPTY with next generation g+1
+finish only after all issued readers and required stores complete
+```
+
+1. At `t=0`, the model selects `(s,g)=(0,0)`. A ready event authorizes the consumer's reads of tile zero, not the next producer's overwrite.
+2. After tile zero's readers finish, slot zero can advance to generation one. That permission is necessary even if the consumer has already *issued* its arithmetic.
+3. At `t=3`, the same physical slot zero holds a different tile. Both tile identity and generation matter; retaining only `s=0` loses the distinction.
+4. At `t=7`, slot one reaches generation two. The loop stops because T is eight. There is no transfer for tile eight and no corresponding full event to await.
+
+The deliberately sequential model makes the proof easy to follow. A real pipeline overlaps producer/consumer progress and uses the selected implementation's barriers, elected issuers, phases and completion operations. Substituting this loop for that protocol would discard concurrency and omit mechanism-specific requirements. Use the actual `producer_acquire`, `consumer_wait` and `consumer_release` contracts located in the selected mainloop; match their state progression to this ownership explanation rather than inventing a universal constructor.
+
+??? question "Exercise: K=129, BK=64 and S=3"
+
+    How many K tiles exist? Which waits disappear compared with the eight-tile model?
+
+    **Answer:** `ceil(129/64)=3`: tiles start at K=0,64,128. The final tile has one valid reduction position and 63 neutral positions under a zero-fill policy. Slots 0,1,2 each have generation-zero contents, and no generation-one transfer exists. Do not wait for tiles 3 through 7 or infer empty-reduction support from this example.
+
 ### Locate the actual mechanisms in the source
 
 Starting from the selected mainloop, find its `SharedStorage`, pipeline type, producer start state, consumer state and transaction-byte calculation. Then locate the TMA copy operation, consumer wait, WGMMA group completion and consumer release. Follow tail/drain calls in the **actual selected specialization**, including any cluster barrier and epilogue store pipeline.
@@ -159,6 +191,16 @@ Change one variable at a time, rerun the full reference checks, then measure sev
 For an FP16 operand tile of M=128, N=128, K=64, the raw A tile is `128*64*2=16,384` bytes and B is another 16,384 bytes. One operand stage is therefore 32,768 bytes before padding or metadata. Three raw stages use 98,304 bytes; six use 196,608 bytes. Neither number includes every barrier, alignment gap or epilogue allocation in a real kernel.
 
 Against H100’s shared-memory resource limits, an extra stage can remove the possibility of two resident CTAs even before registers or threads become limiting. Conversely, too few stages may expose load latency. Use the actual `sizeof(SharedStorage)`, configured shared-memory limit and compiler report, then measure. The raw arithmetic is a design estimate, not a launch-validity certificate.
+
+### Check a byte budget without confusing it with stage validity
+
+Take a **hypothetical** 128-KiB budget for this exercise, rather than treating it as an H100 per-block specification. The budget is `128×1024=131072` bytes. Reserve 16384 bytes for an epilogue and estimate 32768 raw operand bytes per stage:
+
+1. Three raw stages use 98304 bytes. With the epilogue, the subtotal is 114688 bytes, leaving 16384 for other storage.
+2. Four raw stages alone use the entire 131072-byte budget. Adding the epilogue already exceeds it, even before barriers and alignment.
+3. The three-stage estimate still does not certify a launch: compare the actual shared-storage type, alignment and selected device limits. Registers, threads and cluster scheduling can impose additional constraints.
+
+**Pitfall:** subtracting useful matrix bytes from a hardware limit and declaring the remainder “free stages” ignores the actual layout and collective's metadata. Arithmetic is an early rejection test; the selected implementation and launch checks complete the contract.
 
 ## 6 — Epilogue fusion is a computation graph
 

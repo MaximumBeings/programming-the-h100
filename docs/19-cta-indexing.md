@@ -57,6 +57,23 @@ For K iteration `q`, the reduction origin is `k0=q×BK`. A local coordinate `(mi
 
 Use a rectangular problem when checking the convention. Square matrices can hide an accidental interchange of M and N, just as all-ones inputs can hide an output permutation. Inspect actual operand values as well as pointer ranges.
 
+### The launch convention is part of the interface
+
+For the current example, `blockIdx.x` selects M and `blockIdx.y` selects N. A direct illustrative launch grid is therefore:
+
+```cpp
+dim3 grid((M + BM - 1) / BM, (N + BN - 1) / BN);
+```
+
+1. With M=4096 and BM=128, x has 32 CTA positions.
+2. With N=2048 and BN=128, y has 16 CTA positions.
+3. Grid coordinate `(5,3)` means M tile five, N tile three, totaling 512 independent output-tile positions.
+4. A different implementation may map x to N instead; it must change the kernel's interpretation consistently. This small formula assumes the bounded positive sizes here; §5 discusses overflow-conscious ceiling division.
+
+**Guided exercise.** Under this chapter's convention, what does block coordinate `(3,5)` mean?
+
+**Worked answer:** output origin `(3×128,5×128)=(384,640)`, not `(640,384)`. Both are valid positions in this rectangular problem, so a bounds checker alone cannot diagnose the swap.
+
 ## 3 — A complete numeric origin calculation
 
 Set `M=4096`, `N=2048`, `K=1024`, `BM=BN=128`, `BK=64`. For CTA `(bm,bn)=(5,3)`, the output origin is `(640,384)`. At K iteration zero, the panel origins are:
@@ -141,6 +158,23 @@ Physical address for this operand access
 
 **Expected result:** the operands at reduction coordinate 73 contribute to the same D element as the other K iterations. **Check:** compute these offsets directly from the global coordinates, independently of the tile's base-plus-local formula; both routes must agree. **Pitfall:** using `128` as `lda` because the CTA has 128 rows selects a different allocation position. A tile extent is not a global storage stride.
 
+### Connect the selected panel to an actual scalar result
+
+[![A selected CTA point identifies physical A and B words and all six products for one D element](images/worked/cta-operands-to-result.svg)](images/worked/cta-operands-to-result.svg)
+
+Use a separate tiny case: M=5, N=7, K=6; BM=2, BN=3, BK=2; row-major A, column-major B and row-major D. Populate `A[m,k]=100*m+k` and `B[k,n]=100*k+n`. These coordinate-derived **values** are deliberately distinct from storage offsets.
+
+1. CTA `(1,1)` starts at `(m0,n0)=(2,3)`. K iteration two starts at `k0=4`.
+2. Local `(mi,nj,kk)=(1,2,1)` selects global `(m,n,k)=(3,5,5)`.
+3. A's offset is `3×6+5=23`; its value is 305. B's offset is `5+5×6=35`; its value is 505.
+4. This one term contributes `305×505=154025` to output coordinate `(3,5)`.
+5. The complete dot uses A row `[300,301,302,303,304,305]` and B column `[5,105,205,305,405,505]`. Its products are `1500,31605,61910,92415,123120,154025`, whose sum is 464575.
+6. D's row-major offset is `3×7+5=26`. With FP32 storage, A/B/D byte displacements for the selected point are 92,140,104 respectively. No alpha/beta epilogue is included in this example.
+
+**Check:** the selected K panel contributes the last two products, not the entire answer. Earlier panel sums must remain in the accumulator. **Guided exercise:** what is the contribution from K panel zero, and does its D offset differ?
+
+**Worked answer:** panel zero covers k=0 and k=1, contributing `1500+31605=33105`; D remains offset 26. Changing K changes input coordinates and partial sums, not the owned output coordinate.
+
 ## 5 — Ceiling division preserves the tail
 
 For a separate M extent of 3100 with BM=64, floor division gives 48 and loses the final rows. Ceiling division gives 49. Tile 48 begins at row 3072 and has `3100−3072=28` valid rows; the other 36 local rows must not access global data.
@@ -178,6 +212,19 @@ Validate nonnegative extents, supported stride ranges and allocation bounds befo
 ### Include the batch before the tile offset
 
 For batch index l, add each operand's own batch stride: `l*sA + m0*lda + k0`, `l*sB + n0*ldb + k0`, and `l*sD + m0*ldd + n0`. For compact independent batches in this example, the strides are `sA=M*K=4194304`, `sB=K*N=2097152` and `sD=M*N=8388608` elements. At l=2 and K iteration zero, the selected CTA bases become 9043968, 4587520 and 18088320 respectively. These assume at least three allocated batches. Padded or broadcast operands need their actual declared batch strides; a stride of zero intentionally reuses one input and must not be adopted accidentally for independently stored outputs.
+
+### Calculate one batch address before converting to bytes
+
+The batch formula is easiest to inspect with the existing large aligned example. Use batch l=2 and CTA `(5,3)`, with k0=0:
+
+1. A's independent batch stride is `M*K=4194304` elements. Add two batches and the row-major tile origin: `2×4194304+655360=9043968`.
+2. B's batch stride is `K*N=2097152`. Add `2×2097152+393216=4587520`.
+3. D's batch stride is `M*N=8388608`. Add `2×8388608+1311104=18088320`.
+4. Only now multiply each total by its own element size. For FP16 A/B and FP32 D, byte displacements are 18,087,936; 9,175,040; and 72,353,280.
+
+**Check:** all three allocations must contain at least three batches; a valid per-batch coordinate cannot justify escaping the allocation. **Guided exercise:** if B intentionally broadcasts one physical matrix across batches, which term changes?
+
+**Worked answer:** B's batch stride becomes zero by contract, so its tile offset remains 393216 in every batch. A and D retain their own independent batch strides. Accidentally using zero for independently written output batches aliases destinations and changes correctness.
 
 ## 7 — Exercise and independent checks
 

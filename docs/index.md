@@ -57,6 +57,8 @@ The twenty-nine chapters combine explanatory diagrams, worked calculations, down
 
 The CPU coordinate exercises in Chapters 15–19 provide an entry into CuTe without requiring a Hopper instance. Later copy, MMA and pipeline labs reconnect those mappings to the hardware and synchronization chapters. Keep the two routes distinct: calculating an offset on a laptop is useful preparation for a GPU run, not a substitute for it.
 
+The CuTe/CUTLASS chapters use a common learning sequence: define the symbols, read a small worked illustration, follow the matching API call, calculate the intermediate coordinates or values, and check the result before extending the example. Keep the illustration beside the calculation; its labels distinguish logical coordinates, stored values, element offsets and byte addresses.
+
 The companion guides state a goal, explain the mechanisms, provide worked checks and finish with a summary. Open a linked SVG for its full-resolution vector view. Code snippets explain local ideas; complete programs and execution records identify what was actually compiled and run. Use each example's complete command, including its architecture target and required driver, NCCL or cuBLAS linker flags.
 
 ## Contents

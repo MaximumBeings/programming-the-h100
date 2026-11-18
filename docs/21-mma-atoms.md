@@ -106,6 +106,39 @@ row-major global offset = row*leading_dimension + column
 
 The type definitions require the matching atom-traits header; the complete program linked below supplies it.
 
+### Finish the address chain: a trait offset is not a store offset
+
+[![Lane 10 accumulator entries decoded into coordinates and a padded row-major output](images/worked/kernel-mma-lane10.svg)](images/worked/kernel-mma-lane10.svg)
+
+The trait names logical ownership; an output tensor separately names storage. To make the second step concrete, choose an illustrative row-major FP32 destination with sixteen rows, eight valid columns and leading dimension `ld=12` elements. Each row therefore has four padding elements. This destination is a manual storage example, not an additional GPU kernel in the host fragment oracle.
+
+1. Start with lane 10, value entry `v=2`. The real `Traits::CLayout` gives encoded offset 74.
+2. Decode using the trait's first-mode-fast convention: `row=74%16=10`, `column=74/16=4`.
+3. Apply the destination formula, not the trait encoding: `row*ld+column=10*12+4=124` FP32 elements.
+4. Convert to bytes once: `124*4=496` bytes from the destination view origin.
+5. Repeat for entries zero, one and three: element offsets 28, 29 and 125; byte offsets 112, 116 and 500.
+
+An illustrative tensor expression for that second map is:
+
+```cpp
+// Excerpt with a valid float* output allocation already supplied.
+auto output_view = cute::make_tensor(
+    cute::make_gmem_ptr(output),
+    cute::make_layout(cute::make_shape(16, 8), cute::make_stride(12, 1)));
+// Coordinate-to-storage example only, not a complete MMA epilogue:
+// output_view(cute::make_coord(10, 4)) names output[124].
+```
+
+The complete host oracle deliberately stops at coordinates: it never executes MMA or writes a GPU output. The expression above shows how a separate destination layout would interpret those coordinates. A real tiled MMA epilogue must use the selected instruction's partition/retile interface and collective participation requirements rather than treating this scalar illustration as a replacement implementation.
+
+**Pitfall:** an epilogue that stores at `output[74]` confuses encoded logical position with physical storage. An epilogue that writes four consecutive elements beginning at 28 also fails: the third entry belongs to row ten. Nonuniform numerical values are needed to reveal both mistakes; four identical register values can conceal a permutation.
+
+??? question "Exercise: move the origin, preserve the mapping"
+
+    The same destination tile begins at global row 32, column 16 in a row-major matrix with leading dimension 80. Where does lane 10 entry 2 store?
+
+    **Answer:** Local `(10,4)` becomes global `(42,20)`. Element offset from the matrix origin is `42*80+20=3380`; byte offset is 13520. Equivalently, tile origin offset `32*80+16=2576` plus local `10*80+4=804` gives 3380. The local instruction coordinate did not change when the destination origin moved.
+
 ## 4 — Coverage is a proof obligation
 
 Create a 16 × 8 array of zero counters. Enumerate every `(lane,value)` pair, reject out-of-range coordinates, and increment its destination counter. Every counter must finish at **one**. Zero means a missing element; two means overlapping ownership. Keeping only the first owner hides precisely the defect the test should detect.

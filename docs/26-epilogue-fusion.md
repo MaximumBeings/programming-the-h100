@@ -120,6 +120,24 @@ The complete source expresses this graph through `LinCombEltAct<ReLu,float,float
 
 The lower path makes a missing ReLU observable. The upper path alone would pass even if activation were omitted. NaN-initialized output separately makes a missing store observable, including when the correct activated output is zero. Together, graph-value checks and storage sentinels test different failure modes.
 
+[![FP32 branches 17 times 0.5 and minus 4 times 0.25 join at 7.5 before ReLU; a negative test joins at minus 1 and stores zero.](images/worked/ch26-fusion-values.svg)](images/worked/ch26-fusion-values.svg)
+
+### Connect the scalar numbers to the existing API fields
+
+In the complete fused program, `args` is already a `Gemm::Arguments` object with matching problem shape, pointers, strides and fusion types. The following is a **configuration excerpt after that construction**, not an independent kernel:
+
+```cpp
+args.epilogue.thread.alpha = 0.5f;
+args.epilogue.thread.beta = 0.25f;
+```
+
+1. `0.5f` supplies the runtime alpha value; it does not choose an output element type. The `LinCombEltAct` template selected the compute/source/output contract earlier.
+2. `0.25f` supplies beta for the C-source branch. Its presence does not allocate C or specify C's coordinate map; those belong to the surrounding arguments.
+3. At the manual coordinate `(0,1)`, the source value −4 becomes −1 through beta, while accumulator 17 becomes 8.5 through alpha.
+4. The activation sees their sum 7.5. Reading a partial accumulator, selecting the wrong C coordinate, or activating each branch independently changes the operation even though these assignments are correct.
+
+**Check:** use a nonzero-beta case and independently computed C values. **Pitfall:** a correct template tag cannot repair an argument object that points C at the wrong buffer. Keep argument construction and numerical graph validation in the same review.
+
 ## 6 — Bias and residuals need a coordinate contract
 
 The executable lab adds activation, not bias. A bias extension must define its broadcast axis explicitly. For `D[m,n,l]=activation(Z[m,n,l]+bias[n,l])`, a length-N vector is shared across M rows. A length-M vector represents a different operation.
@@ -132,6 +150,16 @@ The executable lab adds activation, not bias. A bias extension must define its b
 | Residual matrix | `R[(l*M+m)*ldr+n]` | Both row and column can change |
 
 An implementation can encode a broadcast with a zero stride in the broadcast mode, but the fusion API still needs its supported layout/argument type. A zero-stride source view is useful for replicated reads; using it for independent output writes creates aliases. Add rectangular and multi-batch tests so an accidental row/column swap is visible.
+
+### Exercise: a rectangular bias distinguishes its axis
+
+This is a paper extension, not an additional operation executed by the ReLU lab. Let the completed product be `P=[[-1,17,2],[7,0,-5]]`, alpha 0.5, beta zero, and a per-column bias `[1,-2,3]`. Define `D[m,n]=ReLU(0.5*P[m,n]+bias[n])`.
+
+1. The first row's scaled product is `[-0.5,8.5,1]`; adding bias gives `[0.5,6.5,4]`.
+2. The second row's scaled product is `[3.5,0,-2.5]`; adding the **same column bias** gives `[4.5,-2,0.5]`.
+3. Apply ReLU last: `D=[[0.5,6.5,4],[4.5,0,0.5]]`.
+
+**Worked check:** a length-three vector matches N=3, not M=2. A row-bias implementation would need a different vector and produce a different operation. To implement this extension, select a supported bias callback, add its runtime pointer/stride contract and independently test those axes; the existing no-bias executable's result does not validate it.
 
 ## 7 — Make the reference stronger than a checksum
 
@@ -154,6 +182,12 @@ A fused kernel can take longer than the unfused GEMM alone while beating GEMM pl
 A complete fused test needs outputs on both sides of zero and at zero. Positive outputs distinguish correct magnitudes; negative preactivation values distinguish ReLU from the identity; zero values exercise the boundary. NaN sentinels separately detect omitted stores, including a missing store whose expected activated output is zero. None of these checks alone establishes the activation's NaN or signed-zero behavior.
 
 When extending the lab, count these categories from the independently computed preactivation values before applying ReLU. If an input change removes a category, restore a targeted case rather than relying on the initialization looking mixed-sign. For a bias or residual extension, keep those categories on output tails and across batches too; a correct interior activation does not prove a correct broadcast or store predicate.
+
+### Count a tiny unfused sequence before extrapolating it
+
+For a two-by-three FP32 output, one complete matrix occupies `2×3×4=24` bytes. An unfused GEMM writes Z (24 bytes), activation reads Z (24) and writes D (24): 72 bytes of these output/intermediate operations. A fused path writes D once: 24 bytes. The difference is 48 bytes, equal to `8MN` for this single batch.
+
+This comparison deliberately holds the rest of the operation fixed. It does not count A/B/C traffic, assert that every byte reaches HBM, or prove that a changed schedule wins. For the larger 2048-square example, apply the same accounting rule rather than inferring a speedup from the byte ratio alone.
 
 ## 9 — A controlled extension exercise
 

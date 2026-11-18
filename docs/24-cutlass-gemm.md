@@ -109,6 +109,56 @@ Element types + layout tags + alignments + tile/cluster shapes
 
 A builder error can be a failed contract, not a missing include. Reduce it to the first failed static assertion and inspect architecture, layout, alignment, tile and schedule compatibility. Repeatedly changing template tags until compilation succeeds is not a correctness method.
 
+### Assemble the exact tested aliases in dependency order
+
+The following are excerpts from the complete captured source, not independent translation units. They require its CUTLASS/CuTe headers and belong together at namespace scope. Start by naming the element/layout choices and static scheduling shapes:
+
+```cpp
+using namespace cute;
+using Half = cutlass::half_t;
+using Row = cutlass::layout::RowMajor;
+using CtaTileShape = Shape<_128, _128, _64>;
+using Cluster = Shape<_1, _1, _1>;
+using Epilogue = cutlass::epilogue::collective::CollectiveBuilder<
+    cutlass::arch::Sm90, cutlass::arch::OpClassTensorOp,
+    CtaTileShape, Cluster, cutlass::epilogue::collective::EpilogueTileAuto,
+    float, float, float, Row, 4, float, Row, 4,
+    cutlass::epilogue::collective::EpilogueScheduleAuto>::CollectiveOp;
+```
+
+Read the epilogue arguments in groups, checking the pinned builder signature rather than counting unnamed `float` tokens from memory:
+
+1. `Sm90, OpClassTensorOp` select the architecture/operator family.
+2. `CtaTileShape, Cluster, EpilogueTileAuto` give the CTA/cluster contract and epilogue tiling policy.
+3. The first two `float` arguments specify accumulator and epilogue compute elements.
+4. `float, Row, 4` specify C's source element, layout and alignment in elements.
+5. The next `float, Row, 4` specify D's output element, layout and alignment.
+6. `EpilogueScheduleAuto` selects the supported automatic epilogue path for this pinned baseline. This is not the explicit ReLU schedule in the later fusion lab.
+
+Next build the mainloop, then the kernel and host adapter:
+
+```cpp
+using Mainloop = cutlass::gemm::collective::CollectiveBuilder<
+    cutlass::arch::Sm90, cutlass::arch::OpClassTensorOp,
+    Half, Row, 8, Half, Row, 8, float, CtaTileShape, Cluster,
+    cutlass::gemm::collective::StageCountAutoCarveout<
+        static_cast<int>(sizeof(Epilogue::SharedStorage))>,
+    cutlass::gemm::collective::KernelScheduleAuto>::CollectiveOp;
+using Kernel = cutlass::gemm::kernel::GemmUniversal<
+    Shape<int, int, int, int>, Mainloop, Epilogue>;
+using Gemm = cutlass::gemm::device::GemmUniversalAdapter<Kernel>;
+```
+
+The two `Half,Row,8` groups describe A and B. Eight half elements correspond to sixteen bytes. The next `float` selects the accumulator, followed by the same CTA/cluster shapes. Stage policy depends on the epilogue's already defined shared storage. `KernelScheduleAuto` completes the mainloop policy. Finally, `GemmUniversal` composes the collectives around a runtime rank-four problem `(M,N,K,L)`; the adapter exposes the host methods used below.
+
+This order explains a common compiler diagnostic: a failure in `Mainloop` can stem from an unsupported A/B layout or schedule, while a failure in `StageCountAutoCarveout` can originate in the epilogue's resource contract. Read the first failed assertion and identify its group before changing unrelated types. The pinned [mainloop builder](https://github.com/NVIDIA/cutlass/blob/v4.3.6/include/cutlass/gemm/collective/collective_builder.hpp) and [epilogue builder](https://github.com/NVIDIA/cutlass/blob/v4.3.6/include/cutlass/epilogue/collective/collective_builder.hpp) define the API signatures.
+
+??? question "Exercise: change output storage, then locate the consequences"
+
+    If D changes from FP32 to FP16 while C remains FP32, which group describes that change? Can the old full-output reference remain unchanged?
+
+    **Answer:** Change the D element/layout/alignment group, not A/B or the accumulator by accident. A sixteen-byte FP16 alignment would count eight elements rather than four, if that path supports it. The selected builder must accept the new combination. The independent reference must now specify the final FP16 conversion/rounding and compare the resulting output representation; the existing FP32 pass does not validate this unexecuted variant.
+
 ## 5 — Do not transpose B by accident
 
 CUTLASS’s CuTe logical B coordinates are `(N,K,L)` even though the mathematical matrix in `A * B` is `K × N`. The kernel’s `StrideB` encodes how that logical view names the physical B allocation. The helper must receive the corresponding logical shape:
@@ -166,6 +216,10 @@ Object  Logical coordinate  Element strides         Batch elements
 `make_cute_packed_stride(Kernel::StrideB{}, make_shape(N,K,L))` supplies the B map in the complete code. It does not physically transpose B or change the CPU oracle's `B[(l*K+k)*N+n]`. Its role is to present the existing allocation using the kernel's expected logical axes. Check this equality at an interior coordinate, not only `(0,0,0)`, where many wrong stride maps happen to agree.
 
 The example's shape is illustrative; the captured harness's three cases are listed below. A substituted shape becomes execution evidence only after that changed source has been compiled and checked.
+
+[![A B coordinate traced through the runtime view and each checked adapter lifecycle state](images/worked/kernel-builder-contract.svg)](images/worked/kernel-builder-contract.svg)
+
+**Read the figure in two passes.** First verify the two B coordinate conventions meet at the same physical element. Then follow the adapter state table downward. `can_implement` accepts the argument contract; `initialize` prepares state/workspace; `run` launches work; CUDA completion and the CPU comparison establish different later facts. A failure must stop that chain rather than being hidden by a final success message.
 
 ## 6 — The host-side launch lifecycle
 

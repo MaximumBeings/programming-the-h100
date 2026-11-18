@@ -22,7 +22,7 @@ The primary references are the pinned [layout tutorial](https://github.com/NVIDI
 
 ## Before the algebra: a reproducible workspace
 
-The introductory path is **15 → 16 → 17 → 18**. Continue through the intermediate copy/MMA/shared-memory/GEMM labs in **20–24**, then the advanced pipeline, fusion, precision and measurement chapters in **25–29**. You do not need to understand a CUTLASS builder before learning a coordinate map.
+The introductory path is **15 → 16 → 17 → 18 → 19**. Continue through the intermediate copy/MMA/shared-memory/GEMM labs in **20–24**, then the advanced pipeline, fusion, precision and measurement chapters in **25–29**. You do not need to understand a CUTLASS builder before learning a coordinate map.
 
 Use a terminal in the book repository root. On the CUDA host, prepare the same pinned dependency used throughout this sequence:
 
@@ -130,6 +130,13 @@ auto last = batches(cute::make_coord(1, 2, 3)); // 23
 
 First select batch one: `1×12=12`. Then move two rows: `2×4=8`. Finally move three columns: `3×1=3`. The sum is 23 elements, or 46 bytes for FP16. The 24-element packed allocation ends at exactly that coordinate. **Check:** batch zero's last coordinate is offset 11, while batch one's first coordinate is 12. **Pitfall:** using the output tile size as a batch stride would overlap independent matrices.
 
+### Read the storage picture as well as the formula
+
+The following concrete map distinguishes logical **values** from physical **offsets**. For shape `(4,3)`, highlighted value 201 belongs to coordinate `(2,1)`. Row-major strides `(3,1)` select offset seven; column-major strides `(1,4)` select offset six. Both strips contain the same logical data arranged for their respective layouts.
+
+[![A logical matrix and its two physical memory orders, highlighting one value and its address calculation](images/worked/row-vs-column.svg)](images/worked/row-vs-column.svg)
+
+
 ## 3 — Size and storage span are different
 
 Now retain shape `(3,4)` but use stride `(8,1)`. The three rows start at offsets 0, 8 and 16. There are 12 logical coordinates, yet the largest referenced offset is 19. For this positive-stride example, the storage span through the last referenced element is 20.
@@ -140,11 +147,54 @@ Now retain shape `(3,4)` but use stride `(8,1)`. The three rows start at offsets
 
 A broadcast layout can map several coordinates to one offset. That may be useful for reads; it does not give independent destinations for parallel writes. The coordinate domain, image, storage bounds and ownership are separate properties. Do not generalize the simple positive-stride span arithmetic to arbitrary composed/swizzled layouts without checking the corresponding contract.
 
+### Ask the API for each quantity, then reconstruct it
+
+```cpp
+auto padded = cute::make_layout(
+    cute::make_shape(cute::Int<3>{}, cute::Int<4>{}),
+    cute::make_stride(cute::Int<8>{}, cute::Int<1>{}));
+auto useful = cute::size(padded);   // 12 logical coordinates
+auto span = cute::cosize(padded);   // 20 for this positive-stride layout
+```
+
+1. Count coordinates: three rows times four columns gives 12.
+2. Find the greatest used offset: row two, column three gives `2×8+3=19`.
+3. Include offset zero: storing through offset 19 needs 20 elements, not 19.
+4. Compare with a full-row allocation: `3×8=24` reserves four additional trailing positions. Those positions are allocated but not part of this view's image.
+
+**Check/pitfall:** neither `size` nor the number of values printed in a matrix proves that a separate allocation is large enough. These span calculations assume the positive-stride example; do not reuse them as a rule for arbitrary negative or overlapping layouts.
+
+**Guided exercise.** Keep three rows and four columns but use row stride ten. What are useful size and minimum span?
+
+**Worked answer:** useful size remains 12. The last referenced offset is `2×10+3=23`, so minimum span is 24 elements; three complete padded rows would reserve 30.
+
 ## 4 — Hierarchy is part of the meaning
 
 A layout may have nested shapes such as `((2,2),4)`. The first mode retains a factorization: two subcoordinates describe its four positions. This is useful when those factors correspond to lanes, values per lane, subtiles or an instruction atom. Flattening the shape can hide exactly the structure that a copy or MMA partition expects.
 
 `coalesce` simplifies compatible layout factors while preserving the mapping it represents. It does not move the tensor, erase data padding by copying, or preserve every original hierarchy boundary. When a later operation expects a particular mode structure, use the algebra’s mode/profile-aware forms and inspect the resulting shape.
+
+### Retain the hierarchy while calculating an element
+
+```cpp
+auto hierarchy = cute::make_layout(
+    cute::make_shape(cute::make_shape(cute::Int<2>{}, cute::Int<2>{}),
+                     cute::Int<4>{}),
+    cute::make_stride(cute::make_stride(cute::Int<1>{}, cute::Int<2>{}),
+                      cute::Int<8>{}));
+auto offset = hierarchy(cute::make_coord(cute::make_coord(1, 1), 2));
+```
+
+1. The coordinate is `((a,b),c)=((1,1),2)`, matching the shape's nested profile.
+2. The inner contribution is `1×1+1×2=3`.
+3. The outer contribution is `2×8=16`, giving offset 19 elements.
+4. The inner tile contains four positions, while its repetitions start at offsets 0,8,16,24. A hierarchy can therefore retain both a useful factorization and real storage gaps.
+
+**Expected result:** offset 19; no data moves. **Pitfall:** replacing the profile with three unstructured indices can change the interface expected by the next partitioning operation, even if an independently constructed flat layout can reproduce the same arithmetic.
+
+**Guided exercise.** Locate `((0,1),3)`.
+
+**Worked answer:** `0×1+1×2+3×8=26` elements. It lies in the fourth outer region, not the third.
 
 ## 5 — Composition is function composition
 
@@ -153,6 +203,23 @@ If layout `A` maps an index to a storage offset and layout `B` maps a new coordi
 A simple scalar example makes the direction visible. Let `A(i)=2i` and `B(j)=j+1` over a valid domain. Then `A(B(j))=2j+2`, while `B(A(j))=2j+1`. Real CuTe layouts must satisfy the algebra’s compatibility rules; this arithmetic analogy does not make every arbitrary affine function a valid `Layout` constructor.
 
 When debugging composition, enumerate the small domain on paper and compare three quantities: the input coordinate, its intermediate index, and its final offset. Then test the actual CuTe object. A type that compiles is not proof that the chosen mapping matches your matrix convention.
+
+### Preview the real composition API
+
+```cpp
+auto outer = cute::make_layout(cute::Int<16>{}, cute::Int<2>{});
+auto inner = cute::make_layout(cute::Int<4>{}, cute::Int<3>{});
+auto selected = cute::composition(outer, inner);
+```
+
+1. Choose x=2 in the inner layout's four-index domain.
+2. The inner map returns `3×2=6`, a valid logical index in the outer layout's 16-index domain.
+3. The outer map returns `2×6=12` elements. Thus `selected(2)` describes physical offset 12.
+4. The intermediate index six and final offset twelve are not interchangeable. This constructs no data buffer and issues no memory operation.
+
+**Guided exercise.** What does x=3 select?
+
+**Worked answer:** inner index nine, then outer offset 18. Chapter 17 adds a physical memory strip and complete-domain checks for this exact construction. Reversing the argument order requires rechecking the intermediate domain, not merely exchanging labels.
 
 ## 6 — Divide a layout into tiles
 
@@ -172,6 +239,17 @@ auto offset = tiled(cute::make_coord(2, 1)); // 6
 
 `logical_divide`, `zipped_divide` and their multidimensional relatives organize tile and remainder modes differently. Learn the returned shape, not just the function name. A layout view does not allocate a shared-memory stage, issue TMA, or predicate out-of-bounds coordinates. A kernel still needs those operations and their synchronization protocol.
 
+### Follow one divided coordinate without flattening it twice
+
+1. Choose logical length 12 and tile length four, as in the API call above.
+2. Tile number one starts at `1×4=4`.
+3. Within-tile coordinate two adds two, so `tiled(make_coord(2,1))` selects offset six.
+4. The corresponding original scalar coordinate is six. Calling the divided object with a guessed row-major flattened coordinate is unnecessary; keep `(within,tile)` explicit until its convention is understood.
+
+**Guided exercise.** Which pair selects the last original element, offset 11?
+
+**Worked answer:** `(within,tile)=(3,2)`, because `3+4×2=11`. Pair `(4,1)` is outside the tile's four-position logical domain even though a naive arithmetic expression could produce an integer.
+
 ## 7 — Tensors, slices and thread/value partitions
 
 A CuTe tensor combines a data engine with a layout. A pointer-backed view over global memory differs from an owning register tensor even when their logical shapes match. Slicing chooses coordinates/modes; `local_tile` selects a tile; a tiled copy or tiled MMA assigns parts of a tensor to participating threads.
@@ -184,11 +262,48 @@ For a load, ask whether every needed element is covered. For a store, also ask w
 
 When reading a `TiledCopy` or `TiledMMA`, locate its atom, thread layout and value layout. Then inspect the per-thread slice and its partition functions. A partition describes ownership; the actual copy/MMA call performs work. NVIDIA’s [copy/MMA atom tutorial](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/0t_mma_atom.md) connects these layers.
 
+### Attach a view only after specifying its storage
+
+```cpp
+// ptr names an existing, suitably accessible float allocation.
+auto view = cute::make_tensor(cute::make_gmem_ptr(ptr),
+    cute::make_layout(cute::make_shape(3, 4),
+                      cute::make_stride(4, cute::Int<1>{})));
+auto second_row = view(1, cute::_);
+```
+
+1. The engine retains a pointer to existing storage; the layout retains the address map.
+2. Fixing row one adds four elements to the view's base.
+3. Row-local coordinate two would select original `(1,2)`, offset six.
+4. This view still references the original allocation. It does not initialize it, copy it or extend its lifetime; GPU memory is not made CPU-readable by constructing a host-side view.
+
+**Guided exercise.** With physical row stride eight instead, what does the same logical selection name?
+
+**Worked answer:** offset `1×8+2=10` elements. The slice remains four logical columns wide, but its base offset changes. Chapter 18 supplies the complete value/offset walkthrough and explains the host/device access boundary.
+
 ## 8 — Swizzles are layout transforms, not faster copies
 
 A shared-memory swizzle changes the mapping between logical coordinates and shared addresses. It can improve bank behavior for a particular access pattern. It must also agree with the TMA and WGMMA layout descriptions. A swizzle applied only to the producer or only to the consumer scrambles the computation.
 
 Check the base alignment, pattern start, tile shape and descriptor fields from [Chapters 4 and 6](04-cutensormap-tma-swizzling.md). A swizzled allocation needs the correct storage span and alignment; `size` alone is not a universal shared-memory allocation recipe. Start with a supported CUTLASS builder layout before inventing a custom composition.
+
+### Derive a four-word swizzle without a performance claim
+
+```cpp
+auto square = cute::make_layout(
+    cute::make_shape(cute::Int<2>{}, cute::Int<2>{}),
+    cute::make_stride(cute::Int<2>{}, cute::Int<1>{}));
+auto permuted = cute::composition(cute::Swizzle<1, 0, 1>{}, square);
+```
+
+1. The ordinary logical grid references word offsets `[[0,1],[2,3]]`.
+2. This swizzle XORs index bit one into bit zero. Offsets zero and one keep a zero source bit, so they stay zero and one.
+3. Offset two, binary `10`, becomes `11` (three); offset three becomes `10` (two).
+4. The new grid references `[[0,1],[3,2]]`. The same four word locations exist, but the last two logical coordinates exchange their physical interpretation.
+
+**Guided exercise.** If a producer writes using the original layout and a consumer reads using only the new layout, does the consumer obtain the same matrix?
+
+**Worked answer:** generally no: logical `(1,0)` now reads word three instead of word two. Both sides must agree on the physical mapping, or an explicit transformation must connect them. Bijection alone also does not prove improved bank behavior; Chapter 22 studies that separate question.
 
 ## 9 — Run the coordinate oracle
 
@@ -298,12 +413,6 @@ LAYOUT PASS: 24 matrix coordinates, 12 tile coordinates; errors=0
 
 - Use the pinned workspace and small coordinate oracles before progressing to [hierarchical algebra](17-cute-layout-algebra.md) and [tensor views](18-cute-tensors-tiling.md).
 <!-- companion-summary:end -->
-
-## Read the storage picture as well as the formula
-
-The following concrete map distinguishes logical **values** from physical **offsets**. For shape `(4,3)`, highlighted value 201 belongs to coordinate `(2,1)`. Row-major strides `(3,1)` select offset seven; column-major strides `(1,4)` select offset six. Both strips contain the same logical data arranged for their respective layouts.
-
-[![A logical matrix and its two physical memory orders, highlighting one value and its address calculation](images/worked/row-vs-column.svg)](images/worked/row-vs-column.svg)
 
 ## Continue with a dedicated study of strides
 

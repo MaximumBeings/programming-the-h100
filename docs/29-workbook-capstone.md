@@ -113,6 +113,8 @@ Load contribution:    real real real   0 ...  0
 
 The final line describes a zero-fill reduction policy: three real contributions and thirteen neutral positions. It is not permission to read invalid global addresses and multiply the returned values by zero afterward. Predicate the load before accessing memory, then supply the neutral register/shared value.
 
+[![The 130 by 70 output has nine boundary-aware tiles; the final corner has twelve valid outputs and row-major offsets 9024 through 9029 and 9094 through 9099.](images/worked/ch29-boundary-tile.svg)](images/worked/ch29-boundary-tile.svg)
+
 ### Add a batch without changing the local tile coordinates
 
 As a separate extension, let L=2 and store independent, compact row-major outputs. Each batch has 9100 FP16 elements, so the output batch stride is 9100 **elements**, or 18,200 bytes:
@@ -189,6 +191,18 @@ Keep accumulation and epilogue arithmetic in the specified precision, then conve
 For NVFP4, account for E2M1 elements, E4M3 block scales and global FP32 scaling. Zero blocks, rounding, saturation and the unused nibble need explicit rules. At large aligned sizes, elements plus one byte per 16-value scale cost 0.5625 bytes/value, approximately 7.11× smaller than FP32 before global scales and padding. Hopper dequantization followed by FP16/BF16 GEMM is not native NVFP4 Tensor Core execution; native Blackwell experiments need separate compatibility and execution evidence. See [NVIDIA's NVFP4 description](https://docs.nvidia.com/deeplearning/transformer-engine-releases/release-2.16/user-guide/features/low_precision_training/nvfp4/nvfp4.html).
 
 For a separate hypothetical benchmark with **FP16 A, B and D**, beta zero, `M=N=2048` and `K=4096`, the conventional GEMM count is 34,359,738,368 operations. At a hypothetical 85 microseconds, throughput is approximately **404.23 TFLOPS**, not 203. Reading A and B once and writing D once requires 41,943,040 bytes, excluding C reads, scales and extra passes. At one millisecond that minimum traffic implies 41.94 GB/s. With FP32 D instead, its output store costs twice as many bytes and the corresponding total becomes 50,331,648 bytes; state the output type rather than importing a traffic count from another kernel. These calculations are consistency checks, not measured bandwidth or peak-utilization claims.
+
+### Exercise: account for padding before quoting a compression ratio
+
+Return to M=130, N=70, K=35. Define a **hypothetical serialized representation** with complete 16-value K blocks: pad each logical K row/column to 48 codes, pack two codes per byte, store one byte per block scale and one four-byte global scale for each complete operand tensor. This is byte accounting for that stated representation, not a claim that the exact-scale Python oracle emits native NVFP4 storage.
+
+1. Each padded A row needs `48/2=24` payload bytes. A's payload is `130×24=3120` bytes, with `130×3=390` block-scale bytes.
+2. Each mathematical B column needs the same 24 payload bytes. B's payload is `70×24=1680` bytes, with `70×3=210` block-scale bytes.
+3. Two four-byte tensor scales add eight bytes. The subtotal is `3120+1680+390+210+8=5408` bytes before any further alignment or container metadata.
+4. The original compact FP32 operands use `(130×35+35×70)×4=28000` bytes. For this small ragged case the ratio is `28000/5408≈5.18`, not the aligned large-tensor estimate 7.11.
+5. Padding must retain the logical length 35. Codes added at K=35 through 47 contribute zero under the declared reconstruction policy and must not turn the operation into a different 48-term problem with arbitrary padded values.
+
+**Worked check:** 390+210=600 local-scale groups, but their serialized bytes depend on the scale format. The Python exact-scale model uses Python-float objects and does not establish this one-byte storage cost. **Pitfall:** reporting only the nibble payload ignores scales and padding precisely where small or ragged shapes can make them important.
 
 ## 10 — Capstone: deliver a reproducible kernel comparison
 

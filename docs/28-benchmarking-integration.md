@@ -113,6 +113,8 @@ Read the drawing in four steps:
 
 This is the dependency structure implemented by the complete overlap program, not a separate copyable launch harness. Real execution can leave gaps between markers; the drawing alone predicts neither overlap nor its speedup. The single-stream timing snippet above needs no cross-stream join because all its measured work stays on one ordered stream.
 
+[![Both workers wait on start and the timing stream joins their completion events; a separate paper strip accounts for four milliseconds setup and ten serial requests of 0.2 milliseconds.](images/worked/ch28-event-join-boundaries.svg)](images/worked/ch28-event-join-boundaries.svg)
+
 ### Work through amortization without hiding setup
 
 Suppose, purely as a paper exercise, packing costs 4 ms once and each prepared request costs 0.2 ms. For ten serial requests:
@@ -138,6 +140,17 @@ Prepared-request timer:            [0.2] [0.2] ... [0.2]
 The widths are schematic, not a plotting scale. The ten requests in this accounting example are serial, so the elapsed intervals add. A timer around just one prepared request answers a different question from the setup-inclusive batch timer. Neither quantity is the 0.085 ms GEMM arithmetic example in the next section; those are separate illustrative workloads.
 
 **Pause and check.** If requests overlap, can you replace makespan with the sum of their individual durations? No: overlapping intervals would be counted twice. Time the actual joined completion boundary instead.
+
+### Exercise: batch throughput is not individual latency
+
+Use two hypothetical requests with measured boundaries A=`[0.0,0.2]` ms and B=`[0.1,0.3]` ms. These intervals are a paper model, not captured H100 samples.
+
+1. Each request's latency is 0.2 ms: subtract its own start from its own completion.
+2. The joined batch spans 0.0 through 0.3 ms, so its makespan is 0.3 ms, not the 0.4-ms sum of individual durations.
+3. Throughput is `2 / 0.0003 ≈ 6666.7 requests/s`. Dividing batch time by request count gives 0.15 ms/request as an **amortized batch cost**, not either request's latency.
+4. A serial schedule with the same individual 0.2-ms work would take 0.4 ms for two requests, giving 5000 requests/s under that schedule. Concurrency changed the schedule's throughput; it did not make the individual 0.2-ms intervals become 0.15 ms.
+
+**Check:** state which start/completion events define each request and the whole batch. **Pitfall:** timing only the first completion changes both the numerator and the useful-result boundary; it cannot support a claim that both requests finished.
 
 ## 6 — Calculate throughput in consistent units
 
