@@ -2077,6 +2077,129 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="30-cutlass-attention-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -2226,7 +2349,7 @@
 <h2 id="a-hardware-level-companion-guide-to-nvidia-hopper">A Hardware-Level Companion Guide to NVIDIA Hopper<a class="headerlink" href="#a-hardware-level-companion-guide-to-nvidia-hopper" title="Permanent link">&para;</a></h2>
 <p><a href="images/chapter-openers/00-cover.svg?v=9ffcf32f172a"><img alt="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" src="images/chapter-openers/00-cover.svg?v=9ffcf32f172a" /></a></p>
 <p>Understand the machine, prove the mapping, build the kernel, then measure the useful result. This book connects Hopper architecture and PTX to safe asynchronous pipelines, Tensor Core programming, application profiling and a complete CuTe/CUTLASS learning sequence.</p>
-<p>The twenty-nine chapters combine explanatory diagrams, worked calculations, downloadable programs and dated execution records. Follow the foundations in order, or choose a focused route below when a particular kernel or application needs attention.</p>
+<p>The thirty-one chapters combine explanatory diagrams, worked calculations, downloadable programs and dated execution records. Follow the foundations in order, or choose a focused route below when a particular kernel or application needs attention.</p>
 <div class="grid cards">
 <ul>
 <li>
@@ -2252,7 +2375,7 @@
 </ul>
 </div>
 <h2 id="how-to-read-this">How to read this<a class="headerlink" href="#how-to-read-this" title="Permanent link">&para;</a></h2>
-<p><a href="images/book/overview.svg?v=51533cea08c0"><img alt="Book reading map: hardware and PTX lead to safe asynchronous data movement and Tensor Core computation, then kernel design, multi-GPU training, attention and profiling." src="images/book/overview.svg?v=51533cea08c0" /></a></p>
+<p><a href="images/book/overview.svg?v=30d5f6ac9450"><img alt="Book reading map: hardware and PTX lead to safe asynchronous data movement and Tensor Core computation, then kernel design, multi-GPU training, attention and profiling." src="images/book/overview.svg?v=30d5f6ac9450" /></a></p>
 <p><em>Build the dependencies from the machine upward. When a profile exposes a bottleneck, return to the layer that explains it.</em></p>
 <p><strong>Prerequisites.</strong> Be comfortable with thread/block indexing, launch dimensions, shared-memory lifetime, block synchronization and CUDA error checking. If those are new, begin with <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/index.html">NVIDIA's CUDA programming introduction</a>, then follow <a href="getting-started/#5-compile-and-execute-your-first-verified-program">the first verified run</a>.</p>
 <table>
@@ -2281,7 +2404,7 @@
 </tr>
 <tr>
 <td>Understand fast attention</td>
-<td>3 → 4 → 6 → 7 → 9 → 12 → 13</td>
+<td>3 → 4 → 6 → 7 → 9 → 12 → 30 → 31 → 13</td>
 <td>A checked recurrence and a clear account of the design's remaining kernel work</td>
 </tr>
 <tr>
@@ -2291,7 +2414,7 @@
 </tr>
 <tr>
 <td>Learn CuTe/CUTLASS progressively</td>
-<td>15–19 foundations → 20–24 implementations → 25–29 advanced work</td>
+<td>15–19 foundations → 20–24 implementations → 25–29 advanced work → 30–31 attention</td>
 <td>Coordinate proofs, checked kernels and a reproducible capstone</td>
 </tr>
 <tr>
@@ -2470,6 +2593,16 @@
 <td><a href="29-workbook-capstone/">29. Worked Labs &amp; Capstone</a></td>
 <td>Progressive exercises, worked solutions and an evidence-driven comparison</td>
 </tr>
+<tr>
+<td>Attention</td>
+<td><a href="30-cutlass-attention-foundations/">30. Attention from Layouts to Online Softmax</a></td>
+<td>Hand-calculated QK scores, masking, online state and output layouts</td>
+</tr>
+<tr>
+<td>Attention</td>
+<td><a href="31-cutlass-hopper-fmha/">31. Hopper CUTLASS FMHA</a></td>
+<td>Trace and build the pinned fused-attention implementation, then validate and profile</td>
+</tr>
 </tbody>
 </table>
 <h2 id="execution-records-and-tested-scope">Execution records and tested scope<a class="headerlink" href="#execution-records-and-tested-scope" title="Permanent link">&para;</a></h2>
@@ -2482,6 +2615,7 @@
 <p class="admonition-title">Expanded workshop — H100, November 18, 2026</p>
 <p>The <a href="cutlass-workshop-validation/">CuTe/CUTLASS workshop record</a> captures <strong>eight CUDA compilations, two Python byte-compilations and eleven passing workload invocations</strong>, plus two real Nsight Systems reports. CPU-only layout, ownership and format checks retain their stated scope. These additions have their own source identities and records; the original suite is preserved.</p>
 </div>
+<p>The attention extension adds a <a href="30-cutlass-attention-foundations/#12-run-the-cpu-oracle-and-read-its-evidence">dated CPU walkthrough</a> and a separate <a href="31-cutlass-hopper-fmha/">Hopper FMHA collection lab</a>. The CPU record checks the equations; the new FMHA build/run commands need their own Hopper capture and do not inherit the earlier workshop's GPU results.</p>
 <p>The <a href="validation/2026-11-17/results.json">original single-GPU manifest</a> remains available as historical evidence. Current chapters link exact tested sources, commands, compile/run timestamps, system information and captured outputs beside the relevant examples. Derived arithmetic, architecture specifications and cited paper benchmarks are identified separately from this book's measured results.</p>
 <details class="info">
 <summary>What the evidence labels mean</summary>

@@ -1,0 +1,2931 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/30-cutlass-attention-foundations/">
+      
+      
+        <link rel="prev" href="../29-workbook-capstone/">
+      
+      
+        <link rel="next" href="../31-cutlass-hopper-fmha/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>30. Attention from Layouts to Online Softmax - Programming the H100: CUDA, CuTe, and CUTLASS from First Principles</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#30-cutlass-attention-foundations-work-every-softmax-state" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-header__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              30. Attention from Layouts to Online Softmax
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-nav__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../revalidation-2026-11-18/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cutlass-workshop-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    H100 CuTe/CUTLASS Workshop Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eight-gpu-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eight-A100 Training Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — Introductory CuTe
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — Introductory CuTe
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cute-strides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Strides, Storage and Memory Addresses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cute-layout-algebra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hierarchical Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../18-cute-tensors-tiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    18. Tensors, Slicing & Predication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../19-cta-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    19. CTA and Byte-Address Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20-tiled-copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20. Thread Ownership & Tiled Copy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21-mma-atoms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    21. MMA Atoms & Register Fragments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../22-shared-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    22. Shared Layouts, Banks & Swizzles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../23-gemm-construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    23. Build a Complete Tiled GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../24-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    24. CUTLASS Collective-Builder GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../25-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    25. Hopper Pipelines & Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../26-epilogue-fusion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    26. Epilogue Fusion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../27-precision-block-scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    27. Precision & Block Scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../28-benchmarking-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    28. Benchmarking & Framework Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../29-workbook-capstone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    29. Worked Labs & Capstone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_17" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lesson-30-companion-guide-from-two-gemms-to-one-streaming-attention-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 30 Companion Guide — From Two GEMMs to One Streaming Attention Contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-define-the-operation-and-every-axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1 — Define the operation and every axis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-choose-inputs-whose-softmax-can-be-checked-exactly-on-paper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2 — Choose inputs whose softmax can be checked exactly on paper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-finish-the-second-gemm-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3 — Finish the second GEMM by hand
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-use-a-stable-maximum-without-changing-the-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4 — Use a stable maximum without changing the function
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-derive-the-online-recurrence-including-the-numerator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5 — Derive the online recurrence, including the numerator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-follow-every-state-through-two-real-key-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6 — Follow every state through two real key blocks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-force-a-maximum-change-so-rescaling-cannot-be-omitted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7 — Force a maximum change so rescaling cannot be omitted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-define-causal-positions-before-applying-a-mask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8 — Define causal positions before applying a mask
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-separate-memory-offsets-from-score-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9 — Separate memory offsets from score coordinates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-map-the-mathematics-to-the-pinned-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10 — Map the mathematics to the pinned implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-keep-intermediate-lifetime-and-arithmetic-separate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11 — Keep intermediate lifetime and arithmetic separate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-run-the-cpu-oracle-and-read-its-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12 — Run the CPU oracle and read its evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-exercises-with-worked-answers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13 — Exercises with worked answers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lesson-30-companion-guide-from-two-gemms-to-one-streaming-attention-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 30 Companion Guide — From Two GEMMs to One Streaming Attention Contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-define-the-operation-and-every-axis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1 — Define the operation and every axis
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-choose-inputs-whose-softmax-can-be-checked-exactly-on-paper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2 — Choose inputs whose softmax can be checked exactly on paper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-finish-the-second-gemm-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3 — Finish the second GEMM by hand
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-use-a-stable-maximum-without-changing-the-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4 — Use a stable maximum without changing the function
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-derive-the-online-recurrence-including-the-numerator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5 — Derive the online recurrence, including the numerator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-follow-every-state-through-two-real-key-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6 — Follow every state through two real key blocks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-force-a-maximum-change-so-rescaling-cannot-be-omitted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7 — Force a maximum change so rescaling cannot be omitted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-define-causal-positions-before-applying-a-mask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8 — Define causal positions before applying a mask
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-separate-memory-offsets-from-score-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9 — Separate memory offsets from score coordinates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-map-the-mathematics-to-the-pinned-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10 — Map the mathematics to the pinned implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-keep-intermediate-lifetime-and-arithmetic-separate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11 — Keep intermediate lifetime and arithmetic separate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-run-the-cpu-oracle-and-read-its-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12 — Run the CPU oracle and read its evidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-exercises-with-worked-answers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13 — Exercises with worked answers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/30-cutlass-attention-foundations.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="30-cutlass-attention-foundations-work-every-softmax-state">30. CUTLASS Attention Foundations — Work Every Softmax State<a class="headerlink" href="#30-cutlass-attention-foundations-work-every-softmax-state" title="Permanent link">&para;</a></h1>
+<h2 id="lesson-30-companion-guide-from-two-gemms-to-one-streaming-attention-contract">Lesson 30 Companion Guide — From Two GEMMs to One Streaming Attention Contract<a class="headerlink" href="#lesson-30-companion-guide-from-two-gemms-to-one-streaming-attention-contract" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/30-workshop.svg?v=bce0f481b09a"><img alt="Chapter 30: CUTLASS attention foundations" src="../images/chapter-openers/30-workshop.svg?v=bce0f481b09a" /></a></p>
+<div class="admonition tip">
+<p class="admonition-title">Your goal in this chapter</p>
+<p>Compute a complete attention example before reading a fused kernel. Track its scores, mask, row maximum, denominator and weighted-value numerator; derive its layouts independently of its arithmetic. Read <a href="../12-flashattention-3/">FlashAttention-3</a>, <a href="../16-cute-strides/">strides</a>, <a href="../24-cutlass-gemm/">the GEMM adapter</a> and <a href="../25-cutlass-pipelines/">pipeline ownership</a> first. <a href="../31-cutlass-hopper-fmha/">Chapter 31</a> connects this contract to pinned Hopper FMHA code.</p>
+</div>
+<p>The CUTLASS example studied here is <strong><code>examples/88_hopper_fmha</code> in v4.3.6</strong>, commit <strong><code>1afc6d355b8cb992398f17beb4425702f1d57ddd</code></strong>. Its README describes a forward GEMM–online-softmax–GEMM fusion and separate backward kernels. This chapter supplies the small mathematical bridge; it does not claim that the tiny example is a supported GPU launch or that a new GPU execution occurred.</p>
+<p>The accompanying <a href="../examples/advanced/attention_walkthrough.py">complete CPU oracle</a> uses Python binary64 arithmetic and the standard library. It independently compares a materialized reference with streaming updates. That checks the worked equations, masks and state transitions. It does not validate CUDA instruction ordering, FP16/FP8 rounding, the CUTLASS compiler interface or performance.</p>
+<h2 id="1-define-the-operation-and-every-axis">1 — Define the operation and every axis<a class="headerlink" href="#1-define-the-operation-and-every-axis" title="Permanent link">&para;</a></h2>
+<p>For one batch and one attention head, write</p>
+<p><code>S = (Q K^T) / sqrt(d)</code></p>
+<p><code>P[i,j] = exp(S[i,j]) / sum_t exp(S[i,t])</code></p>
+<p><code>O = P V</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Shape</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q</td>
+<td>Nq × d</td>
+<td>One feature row per query</td>
+</tr>
+<tr>
+<td>K</td>
+<td>Nk × d</td>
+<td>One feature row per key</td>
+</tr>
+<tr>
+<td>V</td>
+<td>Nk × dv</td>
+<td>One output-value row per key</td>
+</tr>
+<tr>
+<td>S, P</td>
+<td>Nq × Nk</td>
+<td>Scores and row-normalized probabilities</td>
+</tr>
+<tr>
+<td>O</td>
+<td>Nq × dv</td>
+<td>Weighted value result per query</td>
+</tr>
+</tbody>
+</table>
+<p>The reduction in <code>Q K^T</code> is over d. The reduction in <code>P V</code> is over Nk. Confusing those axes gives a plausible-shaped intermediate that computes another operation. The mathematical transpose <code>K^T</code> does not require physically copying K into a transposed allocation; a compatible tensor view/instruction layout can represent the needed access.</p>
+<p>This mathematical chapter permits <code>dv</code> distinct from d. The pinned example runner instead uses one D for Q, K, V and O. Likewise, no dropout, bias, rotary-position transformation or output projection is present in the toy contract. Additions need an explicit placement and numerical reference; they are not implied by the word attention.</p>
+<h2 id="2-choose-inputs-whose-softmax-can-be-checked-exactly-on-paper">2 — Choose inputs whose softmax can be checked exactly on paper<a class="headerlink" href="#2-choose-inputs-whose-softmax-can-be-checked-exactly-on-paper" title="Permanent link">&para;</a></h2>
+<p>Let <code>a=sqrt(2)*ln(2)</code>, choose <code>d=dv=2</code>, and use:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Q = [ a  0 ]      K = [ 1  0 ]      V = [ 1  0 ]
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    [ 0  a ]          [ 0  1 ]          [ 0  2 ]
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                      [ 1  1 ]          [ 3  4 ]
+</span></code></pre></div>
+<p>Here <code>Nq=2</code>, <code>Nk=3</code>. The numbers are a mathematical construction, not exactly representable FP16 inputs. Python approximates the transcendental constants in binary64, so its checks use an explicit <code>1e-12</code> relative/absolute tolerance. The hand derivation treats the equations over real numbers.</p>
+<ol>
+<li>Query row zero dotted with key zero gives a; key one gives zero; key two gives a.</li>
+<li>Scaling by <code>1/sqrt(2)</code> yields score row zero <code>[ln(2),0,ln(2)]</code>.</li>
+<li>Query row one produces <code>[0,ln(2),ln(2)]</code>.</li>
+<li>The unshifted exponentials are <code>[2,1,2]</code> and <code>[1,2,2]</code>. Each row sums to five.</li>
+</ol>
+<p>Therefore the noncausal probability rows are <code>[2/5,1/5,2/5]</code> and <code>[1/5,2/5,2/5]</code>. Each has sum one and nonnegative entries. A sum-one check is necessary but cannot detect every key permutation; the nonuniform V values make that permutation observable at the output.</p>
+<h2 id="3-finish-the-second-gemm-by-hand">3 — Finish the second GEMM by hand<a class="headerlink" href="#3-finish-the-second-gemm-by-hand" title="Permanent link">&para;</a></h2>
+<p>For output row zero, weight all three V rows:</p>
+<p><code>(2/5)*[1,0] + (1/5)*[0,2] + (2/5)*[3,4] = [8/5,2]</code>.</p>
+<p>For output row one:</p>
+<p><code>(1/5)*[1,0] + (2/5)*[0,2] + (2/5)*[3,4] = [7/5,12/5]</code>.</p>
+<p>The expected matrix is thus <code>O=[[1.6,2],[1.4,2.4]]</code>. The first component of row zero includes <code>2/5+6/5=8/5</code>; the second includes <code>2/5+8/5=2</code>. These are different weighted sums, not copies of the same softmax denominator.</p>
+<p><strong>Pitfall:</strong> multiplying every score row by V before normalizing would give unnormalized numerators <code>[8,10]</code> and <code>[7,12]</code>. Dividing by five is essential. Another wrong shortcut is normalizing each key tile independently and adding its outputs; tile-local denominators do not equal the complete row denominator.</p>
+<h2 id="4-use-a-stable-maximum-without-changing-the-function">4 — Use a stable maximum without changing the function<a class="headerlink" href="#4-use-a-stable-maximum-without-changing-the-function" title="Permanent link">&para;</a></h2>
+<p>Subtracting one common value from a row of logits leaves its softmax unchanged. Choose row maximum m:</p>
+<p><code>exp(s_j)/sum_t exp(s_t) = exp(s_j-m)/sum_t exp(s_t-m)</code>.</p>
+<p>For row zero, <code>m=ln(2)</code>. The stable exponential weights are <code>[1,1/2,1]</code>, denominator <code>l=5/2</code>, and weighted-value numerator <code>z=[4,5]</code>. Then <code>z/l=[8/5,2]</code> as before.</p>
+<p>The denominator l is a scalar; z is a vector of length dv. Their magnitudes depend on the chosen maximum, but the normalized output does not. Save <code>LSE=m+ln(l)</code> if the implementation's contract requires natural-log log-sum-exp. Both noncausal rows have <code>LSE=ln(5)</code> in this example.</p>
+<p>Some kernels evaluate exponentials with base two. The equivalent expression is <code>exp(s)=exp2(s*log2(e))</code>; it changes the scaling constant and the meaning of an internal maximum, not the requested function. Never mix a base-two maximum with a natural-exponential rescaling formula. Consult the selected implementation's units before comparing internal traces.</p>
+<h2 id="5-derive-the-online-recurrence-including-the-numerator">5 — Derive the online recurrence, including the numerator<a class="headerlink" href="#5-derive-the-online-recurrence-including-the-numerator" title="Permanent link">&para;</a></h2>
+<p>A fused forward pass need not store the full P or S matrix in global memory. For one query row, retain <code>(m,l,z)</code> for all keys processed so far. Initially <code>m=-infinity</code>, <code>l=0</code>, <code>z=0</code>. For a new block of valid keys J:</p>
+<p><code>m_new = max(m, max_{j in J} s_j)</code></p>
+<p><code>alpha = exp(m-m_new)</code></p>
+<p><code>l_new = alpha*l + sum_{j in J} exp(s_j-m_new)</code></p>
+<p><code>z_new = alpha*z + sum_{j in J} exp(s_j-m_new)*V[j,:]</code>.</p>
+<ol>
+<li>Every old contribution was scaled relative to m.</li>
+<li>The new state is scaled relative to <code>m_new</code>.</li>
+<li>Multiplying the old denominator <strong>and numerator</strong> by alpha converts them to that new reference.</li>
+<li>New contributions can then be added under one scale.</li>
+<li>After the final actual key block, divide z by l once to produce O.</li>
+</ol>
+<p>The first nonempty block uses alpha zero explicitly in the oracle, avoiding an undefined <code>-infinity-(-infinity)</code> calculation. A block containing no valid keys is skipped. An entirely masked row is rejected by this oracle rather than inventing a universal GPU convention for zero outputs or LSE.</p>
+<h2 id="6-follow-every-state-through-two-real-key-blocks">6 — Follow every state through two real key blocks<a class="headerlink" href="#6-follow-every-state-through-two-real-key-blocks" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch30-online-softmax.svg?v=29a1c12efca4"><img alt="Tiny Q/K/V scores, noncausal and causal results, and every online-softmax state" src="../images/worked/ch30-online-softmax.svg?v=29a1c12efca4" /></a></p>
+<p>Split keys into block zero <code>{0,1}</code> and block one <code>{2}</code>. The second block is shorter; its third key is real, while nonexistent padding keys must not gain softmax weight.</p>
+<table>
+<thead>
+<tr>
+<th>Query row / block</th>
+<th>m</th>
+<th style="text-align: right;">alpha for old state</th>
+<th style="text-align: right;">l</th>
+<th>z</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Row 0, keys 0–1</td>
+<td>ln(2)</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.5</td>
+<td>[1,1]</td>
+</tr>
+<tr>
+<td>Row 0, key 2</td>
+<td>ln(2)</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2.5</td>
+<td>[4,5]</td>
+</tr>
+<tr>
+<td>Row 1, keys 0–1</td>
+<td>ln(2)</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.5</td>
+<td>[0.5,2]</td>
+</tr>
+<tr>
+<td>Row 1, key 2</td>
+<td>ln(2)</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2.5</td>
+<td>[3.5,6]</td>
+</tr>
+</tbody>
+</table>
+<p>For row zero's first block, stable weights one and one-half give <code>z=1*[1,0]+0.5*[0,2]=[1,1]</code>. Key two contributes <code>[3,4]</code> at stable weight one, so the final numerator is <code>[4,5]</code>. Divide by 2.5 to obtain <code>[1.6,2]</code>.</p>
+<p>For row one, the first two stable weights are one-half and one. Its first numerator is <code>[0.5,2]</code>; adding key two yields <code>[3.5,6]</code>. Dividing by the same denominator gives <code>[1.4,2.4]</code>. Equal denominators do not make the two output vectors equal.</p>
+<p><strong>Check:</strong> the sequential trace and the materialized full-row reference agree. The CPU oracle also checks different valid partitions and traversal orders. Floating-point results need not be bit-identical under reassociation; matching within this stated tolerance is the criterion for these binary64 inputs.</p>
+<h2 id="7-force-a-maximum-change-so-rescaling-cannot-be-omitted">7 — Force a maximum change so rescaling cannot be omitted<a class="headerlink" href="#7-force-a-maximum-change-so-rescaling-cannot-be-omitted" title="Permanent link">&para;</a></h2>
+<p>The previous order never increased m after the first tile. That cannot expose a missing rescale. Process row zero's key one first, then keys zero and two:</p>
+<ol>
+<li>Key one has score zero and V row <code>[0,2]</code>. State is <code>m=0,l=1,z=[0,2]</code>.</li>
+<li>The new block has scores <code>ln(2),ln(2)</code>, so <code>m_new=ln(2)</code>.</li>
+<li>Old-state factor is <code>alpha=exp(-ln(2))=1/2</code>.</li>
+<li>Rescale old <code>l</code> to 0.5 and old z to <code>[0,1]</code>.</li>
+<li>Add two new weights of one: <code>l_new=0.5+1+1=2.5</code>.</li>
+<li>Add new weighted vectors <code>[1,0]+[3,4]</code> to <code>[0,1]</code>, producing <code>[4,5]</code>.</li>
+<li>Final output remains <code>[1.6,2]</code>.</li>
+</ol>
+<p>If only l is rescaled, z incorrectly becomes <code>[4,6]</code>, giving <code>[1.6,2.4]</code>. If neither is rescaled, l becomes three and z <code>[4,6]</code>, giving <code>[4/3,2]</code>. A correct-looking component or normalized row is insufficient; check the whole vector against the independent reference.</p>
+<h2 id="8-define-causal-positions-before-applying-a-mask">8 — Define causal positions before applying a mask<a class="headerlink" href="#8-define-causal-positions-before-applying-a-mask" title="Permanent link">&para;</a></h2>
+<p>The pinned <code>CausalFusion::before_softmax</code> demonstrates <strong>top-left causal alignment</strong>: a key is excluded when its logical index j exceeds query index i. For <code>Nq=2,Nk=3</code>, the Boolean mask is:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>                key j=0  j=1  j=2
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>query i=0          yes    no   no
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>query i=1          yes   yes   no
+</span></code></pre></div>
+<ol>
+<li>Row zero retains only key zero, so its normalized weight is one and output is <code>[1,0]</code>.</li>
+<li>Row one retains scores <code>[0,ln(2)]</code>, whose exponentials are <code>[1,2]</code>.</li>
+<li>Its weights are <code>[1/3,2/3,0]</code> and output is <code>[1/3,4/3]</code>.</li>
+<li>The corresponding natural-log LSE values are <code>ln(2)</code> and <code>ln(3)</code>.</li>
+</ol>
+<p>Mask logits before softmax: an excluded entry contributes zero weight and does not enter the row maximum or denominator. Setting an excluded logit to zero is wrong because <code>exp(0)=1</code>. Zero-filling an out-of-range K tile similarly does not automatically mask its score; it can create a false zero logit with positive softmax mass.</p>
+<p>Rectangular attention makes the position convention visible. If the two queries represent the <em>last</em> two positions of a three-key sequence, use absolute query positions <code>i+1</code>. The valid test becomes <code>j&lt;=i+1</code>, and the outputs are <code>[[2/3,2/3],[1.4,2.4]]</code>. This is a separate oracle contract, not what the pinned causal functor silently does. Its own comments explain where such an offset would be introduced. Head sharing, cached decode and unequal lengths require explicit positions and ownership, not merely <code>causal=true</code>.</p>
+<h2 id="9-separate-memory-offsets-from-score-coordinates">9 — Separate memory offsets from score coordinates<a class="headerlink" href="#9-separate-memory-offsets-from-score-coordinates" title="Permanent link">&para;</a></h2>
+<p>A score coordinate <code>(i,j)</code> names a query/key pair, whereas a Q/K element coordinate names one feature. For compact row-major views use:</p>
+<p><code>Q(i,c): i*d+c</code>, <code>K(j,c): j*d+c</code>, <code>V(j,v): j*dv+v</code>, <code>O(i,v): i*dv+v</code>.</p>
+<table>
+<thead>
+<tr>
+<th>View coordinate</th>
+<th style="text-align: right;">Element offset</th>
+<th style="text-align: right;">FP16 byte offset, if E=2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q(1,1)</td>
+<td style="text-align: right;">1*2+1=3</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td>K(2,1)</td>
+<td style="text-align: right;">2*2+1=5</td>
+<td style="text-align: right;">10</td>
+</tr>
+<tr>
+<td>V(2,0)</td>
+<td style="text-align: right;">2*2+0=4</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr>
+<td>O(1,0)</td>
+<td style="text-align: right;">1*2+0=2</td>
+<td style="text-align: right;">4</td>
+</tr>
+</tbody>
+</table>
+<p>This byte column illustrates a hypothetical FP16 allocation; it does not claim that the CPU oracle used half storage or reproduced half rounding. With eight-byte binary64 elements, multiply the same offsets by eight instead. K's mathematical transpose in QKᵀ does not change its row-major <code>(j,c)</code> storage formula.</p>
+<p>For two batches and three heads, choose illustrative mode order <code>(sequence,feature,(batch,head))</code> with Q strides <code>(d,1,(H*Nq*d,Nq*d))</code>. At <code>(i,c,b,h)=(1,1,1,2)</code>, offset is <code>1*2+1+1*12+2*4=23</code> elements, or 46 bytes for FP16. The last valid element occupies bytes 46–47 of the 48-byte Q allocation. K/V use Nk instead of Nq, so their batch/head strides are different.</p>
+<p>The pinned sixteen-bit runner uses the same <strong>mode order</strong>, with <code>StrideQ</code>/<code>StrideK</code> represented as <code>tuple&lt;int,_1,tuple&lt;int,int&gt;&gt;</code>. Its FP8 V specialization uses a different stride pattern; do not transplant the sixteen-bit V map into the byte-element path. Supported TMA alignment and head dimensions impose additional restrictions beyond this affine address calculation.</p>
+<h2 id="10-map-the-mathematics-to-the-pinned-implementation">10 — Map the mathematics to the pinned implementation<a class="headerlink" href="#10-map-the-mathematics-to-the-pinned-implementation" title="Permanent link">&para;</a></h2>
+<p>The <a href="https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/README.md">pinned example README</a> describes four layers:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>What to locate</th>
+<th>Mathematical obligation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runner/reference</td>
+<td>Inputs, strides, checks and timing</td>
+<td>Same operation and numerical criterion</td>
+</tr>
+<tr>
+<td>Device operation</td>
+<td>Workspace and launch orchestration</td>
+<td>Correct pointers, shapes, lifetimes and completion</td>
+</tr>
+<tr>
+<td>Kernel</td>
+<td>Scheduling and roles</td>
+<td>Complete query/output coverage</td>
+</tr>
+<tr>
+<td>Collectives</td>
+<td>QK, softmax state, PV and epilogue</td>
+<td>Correct reductions, rescaling and output</td>
+</tr>
+</tbody>
+</table>
+<p>A small type excerpt from the <a href="https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/88_hopper_fmha.cu">actual forward runner</a> exposes the construction boundary:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Excerpt: aliases/headers/template parameters come from the complete runner.</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">using</span><span class="w"> </span><span class="n">Operation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cutlass</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">Universal</span><span class="o">&lt;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">cutlass</span><span class="o">::</span><span class="n">fmha</span><span class="o">::</span><span class="n">kernel</span><span class="o">::</span><span class="n">FmhaBuilder</span><span class="o">&lt;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">        </span><span class="n">Element</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">        </span><span class="n">ElementAccumulatorQK</span><span class="p">,</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">        </span><span class="n">ElementAccumulatorPV</span><span class="p">,</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">        </span><span class="n">TileShape</span><span class="p">,</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span><span class="n">StrideQ</span><span class="p">,</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">        </span><span class="n">StrideK</span><span class="p">,</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">        </span><span class="n">StrideV</span><span class="p">,</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">        </span><span class="n">ActiveFusion</span><span class="p">,</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">        </span><span class="n">DispatchPolicy</span><span class="p">,</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">        </span><span class="n">KernelOptions</span><span class="p">...</span><span class="o">&gt;::</span><span class="n">Kernel</span><span class="o">&gt;</span><span class="p">;</span>
+</span></code></pre></div>
+<p>This is not an ordinary GEMM builder with a different activation tag. Softmax is between two matrix products, and both row statistics and output numerators persist across key tiles. The implementation uses FMHA-specific collective/kernel/device components. The runner's problem tuple is <code>(B,H,Q,K,D)</code>; Q and K in that tuple are <strong>sequence lengths</strong>, not tensor pointers. Compare the tuple with the data and stride arguments before constructing a launch.</p>
+<p>The pinned README lists forward FP16/BF16 head dimensions 32,64,128,256 and FP8 dimensions 128,256; backward is separately FP16 with dimensions 32,64,128. These are advertised example paths, not proof of all arbitrary shapes, masks and strides. The toy <code>d=2</code> belongs only to this mathematical chapter. A successful address calculation is not a supported launch.</p>
+<p>The customization hook <code>before_softmax</code> receives score accumulators and their logical positions. <code>ResidualFusion</code> masks keys beyond Nk; <code>CausalFusion</code> applies the demonstrated causal comparison. Inspect the selected fusion's complete behavior rather than assuming every mask automatically combines every kind of tail. A real ragged causal configuration must be checked against its exact specialization and reference.</p>
+<h2 id="11-keep-intermediate-lifetime-and-arithmetic-separate">11 — Keep intermediate lifetime and arithmetic separate<a class="headerlink" href="#11-keep-intermediate-lifetime-and-arithmetic-separate" title="Permanent link">&para;</a></h2>
+<p>A fused implementation still needs Q/K/V delivery, safe buffer reuse, complete WGMMA participation and valid output stores. The online recurrence proves how to combine mathematical contributions; it does not establish TMA arrival or asynchronous-reader completion. Conversely, correct barriers do not repair a wrong rescaling formula.</p>
+<p>Map one physical stage to its logical key interval. Record when K/V become ready, which query rows consume them, when asynchronous readers finish, and which producer may next overwrite the stage. A probability fragment may be converted before PV; that conversion changes numerical error even if the state recurrence is algebraically correct. Match the reference to the selected accumulator/conversion policy.</p>
+<p>Avoid claiming that streaming attention reads each input from HBM exactly once. Query tiling, cache residency and schedule affect requested and physical traffic. The important storage difference is that a full Nq×Nk score/probability matrix need not be materialized in global memory. Benchmark only after specifying dtype, mask, lengths, heads, position alignment, work count and useful-result boundary.</p>
+<h2 id="12-run-the-cpu-oracle-and-read-its-evidence">12 — Run the CPU oracle and read its evidence<a class="headerlink" href="#12-run-the-cpu-oracle-and-read-its-evidence" title="Permanent link">&para;</a></h2>
+<p>From the repository root:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python3<span class="w"> </span>docs/examples/advanced/attention_walkthrough.py
+</span></code></pre></div>
+<p>The oracle checks materialized versus online output and natural-log LSE; noncausal and two explicitly positioned causal masks; a maximum-increasing rescale; several partitions/traversal orders; a +1000 common logit shift; an initially fully masked block; duplicate/missing coverage rejection; and an all-masked-row diagnostic. It uses explicit checks that remain active under Python optimization.</p>
+<p>Its output is CPU mathematical evidence only. Compile/run commands, UTC times, local platform and exact source hash appear in the capture below. CUTLASS/Hopper compilation, vendor numerical checks and GPU profiling are a separate task in <a href="../31-cutlass-hopper-fmha/">Chapter 31</a>.</p>
+<!-- attention-walkthrough:capture:start -->
+<p><strong>Actually executed locally on 2026-11-18T21:34:25.783435+00:00 (UTC).</strong> Scope: CPU-only binary64 mathematical reference. System: <code>macOS-26.6-arm64-arm-64bit-Mach-O</code>; Python <code>3.14.5</code>. Python byte-compilation and execution both exited zero.</p>
+<p>Source SHA-256: <code>2e59d020aaf1c7d763bff8f7a924ff20da3b34f578f07ea5735024475367ea52</code>. <a href="../validation/2026-11-18-attention-cpu/attention_walkthrough.py">Exact captured source</a> · <a href="../validation/2026-11-18-attention-cpu/system.json">System information</a> · <a href="../validation/2026-11-18-attention-cpu/commands.json">Commands and stage times</a> · <a href="../validation/2026-11-18-attention-cpu/compile.log">Compile log</a> · <a href="../validation/2026-11-18-attention-cpu/run.log">Run log</a>.</p>
+<p>The raw commands ran in the capture directory with its copied source. Equivalent scratch-directory commands are:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>py_compile<span class="w"> </span>attention_walkthrough.py
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>python3<span class="w"> </span>attention_walkthrough.py
+</span></code></pre></div>
+<p><strong>Actual captured output:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>NONCAUSAL O: [1.6, 2]; [1.4, 2.4]
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>ROW 0 BLOCK 0 keys=[0, 1]: m=0.69314718056 alpha=0 l=1.5 z=[1, 1]
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>ROW 0 BLOCK 1 keys=[2]: m=0.69314718056 alpha=1 l=2.5 z=[4, 5]
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>ROW 1 BLOCK 0 keys=[0, 1]: m=0.69314718056 alpha=0 l=1.5 z=[0.5, 2]
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>ROW 1 BLOCK 1 keys=[2]: m=0.69314718056 alpha=1 l=2.5 z=[3.5, 6]
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>TOP-LEFT CAUSAL O: [1, 0]; [0.333333333333, 1.33333333333]
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>OFFSET-1 CAUSAL O: [0.666666666667, 0.666666666667]; [1.4, 2.4]
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>RESCALE row0: alpha=0.5 l=2.5 z=[4, 5]
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>PASS: materialized/online references; causal positions; rescaling; partitions; shift stability; masked/invalid diagnostics
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>ATTENTION WALKTHROUGH PASS: CPU binary64 mathematics; no CUTLASS compilation or GPU execution
+</span></code></pre></div>
+<!-- attention-walkthrough:capture:end -->
+
+<h2 id="13-exercises-with-worked-answers">13 — Exercises with worked answers<a class="headerlink" href="#13-exercises-with-worked-answers" title="Permanent link">&para;</a></h2>
+<details class="question">
+<summary>Exercise 1: move one V row</summary>
+<p>Keep Q/K unchanged, but replace key two's V row by <code>[0,0]</code>. What are the noncausal outputs?</p>
+<p><strong>Answer:</strong> The probabilities stay unchanged. Row zero becomes <code>[2/5,2/5]</code>; row one becomes <code>[1/5,4/5]</code>. Masking key two instead would change the denominator and is a different operation.</p>
+</details>
+<details class="question">
+<summary>Exercise 2: identify a bad mask</summary>
+<p>At causal query zero, an implementation replaces excluded scores by zero. What does it compute?</p>
+<p><strong>Answer:</strong> Its exponentials are <code>[2,1,1]</code>, so probabilities are <code>[1/2,1/4,1/4]</code>. Output becomes <code>[1.25,1.5]</code>, rather than <code>[1,0]</code>. Excluded entries must contribute no softmax mass.</p>
+</details>
+<details class="question">
+<summary>Exercise 3: why save two row statistics?</summary>
+<p>Can a streaming implementation retain only l and omit m?</p>
+<p><strong>Answer:</strong> Not with this recurrence and arbitrary logits. l is defined relative to m. A new maximum changes that reference and requires alpha to rescale old l and z. Another algorithm could store other equivalent information, but it still needs a well-defined stable representation.</p>
+</details>
+<details class="question">
+<summary>Exercise 4: count full-matrix storage</summary>
+<p>A separate example has Nq=Nk=1024 and materializes both S and P in FP32. How many bytes do just those two matrices occupy per head?</p>
+<p><strong>Answer:</strong> <code>2*1024*1024*4=8388608</code> bytes, or 8 MiB. This excludes Q/K/V/O, temporary storage, extra heads/batches and allocator overhead. Avoiding that materialization is not a claim that all other memory traffic disappears.</p>
+</details>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Define the Q/K and P/V reduction axes, positions, mask and conversion policy before choosing an FMHA kernel.</li>
+<li>Online attention carries a row maximum, scalar denominator and vector numerator. A new maximum rescales both accumulated quantities; mask before contributing to any statistic.</li>
+<li>Layouts map feature coordinates to storage independently of score coordinates. A logical transpose, valid address map or tiny correct equation does not establish a supported Hopper launch.</li>
+<li>The CPU oracle checks the mathematics. Continue to the pinned implementation and its separately stated build/validation scope in <a href="../31-cutlass-hopper-fmha/">Chapter 31</a>.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../29-workbook-capstone/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 29. Worked Labs &amp; Capstone">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                29. Worked Labs & Capstone
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../31-cutlass-hopper-fmha/" class="md-footer__link md-footer__link--next" aria-label="Next: 31. Hopper CUTLASS FMHA — Build, Trace and Validate">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                31. Hopper CUTLASS FMHA — Build, Trace and Validate
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

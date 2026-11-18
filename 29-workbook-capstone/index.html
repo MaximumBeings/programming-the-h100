@@ -18,6 +18,8 @@
         <link rel="prev" href="../28-benchmarking-integration/">
       
       
+        <link rel="next" href="../30-cutlass-attention-foundations/">
+      
       
         
       
@@ -2172,10 +2174,144 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#continue-with-an-attention-capstone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continue with an attention capstone
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30-cutlass-attention-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2413,6 +2549,17 @@
     <span class="md-ellipsis">
       
         Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#continue-with-an-attention-capstone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continue with an attention capstone
       
     </span>
   </a>
@@ -2658,6 +2805,9 @@
 </ul>
 <!-- companion-summary:end -->
 
+<h2 id="continue-with-an-attention-capstone">Continue with an attention capstone<a class="headerlink" href="#continue-with-an-attention-capstone" title="Permanent link">&para;</a></h2>
+<p>Apply the same mapping, safety, numerics and measurement rubric to <a href="../30-cutlass-attention-foundations/">the attention derivation</a>, then <a href="../31-cutlass-hopper-fmha/">the pinned Hopper CUTLASS FMHA implementation</a>. The two matrix products share an online-softmax dependency that makes attention a useful next step beyond a single GEMM.</p>
+
 
 
 
@@ -2709,6 +2859,22 @@
             </div>
           </a>
         
+        
+          
+          <a href="../30-cutlass-attention-foundations/" class="md-footer__link md-footer__link--next" aria-label="Next: 30. Attention from Layouts to Online Softmax">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                30. Attention from Layouts to Online Softmax
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     

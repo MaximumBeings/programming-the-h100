@@ -1,0 +1,10 @@
+{
+  "scope": "Local CPU binary64 mathematics; no CUTLASS compilation or GPU execution",
+  "source_sha256": "2e59d020aaf1c7d763bff8f7a924ff20da3b34f578f07ea5735024475367ea52",
+  "source": "attention_walkthrough.py",
+  "python": "3.14.5 (main, May 10 2026, 10:21:34) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "git_base_commit": "5f835c9f8a247c0911054532030d751b16588258",
+  "source_is_uncommitted": true
+}
