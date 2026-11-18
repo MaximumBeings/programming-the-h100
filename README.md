@@ -17,12 +17,19 @@ docs/
   09-kernel-design-part-2.md
   10-stream-k-scheduling.md
   11-multi-gpu-nccl.md           Part VI   — Scaling Out
+  12-flashattention-3.md        Part VII  — Putting It to Work
+  13-nsight-compute.md
+  14-nsight-systems.md
+  15-cute-layouts.md             Part VIII — From Primitives to CUTLASS
+  16-cutlass-gemm.md
+  17-cutlass-pipelines.md
+  examples/advanced/            new exercise sources and validation plan
   stylesheets/extra.css          typography + code-block tuning
 hooks/fix_anchors.py             build-time link repair (see below)
 mkdocs.yml                       site config and nav
 ```
 
-The recorded revisions of all **27 complete CUDA programs compiled and executed successfully** across the recorded H100 and A100 hosts on November 17–18, 2026. The [complete validation summary](docs/final-audit.md) combines 26 successful H100 workloads with the [eight-A100 training execution](docs/eight-gpu-validation.md), which checks every final weight and per-step loss against an independent CPU reference.
+The recorded revisions of all **27 original complete CUDA programs compiled and executed successfully** across the recorded H100 and A100 hosts on November 17–18, 2026. The [complete validation summary](docs/final-audit.md) combines 26 successful H100 workloads with the [eight-A100 training execution](docs/eight-gpu-validation.md), which checks every final weight and per-step loss against an independent CPU reference.
 
 The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **All 27 current revisions have verified workload records** across the H100 and eight-A100 hosts. The [additional H100 record](docs/revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 
@@ -108,3 +115,7 @@ Regenerating figures does not compile or execute any CUDA example.
 ## Code listing presentation
 
 Website builds format C, C++ and CUDA listings with pinned clang-format 19.1.7: four-space indentation, 68-column layout and expanded control-flow blocks. The build rejects changes to lexical tokens, literals or comment contents. Only displayed listings are formatted; stored sources, execution hashes, commands and captured outputs remain unchanged. Long literals wrap visually without inserting copied newlines. Style settings are in `.clang-format`; the build hook is `hooks/code_formatting.py`.
+
+## Systems and CUTLASS extension
+
+Chapters 14–17 add application-level profiling, CuTe layouts, a pinned CUTLASS v4.3.6 GEMM and Hopper pipeline/fusion analysis. New [exercise sources](docs/examples/advanced/README.md) have a separate collector, `tools/run_advanced_validation.py`; their hardware compilation/execution and profiler records will be added after the next Hopper session. The original 27-program evidence is preserved. Run the new collector without `--execute` to inspect its plan without invoking tools or a GPU.

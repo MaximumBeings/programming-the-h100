@@ -48,6 +48,12 @@ jobs:
       - name: Verify November 18 rerun
         run: python3 tools/verify_revalidation.py
 
+      - name: Check new advanced collector without executing CUDA
+        run: |
+          bash -n tools/fetch_cutlass.sh
+          python3 -m py_compile tools/run_advanced_validation.py
+          python3 tools/run_advanced_validation.py --cutlass /tmp/not-required-for-plan --output /tmp/advanced-plan-only
+
       - name: Verify SVG readability
         run: python3 tools/verify_svg_readability.py
 

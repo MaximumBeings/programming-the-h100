@@ -6,7 +6,7 @@ from illustrations.drawing import Drawing, ROOT, COLORS, MUTED
 output = ROOT/'docs/images/book'
 output.mkdir(exist_ok=True)
 d = Drawing('book/overview.svg', 'From the machine to a measured kernel',
-            'A reading map for all 13 chapters: place data, establish ownership, overlap work, then measure.',
+            'A reading map for all 17 chapters: place data, establish ownership, overlap work, then measure.',
             'Reading map for Programming the H100 · schematic dependencies, not a hardware block diagram')
 d.parts = [part.replace('CHAPTER ok   /   FIGURE overview.svg', 'THE WHOLE BOOK   /   READING MAP') for part in d.parts]
 y=d.y
@@ -44,8 +44,11 @@ connector()
 pair(('11  Scale across GPUs','Topology, NCCL and hybrid parallel training.','blue'),
      ('12  Apply it to attention','Online softmax and an annotated FA3 kernel design.','violet'))
 connector()
-whole('13  Measure, explain, refine',
-      'Use Nsight Compute and a stated roofline model to test your bottleneck hypothesis.', 'amber')
+whole('13–14  Measure, explain, refine',
+      'Use Systems for the application timeline and Compute for the selected kernel.', 'amber')
+connector()
+whole('15–17  Read and verify CUTLASS',
+      'CuTe layouts, a checked Hopper GEMM, pipeline ownership and epilogue fusion.', 'violet')
 d.y=y+24
 d.note('The invariant at every layer',
        'Know who owns each value, when it is ready, when its storage is reusable, and how the result is checked.', 'gray')
@@ -53,6 +56,6 @@ height=d.write()
 # Give the accessible description the same useful information as the visual map.
 p=output/'overview.svg'
 s=p.read_text();a=s.index('<desc id="figure-desc">');b=s.index('</desc>',a)
-s=s[:a]+'<desc id="figure-desc">Chapters 1–2: hardware, memory and PTX. Chapter 3: asynchronous completion and ownership. Chapters 4–5: TMA and layouts; chapters 6–7: WGMMA and epilogues. Chapters 8–10 combine these in pipelined kernels. Chapter 11 scales across GPUs; chapter 12 applies the ideas to attention. Chapter 13 uses profiling to guide another iteration. At every layer, check ownership, readiness, reuse and correctness.'+s[b:]
+s=s[:a]+'<desc id="figure-desc">Chapters 1–2: hardware, memory and PTX. Chapter 3: asynchronous completion and ownership. Chapters 4–5: TMA and layouts; chapters 6–7: WGMMA and epilogues. Chapters 8–10 combine these in pipelined kernels. Chapter 11 scales across GPUs; chapter 12 applies the ideas to attention. Chapters 13–14 use kernel and application profiling to guide another iteration. Chapters 15–17 apply the primitives through CuTe layouts, a checked CUTLASS GEMM and Hopper pipelines. At every layer, check ownership, readiness, reuse and correctness.'+s[b:]
 p.write_text(s)
 print(f'Created {p.relative_to(ROOT)} (760 × {height}).')

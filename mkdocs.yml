@@ -2,7 +2,8 @@ site_name: Programming the H100 - Under Development
 site_description: >-
   A hardware-level companion guide to the NVIDIA Hopper architecture — from the
   H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines
-  and WGMMA tensor cores, up to warp-specialized kernel design and multi-GPU NCCL.
+  and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL,
+  Nsight profiling and CUTLASS/CuTe.
 site_author: Oluwaseyi Awoga
 
 # ---------------------------------------------------------------------------
@@ -135,3 +136,8 @@ nav:
   - Part VII — Putting It to Work:
       - 12. FlashAttention-3 on the H100: 12-flashattention-3.md
       - 13. Profiling with Nsight Compute: 13-nsight-compute.md
+      - 14. Application Profiling with Nsight Systems: 14-nsight-systems.md
+  - Part VIII — From Primitives to CUTLASS:
+      - 15. CuTe Layout Algebra: 15-cute-layouts.md
+      - 16. Build a Verified CUTLASS GEMM: 16-cutlass-gemm.md
+      - 17. Hopper Pipelines, Fusion & Tuning: 17-cutlass-pipelines.md

@@ -3,7 +3,7 @@
 [![FIELD GUIDE: Programming the H100](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
 
 
-> **Validation — November 17–18, 2026.** The recorded revisions of all **27 complete CUDA programs compiled and executed successfully** across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The [complete validation summary](final-audit.md) links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The [training record](eight-gpu-validation.md) targets `sm_80` and checks all final weights and per-step losses against an independent CPU reference.
+> **Original program suite — November 17–18, 2026.** The recorded revisions of all **27 original complete CUDA programs compiled and executed successfully** across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The [complete validation summary](final-audit.md) links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The [training record](eight-gpu-validation.md) targets `sm_80` and checks all final weights and per-step losses against an independent CPU reference.
 > The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **All 27 current revisions have verified workload records** across the H100 and eight-A100 hosts. The [additional H100 record](revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 > **Follow-up system:** 2× H100 80GB HBM3, 132 SMs each, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > The [original single-GPU records](validation/2026-11-17/results.json) remain available as historical evidence. Each tested source and captured output is linked beside its example or in the follow-up audit. Diagrams open as original SVGs for zooming.
@@ -13,14 +13,18 @@
 
 <p class="hero-tagline">
 The gap between "my kernel runs" and "my kernel saturates the tensor cores" is
-exactly the size of this book. Thirteen chapters that start at the H100 die and
-end with a profiler telling you which of your assumptions was wrong — every one
-with ASCII diagrams, worked examples with concrete numbers, and code you can
-read line by line.
+the subject of this book. Seventeen chapters connect the H100 die and its
+instructions to kernel design, application profiling and CUTLASS. Follow worked
+layouts, explicit ownership protocols, diagrams and downloadable examples,
+then test the result and the performance hypothesis separately.
 </p>
 
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
 > **Run with:** `./<out>` on Hopper hardware matching the compiled target. Use the complete per-example command, including any driver, NCCL or cuBLAS linker flags.
+
+!!! info "New Systems and CUTLASS exercises"
+
+    Chapters 14–17 add a profiler overlap exercise, a CuTe coordinate oracle and a CUTLASS GEMM with a full CPU reference. Their [separate test collector](examples/advanced/README.md) is prepared for the next Hopper session. The original 27-program execution records remain unchanged; new captured outputs and profiles will be added from that session.
 
 ## How to read this
 
@@ -36,7 +40,9 @@ just the machine. Chapters 2–3 give you the instruction-level vocabulary
 getting bytes into shared memory efficiently. Chapters 6–7 are the tensor
 cores. Chapters 8–10 put it together into real warp-specialized kernels.
 Chapter 11 leaves the single GPU behind. Chapters 12–13 are the payoff: an
-annotated FA3 design with a tested numerical reference, and the tool that measures real kernels.
+annotated FA3 design with a tested numerical reference, and kernel profiling.
+Chapter 14 adds the application timeline with Nsight Systems. Chapters 15–17
+bridge the hand-written primitives to CuTe and a pinned CUTLASS Hopper implementation.
 
 If you already write CUDA and want the Hopper-specific parts, start at
 Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order. If you
@@ -50,6 +56,8 @@ have a slow kernel in front of you right now, start at Chapter 13.
 | Understand Hopper data movement | 2 → 3 → 4 → 5 | A valid descriptor, a byte count and a completion/ownership explanation |
 | Write and diagnose GEMM kernels | 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 13 | Full-output reference checks and a profile tied to the right roofline |
 | Understand fast attention | 3 → 4 → 6 → 7 → 9 → 12 → 13 | A recurrence check and a clear account of what the skeleton still omits |
+| Trace application stalls and overlap | 11 → 13 → 14 | A bounded timeline and a useful-result timing comparison |
+| Read and validate CUTLASS kernels | 4 → 6 → 7 → 15 → 16 → 17 | A pinned build, coordinate checks and a full-output GEMM oracle |
 | Study distributed GPU workloads | 1 → 2 → 11 → 13 | A topology record and a collective result checked on the required hardware |
 
 **Read an example in three passes.** First trace where each value lives and which thread owns it. Then identify what makes it safe to read and safe to overwrite. Finally predict the reference output before looking at the captured result. Performance tuning comes after those three agree.
@@ -213,6 +221,15 @@ have a slow kernel in front of you right now, start at Chapter 13.
     from symptom to fix.
 
 </div>
+
+### Continue into application profiling and CUTLASS
+
+| Chapter | What you will build or explain |
+| --- | --- |
+| [14. Nsight Systems](14-nsight-systems.md) | A correct serial/two-stream workload, bounded captures and a Systems → Compute → Systems investigation |
+| [15. CuTe layout algebra](15-cute-layouts.md) | Coordinate tables, storage spans, composition, tiling and thread/value ownership |
+| [16. CUTLASS Hopper GEMM](16-cutlass-gemm.md) | A pinned v4.3.6 build with aligned operands, a complete launch lifecycle and an independent CPU oracle |
+| [17. Pipelines, fusion and tuning](17-cutlass-pipelines.md) | A real stage-lifetime trace, compatible schedules, epilogue dataflow and a narrow profiler build |
 
 ## Running this book locally
 

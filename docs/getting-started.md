@@ -311,6 +311,7 @@ Check what the image already provides:
 
 ```bash
 ncu --version
+nsys --version
 compute-sanitizer --version
 cuobjdump --version
 ```
@@ -318,11 +319,15 @@ cuobjdump --version
 For the CUDA 12.8 toolkit installed through the repository above, missing inspection tools can be installed with:
 
 ```bash
-sudo apt-get install -y cuda-nsight-compute-12-8 cuda-sanitizer-12-8
+sudo apt-get install -y cuda-nsight-compute-12-8 cuda-nsight-systems-12-8 cuda-sanitizer-12-8
 ncu --version
 ```
 
 The earlier captured Lambda session installed the image's `nsight-compute` package and reported **2025.1.1.0**; the versioned toolkit package above can supply a newer 2025.1.x patch. Record `ncu --version` on your host. If `ncu` is outside `PATH`, inspect `dpkg -L cuda-nsight-compute-12-8` and its `nsight-compute-2025.1.1` dependency for the installed executable, then use its full path or add that directory to `PATH`. The first ordinary-user profile reported `ERR_NVGPUCTRPERM`; profiling with elevated permissions succeeded on the instance we administered. [Chapter 13](13-nsight-compute.md) shows both logs and the exact successful invocation. Do not change system-wide counter permissions merely to imitate a screenshot.
+
+### Optional Systems and CUTLASS extension
+
+[Chapter 14](14-nsight-systems.md) adds Nsight Systems CLI capture and timeline analysis; record `nsys --version` separately from `ncu --version`. [Chapter 16](16-cutlass-gemm.md) pins CUTLASS v4.3.6 and supplies a separate collector for the new layout, GEMM and overlap exercises. Follow those chapters for their additional setup and current validation scope.
 
 ### Optional attention-reference dependency
 

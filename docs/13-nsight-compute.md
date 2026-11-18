@@ -1720,18 +1720,15 @@ spill stores / loads            0              --ptxas-options=-v
 
 ---
 
-> **The end of the book.**
+> **From the kernel to the application and the library.**
 >
-> Thirteen chapters, from a single H100 die to a multi-node SuperPOD and back
-> down to the individual instruction that stalled. You have the architecture, the
-> instruction set, the data movement machinery, the tensor cores, the kernel
-> designs that combine them, the distributed systems layer above, an annotated
-> production-kernel design and a tested numerical reference, and now the tool that tells you when
-> your reasoning was wrong.
+> The hardware and instruction-level chapters give you the vocabulary for a
+> Hopper kernel. [Chapter 14](14-nsight-systems.md) adds the application timeline:
+> find the kernel or dependency that actually determines useful-result time.
+> [Chapters 15–17](15-cute-layouts.md) then turn the closing CUTLASS recommendation
+> into a practical route through CuTe layouts, a complete GEMM harness, Hopper
+> pipeline ownership, epilogue fusion and controlled tuning.
 >
-> One place left to go: [CUTLASS](https://github.com/NVIDIA/cutlass) is the
-> reference implementation of nearly every technique in Parts IV and V. Its
-> `sm90` GEMM kernels and the CuTe layout algebra underneath them are dense
-> reading, but the vocabulary is now familiar — you will recognise the
-> descriptors, the warp specialisation, the ping-pong scheduling, and the
-> epilogue fusion, because you have built all of them by hand.
+> The reference source is pinned rather than a moving `main` branch. The new
+> exercises have their own collector, so their future hardware records remain
+> distinct from the original 27-program suite.
