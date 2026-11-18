@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design and multi-GPU NCCL.">
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
       
       
         <meta name="author" content="Oluwaseyi Awoga">
@@ -540,6 +540,17 @@
   
     <nav class="md-nav" aria-label="6 — Install optional profiling tools">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-systems-and-cutlass-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional Systems and CUTLASS extension
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#optional-attention-reference-dependency" class="md-nav__link">
@@ -1400,6 +1411,8 @@
       
         
       
+        
+      
     
     
     
@@ -1490,6 +1503,187 @@
     
   
     13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — From Primitives to CUTLASS
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — From Primitives to CUTLASS
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Build a Verified CUTLASS GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hopper Pipelines, Fusion & Tuning
   
 
     
@@ -1707,6 +1901,17 @@
   
     <nav class="md-nav" aria-label="6 — Install optional profiling tools">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-systems-and-cutlass-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional Systems and CUTLASS extension
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#optional-attention-reference-dependency" class="md-nav__link">
@@ -2043,14 +2248,17 @@
 <h2 id="6-install-optional-profiling-tools">6 — Install optional profiling tools<a class="headerlink" href="#6-install-optional-profiling-tools" title="Permanent link">&para;</a></h2>
 <p>Check what the image already provides:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>ncu<span class="w"> </span>--version
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>compute-sanitizer<span class="w"> </span>--version
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>cuobjdump<span class="w"> </span>--version
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>nsys<span class="w"> </span>--version
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>compute-sanitizer<span class="w"> </span>--version
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>cuobjdump<span class="w"> </span>--version
 </span></code></pre></div>
 <p>For the CUDA 12.8 toolkit installed through the repository above, missing inspection tools can be installed with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>cuda-nsight-compute-12-8<span class="w"> </span>cuda-sanitizer-12-8
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>cuda-nsight-compute-12-8<span class="w"> </span>cuda-nsight-systems-12-8<span class="w"> </span>cuda-sanitizer-12-8
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>ncu<span class="w"> </span>--version
 </span></code></pre></div>
 <p>The earlier captured Lambda session installed the image's <code>nsight-compute</code> package and reported <strong>2025.1.1.0</strong>; the versioned toolkit package above can supply a newer 2025.1.x patch. Record <code>ncu --version</code> on your host. If <code>ncu</code> is outside <code>PATH</code>, inspect <code>dpkg -L cuda-nsight-compute-12-8</code> and its <code>nsight-compute-2025.1.1</code> dependency for the installed executable, then use its full path or add that directory to <code>PATH</code>. The first ordinary-user profile reported <code>ERR_NVGPUCTRPERM</code>; profiling with elevated permissions succeeded on the instance we administered. <a href="../13-nsight-compute/">Chapter 13</a> shows both logs and the exact successful invocation. Do not change system-wide counter permissions merely to imitate a screenshot.</p>
+<h3 id="optional-systems-and-cutlass-extension">Optional Systems and CUTLASS extension<a class="headerlink" href="#optional-systems-and-cutlass-extension" title="Permanent link">&para;</a></h3>
+<p><a href="../14-nsight-systems/">Chapter 14</a> adds Nsight Systems CLI capture and timeline analysis; record <code>nsys --version</code> separately from <code>ncu --version</code>. <a href="../16-cutlass-gemm/">Chapter 16</a> pins CUTLASS v4.3.6 and supplies a separate collector for the new layout, GEMM and overlap exercises. Follow those chapters for their additional setup and current validation scope.</p>
 <h3 id="optional-attention-reference-dependency">Optional attention-reference dependency<a class="headerlink" href="#optional-attention-reference-dependency" title="Permanent link">&para;</a></h3>
 <p>The 27 named CUDA programs do not require PyTorch. To reproduce the separate Chapter 12 recurrence check from the repository root, use an isolated environment and the recorded CUDA-enabled PyTorch version:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv-attention

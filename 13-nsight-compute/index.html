@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design and multi-GPU NCCL.">
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
       
       
         <meta name="author" content="Oluwaseyi Awoga">
@@ -17,6 +17,8 @@
       
         <link rel="prev" href="../12-flashattention-3/">
       
+      
+        <link rel="next" href="../14-nsight-systems/">
       
       
         
@@ -1132,6 +1134,8 @@
       
         
       
+        
+      
     
     
     
@@ -1863,6 +1867,187 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — From Primitives to CUTLASS
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — From Primitives to CUTLASS
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Build a Verified CUTLASS GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hopper Pipelines, Fusion & Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -4059,19 +4244,16 @@ machine this book is about.</p>
 
 <hr />
 <blockquote>
-<p><strong>The end of the book.</strong></p>
-<p>Thirteen chapters, from a single H100 die to a multi-node SuperPOD and back
-down to the individual instruction that stalled. You have the architecture, the
-instruction set, the data movement machinery, the tensor cores, the kernel
-designs that combine them, the distributed systems layer above, an annotated
-production-kernel design and a tested numerical reference, and now the tool that tells you when
-your reasoning was wrong.</p>
-<p>One place left to go: <a href="https://github.com/NVIDIA/cutlass">CUTLASS</a> is the
-reference implementation of nearly every technique in Parts IV and V. Its
-<code>sm90</code> GEMM kernels and the CuTe layout algebra underneath them are dense
-reading, but the vocabulary is now familiar — you will recognise the
-descriptors, the warp specialisation, the ping-pong scheduling, and the
-epilogue fusion, because you have built all of them by hand.</p>
+<p><strong>From the kernel to the application and the library.</strong></p>
+<p>The hardware and instruction-level chapters give you the vocabulary for a
+Hopper kernel. <a href="../14-nsight-systems/">Chapter 14</a> adds the application timeline:
+find the kernel or dependency that actually determines useful-result time.
+<a href="../15-cute-layouts/">Chapters 15–17</a> then turn the closing CUTLASS recommendation
+into a practical route through CuTe layouts, a complete GEMM harness, Hopper
+pipeline ownership, epilogue fusion and controlled tuning.</p>
+<p>The reference source is pinned rather than a moving <code>main</code> branch. The new
+exercises have their own collector, so their future hardware records remain
+distinct from the original 27-program suite.</p>
 </blockquote>
 
 
@@ -4125,6 +4307,22 @@ epilogue fusion, because you have built all of them by hand.</p>
             </div>
           </a>
         
+        
+          
+          <a href="../14-nsight-systems/" class="md-footer__link md-footer__link--next" aria-label="Next: 14. Application Profiling with Nsight Systems">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                14. Application Profiling with Nsight Systems
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     

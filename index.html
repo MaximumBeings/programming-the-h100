@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design and multi-GPU NCCL.">
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
       
       
         <meta name="author" content="Oluwaseyi Awoga">
@@ -370,6 +370,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Contents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#continue-into-application-profiling-and-cutlass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continue into application profiling and CUTLASS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1221,6 +1238,8 @@
       
         
       
+        
+      
     
     
     
@@ -1324,6 +1343,187 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — From Primitives to CUTLASS
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — From Primitives to CUTLASS
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="16-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Build a Verified CUTLASS GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="17-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hopper Pipelines, Fusion & Tuning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1388,6 +1588,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Contents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#continue-into-application-profiling-and-cutlass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continue into application profiling and CUTLASS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1429,7 +1646,7 @@
 <h1 id="programming-the-h100">Programming the H100<a class="headerlink" href="#programming-the-h100" title="Permanent link">&para;</a></h1>
 <p><a href="images/chapter-openers/00-cover.svg?v=173db23bc5de"><img alt="FIELD GUIDE: Programming the H100" src="images/chapter-openers/00-cover.svg?v=173db23bc5de" /></a></p>
 <blockquote>
-<p><strong>Validation — November 17–18, 2026.</strong> The recorded revisions of all <strong>27 complete CUDA programs compiled and executed successfully</strong> across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The <a href="final-audit/">complete validation summary</a> links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The <a href="eight-gpu-validation/">training record</a> targets <code>sm_80</code> and checks all final weights and per-step losses against an independent CPU reference.
+<p><strong>Original program suite — November 17–18, 2026.</strong> The recorded revisions of all <strong>27 original complete CUDA programs compiled and executed successfully</strong> across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The <a href="final-audit/">complete validation summary</a> links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The <a href="eight-gpu-validation/">training record</a> targets <code>sm_80</code> and checks all final weights and per-step losses against an independent CPU reference.
 The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. <strong>All 27 current revisions have verified workload records</strong> across the H100 and eight-A100 hosts. The <a href="revalidation-2026-11-18/">additional H100 record</a> includes fresh compilation dates, execution times, system information and sample outputs.
 <strong>Follow-up system:</strong> 2× H100 80GB HBM3, 132 SMs each, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; <code>sm_90a</code>, C++17, <code>-O2</code>.
 The <a href="validation/2026-11-17/results.json">original single-GPU records</a> remain available as historical evidence. Each tested source and captured output is linked beside its example or in the follow-up audit. Diagrams open as original SVGs for zooming.</p>
@@ -1437,18 +1654,22 @@ The <a href="validation/2026-11-17/results.json">original single-GPU records</a>
 <h2 id="a-hardware-level-companion-guide-to-nvidia-hopper">A hardware-level companion guide to NVIDIA Hopper<a class="headerlink" href="#a-hardware-level-companion-guide-to-nvidia-hopper" title="Permanent link">&para;</a></h2>
 <p class="hero-tagline">
 The gap between "my kernel runs" and "my kernel saturates the tensor cores" is
-exactly the size of this book. Thirteen chapters that start at the H100 die and
-end with a profiler telling you which of your assumptions was wrong — every one
-with ASCII diagrams, worked examples with concrete numbers, and code you can
-read line by line.
+the subject of this book. Seventeen chapters connect the H100 die and its
+instructions to kernel design, application profiling and CUTLASS. Follow worked
+layouts, explicit ownership protocols, diagrams and downloadable examples,
+then test the result and the performance hypothesis separately.
 </p>
 
 <blockquote>
 <p><strong>Compile CUDA examples with:</strong> <code>nvcc -std=c++17 -arch=sm_90a -O2 &lt;file&gt;.cu -o &lt;out&gt;</code>
 <strong>Run with:</strong> <code>./&lt;out&gt;</code> on Hopper hardware matching the compiled target. Use the complete per-example command, including any driver, NCCL or cuBLAS linker flags.</p>
 </blockquote>
+<div class="admonition info">
+<p class="admonition-title">New Systems and CUTLASS exercises</p>
+<p>Chapters 14–17 add a profiler overlap exercise, a CuTe coordinate oracle and a CUTLASS GEMM with a full CPU reference. Their <a href="examples/advanced/">separate test collector</a> is prepared for the next Hopper session. The original 27-program execution records remain unchanged; new captured outputs and profiles will be added from that session.</p>
+</div>
 <h2 id="how-to-read-this">How to read this<a class="headerlink" href="#how-to-read-this" title="Permanent link">&para;</a></h2>
-<p><a href="images/book/overview.svg?v=e420cc30a908"><img alt="Book reading map: hardware and PTX lead to safe asynchronous data movement and Tensor Core computation, then kernel design, multi-GPU training, attention and profiling." src="images/book/overview.svg?v=e420cc30a908" /></a></p>
+<p><a href="images/book/overview.svg?v=0d38d206e4bf"><img alt="Book reading map: hardware and PTX lead to safe asynchronous data movement and Tensor Core computation, then kernel design, multi-GPU training, attention and profiling." src="images/book/overview.svg?v=0d38d206e4bf" /></a></p>
 <p><em>The whole book in one view. Read downward to build the dependencies; return to the relevant layer when profiling exposes a bottleneck.</em></p>
 <p><strong>CUDA prerequisites:</strong> Be comfortable with thread/block indexing, launch dimensions, shared-memory lifetime, block synchronisation and CUDA error checking. If these are new, first work through <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/index.html">NVIDIA’s CUDA programming introduction</a>, then follow this book’s <a href="getting-started/#5-compile-and-execute-your-first-verified-program">first verified run</a>.</p>
 <p>The chapters build on each other. Chapter 1 is pure architecture — no code,
@@ -1457,7 +1678,9 @@ just the machine. Chapters 2–3 give you the instruction-level vocabulary
 getting bytes into shared memory efficiently. Chapters 6–7 are the tensor
 cores. Chapters 8–10 put it together into real warp-specialized kernels.
 Chapter 11 leaves the single GPU behind. Chapters 12–13 are the payoff: an
-annotated FA3 design with a tested numerical reference, and the tool that measures real kernels.</p>
+annotated FA3 design with a tested numerical reference, and kernel profiling.
+Chapter 14 adds the application timeline with Nsight Systems. Chapters 15–17
+bridge the hand-written primitives to CuTe and a pinned CUTLASS Hopper implementation.</p>
 <p>If you already write CUDA and want the Hopper-specific parts, start at
 Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order. If you
 have a slow kernel in front of you right now, start at Chapter 13.</p>
@@ -1490,6 +1713,16 @@ have a slow kernel in front of you right now, start at Chapter 13.</p>
 <td>Understand fast attention</td>
 <td>3 → 4 → 6 → 7 → 9 → 12 → 13</td>
 <td>A recurrence check and a clear account of what the skeleton still omits</td>
+</tr>
+<tr>
+<td>Trace application stalls and overlap</td>
+<td>11 → 13 → 14</td>
+<td>A bounded timeline and a useful-result timing comparison</td>
+</tr>
+<tr>
+<td>Read and validate CUTLASS kernels</td>
+<td>4 → 6 → 7 → 15 → 16 → 17</td>
+<td>A pinned build, coordinate checks and a full-output GEMM oracle</td>
 </tr>
 <tr>
 <td>Study distributed GPU workloads</td>
@@ -1712,6 +1945,33 @@ from symptom to fix.</p>
 </li>
 </ul>
 </div>
+<h3 id="continue-into-application-profiling-and-cutlass">Continue into application profiling and CUTLASS<a class="headerlink" href="#continue-into-application-profiling-and-cutlass" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Chapter</th>
+<th>What you will build or explain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="14-nsight-systems/">14. Nsight Systems</a></td>
+<td>A correct serial/two-stream workload, bounded captures and a Systems → Compute → Systems investigation</td>
+</tr>
+<tr>
+<td><a href="15-cute-layouts/">15. CuTe layout algebra</a></td>
+<td>Coordinate tables, storage spans, composition, tiling and thread/value ownership</td>
+</tr>
+<tr>
+<td><a href="16-cutlass-gemm/">16. CUTLASS Hopper GEMM</a></td>
+<td>A pinned v4.3.6 build with aligned operands, a complete launch lifecycle and an independent CPU oracle</td>
+</tr>
+<tr>
+<td><a href="17-cutlass-pipelines/">17. Pipelines, fusion and tuning</a></td>
+<td>A real stage-lifetime trace, compatible schedules, epilogue dataflow and a narrow profiler build</td>
+</tr>
+</tbody>
+</table>
 <h2 id="running-this-book-locally">Running this book locally<a class="headerlink" href="#running-this-book-locally" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
