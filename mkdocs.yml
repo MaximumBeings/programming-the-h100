@@ -157,3 +157,7 @@ nav:
       - 27. Precision & Block Scaling: 27-precision-block-scaling.md
       - 28. Benchmarking & Framework Integration: 28-benchmarking-integration.md
       - 29. Worked Labs & Capstone: 29-workbook-capstone.md
+
+  - Part XI — CUTLASS FlashAttention:
+      - 30. Attention from Layouts to Online Softmax: 30-cutlass-attention-foundations.md
+      - 31. Hopper CUTLASS FMHA — Build, Trace and Validate: 31-cutlass-hopper-fmha.md

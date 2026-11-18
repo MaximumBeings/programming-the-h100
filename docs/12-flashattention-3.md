@@ -1811,35 +1811,34 @@ splitting of the K loop (Chapter 10).
 ### Common Mistakes
 
 ```
-Mistake                                  Symptom            Fix
-──────────────────────────────────────────────────────────────────────
-wgmma_wait_group<0> in the 2-stage       No speedup from    Use <1>;
-loop                                     §7                 Ch 7 §3
+Mistake                          Consequence             Safer reasoning
+--------------------------------------------------------------------------
+Draining every WGMMA group        Can reduce overlap      Keep groups pending only
+at each loop iteration                                    while operand lifetime
+                                                          and accumulator hazards
+                                                          permit; drain at the end
 
-Rescaling O before the fence             Corrupt output     wgmma.fence
-                                                            before
-                                                            touching
-                                                            accumulator
-                                                            (Ch 7 §5)
+Changing an accumulator while    Race with pending       Wait for its WGMMA writers;
+WGMMA may still write it         asynchronous work       apply the required fence
+                                                          before later WGMMA use
 
-Forgetting buffer_free arrive            Hang after         Ch 3 §13 —
-                                         kNumStages iters   WAR barrier
+Reusing a buffer without its     Overwrite before        Wait for the matching
+last reader's completion         consumption finishes    generation's reuse signal
 
-expect_tx after issuing the TMA copy     Intermittent hang  Always before
-                                                            (Ch 3 §9.2)
+Expecting transfer bytes after   Completion can race     Follow the instruction's
+issuing the TMA operation         barrier accounting      expected-byte protocol
 
-Mask predicate inside FULL blocks        ~10% slower        Specialise the
-                                                            loop (§8.1)
+Unnecessary masking on a         Possible extra work     Specialize proven full
+proven full tile                                          tiles; retain edge checks
 
-Per-tensor FP8 scaling                   Accuracy collapse  Block quant
-                                         on outlier heads   (§9.1)
+One coarse FP8 scale despite     Possible excess         Check range/error against
+outlier values                   quantization error      an independent reference
 
-V not transposed for FP8 GEMM1           Silently wrong     In-kernel
-                                         output             transpose
-                                                            (§9.3)
+A V layout incompatible with     Incorrect instruction   Match the precise operand
+the chosen matrix instruction    operands                format and descriptor
 
-Both warpgroups sync on the same         Ping-pong does     Two barrier
-barrier                                  nothing            IDs (§6.2)
+Using one indistinguishable      Missing readiness or    Track direction, stage
+barrier for different lifetimes  reuse dependencies      and phase explicitly
 ```
 
 <!-- practice:start -->
@@ -1870,3 +1869,7 @@ barrier                                  nothing            IDs (§6.2)
 > state breakdown tells you which of the stalls described here is actually
 > costing you cycles, and its memory chart maps directly onto Chapter 1's
 > hierarchy.
+
+## Continue from the design to CUTLASS attention
+
+[Chapter 30](30-cutlass-attention-foundations.md) derives a complete small attention problem from Q/K/V coordinates through online-softmax state. [Chapter 31](31-cutlass-hopper-fmha.md) connects that derivation to the pinned CUTLASS Hopper FMHA implementation, its build and runtime arguments, reference checks and measurement boundaries. A fused-attention implementation is not automatically the FlashAttention-3 paper's exact kernel or performance result.

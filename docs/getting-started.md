@@ -329,6 +329,10 @@ The earlier captured Lambda session installed the image's `nsight-compute` packa
 
 [Chapter 14](14-nsight-systems.md) adds Nsight Systems CLI capture and timeline analysis; record `nsys --version` separately from `ncu --version`. [Chapter 24](24-cutlass-gemm.md) pins CUTLASS v4.3.6 and supplies a separate collector for the new layout, GEMM and overlap exercises. Follow those chapters for their additional setup and current validation scope.
 
+### CUTLASS fused-attention extension
+
+[Chapter 30](30-cutlass-attention-foundations.md) adds a standard-library CPU attention walkthrough. [Chapter 31](31-cutlass-hopper-fmha.md) builds the pinned CUTLASS Hopper FMHA example with CMake and supplies a separate, opt-in evidence collector. Its new GPU results are separate from the existing 27-program and CuTe/CUTLASS workshop records; use the new collector on an active Hopper host before recording them as executed.
+
 ### Optional attention-reference dependency
 
 The 27 named CUDA programs do not require PyTorch. To reproduce the separate Chapter 12 recurrence check from the repository root, use an isolated environment and the recorded CUDA-enabled PyTorch version:

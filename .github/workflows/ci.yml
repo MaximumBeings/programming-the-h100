@@ -60,6 +60,14 @@ jobs:
       - name: Verify introductory stride arithmetic
         run: python3 docs/examples/advanced/stride_walkthrough.py
 
+      - name: Verify attention arithmetic and result classification without a GPU
+        run: |
+          python3 docs/examples/advanced/attention_walkthrough.py
+          python3 tools/verify_attention_walkthrough.py
+          python3 tools/tests/test_cutlass_attention.py
+          python3 -m py_compile tools/run_cutlass_attention.py
+          python3 tools/run_cutlass_attention.py --help
+
       - name: Verify SVG readability
         run: python3 tools/verify_svg_readability.py
 

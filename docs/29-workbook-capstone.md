@@ -228,3 +228,7 @@ A convincing capstone can explain a slowdown. It need not promise a fixed fracti
 
 - A capstone connects exact source and system records to full correctness checks, explicit timing scope and a measured conclusion. Derived exercise answers remain distinct from captured GPU results.
 <!-- companion-summary:end -->
+
+## Continue with an attention capstone
+
+Apply the same mapping, safety, numerics and measurement rubric to [the attention derivation](30-cutlass-attention-foundations.md), then [the pinned Hopper CUTLASS FMHA implementation](31-cutlass-hopper-fmha.md). The two matrix products share an online-softmax dependency that makes attention a useful next step beyond a single GEMM.

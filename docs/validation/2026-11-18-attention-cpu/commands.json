@@ -1,0 +1,30 @@
+[
+  {
+    "kind": "compile",
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "-m",
+      "py_compile",
+      "attention_walkthrough.py"
+    ],
+    "working_directory": "/Users/oluwaseyiawoga/Documents/Resume_2026/programming-the-h100/docs/validation/2026-11-18-attention-cpu",
+    "started_utc": "2026-11-18T21:34:25.714954+00:00",
+    "finished_utc": "2026-11-18T21:34:25.756075+00:00",
+    "exit_code": 0,
+    "log": "compile.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "kind": "run",
+    "command": [
+      "/opt/homebrew/opt/python@3.14/bin/python3.14",
+      "attention_walkthrough.py"
+    ],
+    "working_directory": "/Users/oluwaseyiawoga/Documents/Resume_2026/programming-the-h100/docs/validation/2026-11-18-attention-cpu",
+    "started_utc": "2026-11-18T21:34:25.783435+00:00",
+    "finished_utc": "2026-11-18T21:34:25.804587+00:00",
+    "exit_code": 0,
+    "log": "run.log",
+    "log_sha256": "ba93487954054ddf1c50c89768175540d659c068c5357b4d01116d0a5e7b0ef7"
+  }
+]

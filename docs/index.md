@@ -5,7 +5,7 @@
 
 Understand the machine, prove the mapping, build the kernel, then measure the useful result. This book connects Hopper architecture and PTX to safe asynchronous pipelines, Tensor Core programming, application profiling and a complete CuTe/CUTLASS learning sequence.
 
-The twenty-nine chapters combine explanatory diagrams, worked calculations, downloadable programs and dated execution records. Follow the foundations in order, or choose a focused route below when a particular kernel or application needs attention.
+The thirty-one chapters combine explanatory diagrams, worked calculations, downloadable programs and dated execution records. Follow the foundations in order, or choose a focused route below when a particular kernel or application needs attention.
 
 <div class="grid cards" markdown>
 
@@ -48,9 +48,9 @@ The twenty-nine chapters combine explanatory diagrams, worked calculations, down
 | First successful GPU run | Getting Started → 1 → 2 | A checked result and saved preflight information |
 | Understand Hopper data movement | 2 → 3 → 4 → 5 | Valid descriptors, byte counts and an ownership/completion explanation |
 | Design and diagnose a GEMM | 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 13 | Full-output reference checks and a profile tied to the right bottleneck |
-| Understand fast attention | 3 → 4 → 6 → 7 → 9 → 12 → 13 | A checked recurrence and a clear account of the design's remaining kernel work |
+| Understand fast attention | 3 → 4 → 6 → 7 → 9 → 12 → 30 → 31 → 13 | A checked recurrence and a clear account of the design's remaining kernel work |
 | Find application stalls | 11 → 13 → 14 | A bounded timeline and consistently timed useful-result comparison |
-| Learn CuTe/CUTLASS progressively | 15–19 foundations → 20–24 implementations → 25–29 advanced work | Coordinate proofs, checked kernels and a reproducible capstone |
+| Learn CuTe/CUTLASS progressively | 15–19 foundations → 20–24 implementations → 25–29 advanced work → 30–31 attention | Coordinate proofs, checked kernels and a reproducible capstone |
 | Study distributed GPU work | 1 → 2 → 11 → 13 | A topology record and a result checked on the required participants |
 
 **Read each example in three passes.** Trace where values live and who owns them. Identify what makes them safe to read and safe to overwrite. Predict the reference result, then compare it with the captured output. Tune performance after those agree.
@@ -108,6 +108,8 @@ Each level builds on the previous one. Introductory chapters establish mappings;
 | Advanced | [27. Precision & Block Scaling](27-precision-block-scaling.md) | E2M1, scale axes, packed storage and architecture boundaries |
 | Advanced | [28. Benchmarking & Framework Integration](28-benchmarking-integration.md) | Fair timing, concurrency, current streams and allocation lifetimes |
 | Advanced | [29. Worked Labs & Capstone](29-workbook-capstone.md) | Progressive exercises, worked solutions and an evidence-driven comparison |
+| Attention | [30. Attention from Layouts to Online Softmax](30-cutlass-attention-foundations.md) | Hand-calculated QK scores, masking, online state and output layouts |
+| Attention | [31. Hopper CUTLASS FMHA](31-cutlass-hopper-fmha.md) | Trace and build the pinned fused-attention implementation, then validate and profile |
 
 ## Execution records and tested scope
 
@@ -120,6 +122,8 @@ Each level builds on the previous one. Introductory chapters establish mappings;
 !!! success "Expanded workshop — H100, November 18, 2026"
 
     The [CuTe/CUTLASS workshop record](cutlass-workshop-validation.md) captures **eight CUDA compilations, two Python byte-compilations and eleven passing workload invocations**, plus two real Nsight Systems reports. CPU-only layout, ownership and format checks retain their stated scope. These additions have their own source identities and records; the original suite is preserved.
+
+The attention extension adds a [dated CPU walkthrough](30-cutlass-attention-foundations.md#12-run-the-cpu-oracle-and-read-its-evidence) and a separate [Hopper FMHA collection lab](31-cutlass-hopper-fmha.md). The CPU record checks the equations; the new FMHA build/run commands need their own Hopper capture and do not inherit the earlier workshop's GPU results.
 
 The [original single-GPU manifest](validation/2026-11-17/results.json) remains available as historical evidence. Current chapters link exact tested sources, commands, compile/run timestamps, system information and captured outputs beside the relevant examples. Derived arithmetic, architecture specifications and cited paper benchmarks are identified separately from this book's measured results.
 

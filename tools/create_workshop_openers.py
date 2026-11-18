@@ -21,7 +21,9 @@ SPECS=[
 (26,'Fuse the graph.','Preserve math.','Linear combination · activation · store',['alpha AB + beta C','ReLU','STORE']),
 (27,'Pack fewer bits.','Keep the contract.','E2M1 values · scales · numerical checks',['PACK','SCALE','DECODE']),
 (28,'Measure a scope.','Explain results.','Correctness · timing · profiler evidence',['VERIFY','MEASURE','EXPLAIN']),
-(29,'Prove it.','Then improve it.','References · kernels · reproducible evidence',['REFERENCE','KERNEL','EVIDENCE'])]
+(29,'Prove it.','Then improve it.','References · kernels · reproducible evidence',['REFERENCE','KERNEL','EVIDENCE']),
+(30,'Two GEMMs.','One row state.','Scores · online softmax · weighted values',['Q K^T','SOFTMAX','P V']),
+(31,'Stream tiles.','Retain the proof.','Pinned Hopper FMHA · ownership · checks',['TMA','QK / PV','O + LSE'])]
 
 def art(n,labels):
     d=Drawing()
@@ -65,11 +67,16 @@ def art(n,labels):
     return ''.join(d.parts)
 
 def main():
-    for n,a,b,subtitle,labels in SPECS:
+    import sys
+    selected = {int(value) for value in sys.argv[1:]} if sys.argv[1:] else None
+    specs = [spec for spec in SPECS if selected is None or spec[0] in selected]
+    if selected and selected != {spec[0] for spec in specs}:
+        raise SystemExit('Unknown workshop chapter number')
+    for n,a,b,subtitle,labels in specs:
         svg=f'''<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="520" viewBox="0 0 1440 520" role="img" aria-labelledby="title description"><title id="title">Chapter {n}: {escape(a+' '+b)}</title><desc id="description">{escape(subtitle)}. Conceptual illustration, not a measured trace or hardware diagram.</desc>{LICENSE}<defs>{FONT_STYLE}<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#071a20"/><stop offset="1" stop-color="#0e3033"/></linearGradient><pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#9ccfc0" opacity=".16"/></pattern><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="none" stroke="#2dd4bf" stroke-width="1.5"/></marker></defs><rect width="1440" height="520" rx="20" fill="url(#bg)"/><rect width="1440" height="520" rx="20" fill="url(#dots)"/><g font-family="Inter, Arial, sans-serif"><rect x="55" y="62" width="5" height="315" rx="2" fill="#a3e635"/><text x="83" y="94" font-size="19" letter-spacing="3" fill="#a3e635" font-weight="700">CHAPTER {n:02}</text><text x="83" y="176" font-size="43" fill="#eef9f5" font-weight="700">{escape(a)}</text><text x="83" y="232" font-size="43" fill="#eef9f5" font-weight="700">{escape(b)}</text>'''
         for i,line in enumerate(subtitle.split(' · ')):
             svg+=f'<text x="83" y="{290+i*31}" font-size="21" fill="#a8c6c8">{escape(line)}</text>'
         svg+=f'<text x="83" y="440" font-size="18" fill="#a8c6c8">PROGRAMMING THE H100</text><g transform="translate(555 30)">{art(n,labels)}</g><text x="1390" y="490" text-anchor="end" font-size="15" fill="#89b0b2">CONCEPTUAL ILLUSTRATION</text></g></svg>\n'
         (ROOT/f'docs/images/chapter-openers/{n:02}-workshop.svg').write_text(svg)
-    print(f'Created {len(SPECS)} matching workshop chapter openers.')
+    print(f'Created {len(specs)} matching workshop chapter openers.')
 if __name__=='__main__':main()
