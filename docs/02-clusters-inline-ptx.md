@@ -52,8 +52,7 @@ The `a` suffix enables architecture-specific features; it is not part of the run
 
 ### Cloud GPU Rental — Lambda Labs
 
-The `hello.cu` setup smoke check below is a suggested local check, not one
-of the 27 named programs with dated compile/execution evidence.
+**Optional setup smoke check.** Use `hello.cu` below to confirm local compilation and GPU launch before starting the named examples. The dated execution records cover the 27 named book programs.
 
 Lambda Labs offers H100 instances (the ideal hardware for this guide).
 

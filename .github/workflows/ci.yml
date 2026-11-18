@@ -48,6 +48,9 @@ jobs:
       - name: Build strictly
         run: mkdocs build --strict
 
+      - name: Verify reader comment presentation
+        run: python3 tools/verify_reader_comments.py --site-dir site
+
       - name: Verify built internal links
         run: python3 tools/verify_site_links.py
 
