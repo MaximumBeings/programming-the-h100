@@ -1778,6 +1778,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#compare-all-three-maps-with-the-same-lane-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compare all three maps with the same lane request
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2216,6 +2227,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#compare-all-three-maps-with-the-same-lane-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compare all three maps with the same lane request
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2447,6 +2469,23 @@
 </ol>
 <p><strong>Expected result:</strong> the mapping remains a permutation, yet a fixed-column warp still sends distinct addresses to one bank. <strong>Check:</strong> enumerate all 32 lane addresses for the actual fixed column; uniqueness of addresses and uniqueness of banks are separate tests. <strong>Pitfall:</strong> labeling every XOR composition “bank-conflict free” without examining which bits changed.</p>
 <p>This distinction is a useful review habit: ask <strong>which address bits select the resource you are trying to distribute?</strong> Then enumerate those bits for the actual participating lanes.</p>
+<h3 id="compare-all-three-maps-with-the-same-lane-request">Compare all three maps with the same lane request<a class="headerlink" href="#compare-all-three-maps-with-the-same-lane-request" title="Permanent link">&para;</a></h3>
+<p><a href="../images/worked/kernel-shared-banks.svg?v=57b6e56f778c"><img alt="Scalar fixed-column requests compared across plain, padded and XOR shared layouts" src="../images/worked/kernel-shared-banks.svg?v=57b6e56f778c" /></a></p>
+<p>The scalar model has logical coordinates <code>(i,j)</code> in a 32×32 FP32 tile. Lane t requests <code>(i,j)=(t,0)</code>. Define <strong>word offset</strong> w as a count of aligned four-byte words from the shared allocation origin, and bank as <code>w%32</code>. A different origin shifts bank numbers; the conflict relationship still needs the actual effective word addresses.</p>
+<ol>
+<li><strong>Plain storage:</strong> <code>w=32*i+j</code>. Lane 7 requests <code>32*7=224</code>, byte offset 896, bank zero. Lane 0 requests a different word zero in that same bank.</li>
+<li><strong>Padded storage:</strong> <code>w=33*i+j</code>. Lane 7 requests 231, byte offset 924, bank seven. The thirty-two lanes visit distinct banks for this fixed-column request.</li>
+<li><strong>XOR storage:</strong> <code>w=32*i+(j^i)</code>. With j zero, lane 7 also requests 231 and bank seven. This agreement at column zero does not mean the complete padded and XOR layouts are identical.</li>
+<li><strong>Distinguish them at <code>(3,5)</code>.</strong> Plain gives <code>96+5=101</code> and bank five. Padding gives <code>99+5=104</code> and bank eight. XOR gives <code>96+(5^3)=96+6=102</code> and bank six. One coordinate is enough to reject equality of the three maps.</li>
+<li><strong>Check storage span and producer agreement.</strong> Plain and this XOR permutation use 1024 words. Padded storage's logical view spans 1055 words, or 1056 when reserving complete padded rows. A producer writing plain offsets and a consumer reading XOR offsets disagree even though both stay in bounds.</li>
+</ol>
+<p>The actual CuTe composition shown earlier applies <code>Swizzle&lt;5,0,5&gt;</code> to a linear <strong>word-index</strong> layout. Its input bits 5–9 encode the row for this compact map, and XOR into bits 0–4 changes the stored column. Reusing those parameters on byte offsets mixes different bit positions and defines a different map.</p>
+<p><strong>Expected check:</strong> enumerate all 1024 logical coordinates and require 1024 unique in-range locations for the XOR map, then compare each against <code>32*i+(j^i)</code>. Separately, enumerate one lane request pattern and count distinct banks. Bijective storage is necessary for independent writes but does not itself establish conflict freedom or a supported matrix-instruction operand.</p>
+<details class="question">
+<summary>Exercise: a nonzero fixed column</summary>
+<p>A warp requests <code>(t,5)</code> for t=0 through 31. Which banks does the XOR map visit? Compare lane 3 with padding.</p>
+<p><strong>Answer:</strong> XOR visits banks <code>5^t</code>, a permutation of 0 through 31, so all are distinct in this scalar model. Lane 3 reaches word 102, bank six. Padding reaches word 104, bank eight. Both patterns distribute this request, but use different addresses. This calculation predicts a bank property, not measured latency.</p>
+</details>
 <h2 id="6-use-the-supported-hopper-layout-atoms">6 — Use the supported Hopper layout atoms<a class="headerlink" href="#6-use-the-supported-hopper-layout-atoms" title="Permanent link">&para;</a></h2>
 <p>A production WGMMA operand should begin with the pinned type-aware GMMA layout atoms, rather than an invented XOR formula:</p>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">using</span><span class="w"> </span><span class="n">Element</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cutlass</span><span class="o">::</span><span class="n">half_t</span><span class="p">;</span>

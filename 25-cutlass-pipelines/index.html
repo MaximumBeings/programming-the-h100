@@ -1947,6 +1947,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#turn-the-picture-into-an-explicit-lifetime-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turn the picture into an explicit lifetime model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#locate-the-actual-mechanisms-in-the-source" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1979,6 +1990,17 @@
     <span class="md-ellipsis">
       
         A concrete shared-memory budget
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-a-byte-budget-without-confusing-it-with-stage-validity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check a byte budget without confusing it with stage validity
       
     </span>
   </a>
@@ -2289,6 +2311,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#turn-the-picture-into-an-explicit-lifetime-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turn the picture into an explicit lifetime model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#locate-the-actual-mechanisms-in-the-source" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2321,6 +2354,17 @@
     <span class="md-ellipsis">
       
         A concrete shared-memory budget
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-a-byte-budget-without-confusing-it-with-stage-validity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check a byte budget without confusing it with stage validity
       
     </span>
   </a>
@@ -2651,6 +2695,32 @@
 </span></code></pre></div>
 <p>A full event answers “have this generation's operand bytes arrived?” A safe release answers “may a producer overwrite this storage?” These are distinct dependency edges. <code>consumer_wait</code> cannot prove that asynchronous reads launched afterward have finished. The selected mainloop's WGMMA completion protocol must establish that second fact before release.</p>
 <p>For eight K tiles, tile 7 still uses slot 1 of generation 2; slot 2 has no generation-2 tile. Drain the actual operations instead of waiting on a third transfer that never existed. Locate <code>producer_acquire</code>, TMA issue, <code>consumer_wait</code>, the asynchronous-reader completion and <code>consumer_release</code> in the <strong>selected</strong> pinned mainloop; this panel is a lifetime model, not replacement pipeline code.</p>
+<h3 id="turn-the-picture-into-an-explicit-lifetime-model">Turn the picture into an explicit lifetime model<a class="headerlink" href="#turn-the-picture-into-an-explicit-lifetime-model" title="Permanent link">&para;</a></h3>
+<p><a href="../images/worked/ch25-stage-generations.svg?v=ef8397a5e20b"><img alt="Three shared slots hold tiles 0 through 7 across three generations; slot 2 has no tile 8. Each raw operand tile uses 32768 bytes." src="../images/worked/ch25-stage-generations.svg?v=ef8397a5e20b" /></a></p>
+<p>Name the model's variables before reading it: <code>S=3</code> is the number of allocated slots, <code>T=8</code> is the number of actual K tiles, <code>t</code> is a tile index, <code>s=t%S</code> is a slot index, and <code>g=t//S</code> is its generation. Each slot retains its identity while its contents change. <strong>The following is a sequential ownership model, not compilable CUTLASS code or a simulation of the GPU memory model.</strong> Its descriptive verbs are not additional API names:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>MODEL: each slot begins EMPTY, with next generation 0
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>for each actual tile t from 0 through T-1:
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    s = t modulo S; g = floor(t / S)
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    require slot s is EMPTY and belongs to generation g
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    acquire s; issue the real transfer for tile t
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    wait until this tile's transfer is complete; mark s FULL
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    read s for the matrix operation; mark s READING
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    wait until every asynchronous reader of s is safe
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    release s; mark s EMPTY with next generation g+1
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>finish only after all issued readers and required stores complete
+</span></code></pre></div>
+<ol>
+<li>At <code>t=0</code>, the model selects <code>(s,g)=(0,0)</code>. A ready event authorizes the consumer's reads of tile zero, not the next producer's overwrite.</li>
+<li>After tile zero's readers finish, slot zero can advance to generation one. That permission is necessary even if the consumer has already <em>issued</em> its arithmetic.</li>
+<li>At <code>t=3</code>, the same physical slot zero holds a different tile. Both tile identity and generation matter; retaining only <code>s=0</code> loses the distinction.</li>
+<li>At <code>t=7</code>, slot one reaches generation two. The loop stops because T is eight. There is no transfer for tile eight and no corresponding full event to await.</li>
+</ol>
+<p>The deliberately sequential model makes the proof easy to follow. A real pipeline overlaps producer/consumer progress and uses the selected implementation's barriers, elected issuers, phases and completion operations. Substituting this loop for that protocol would discard concurrency and omit mechanism-specific requirements. Use the actual <code>producer_acquire</code>, <code>consumer_wait</code> and <code>consumer_release</code> contracts located in the selected mainloop; match their state progression to this ownership explanation rather than inventing a universal constructor.</p>
+<details class="question">
+<summary>Exercise: K=129, BK=64 and S=3</summary>
+<p>How many K tiles exist? Which waits disappear compared with the eight-tile model?</p>
+<p><strong>Answer:</strong> <code>ceil(129/64)=3</code>: tiles start at K=0,64,128. The final tile has one valid reduction position and 63 neutral positions under a zero-fill policy. Slots 0,1,2 each have generation-zero contents, and no generation-one transfer exists. Do not wait for tiles 3 through 7 or infer empty-reduction support from this example.</p>
+</details>
 <h3 id="locate-the-actual-mechanisms-in-the-source">Locate the actual mechanisms in the source<a class="headerlink" href="#locate-the-actual-mechanisms-in-the-source" title="Permanent link">&para;</a></h3>
 <p>Starting from the selected mainloop, find its <code>SharedStorage</code>, pipeline type, producer start state, consumer state and transaction-byte calculation. Then locate the TMA copy operation, consumer wait, WGMMA group completion and consumer release. Follow tail/drain calls in the <strong>actual selected specialization</strong>, including any cluster barrier and epilogue store pipeline.</p>
 <p>Write the dependency edges explicitly: generic producer stores require the appropriate proxy publication; TMA arrival establishes the load’s completion; WGMMA’s register fence is not its completion wait; and a completed shared-to-global source read is different from final destination completion. A synchronization primitive is meaningful only with its participant, memory-space, proxy and generation scope.</p>
@@ -2661,6 +2731,14 @@
 <h3 id="a-concrete-shared-memory-budget">A concrete shared-memory budget<a class="headerlink" href="#a-concrete-shared-memory-budget" title="Permanent link">&para;</a></h3>
 <p>For an FP16 operand tile of M=128, N=128, K=64, the raw A tile is <code>128*64*2=16,384</code> bytes and B is another 16,384 bytes. One operand stage is therefore 32,768 bytes before padding or metadata. Three raw stages use 98,304 bytes; six use 196,608 bytes. Neither number includes every barrier, alignment gap or epilogue allocation in a real kernel.</p>
 <p>Against H100’s shared-memory resource limits, an extra stage can remove the possibility of two resident CTAs even before registers or threads become limiting. Conversely, too few stages may expose load latency. Use the actual <code>sizeof(SharedStorage)</code>, configured shared-memory limit and compiler report, then measure. The raw arithmetic is a design estimate, not a launch-validity certificate.</p>
+<h3 id="check-a-byte-budget-without-confusing-it-with-stage-validity">Check a byte budget without confusing it with stage validity<a class="headerlink" href="#check-a-byte-budget-without-confusing-it-with-stage-validity" title="Permanent link">&para;</a></h3>
+<p>Take a <strong>hypothetical</strong> 128-KiB budget for this exercise, rather than treating it as an H100 per-block specification. The budget is <code>128×1024=131072</code> bytes. Reserve 16384 bytes for an epilogue and estimate 32768 raw operand bytes per stage:</p>
+<ol>
+<li>Three raw stages use 98304 bytes. With the epilogue, the subtotal is 114688 bytes, leaving 16384 for other storage.</li>
+<li>Four raw stages alone use the entire 131072-byte budget. Adding the epilogue already exceeds it, even before barriers and alignment.</li>
+<li>The three-stage estimate still does not certify a launch: compare the actual shared-storage type, alignment and selected device limits. Registers, threads and cluster scheduling can impose additional constraints.</li>
+</ol>
+<p><strong>Pitfall:</strong> subtracting useful matrix bytes from a hardware limit and declaring the remainder “free stages” ignores the actual layout and collective's metadata. Arithmetic is an early rejection test; the selected implementation and launch checks complete the contract.</p>
 <h2 id="6-epilogue-fusion-is-a-computation-graph">6 — Epilogue fusion is a computation graph<a class="headerlink" href="#6-epilogue-fusion-is-a-computation-graph" title="Permanent link">&para;</a></h2>
 <p>The Chapter 24 baseline computes <code>alpha * accumulator + beta * C</code>. A fused epilogue might add a bias and apply an activation before the final store. That can avoid a separate launch and an intermediate write/read, but it also changes arithmetic, live values, shared storage and the numerical reference.</p>
 <p>Pinned example 49 demonstrates both a predefined fusion operation and an epilogue visitor tree (EVT). An EVT describes dataflow: accumulator/source fetches, scalar/vector broadcasts, computations and stores. The nesting determines which values feed which operation; it is not merely a list of operations to perform in any order.</p>
@@ -2669,39 +2747,39 @@
 <h2 id="7-use-a-narrow-profiler-build">7 — Use a narrow profiler build<a class="headerlink" href="#7-use-a-narrow-profiler-build" title="Permanent link">&para;</a></h2>
 <p>The CUTLASS profiler is a separate tool from Nsight Systems and Compute. It instantiates many candidate kernels and measures supported operations. Compiling every kernel, precision, architecture and instantiation level is unnecessary for this chapter.</p>
 <p>Start with one actual kernel name from the pinned generator rather than a whole family. Even a single-kernel build compiles common reference-provider support. The recorded configuration uses FP16 A/B, <strong>FP32 C and D</strong>, beta 0.5, and the cooperative no-shared-memory epilogue schedule. It differs from the small correctness harness; it is a separate configuration, not a timing of that harness.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">kernel</span><span class="o">=</span><span class="s2">"cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_nosmem"</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>cmake<span class="w"> </span>-S<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">"</span><span class="w"> </span>-B<span class="w"> </span>build/cutlass-profiler<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>-DCUTLASS_NVCC_ARCHS<span class="o">=</span>90a<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span>-DCUTLASS_ENABLE_LIBRARY<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>-DCUTLASS_ENABLE_PROFILER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>-DCUTLASS_LIBRARY_OPERATIONS<span class="o">=</span>gemm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>-DCUTLASS_LIBRARY_KERNELS<span class="o">=</span><span class="s2">"</span><span class="nv">$kernel</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span>-DCUTLASS_ENABLE_CUBLAS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span>-DCUTLASS_ENABLE_EXAMPLES<span class="o">=</span>OFF<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span>-DCUTLASS_ENABLE_TESTS<span class="o">=</span>OFF
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build/cutlass-profiler<span class="w"> </span>--target<span class="w"> </span>cutlass_profiler<span class="w"> </span>-j<span class="w"> </span><span class="m">2</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span>--help
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">  </span>--mode<span class="o">=</span>enumerate<span class="w"> </span>--operation<span class="o">=</span>Gemm
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">kernel</span><span class="o">=</span><span class="s2">"cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_nosmem"</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>cmake<span class="w"> </span>-S<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">"</span><span class="w"> </span>-B<span class="w"> </span>build/cutlass-profiler<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>-DCUTLASS_NVCC_ARCHS<span class="o">=</span>90a<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>-DCUTLASS_ENABLE_LIBRARY<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>-DCUTLASS_ENABLE_PROFILER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>-DCUTLASS_LIBRARY_OPERATIONS<span class="o">=</span>gemm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>-DCUTLASS_LIBRARY_KERNELS<span class="o">=</span><span class="s2">"</span><span class="nv">$kernel</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>-DCUTLASS_ENABLE_CUBLAS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span>-DCUTLASS_ENABLE_EXAMPLES<span class="o">=</span>OFF<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span>-DCUTLASS_ENABLE_TESTS<span class="o">=</span>OFF
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build/cutlass-profiler<span class="w"> </span>--target<span class="w"> </span>cutlass_profiler<span class="w"> </span>-j<span class="w"> </span><span class="m">2</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span>--help
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">  </span>--mode<span class="o">=</span>enumerate<span class="w"> </span>--operation<span class="o">=</span>Gemm
 </span></code></pre></div>
 <p>Require exactly the intended matching operation before interpreting a benchmark. If none appears, inspect the generator filter, architecture and instantiation policy; a compatible API combination is not necessarily instantiated by the generator. An empty result is not a fast kernel. Avoid <code>all</code> or maximum instantiation as a first response. The captured host used eight build jobs after checking available RAM; two jobs above is a conservative starting point.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>reports
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--operation<span class="o">=</span>Gemm<span class="w"> </span>--kernels<span class="o">=</span><span class="s2">"</span><span class="nv">$kernel</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--m<span class="o">=</span><span class="m">512</span><span class="w"> </span>--n<span class="o">=</span><span class="m">512</span><span class="w"> </span>--k<span class="o">=</span><span class="m">512</span><span class="w"> </span>--alpha<span class="o">=</span><span class="m">1</span><span class="w"> </span>--beta<span class="o">=</span><span class="m">0</span>.5<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--providers<span class="o">=</span>cutlass<span class="w"> </span>--verification-enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>--verification-required<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--verification-providers<span class="o">=</span>reference_device<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>--warmup-iterations<span class="o">=</span><span class="m">5</span><span class="w"> </span>--profiling-iterations<span class="o">=</span><span class="m">20</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>--output<span class="o">=</span>reports/cutlass-hopper
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>reports
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--operation<span class="o">=</span>Gemm<span class="w"> </span>--kernels<span class="o">=</span><span class="s2">"</span><span class="nv">$kernel</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>--m<span class="o">=</span><span class="m">512</span><span class="w"> </span>--n<span class="o">=</span><span class="m">512</span><span class="w"> </span>--k<span class="o">=</span><span class="m">512</span><span class="w"> </span>--alpha<span class="o">=</span><span class="m">1</span><span class="w"> </span>--beta<span class="o">=</span><span class="m">0</span>.5<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span>--providers<span class="o">=</span>cutlass<span class="w"> </span>--verification-enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>--verification-required<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--verification-providers<span class="o">=</span>reference_device<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>--warmup-iterations<span class="o">=</span><span class="m">5</span><span class="w"> </span>--profiling-iterations<span class="o">=</span><span class="m">20</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>--output<span class="o">=</span>reports/cutlass-hopper
 </span></code></pre></div>
 <p>Read the <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/profiler.md">pinned profiler documentation</a> and local help. The tool appends an operation-specific CSV suffix; inspect the file actually produced. The following is an abbreviated transcription of the <strong>18 November 2026, 14:38:47 UTC</strong> run on the H100 PCIe system described in <a href="../cutlass-workshop-validation/">the workshop record</a>:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Verification: reference_device: Passed
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>CSV rows: 1
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>Disposition: passed
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>Status: success
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>m=512, n=512, k=512, alpha=1, beta=0.5
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>Runtime (ms): 0.0566496
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Verification: reference_device: Passed
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>CSV rows: 1
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Disposition: passed
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>Status: success
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>m=512, n=512, k=512, alpha=1, beta=0.5
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>Runtime (ms): 0.0566496
 </span></code></pre></div>
 <p>Download the <a href="../validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/commands.json">exact command and timestamps</a>, <a href="../validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/profiler-run.log">raw console log</a> and <a href="../validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/cutlass-hopper.gemm.csv">one-row CSV</a>. This is a bounded tool check, not a representative benchmark distribution or a claim of tuned performance. The tool's FLOP convention includes additional work; use the declared count when comparing rates.</p>
 <p><strong>Walk through the acceptance decision.</strong> First confirm the kernel name and input types. Next require one actual CSV row, then <code>passed/success</code>, then a provider that explicitly says <code>Passed</code>. Only after these checks should you read the runtime. A zero process exit, a verification flag or a CSV header without a row proves none of those steps by itself.</p>

@@ -2131,6 +2131,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="9 — Advanced lab: precision, metadata and honest timing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exercise-account-for-padding-before-quoting-a-compression-ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise: account for padding before quoting a compression ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2361,6 +2378,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="9 — Advanced lab: precision, metadata and honest timing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exercise-account-for-padding-before-quoting-a-compression-ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise: account for padding before quoting a compression ratio
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2544,6 +2578,7 @@
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>Load contribution:    real real real   0 ...  0
 </span></code></pre></div>
 <p>The final line describes a zero-fill reduction policy: three real contributions and thirteen neutral positions. It is not permission to read invalid global addresses and multiply the returned values by zero afterward. Predicate the load before accessing memory, then supply the neutral register/shared value.</p>
+<p><a href="../images/worked/ch29-boundary-tile.svg?v=388c0b20cf18"><img alt="The 130 by 70 output has nine boundary-aware tiles; the final corner has twelve valid outputs and row-major offsets 9024 through 9029 and 9094 through 9099." src="../images/worked/ch29-boundary-tile.svg?v=388c0b20cf18" /></a></p>
 <h3 id="add-a-batch-without-changing-the-local-tile-coordinates">Add a batch without changing the local tile coordinates<a class="headerlink" href="#add-a-batch-without-changing-the-local-tile-coordinates" title="Permanent link">&para;</a></h3>
 <p>As a separate extension, let L=2 and store independent, compact row-major outputs. Each batch has 9100 FP16 elements, so the output batch stride is 9100 <strong>elements</strong>, or 18,200 bytes:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Physical output element offsets (two packed batches)
@@ -2586,6 +2621,16 @@
 <p><strong>Worked answer.</strong> Each row of A and each mathematical column of B needs three K groups: 390 scales for A and 210 for B. Do not group B along N simply because its physical allocation is row-major. A rowwise A packing uses 18 bytes per row for 35 nibbles, or 2340 bytes. A columnwise B packing similarly uses <code>70×18=1260</code> bytes. Those are illustrative separate-row/column packing contracts, not a native CUTLASS scale-layout prescription. An instruction-specific representation can require padding, a different interleave and a defined scale layout. The complete CPU encoder in Chapter 27 deliberately requires complete blocks; K=35 here is a paper exercise in defining a tail contract, not a supported direct call to that encoder. To implement it, specify padding to complete blocks while retaining the logical reduction length 35, then test that padded elements contribute zero.</p>
 <p>For NVFP4, account for E2M1 elements, E4M3 block scales and global FP32 scaling. Zero blocks, rounding, saturation and the unused nibble need explicit rules. At large aligned sizes, elements plus one byte per 16-value scale cost 0.5625 bytes/value, approximately 7.11× smaller than FP32 before global scales and padding. Hopper dequantization followed by FP16/BF16 GEMM is not native NVFP4 Tensor Core execution; native Blackwell experiments need separate compatibility and execution evidence. See <a href="https://docs.nvidia.com/deeplearning/transformer-engine-releases/release-2.16/user-guide/features/low_precision_training/nvfp4/nvfp4.html">NVIDIA's NVFP4 description</a>.</p>
 <p>For a separate hypothetical benchmark with <strong>FP16 A, B and D</strong>, beta zero, <code>M=N=2048</code> and <code>K=4096</code>, the conventional GEMM count is 34,359,738,368 operations. At a hypothetical 85 microseconds, throughput is approximately <strong>404.23 TFLOPS</strong>, not 203. Reading A and B once and writing D once requires 41,943,040 bytes, excluding C reads, scales and extra passes. At one millisecond that minimum traffic implies 41.94 GB/s. With FP32 D instead, its output store costs twice as many bytes and the corresponding total becomes 50,331,648 bytes; state the output type rather than importing a traffic count from another kernel. These calculations are consistency checks, not measured bandwidth or peak-utilization claims.</p>
+<h3 id="exercise-account-for-padding-before-quoting-a-compression-ratio">Exercise: account for padding before quoting a compression ratio<a class="headerlink" href="#exercise-account-for-padding-before-quoting-a-compression-ratio" title="Permanent link">&para;</a></h3>
+<p>Return to M=130, N=70, K=35. Define a <strong>hypothetical serialized representation</strong> with complete 16-value K blocks: pad each logical K row/column to 48 codes, pack two codes per byte, store one byte per block scale and one four-byte global scale for each complete operand tensor. This is byte accounting for that stated representation, not a claim that the exact-scale Python oracle emits native NVFP4 storage.</p>
+<ol>
+<li>Each padded A row needs <code>48/2=24</code> payload bytes. A's payload is <code>130×24=3120</code> bytes, with <code>130×3=390</code> block-scale bytes.</li>
+<li>Each mathematical B column needs the same 24 payload bytes. B's payload is <code>70×24=1680</code> bytes, with <code>70×3=210</code> block-scale bytes.</li>
+<li>Two four-byte tensor scales add eight bytes. The subtotal is <code>3120+1680+390+210+8=5408</code> bytes before any further alignment or container metadata.</li>
+<li>The original compact FP32 operands use <code>(130×35+35×70)×4=28000</code> bytes. For this small ragged case the ratio is <code>28000/5408≈5.18</code>, not the aligned large-tensor estimate 7.11.</li>
+<li>Padding must retain the logical length 35. Codes added at K=35 through 47 contribute zero under the declared reconstruction policy and must not turn the operation into a different 48-term problem with arbitrary padded values.</li>
+</ol>
+<p><strong>Worked check:</strong> 390+210=600 local-scale groups, but their serialized bytes depend on the scale format. The Python exact-scale model uses Python-float objects and does not establish this one-byte storage cost. <strong>Pitfall:</strong> reporting only the nibble payload ignores scales and padding precisely where small or ragged shapes can make them important.</p>
 <h2 id="10-capstone-deliver-a-reproducible-kernel-comparison">10 — Capstone: deliver a reproducible kernel comparison<a class="headerlink" href="#10-capstone-deliver-a-reproducible-kernel-comparison" title="Permanent link">&para;</a></h2>
 <p>Choose one supported operation and keep its semantics identical across the reference, baseline and tuned implementations. Submit:</p>
 <ul>

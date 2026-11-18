@@ -1711,6 +1711,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#walk-from-the-logical-owner-to-two-different-physical-addresses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk from the logical owner to two different physical addresses
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2227,6 +2238,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#walk-from-the-logical-owner-to-two-different-physical-addresses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk from the logical owner to two different physical addresses
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2469,6 +2491,24 @@
 <p><strong>Read the figure:</strong> first discard invalid global rows, then discard columns at or beyond 70. Finally use <code>tid=32*local_row+local_column</code> to recover the six valid owners. The actual <a href="#construct-the-predicate-and-follow-one-tail-thread"><code>copy_if</code> chain above</a> applies this mask to the operation itself. Even an allocated padding slot outside the logical 37×70 matrix remains an X.</p>
 <p><strong>Expected result:</strong> six valid copied values in this final tile, zero writes to its other 122 logical positions, and no change to destination padding. The lab's ownership counters and complete nonuniform output comparison check this behavior on the actual kernel. <strong>Pitfall:</strong> applying the predicate only to <code>partition_D</code> after an unconditional source read cannot protect an out-of-bounds load.</p>
 <p>For vectorized instructions, the validity and alignment contract applies to the instruction’s whole accessed segment. Per-element predicates do not make an arbitrary partially valid 16-byte access safe. Handle tails with a supported predicated atom, a separate scalar path, or an explicitly padded allocation whose semantics permit the access.</p>
+<h3 id="walk-from-the-logical-owner-to-two-different-physical-addresses">Walk from the logical owner to two different physical addresses<a class="headerlink" href="#walk-from-the-logical-owner-to-two-different-physical-addresses" title="Permanent link">&para;</a></h3>
+<p><a href="../images/worked/kernel-copy-tail.svg?v=2f467e51716c"><img alt="Six valid tail owners mapped to separate padded source and destination offsets" src="../images/worked/kernel-copy-tail.svg?v=2f467e51716c" /></a></p>
+<p>The figure's numbers come from the executed lab's row-pitch and initialization formulas. A <strong>pitch</strong> here counts FP32 elements, while <code>threadIdx.x</code> is an integer thread identifier. Define source pitch <code>ps=N+3=73</code> and destination pitch <code>pd=N+5=75</code>. The base pointers in the tensor views already skip the sixteen-element leading guards.</p>
+<ol>
+<li><strong>Choose an owner.</strong> Thread 5 in tile <code>(9,2)</code> owns <code>(row,column)=(36,69)</code>. The thread/value assignment determines this coordinate before either storage layout is consulted.</li>
+<li><strong>Check the coordinate.</strong> <code>36&lt;37</code> and <code>69&lt;70</code>, so the lazy predicate is true. The same Boolean governs the source load and destination store in <code>copy_if</code>.</li>
+<li><strong>Apply the source map.</strong> Element offset is <code>36*73+69=2697</code>. In the actual source initializer, value is <code>row*N+column+1=36*70+69+1=2590</code>. Notice the initializer uses logical width 70 for the value pattern but physical pitch 73 for its storage address.</li>
+<li><strong>Apply the destination map.</strong> The same coordinate maps to <code>36*75+69=2769</code>. Copy the number 2590 there. Reusing source offset 2697 as the destination offset would place a correct value at the wrong location.</li>
+<li><strong>Update the logical ownership count.</strong> The lab counts writers at compact logical index <code>36*70+69=2589</code>, not at padded destination offset 2769. That counter must become one. Its purpose is to count ownership, not mimic the data allocation's padding.</li>
+<li><strong>Check a false neighbor.</strong> Thread 6 owns column 70. Source offset 2698 and destination offset 2770 happen to be allocated padding, but the logical predicate is false. Neither data operation nor ownership increment should occur.</li>
+</ol>
+<p>The byte offsets for the valid copy are <code>4*2697=10788</code> and <code>4*2769=11076</code>, relative to the guarded tensor origins. Add another <code>16*4=64</code> bytes only when comparing against the raw allocation base. Writing down the origin prevents a guard offset from being counted twice.</p>
+<p><strong>Expected check:</strong> the final tile copies six values and contributes six ownership increments. The whole matrix contributes <code>37*70=2590</code>. The rounded grid has thirty tiles, each with 128 potential owners, so <code>3840-2590=1250</code> positions must not copy. Both the global total and the final-tile local total should agree with the coordinate model.</p>
+<details class="question">
+<summary>Exercise: thread 4, then a different destination pitch</summary>
+<p>Find thread 4's source offset, destination offset and copied value in this tile. If destination pitch becomes 80, does ownership change?</p>
+<p><strong>Answer:</strong> Coordinate <code>(36,68)</code> gives source <code>36*73+68=2696</code>, destination <code>36*75+68=2768</code> and value <code>36*70+68+1=2589</code>. With pitch 80, destination offset becomes 2948; the coordinate, source offset, predicate and logical owner counter remain unchanged. A modified executable still needs its own allocation checks and rerun.</p>
+</details>
 <h2 id="5-prove-both-values-and-ownership">5 — Prove both values and ownership<a class="headerlink" href="#5-prove-both-values-and-ownership" title="Permanent link">&para;</a></h2>
 <p>The executable does more than compare a checksum. It initializes distinct logical values, launches the copy and validates every output. An instrumented owner count records the number of writers for each valid destination; it must be exactly one. Guards and row padding remain unchanged, and the source allocation is checked after the operation.</p>
 <p>Those checks answer different questions:</p>

@@ -2058,6 +2058,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#exercise-batch-throughput-is-not-individual-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise: batch throughput is not individual latency
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2333,6 +2344,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#exercise-batch-throughput-is-not-individual-latency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exercise: batch throughput is not individual latency
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2545,6 +2567,7 @@
 <li>Synchronize <code>stop</code> before reading elapsed time or consuming returned host data. A stop event recorded without the two waits could finish while a worker is still active.</li>
 </ol>
 <p>This is the dependency structure implemented by the complete overlap program, not a separate copyable launch harness. Real execution can leave gaps between markers; the drawing alone predicts neither overlap nor its speedup. The single-stream timing snippet above needs no cross-stream join because all its measured work stays on one ordered stream.</p>
+<p><a href="../images/worked/ch28-event-join-boundaries.svg?v=326d0f9c98d0"><img alt="Both workers wait on start and the timing stream joins their completion events; a separate paper strip accounts for four milliseconds setup and ten serial requests of 0.2 milliseconds." src="../images/worked/ch28-event-join-boundaries.svg?v=326d0f9c98d0" /></a></p>
 <h3 id="work-through-amortization-without-hiding-setup">Work through amortization without hiding setup<a class="headerlink" href="#work-through-amortization-without-hiding-setup" title="Permanent link">&para;</a></h3>
 <p>Suppose, purely as a paper exercise, packing costs 4 ms once and each prepared request costs 0.2 ms. For ten serial requests:</p>
 <ol>
@@ -2565,6 +2588,15 @@
 </span></code></pre></div>
 <p>The widths are schematic, not a plotting scale. The ten requests in this accounting example are serial, so the elapsed intervals add. A timer around just one prepared request answers a different question from the setup-inclusive batch timer. Neither quantity is the 0.085 ms GEMM arithmetic example in the next section; those are separate illustrative workloads.</p>
 <p><strong>Pause and check.</strong> If requests overlap, can you replace makespan with the sum of their individual durations? No: overlapping intervals would be counted twice. Time the actual joined completion boundary instead.</p>
+<h3 id="exercise-batch-throughput-is-not-individual-latency">Exercise: batch throughput is not individual latency<a class="headerlink" href="#exercise-batch-throughput-is-not-individual-latency" title="Permanent link">&para;</a></h3>
+<p>Use two hypothetical requests with measured boundaries A=<code>[0.0,0.2]</code> ms and B=<code>[0.1,0.3]</code> ms. These intervals are a paper model, not captured H100 samples.</p>
+<ol>
+<li>Each request's latency is 0.2 ms: subtract its own start from its own completion.</li>
+<li>The joined batch spans 0.0 through 0.3 ms, so its makespan is 0.3 ms, not the 0.4-ms sum of individual durations.</li>
+<li>Throughput is <code>2 / 0.0003 ≈ 6666.7 requests/s</code>. Dividing batch time by request count gives 0.15 ms/request as an <strong>amortized batch cost</strong>, not either request's latency.</li>
+<li>A serial schedule with the same individual 0.2-ms work would take 0.4 ms for two requests, giving 5000 requests/s under that schedule. Concurrency changed the schedule's throughput; it did not make the individual 0.2-ms intervals become 0.15 ms.</li>
+</ol>
+<p><strong>Check:</strong> state which start/completion events define each request and the whole batch. <strong>Pitfall:</strong> timing only the first completion changes both the numerator and the useful-result boundary; it cannot support a claim that both requests finished.</p>
 <h2 id="6-calculate-throughput-in-consistent-units">6 — Calculate throughput in consistent units<a class="headerlink" href="#6-calculate-throughput-in-consistent-units" title="Permanent link">&para;</a></h2>
 <p>A conventional dense GEMM work count is <code>2*M*N*K</code> floating-point operations. This treats each multiply-add as two operations; epilogue operations usually are not included in that conventional count. State when a result is instead batched, sparse, quantized or counts a different workload.</p>
 <p>For M=N=2048 and K=4096:</p>
