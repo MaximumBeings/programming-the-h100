@@ -1994,11 +1994,12 @@
 </span></code></pre></div>
 <p>The driver supplies GPU access; the toolkit supplies compilation; cuBLAS and NCCL supply libraries. <code>nvidia-smi</code>'s “CUDA Version” is driver compatibility, not the installed <code>nvcc</code> version. A topology listing describes connectivity, not a measured bandwidth or a successful peer-transfer test. Finish with the book's actual compile, launch and numerical checks below.</p>
 <h2 id="4-download-the-source-and-run-preflight">4 — Download the source and run preflight<a class="headerlink" href="#4-download-the-source-and-run-preflight" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/MaximumBeings/programming-the-h100.git
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>git<span class="w"> </span>clone<span class="w"> </span>--branch<span class="w"> </span>main<span class="w"> </span>https://github.com/MaximumBeings/programming-the-h100.git
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nb">cd</span><span class="w"> </span>programming-the-h100
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>python3<span class="w"> </span>tools/h100_preflight.py
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>python3<span class="w"> </span>tools/h100_preflight.py<span class="w"> </span>--json<span class="w"> </span>&gt;<span class="w"> </span>preflight.json
 </span></code></pre></div>
+<p>The clone explicitly selects the source branch. If already cloned, check <code>git branch --show-current</code>: <code>gh-pages</code> contains generated HTML rather than the source/build tools.</p>
 <p>The checker uses the CUDA Driver API to count CUDA-visible devices, including the effect of <code>CUDA_VISIBLE_DEVICES</code>. It checks Hopper capability, the compiler, and the availability of optional inspection tools. It needs Python's standard library, not PyTorch. It <strong>does not</strong> prove that a kernel is correct or that multiple GPUs have a suitable interconnect.</p>
 <p>Selected lines captured on the validation host:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>H100 book preflight: PASS
