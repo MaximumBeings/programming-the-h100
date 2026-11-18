@@ -1,0 +1,6 @@
+$ /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_fragments
+lane=10 value=0 C=(2,4) trait_offset=66
+lane=10 value=1 C=(2,5) trait_offset=82
+lane=10 value=2 C=(10,4) trait_offset=74
+lane=10 value=3 C=(10,5) trait_offset=90
+FRAGMENT PASS: C_pairs=128 A_pairs=128 B_pairs=64 errors=0

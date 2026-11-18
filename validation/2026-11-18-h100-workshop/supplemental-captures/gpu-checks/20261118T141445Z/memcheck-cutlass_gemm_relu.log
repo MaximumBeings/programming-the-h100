@@ -1,0 +1,7 @@
+$ compute-sanitizer --tool memcheck --error-exitcode 1 /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cutlass_gemm_relu
+========= COMPUTE-SANITIZER
+FUSED GEMM CASE PASS M=128 N=128 K=64 L=1 alpha=1.00 beta=0.00 checked=16384 errors=0
+FUSED GEMM CASE PASS M=256 N=128 K=128 L=2 alpha=0.50 beta=0.25 checked=65536 errors=0
+FUSED GEMM CASE PASS M=136 N=264 K=72 L=1 alpha=0.50 beta=0.25 checked=35904 errors=0
+FUSED GEMM PASS: 3 full CPU-reference cases
+========= ERROR SUMMARY: 0 errors

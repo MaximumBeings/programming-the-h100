@@ -1,0 +1,5 @@
+$ ncu --set basic --kernel-name regex:transform --launch-skip 1 --launch-count 1 --export /home/ubuntu/h100-expanded-review-20261118/gpu-checks/20261118T141445Z/ncu-transform /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap serial
+==PROF== Connected to process 7104 (/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap)
+==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM
+OVERLAP PASS: mode=serial slots=1 checked=4194304 errors=0 device_span_ms=52.285
+==PROF== Disconnected from process 7104

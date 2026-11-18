@@ -1,0 +1,6 @@
+$ nsys stats --report cuda_gpu_kern_sum --format csv /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-overlap.nsys-rep
+Generating SQLite file /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-overlap.sqlite from /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-overlap.nsys-rep
+Processing [/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-overlap.sqlite] with [/usr/lib/x86_64-linux-gnu/nsight-systems/target-linux-x64/reports/cuda_gpu_kern_sum.py]... 
+Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Name
+100.0,247520,128,1933.8,1920.0,1888,2016,21.5,"transform(const float *, float *, int)"
+

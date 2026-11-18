@@ -1,0 +1,406 @@
+[
+  {
+    "source": "docs/examples/advanced/cute_layouts.cu",
+    "sha256": "39e99111ba0dd6a48ecb812bd9ce6afe918e557407c8160a6dd8f8b1c530ab3f",
+    "kind": "cute_host_oracle",
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-lineinfo",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/cute_layouts.cu",
+        "-o",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_layouts"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.582401+00:00",
+      "finished_utc": "2026-11-18T14:09:25.346391+00:00",
+      "seconds": 11.764003005999939,
+      "log": "cute_layouts-compile.log",
+      "log_sha256": "4fefa39ac7ff59035255783d7a8a46219f4f613d8faddb309702481b5869adeb"
+    },
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_layouts"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:09:25.346704+00:00",
+        "finished_utc": "2026-11-18T14:09:25.350913+00:00",
+        "seconds": 0.004212275000099908,
+        "log": "cute_layouts-run.log",
+        "log_sha256": "5f6af2015c162a0c364a874d56e803e3b93d6c4d0381433475cc34f843e939fd",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/cute_algebra.cu",
+    "sha256": "057517089668e8cddcb6623e5db38c4b37974dfb6548412b212417c433fab3ec",
+    "kind": "cute_host_oracle",
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-lineinfo",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/cute_algebra.cu",
+        "-o",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_algebra"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:25.352747+00:00",
+      "finished_utc": "2026-11-18T14:09:36.964752+00:00",
+      "seconds": 11.612025786999993,
+      "log": "cute_algebra-compile.log",
+      "log_sha256": "130d0edeb8e31898067b3034092d7276f40755aba8a595ecd32d702d7ccc51c8"
+    },
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_algebra"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:09:36.965003+00:00",
+        "finished_utc": "2026-11-18T14:09:36.973428+00:00",
+        "seconds": 0.008430137999994258,
+        "log": "cute_algebra-run.log",
+        "log_sha256": "dabc32cc65fa5e80876ac64e1215aceb116c8176609ce155340ac69254ef63aa",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/cute_fragments.cu",
+    "sha256": "fae8d94ea8f09f4eaf81c4d72bd231b27a51779d64bec93ece4d57278876ecb0",
+    "kind": "cute_host_oracle",
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-lineinfo",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/cute_fragments.cu",
+        "-o",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_fragments"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:36.975235+00:00",
+      "finished_utc": "2026-11-18T14:09:43.466257+00:00",
+      "seconds": 6.491031371999952,
+      "log": "cute_fragments-compile.log",
+      "log_sha256": "cbadcbab5e46bc294ceb57d59b7a572e6ce51315dbf97736eb17071b6d9d05cc"
+    },
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_fragments"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:09:43.466571+00:00",
+        "finished_utc": "2026-11-18T14:09:43.470809+00:00",
+        "seconds": 0.004240643999992244,
+        "log": "cute_fragments-run.log",
+        "log_sha256": "c03708e3a3989148ec884fe049a1a97dc9b4c173d2ddd102d4f87f79ce93f425",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/cute_copy.cu",
+    "sha256": "80653d5417224c96a362cb0784830d9c5262aaa70c10a4a161465b153b0adf4d",
+    "kind": "cuda_workload",
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-lineinfo",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/cute_copy.cu",
+        "-o",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_copy"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:43.473198+00:00",
+      "finished_utc": "2026-11-18T14:09:59.102022+00:00",
+      "seconds": 15.628842951000024,
+      "log": "cute_copy-compile.log",
+      "log_sha256": "7652da09fffba2bbc84a798bbf0b53b4611eb6ee8016e71a986ad3a407eab657"
+    },
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_copy"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:09:59.102270+00:00",
+        "finished_utc": "2026-11-18T14:09:59.518675+00:00",
+        "seconds": 0.41642796599990106,
+        "log": "cute_copy-run.log",
+        "log_sha256": "320c9016514fa2e1c8ddf2c14fcd4fff822611e73c833cf8cc08d0e428378fdf",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/tiled_gemm.cu",
+    "sha256": "2e538ea2ead02582618632d764eb54d3420d87ebda007616ff54f5b499eb3c61",
+    "kind": "cuda_workload",
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-lineinfo",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/tiled_gemm.cu",
+        "-o",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/tiled_gemm"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:59.520974+00:00",
+      "finished_utc": "2026-11-18T14:10:02.146228+00:00",
+      "seconds": 2.6252672120001534,
+      "log": "tiled_gemm-compile.log",
+      "log_sha256": "6746d425f4e104507baf53d2f10b0d55f052dc00155988c483619c54a98ed87c"
+    },
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/tiled_gemm"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:10:02.146468+00:00",
+        "finished_utc": "2026-11-18T14:10:02.613178+00:00",
+        "seconds": 0.4667349510000349,
+        "log": "tiled_gemm-run.log",
+        "log_sha256": "966ba7ea4ddbbbe93509920886e070695504165aa45f9194a3f51b0845f15e85",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/cutlass_gemm.cu",
+    "sha256": "c906aff6157e1759ebe1b7287bc75b78eeb5b35d4e7ef0751f5001c29d568de3",
+    "kind": "cuda_workload",
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-lineinfo",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/cutlass_gemm.cu",
+        "-o",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cutlass_gemm",
+        "-lcuda"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:10:02.615598+00:00",
+      "finished_utc": "2026-11-18T14:10:34.405725+00:00",
+      "seconds": 31.790142012999922,
+      "log": "cutlass_gemm-compile.log",
+      "log_sha256": "9714238a601946c7f35fb7f7acff017063f83d23ea8db2cf89415edb67460893"
+    },
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cutlass_gemm"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:10:34.405978+00:00",
+        "finished_utc": "2026-11-18T14:10:34.922717+00:00",
+        "seconds": 0.5167629570000827,
+        "log": "cutlass_gemm-run.log",
+        "log_sha256": "a593c7896a1c0096c0d1e57189f2b2efc620018351ef8b7d95114ed934fa594b",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/cutlass_gemm_relu.cu",
+    "sha256": "1c30bab9f526932f2749329a71ad50f9002deeddcba4108113ffa497e0482418",
+    "kind": "cuda_workload",
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-lineinfo",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/cutlass_gemm_relu.cu",
+        "-o",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cutlass_gemm_relu",
+        "-lcuda"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:10:34.925330+00:00",
+      "finished_utc": "2026-11-18T14:11:16.060125+00:00",
+      "seconds": 41.13480814599984,
+      "log": "cutlass_gemm_relu-compile.log",
+      "log_sha256": "f1b720c6876a882ffde8a89a33b40843e2c4035b4a79b8fd9e699f63e2e2e196"
+    },
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cutlass_gemm_relu"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:11:16.060379+00:00",
+        "finished_utc": "2026-11-18T14:11:16.576932+00:00",
+        "seconds": 0.516575105000129,
+        "log": "cutlass_gemm_relu-run.log",
+        "log_sha256": "dc6483f1efd34a6aff3a1b877da5737218c7063e1ba3e25a926eab2e9de19b68",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/nsys_overlap.cu",
+    "sha256": "c47d8ed9b3db321f7caa7b3224bcbf4d64918986414f597462196bae2f6a0a6e",
+    "kind": "cuda_workload",
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-lineinfo",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+        "-I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/nsys_overlap.cu",
+        "-o",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:11:16.579477+00:00",
+      "finished_utc": "2026-11-18T14:11:19.004048+00:00",
+      "seconds": 2.424585965999995,
+      "log": "nsys_overlap-compile.log",
+      "log_sha256": "6c2bfc052558f97a6e9bc5f30f9d040997b5a52183f795b2576ca871a65efdb7"
+    },
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap",
+          "serial"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:11:19.004299+00:00",
+        "finished_utc": "2026-11-18T14:11:19.521167+00:00",
+        "seconds": 0.5168907059999128,
+        "log": "nsys_overlap-serial-run.log",
+        "log_sha256": "2fc2b8fd1f91a0451f25387038a983912c5dd2e2e4a21d383ea6fdd5b6034cc8",
+        "status": "PASS"
+      },
+      {
+        "command": [
+          "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap",
+          "overlap"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:11:19.521997+00:00",
+        "finished_utc": "2026-11-18T14:11:19.938129+00:00",
+        "seconds": 0.4161503550001271,
+        "log": "nsys_overlap-overlap-run.log",
+        "log_sha256": "eb6824b384ce34b9a16c9b47f5ef80607751cbf3c01255c017270c2993a27345",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/indexing_workbook.py",
+    "sha256": "600d93b6e87f75e8758fd1ac62785130d643fce63dc1a054a056b949a216c1f0",
+    "kind": "python_cpu_reference",
+    "compile": {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/indexing_workbook.py"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:11:19.940849+00:00",
+      "finished_utc": "2026-11-18T14:11:20.055875+00:00",
+      "seconds": 0.11503600999981245,
+      "log": "indexing_workbook-compile.log",
+      "log_sha256": "e8955a7d077bbd75266f5e1c13f8fd21e6f9b1dcaa91b4dada8f0af7e4cbfbe8"
+    },
+    "runs": [
+      {
+        "command": [
+          "python3",
+          "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/indexing_workbook.py"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:11:20.056089+00:00",
+        "finished_utc": "2026-11-18T14:11:20.121147+00:00",
+        "seconds": 0.0650751670000318,
+        "log": "indexing_workbook-run.log",
+        "log_sha256": "d48e453d984cffeb6cc457c41f011fe0591c25362e27b54e44be29e8bd0e51f2",
+        "status": "PASS"
+      }
+    ]
+  },
+  {
+    "source": "docs/examples/advanced/fp4_reference.py",
+    "sha256": "ffbaaa8cac5e92f51c4035b7e92ef6fab9a55537bd262c47d2fe9998fc766977",
+    "kind": "python_cpu_reference",
+    "compile": {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/fp4_reference.py"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:11:20.123780+00:00",
+      "finished_utc": "2026-11-18T14:11:20.188320+00:00",
+      "seconds": 0.06454704099996889,
+      "log": "fp4_reference-compile.log",
+      "log_sha256": "c978c9983aef3a08f6a688acae077fc87174649ce334eaab81a610449265ee40"
+    },
+    "runs": [
+      {
+        "command": [
+          "python3",
+          "/home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/fp4_reference.py"
+        ],
+        "exit_code": 0,
+        "started_utc": "2026-11-18T14:11:20.188561+00:00",
+        "finished_utc": "2026-11-18T14:11:20.220922+00:00",
+        "seconds": 0.032365144999857876,
+        "log": "fp4_reference-run.log",
+        "log_sha256": "c490b16f9e7249991c7ad169a0ab9af3dd672899c256b3f2dddf464dbecbd10e",
+        "status": "PASS"
+      }
+    ]
+  }
+]

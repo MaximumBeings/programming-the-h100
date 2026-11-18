@@ -1,0 +1,7 @@
+$ compute-sanitizer --tool racecheck --error-exitcode 1 /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/tiled_gemm
+========= COMPUTE-SANITIZER
+SIMT GEMM M=16 N=16 K=16 batches=1: 256 exact outputs, padding/canaries/inputs checked, errors=0
+SIMT GEMM M=37 N=29 K=41 batches=2: 2146 exact outputs, padding/canaries/inputs checked, errors=0
+SIMT GEMM M=7 N=9 K=0 batches=1: 63 exact outputs, padding/canaries/inputs checked, errors=0
+TILED GEMM PASS: 3 cases, errors=0
+========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)

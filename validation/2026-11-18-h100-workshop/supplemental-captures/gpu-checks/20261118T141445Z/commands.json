@@ -1,0 +1,193 @@
+[
+  {
+    "name": "nsys-version",
+    "kind": "metadata",
+    "command": [
+      "nsys",
+      "--version"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:14:45.576431+00:00",
+    "finished_utc": "2026-11-18T14:14:45.691647+00:00",
+    "seconds": 0.11523521599997366,
+    "log": "nsys-version.log",
+    "log_sha256": "062d4fdbb257ef569008a4b11ed3b95f40afd5cd02c3f2b4f5185c18a9805aa0",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "ncu-version",
+    "kind": "metadata",
+    "command": [
+      "ncu",
+      "--version"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:14:45.692743+00:00",
+    "finished_utc": "2026-11-18T14:14:45.725458+00:00",
+    "seconds": 0.032715228999904866,
+    "log": "ncu-version.log",
+    "log_sha256": "3ed0ee370098eb113e094ce0486a7674a8ae907ad1ceb519bbedcc6140943c27",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "memcheck-cute_copy",
+    "kind": "memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "1",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_copy"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:14:45.726976+00:00",
+    "finished_utc": "2026-11-18T14:14:46.595114+00:00",
+    "seconds": 0.868155244000036,
+    "log": "memcheck-cute_copy.log",
+    "log_sha256": "c7db6e05ba61499af854ed9ab6acc9e98e1ded192a30d2a6d41d01357dcd2160",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+    "source_sha256": "80653d5417224c96a362cb0784830d9c5262aaa70c10a4a161465b153b0adf4d",
+    "zero_error_summary": true
+  },
+  {
+    "name": "memcheck-tiled_gemm",
+    "kind": "memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "1",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/tiled_gemm"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:14:46.596786+00:00",
+    "finished_utc": "2026-11-18T14:14:47.163895+00:00",
+    "seconds": 0.5671248830001332,
+    "log": "memcheck-tiled_gemm.log",
+    "log_sha256": "91aca5647d5c8a4e2632bac84cfc9bd6f1190561720819bb7bb8dab6eace3f52",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+    "source_sha256": "2e538ea2ead02582618632d764eb54d3420d87ebda007616ff54f5b499eb3c61",
+    "zero_error_summary": true
+  },
+  {
+    "name": "memcheck-cutlass_gemm",
+    "kind": "memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "1",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cutlass_gemm"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:14:47.165149+00:00",
+    "finished_utc": "2026-11-18T14:14:47.832356+00:00",
+    "seconds": 0.6672229309999693,
+    "log": "memcheck-cutlass_gemm.log",
+    "log_sha256": "541e6734cff3448f756a97d7bdef9bb31a73645cfdaca32c4a37db77516eb266",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+    "source_sha256": "c906aff6157e1759ebe1b7287bc75b78eeb5b35d4e7ef0751f5001c29d568de3",
+    "zero_error_summary": true
+  },
+  {
+    "name": "memcheck-cutlass_gemm_relu",
+    "kind": "memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "1",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cutlass_gemm_relu"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:14:47.833615+00:00",
+    "finished_utc": "2026-11-18T14:14:48.500953+00:00",
+    "seconds": 0.6673562480000328,
+    "log": "memcheck-cutlass_gemm_relu.log",
+    "log_sha256": "d68a696ea01b8f1256d30b03829ba2be8941129cbb5404cbdae03ce098fe1dfd",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+    "source_sha256": "1c30bab9f526932f2749329a71ad50f9002deeddcba4108113ffa497e0482418",
+    "zero_error_summary": true
+  },
+  {
+    "name": "racecheck-tiled_gemm",
+    "kind": "racecheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "racecheck",
+      "--error-exitcode",
+      "1",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/tiled_gemm"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:14:48.502262+00:00",
+    "finished_utc": "2026-11-18T14:14:49.621403+00:00",
+    "seconds": 1.119155967000097,
+    "log": "racecheck-tiled_gemm.log",
+    "log_sha256": "c31c3cb70c024cda62e5cdb4fd5e5b5fbe5a8584c01132a6a1a34995dc08bc87",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+    "source_sha256": "2e538ea2ead02582618632d764eb54d3420d87ebda007616ff54f5b499eb3c61",
+    "zero_error_summary": true
+  },
+  {
+    "name": "ncu-transform",
+    "kind": "nsight_compute",
+    "command": [
+      "ncu",
+      "--set",
+      "basic",
+      "--kernel-name",
+      "regex:transform",
+      "--launch-skip",
+      "1",
+      "--launch-count",
+      "1",
+      "--export",
+      "/home/ubuntu/h100-expanded-review-20261118/gpu-checks/20261118T141445Z/ncu-transform",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap",
+      "serial"
+    ],
+    "exit_code": 1,
+    "started_utc": "2026-11-18T14:14:49.622771+00:00",
+    "finished_utc": "2026-11-18T14:14:51.443661+00:00",
+    "seconds": 1.8209053890000177,
+    "log": "ncu-transform.log",
+    "log_sha256": "05178c1fb80e05e8febd36763efdf8709daa850a476fb05679ceb54b36f37e26",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+    "source_sha256": "c47d8ed9b3db321f7caa7b3224bcbf4d64918986414f597462196bae2f6a0a6e"
+  },
+  {
+    "name": "ncu-transform-privileged",
+    "kind": "nsight_compute",
+    "command": [
+      "sudo",
+      "-n",
+      "/usr/bin/ncu",
+      "--set",
+      "basic",
+      "--kernel-name",
+      "regex:transform",
+      "--launch-skip",
+      "1",
+      "--launch-count",
+      "1",
+      "--export",
+      "/home/ubuntu/h100-expanded-review-20261118/gpu-checks/20261118T141445Z/ncu-transform-privileged",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap",
+      "serial"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:14:51.445060+00:00",
+    "finished_utc": "2026-11-18T14:14:54.821223+00:00",
+    "seconds": 3.376181165999924,
+    "log": "ncu-transform-privileged.log",
+    "log_sha256": "a3787200be285607b01428602b9d0a1891ab94649271ad0475e56e865a9f21a0",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+    "source_sha256": "c47d8ed9b3db321f7caa7b3224bcbf4d64918986414f597462196bae2f6a0a6e"
+  }
+]

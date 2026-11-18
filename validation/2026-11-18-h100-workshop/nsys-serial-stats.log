@@ -1,0 +1,6 @@
+$ nsys stats --report cuda_gpu_kern_sum --format csv /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial.nsys-rep
+Generating SQLite file /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial.sqlite from /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial.nsys-rep
+Processing [/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial.sqlite] with [/usr/lib/x86_64-linux-gnu/nsight-systems/target-linux-x64/reports/cuda_gpu_kern_sum.py]... 
+Time (%),Total Time (ns),Instances,Avg (ns),Med (ns),Min (ns),Max (ns),StdDev (ns),Name
+100.0,246401,128,1925.0,1920.0,1888,1984,21.4,"transform(const float *, float *, int)"
+

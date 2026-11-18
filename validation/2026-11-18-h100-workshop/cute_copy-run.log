@@ -1,0 +1,5 @@
+$ /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/cute_copy
+copy M=8 N=64: 512 unique values, padding/canaries/source checked, errors=0
+copy M=37 N=70: 2590 unique values, padding/canaries/source checked, errors=0
+copy M=1 N=1: 1 unique values, padding/canaries/source checked, errors=0
+COPY PASS: 3 cases, errors=0

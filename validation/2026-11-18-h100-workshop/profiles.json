@@ -1,0 +1,114 @@
+[
+  {
+    "command": [
+      "nsys",
+      "profile",
+      "--trace=cuda,nvtx,osrt",
+      "--sample=none",
+      "--cpuctxsw=none",
+      "--capture-range=cudaProfilerApi",
+      "--capture-range-end=stop",
+      "--output=/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap",
+      "serial"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:11:20.222789+00:00",
+    "finished_utc": "2026-11-18T14:11:28.366718+00:00",
+    "seconds": 8.143954603000111,
+    "log": "nsys-serial.log",
+    "log_sha256": "245cdad2e8c081a8edac398910c858e7027cbff876f0b21974140e35fa4cd082",
+    "import": {
+      "command": [
+        "/home/ubuntu/.local/bin/QdstrmImporter",
+        "--input-file",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial.qdstrm",
+        "--output-file",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial.nsys-rep"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:11:28.367305+00:00",
+      "finished_utc": "2026-11-18T14:11:28.833844+00:00",
+      "seconds": 0.46655562299997655,
+      "log": "nsys-serial-import.log",
+      "log_sha256": "a4e0823c231bc2df291176d27947eef69abe1114c919e64d55e96b5853678b2e"
+    },
+    "report_exists": true,
+    "workload_pass": true,
+    "captured_kernel": true,
+    "stats": {
+      "command": [
+        "nsys",
+        "stats",
+        "--report",
+        "cuda_gpu_kern_sum",
+        "--format",
+        "csv",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial.nsys-rep"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:11:28.834818+00:00",
+      "finished_utc": "2026-11-18T14:11:29.000080+00:00",
+      "seconds": 0.16527587799987487,
+      "log": "nsys-serial-stats.log",
+      "log_sha256": "e2a6025518bd0b886a57423811197951391d916b70d8837088896dc999f01d9a"
+    },
+    "status": "PASS"
+  },
+  {
+    "command": [
+      "nsys",
+      "profile",
+      "--trace=cuda,nvtx,osrt",
+      "--sample=none",
+      "--cpuctxsw=none",
+      "--capture-range=cudaProfilerApi",
+      "--capture-range-end=stop",
+      "--output=/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-overlap",
+      "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap",
+      "overlap"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:11:29.000569+00:00",
+    "finished_utc": "2026-11-18T14:11:37.149624+00:00",
+    "seconds": 8.149078191000172,
+    "log": "nsys-overlap.log",
+    "log_sha256": "1e2d36a21d9ad7eaff986ea3522dce7b27383f43b9e5d2f0045705559da58bee",
+    "import": {
+      "command": [
+        "/home/ubuntu/.local/bin/QdstrmImporter",
+        "--input-file",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-overlap.qdstrm",
+        "--output-file",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-overlap.nsys-rep"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:11:37.150114+00:00",
+      "finished_utc": "2026-11-18T14:11:37.566274+00:00",
+      "seconds": 0.416180734000136,
+      "log": "nsys-overlap-import.log",
+      "log_sha256": "25a39ef46184624c80a8bb67dd61efa8ce14b090c39e306a3496350d0ea8271b"
+    },
+    "report_exists": true,
+    "workload_pass": true,
+    "captured_kernel": true,
+    "stats": {
+      "command": [
+        "nsys",
+        "stats",
+        "--report",
+        "cuda_gpu_kern_sum",
+        "--format",
+        "csv",
+        "/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-overlap.nsys-rep"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:11:37.567208+00:00",
+      "finished_utc": "2026-11-18T14:11:37.782675+00:00",
+      "seconds": 0.21548648800012415,
+      "log": "nsys-overlap-stats.log",
+      "log_sha256": "3ae529db17f7da0b24cfec606742bd12a35d046037a3660bd1c7a2de945775e2"
+    },
+    "status": "PASS"
+  }
+]
