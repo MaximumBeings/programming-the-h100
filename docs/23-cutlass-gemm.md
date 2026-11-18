@@ -1,12 +1,16 @@
 # 23. CUTLASS — Build a Hopper GEMM You Can Verify
+## Lesson 23 Companion Guide — Assemble a Pinned Hopper Kernel and Its Launch Contract
 
-[![A GEMM adapter assembles a mainloop, epilogue and launch contract.](images/ch23/overview.svg)](images/ch23/overview.svg)
+[![CHAPTER 23: 23. CUTLASS — Build a Hopper GEMM You Can Verify — conceptual chapter illustration](images/chapter-openers/23-workshop.svg)](images/chapter-openers/23-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Construct a reproducible CUTLASS GEMM, explain every operand’s physical layout, and check every output against an independent CPU reference. Read the introductory [CuTe sequence](15-cute-layouts.md), the [tiled GEMM baseline](22-gemm-construction.md), [WGMMA](06-wgmma-part-1.md) and [epilogues](07-wgmma-part-2.md) first.
 
 ## 1 — From a library name to a specific kernel
+
+[![A GEMM adapter assembles a mainloop, epilogue and launch contract.](images/ch23/overview.svg)](images/ch23/overview.svg)
 
 CUTLASS is a collection of building blocks, kernels, utilities and examples; it is not a single GEMM algorithm. A device adapter accepts arguments and workspace, a kernel schedules tiles, a collective mainloop coordinates copies and MMA, and an epilogue transforms accumulators into output. CuTe supplies much of the layout and instruction-partition vocabulary underneath those layers.
 
@@ -117,6 +121,18 @@ auto stride_B = cutlass::make_cute_packed_stride(
 In this harness the independent CPU reference reads row-major B with `B[(l * K + k) * N + n]`. That is deliberate: the oracle follows the mathematical matrix and its physical row-major storage instead of duplicating the library’s CuTe indexing code. A reference that repeats the same wrong layout transform can agree with the kernel while both compute the wrong problem.
 
 Similarly, use `StrideA` with `(M,K,L)` and output strides with `(M,N,L)`. Check leading dimensions and batch offsets in **elements** before converting any quantity to bytes.
+
+### Substitute a rectangular batch into the runtime contract
+
+Use the illustrative aligned problem `M=128,N=256,K=64,L=2`, with packed row-major arrays. Here `M,N,K,L` count matrix rows, columns, reduction positions and independent batches; they are not the CTA tile or cluster shape.
+
+1. **Write the physical offsets first.** `A(l,m,k)=l*8192+m*64+k`, `B(l,k,n)=l*16384+k*256+n`, and `C/D(l,m,n)=l*32768+m*256+n`. These formulas are in elements; multiply by two for A/B bytes and by four for C/D bytes.
+2. **Translate to CuTe's operand modes.** A has logical shape `(M,K,L)` and stride `(64,1,8192)`. B has logical shape `(N,K,L)` and stride `(1,256,16384)`. C/D have shape `(M,N,L)` and stride `(256,1,32768)`. B's reordered *logical modes* do not transpose the allocated mathematical matrix.
+3. **Check one coordinate independently.** Mathematical `B(l=1,k=7,n=11)` is offset `16384+7*256+11=18187`. Its CuTe coordinate `(n,k,l)=(11,7,1)` gives `11*1+7*256+1*16384=18187`, the same half element and byte offset `36374`.
+4. **Construct, then validate.** The complete source obtains these strides with `make_cute_packed_stride`, places them beside their pointers in `Gemm::Arguments`, and sets `args.epilogue.thread.alpha` and `.beta`. `can_implement(args)` checks the library contract before workspace initialization and launch; pointer alignment alone cannot replace it.
+5. **Check the result, not the launch alone.** If one independently calculated dot product is `acc=-1` and the corresponding C value is `2`, alpha `0.5` and beta `0.25` require output zero. This scalar example checks the epilogue expression; the executable's nonuniform reference checks every output of its actual cases.
+
+**Pitfall:** constructing B with a packed `(K,N,L)` shape while retaining `Kernel::StrideB` mixes two coordinate conventions. The dimensions can look plausible in a square example. A rectangular example and the explicit offset equality above expose the mistake before performance tuning.
 
 ## 6 — The host-side launch lifecycle
 
@@ -320,3 +336,13 @@ GEMM PASS: 3 full CPU-reference cases
 ## Additional memory-safety record
 
 The exact tested revision also passed [Compute Sanitizer memcheck](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/memcheck-cutlass_gemm.log) with zero errors and its numerical checks intact. [The dated supplemental manifest](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/commands.json) retains commands, source hashes and actual UTC stage times. This does not prove every untested schedule.
+
+<!-- companion-summary:start -->
+## Summary
+
+- The collective builder assembles a specific mainloop, epilogue, kernel and adapter from explicit types, layouts, alignments and compatible schedules.
+
+- Construct logical B strides deliberately, reserve epilogue storage when choosing stages, and preserve every adapter status and asynchronous completion check.
+
+- Only full-output independent reference checks establish the tested numerical result. Follow the selected kernel into [its pipeline and scheduling protocol](24-cutlass-pipelines.md).
+<!-- companion-summary:end -->

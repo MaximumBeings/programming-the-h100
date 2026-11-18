@@ -1,0 +1,8 @@
+$ /home/ubuntu/h100-expanded-review-20261118/complement-probeout/probe
+coalesced=(_12,_2):(_1,_40)
+product=(_4,_3):(_1,_4)
+compact_rest=_6:_4
+0 4 8 12 16 20
+even_rest=(_2,_2):(_1,_8)
+0 1 8 9
+COMPLEMENT PASS: 16 unique offsets from strided tile plus complement

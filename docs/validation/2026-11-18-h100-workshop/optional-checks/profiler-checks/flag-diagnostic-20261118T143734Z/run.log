@@ -1,0 +1,29 @@
+
+
+
+=============================
+  Problem ID: 1
+
+        Provider: [1;37mCUTLASS[0m
+   OperationKind: [1;37mgemm[0m
+       Operation: cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_nosmem
+
+          Status: [1;37mError: not supported[0m
+    Verification: [1;37mON[0m
+     Disposition: [0mNot verified[0m
+
+          cuBLAS: Not run
+
+       Arguments: --gemm_kind=universal --m=512 --n=512 --k=512 --A=f16:column --B=f16:column --C=f32:column --D=f32:column  \
+                  --alpha=1 --beta=0.5 --split_k_mode=serial --split_k_slices=1 --batch_count=1 --raster_order=heuristic  \
+                  --runtime_input_datatype_a=invalid --runtime_input_datatype_b=invalid --use_pdl=false --enable_sm90_mixed_dtype_shuffle_test=false  \
+                  --swizzle_size=1 --op_class=tensorop --accum=f32 --cta_m=256 --cta_n=128 --cta_k=64 --cluster_m=1 --cluster_n=2  \
+                  --cluster_k=1 --cluster_m_fallback=1 --cluster_n_fallback=1 --cluster_k_fallback=1 --stages=4 --warps_m=4  \
+                  --warps_n=2 --warps_k=1 --inst_m=64 --inst_n=128 --inst_k=16 --min_cc=90 --max_cc=90
+
+           Bytes: 3145728  bytes
+           FLOPs: 268959744  flops
+           FLOPs/Byte: 85
+
+
+Wrote results to '/home/ubuntu/h100-expanded-review-20261118/profiler-checks/flag-diagnostic-20261118T143734Z/result.gemm.csv'

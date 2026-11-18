@@ -1,12 +1,21 @@
 # 27. Benchmarking and Framework Integration Without Changing the Question
+## Lesson 27 Companion Guide — Measure the Useful Operation and Preserve Framework Semantics
 
-[![Fair benchmarking and integration: contracts, streams and measurement scope](images/ch27/overview.svg)](images/ch27/overview.svg)
+[![CHAPTER 27: 27. Benchmarking and Framework Integration Without Changing the Question — conceptual chapter illustration](images/chapter-openers/27-workshop.svg)](images/chapter-openers/27-workshop.svg)
+
+
+
+!!! tip "Your goal in this chapter"
+
+    Define a fair correctness and timing contract, distinguish serial latency from concurrent throughput, and preserve device, stream and lifetime rules in integration. Read [pipeline costs](24-cutlass-pipelines.md), [fusion](25-epilogue-fusion.md) and [precision](26-precision-block-scaling.md) first.
 
 A kernel benchmark answers a narrow question about a particular operation on a particular system. A framework integration must additionally preserve layouts, numerical behavior, stream ordering and object lifetimes. Combining these tasks without an explicit contract can produce an impressive number for an operation the application never requested.
 
 This chapter turns a verified Hopper GEMM into an experiment someone else can interpret. Its timing examples are arithmetic illustrations, not new measurements. The book's captured execution records remain the source of actual dates, systems, commands and outputs.
 
 ## 1 — Identify the implementation before comparing it
+
+[![Fair benchmarking and integration: contracts, streams and measurement scope](images/ch27/overview.svg)](images/ch27/overview.svg)
 
 CUTLASS C++ is a collection of CUDA C++ templates and components. CuTe C++ supplies tensor and layout abstractions used within that ecosystem. CuTe DSL is a separate Python kernel-authoring interface in the CUTLASS Python stack; it generates device code while retaining explicit layout, copy, MMA and pipeline concepts.
 
@@ -52,6 +61,40 @@ For several streams, establish a start dependency in each participating stream a
 
 A host wall-clock timer can measure application latency if it waits for the required completion. It will include host dispatch and other requested work, so label it accordingly. CUDA event timing and host wall-clock timing can both be correct while answering different questions. Avoid comparing one method's event interval with another method's end-to-end wall time.
 
+### A timing interval, one API call at a time
+
+The following is an excerpt pattern, not a standalone program. Assume `stream`, `start` and `stop` have been created, inputs are prepared, and `launch_checked_gemm(stream)` submits the already-validated operation while checking its CUTLASS status. Here `check` checks a CUDA return value, as in the complete overlap example from Chapter 14.
+
+```cpp
+check(cudaEventRecord(start, stream));       // Mark the beginning on this stream.
+launch_checked_gemm(stream);                // Enqueue the operation on that SAME stream.
+check(cudaGetLastError());                  // Check the CUDA launch boundary too.
+check(cudaEventRecord(stop, stream));        // This marker follows the operation.
+check(cudaEventSynchronize(stop));           // Wait until the finish marker is reached.
+float elapsed_ms = 0.0f;
+check(cudaEventElapsedTime(&elapsed_ms, start, stop));
+```
+
+1. **Put the start in the queue.** Recording an event submits a marker; it does not mean all queued work finished before the CPU returned.
+2. **Submit the actual operation.** The device stream orders the GEMM after `start`. A helper that launches on another stream would break this simple proof.
+3. **Put the stop after the work.** The same stream cannot reach `stop` until its earlier GEMM finishes.
+4. **Wait for the result.** Synchronizing `stop` makes the elapsed interval available and provides a boundary at which asynchronous errors can surface.
+5. **Read the units.** `cudaEventElapsedTime` returns milliseconds. An illustrative `elapsed_ms=0.085` means 85 microseconds, not 85 milliseconds.
+
+For two worker streams, the complete Chapter 14 program adds `cudaStreamWaitEvent` at the beginning and joins two completion events at the end. Trace those arrows before reusing the pattern; placing `stop` on an unrelated stream without the join measures a different interval.
+
+### Work through amortization without hiding setup
+
+Suppose, purely as a paper exercise, packing costs 4 ms once and each prepared request costs 0.2 ms. For ten serial requests:
+
+1. Recurring work is `10×0.2=2 ms`.
+2. Total including setup is `4+2=6 ms`.
+3. Average request cost including setup is `6/10=0.6 ms`.
+4. The prepared request cost is still 0.2 ms. Report both quantities with their boundaries.
+5. At 100 requests the amortized cost becomes `(4+100×0.2)/100=0.24 ms`. Reuse changed the accounting, not the speed of the prepared kernel.
+
+**Pause and check.** If requests overlap, can you replace makespan with the sum of their individual durations? No: overlapping intervals would be counted twice. Time the actual joined completion boundary instead.
+
 ## 6 — Calculate throughput in consistent units
 
 A conventional dense GEMM work count is `2*M*N*K` floating-point operations. This treats each multiply-add as two operations; epilogue operations usually are not included in that conventional count. State when a result is instead batched, sparse, quantized or counts a different workload.
@@ -93,3 +136,13 @@ Graph capture introduces additional requirements: avoid unexpected allocation or
 Publish what changed, the matching correctness evidence, the measured scope and the observed tradeoff. An efficient specialized kernel may win for repeated fixed shapes while losing when packing or compilation cannot be amortized. A library fallback may serve the remaining cases best.
 
 The final deliverable is a validated dispatch decision with readable records, not a universal ranking of PyTorch, Triton, CuTe DSL and C++. Each can express different levels of control, and each can generate fast or slow implementations. The next workbook asks you to change one design choice at a time, predict its effect, verify correctness and explain the measurements that actually occur.
+
+<!-- companion-summary:start -->
+## Summary
+
+- Freeze the operation, layout, precision and required preparation before comparing implementations; correctness is a prerequisite for timing.
+
+- Name timing boundaries, join actual dependencies, report variation and match throughput to the executed arithmetic. Concurrent request intervals do not add into a batch makespan.
+
+- Integration must preserve device selection, current-stream ordering, allocation lifetime and supported-input behavior. Turn these contracts into the [workbook capstone](28-workbook-capstone.md).
+<!-- companion-summary:end -->

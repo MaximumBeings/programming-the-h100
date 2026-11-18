@@ -1,12 +1,21 @@
 # 28. CuTe and CUTLASS Workbook — From Coordinates to Evidence
+## Lesson 28 Companion Guide — Progress from Coordinate Proofs to a Reproducible Capstone
 
-[![A progression from coordinate proofs through GPU kernels to a reproducible capstone report.](images/ch28/overview.svg)](images/ch28/overview.svg)
+[![CHAPTER 28: 28. CuTe and CUTLASS Workbook — From Coordinates to Evidence — conceptual chapter illustration](images/chapter-openers/28-workshop.svg)](images/chapter-openers/28-workshop.svg)
+
+
+
+!!! tip "Your goal in this chapter"
+
+    Solve the beginner, intermediate and advanced labs, explain each worked answer, and submit a kernel comparison with reproducible correctness and measurement evidence. Use [Chapters 15–18](15-cute-layouts.md) for foundations and [Chapters 19–27](19-tiled-copy.md) for implementation and measurement.
 
 This workbook turns the preceding chapters into problems you can solve, explain and extend. Start with a pencil and a small coordinate enumerator, then move to the GPU. The worked numbers below are **derived exercise answers**, not captured hardware measurements. For actual compilation dates, system information and program outputs, follow the book's execution records. A correct paper exercise does not establish that a new kernel compiled or ran.
 
 Use the same pinned CUTLASS/CUDA environment as the preceding chapters. Preserve an unmodified working version before each experiment. Change one ownership rule, layout or schedule at a time; validate before timing. The beginner labs require arithmetic and small host-side checks. Intermediate labs require CUDA instruction and synchronization knowledge. Advanced labs combine the builder, precision and measurement chapters.
 
 ## 1 — Beginner lab: distinguish a view from storage
+
+[![A progression from coordinate proofs through GPU kernels to a reproducible capstone report.](images/ch28/overview.svg)](images/ch28/overview.svg)
 
 **Problem.** A two-dimensional tensor has shape `(3,4)` and element strides `(8,1)`. List its offsets, logical size, storage span and FP16 byte offset for coordinate `(2,3)`. Does creating a compact view remove the padding from an existing allocation?
 
@@ -15,6 +24,26 @@ Use the same pinned CUTLASS/CUDA environment as the preceding chapters. Preserve
 Constructing another layout changes the address interpretation. It does not copy the original rows into compact storage. A compact view over the same pointer would read different elements in rows one and two. To remove padding, perform a correctly indexed copy into a separate compact destination. Check both layouts against an array containing distinct coordinate-derived values; zeros cannot reveal this error.
 
 **Extension.** Set the first stride to zero. Several rows now alias. Such a broadcast view can describe repeated reads, but independent parallel stores to those logical coordinates need an explicit ownership or reduction policy.
+
+### Solve the first lab without skipping an address
+
+If the answer above felt too quick, put the pieces on paper. A stride is measured in **elements**, not bytes:
+
+1. **Read the domain.** Shape `(3,4)` permits row `i=0,1,2` and column `j=0,1,2,3`.
+2. **Write the rule.** Strides `(8,1)` mean `offset(i,j)=8i+j`. Advancing one row skips eight elements; advancing one column skips one.
+3. **Expand the first row.** With `i=0`, substitute `j=0,1,2,3` to obtain offsets `0,1,2,3`.
+4. **Advance one row.** With `i=1`, the row begins at `8×1=8`, so its offsets are `8,9,10,11`. Offsets `4..7` are not in this logical view.
+5. **Finish the table.** With `i=2`, the offsets are `16,17,18,19`. Three rows times four columns give 12 logical coordinates; the span through offset 19 requires 20 element positions.
+6. **Convert the selected address.** At `(2,3)`, `8×2+3=19` elements. FP16 occupies two bytes, so the address is `base+38` bytes. Do not multiply only one term by two.
+7. **Test the tempting shortcut.** A compact row-major view would use `4i+j`. Its `(1,0)` reads offset 4, while the padded source's `(1,0)` reads offset 8. A new view did not move any values.
+
+```text
+logical row 0 →  0  1  2  3    gap:  4  5  6  7
+logical row 1 →  8  9 10 11    gap: 12 13 14 15
+logical row 2 → 16 17 18 19
+```
+
+**Check yourself.** At `(1,2)`, the element offset is `8+2=10`, and the FP16 byte offset is 20. If you obtained 6, you silently replaced the padded stride with a compact one. Return to the stride definition before continuing.
 
 ## 2 — Beginner lab: rectangular CTA origins and boundaries
 
@@ -104,3 +133,13 @@ Choose one supported operation and keep its semantics identical across the refer
 - A conclusion tied to measurements: what changed, why the evidence supports it, and which configurations remain outside the test.
 
 A convincing capstone can explain a slowdown. It need not promise a fixed fraction of peak. If a layout change reduces conflicts but increases register pressure or conversion cost, record that tradeoff. The final skill is connecting coordinates, numerical semantics and synchronization to evidence another reader can reproduce.
+
+<!-- companion-summary:start -->
+## Summary
+
+- Trace coordinates through storage, thread/value ownership and instruction fragments before reasoning about bank conflicts or asynchronous stage reuse.
+
+- Preserve the mathematical epilogue and quantization contract, and check operation counts, metadata and timing units independently.
+
+- A capstone connects exact source and system records to full correctness checks, explicit timing scope and a measured conclusion. Derived exercise answers remain distinct from captured GPU results.
+<!-- companion-summary:end -->

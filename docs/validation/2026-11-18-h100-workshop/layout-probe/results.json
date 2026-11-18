@@ -1,0 +1,33 @@
+{
+  "scope": "CPU-only CuTe layout probe; no CUDA API or GPU kernel executed",
+  "source_sha256": "36240dc9a0b48e98a6f3b5583ddcf08dc677b6f937579f9017c7a7a541e4c163",
+  "utc": "2026-11-18T14:35:12.382753+00:00",
+  "system": "Linux-6.8.0-1064-nvidia-x86_64-with-glibc2.39",
+  "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "--expt-relaxed-constexpr",
+      "-I",
+      "/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+      "/home/ubuntu/h100-expanded-review-20261118/complement-probeout/probe.cu",
+      "-o",
+      "/home/ubuntu/h100-expanded-review-20261118/complement-probeout/probe"
+    ],
+    "started_utc": "2026-11-18T14:35:12.389472+00:00",
+    "finished_utc": "2026-11-18T14:35:21.656389+00:00",
+    "exit_code": 0,
+    "log_sha256": "4c9f766c965bea6c24c8d4fc8c24587b799ef9eed8dea6a2647b793b60b50a71"
+  },
+  "run": {
+    "command": [
+      "/home/ubuntu/h100-expanded-review-20261118/complement-probeout/probe"
+    ],
+    "started_utc": "2026-11-18T14:35:21.656468+00:00",
+    "finished_utc": "2026-11-18T14:35:21.660866+00:00",
+    "exit_code": 0,
+    "log_sha256": "b4d93ed2153a2a0817629d3b83bb954c47806d7b7e8a5d4e1fa532244a4626a6"
+  }
+}

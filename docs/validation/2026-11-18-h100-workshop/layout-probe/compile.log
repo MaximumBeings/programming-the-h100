@@ -1,0 +1,2 @@
+$ nvcc -std=c++17 -O2 --expt-relaxed-constexpr -I /home/ubuntu/h100-expanded-review-20261118/cutlass/include /home/ubuntu/h100-expanded-review-20261118/complement-probeout/probe.cu -o /home/ubuntu/h100-expanded-review-20261118/complement-probeout/probe
+nvcc warning : Support for offline compilation for architectures prior to '<compute/sm/lto>_75' will be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).

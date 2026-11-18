@@ -1,12 +1,21 @@
 # 16. CuTe Layout Algebra — Hierarchy, Composition and Tiling
+## Lesson 16 Companion Guide — Derive Hierarchical Layouts Before Composing Them
 
-[![Hierarchical coordinates pass through a layout function into storage offsets.](images/ch16/overview.svg)](images/ch16/overview.svg)
+[![CHAPTER 16: 16. CuTe Layout Algebra — Hierarchy, Composition and Tiling — conceptual chapter illustration](images/chapter-openers/16-workshop.svg)](images/chapter-openers/16-workshop.svg)
+
+
+
+!!! tip "Your goal in this chapter"
+
+    Enumerate nested and scalar coordinates, distinguish useful size from storage span, and predict composition and tiling on small domains. Complete [CuTe foundations](15-cute-layouts.md) first.
 
 [Chapter 15](15-cute-layouts.md) introduced layouts as address functions. This chapter develops the algebra behind those functions. The goal is not to memorize template spellings: it is to predict a small layout's offsets, explain which structure an operation preserves and catch a mapping error before it reaches a GPU instruction.
 
 The APIs here are **CuTe C++ from CUTLASS v4.3.6**, not CuTe Python DSL or Triton. The authoritative references are the pinned [layout](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/01_layout.md) and [layout-algebra](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/02_layout_algebra.md) tutorials. Code fragments assume `#include <cute/tensor.hpp>` and `using namespace cute;`. They explain mappings; the complete oracle linked below collects the checks into a program.
 
 ## 1 — Coordinates and physical offsets are different integers
+
+[![Hierarchical coordinates pass through a layout function into storage offsets.](images/ch16/overview.svg)](images/ch16/overview.svg)
 
 Consider shape `(3,4)` with strides `(4,1)`. Logical coordinate `(m,n)` maps to physical element offset `4m+n`. CuTe also accepts a scalar logical coordinate: its coordinate decomposition is first-mode-fastest. Thus scalar `i` decomposes as `m=i%3`, `n=i/3` over the 12-element domain.
 
@@ -57,6 +66,28 @@ Do not allocate only 24 elements and assume that a 24-coordinate view must fit. 
 
 `coalesce` combines compatible factors and removes static size-one factors while preserving the represented scalar-index-to-offset function. In the nested example, the contiguous factors `(3,4):(1,3)` can combine into `12:1`; the gap before the second region prevents combining everything into a single compact contiguous mode.
 
+### Work through the actual coalesce call
+
+Use the `nested` object from §2, rather than replacing its structure with an assumed compact array:
+
+```cpp
+auto simplified = cute::coalesce(nested);
+cute::print(simplified);
+```
+
+1. Its inner coordinates `(a,b)` map to `a+3b`. Because `a` has size three and stride one, the next factor's stride three continues exactly after it.
+2. Combine those two factors into a size-12 mode of stride one. This mode still enumerates offsets 0 through 11.
+3. The outer size-two mode has stride 40, not 12, so the 28-element gap remains.
+4. The resulting layout is `(12,2):(1,40)`. At scalar logical index 14, first-mode-fast decomposition gives `(2,1)`, hence offset `2+40=42`.
+
+The pinned CuTe CPU probe printed:
+
+```text
+coalesced=(_12,_2):(_1,_40)
+```
+
+Underscores identify static values in this diagnostic representation. The probe compared all 24 scalar offsets before and after coalescing, not just this printed type. **Check:** `nested(14)` and `simplified(14)` must both be 42. **Pitfall:** interpreting the result as compact `24:1` would change index 14 to offset 14, thereby selecting a different location.
+
 The word *coalesce* here is an algebra operation. It is not a global-memory transaction, a copy or a promise of faster access. A row-major `(3,4):(4,1)` layout also does not become “physical offset equals scalar i” just because `coalesce(row)` is called.
 
 When verifying a coalesced result, enumerate the original scalar logical indices and compare offsets. Do not compare `coalesced(4m+n)` with `row(m,n)` unless that is genuinely the intended coordinate conversion. For this row example, the matching scalar logical index is `m+3n`.
@@ -79,11 +110,65 @@ Composition is not arbitrary pointer arithmetic disguised as a template. Check t
 
 ## 5 — Complement describes the missing repetition pattern
 
-For a compact `4:1` tile, complementing toward a 24-element target yields a six-position repetition layout `6:4`. A coordinate pair `(within,tile)` then addresses `within+4tile`. The original tile and its complement account for the complete contiguous target together.
+Complement supplies offsets that fill the repetition pattern missing from a layout. Treat its target as a codomain bound for the supported layout, not a request to allocate memory. We will construct two real complements, enumerate their offsets and check the combined coverage.
 
-For a strided `4:2` pattern, holes must be filled as well as the pattern repeated. The complement is not simply “total size divided by tile size with a larger stride.” This distinction matters when constructing thread/value maps from a noncompact atom.
+The CPU-only probe was compiled and executed on **18 November 2026 (UTC)** against the pinned CUTLASS revision. Download its [complete source](validation/2026-11-18-h100-workshop/layout-probe/probe.cu), [commands and timestamps](validation/2026-11-18-h100-workshop/layout-probe/results.json), and [captured output](validation/2026-11-18-h100-workshop/layout-probe/run.log). This checks layout algebra; it launches no GPU kernel.
 
-CuTe exposes `complement(layout,cotarget)`; use a small supported layout, enumerate both components and prove uniqueness before applying the result to writable storage. A broadcast or overlapping mapping does not acquire a bijective inverse merely because its logical size matches another layout. Inversion, where supported, must be interpreted against the mapping's image and the exact inverse contract; it is not a general recovery operation for arbitrary aliasing.
+### Compact tile: supply six repetitions
+
+```cpp
+auto compact = cute::make_layout(cute::Int<4>{}, cute::Int<1>{});
+auto compact_rest = cute::complement(compact, cute::Int<24>{});
+cute::print(compact_rest);
+```
+
+1. `compact(i)` addresses `0,1,2,3` for `i=0..3`.
+2. A new nonoverlapping copy can start at offset four; subsequent copies start four elements apart.
+3. Covering offsets `0..23` requires six such starts: `0,4,8,12,16,20`.
+4. Therefore `compact_rest` is `6:4`, and a pair `(i,r)` addresses `compact(i)+compact_rest(r)=i+4r`.
+
+For example, `(i,r)=(2,4)` selects `2+16=18`. The full last tile is `20,21,22,23`. The pinned CPU probe printed the actual layout and its scalar-index enumeration:
+
+```text
+compact_rest=_6:_4
+0 4 8 12 16 20
+```
+
+**Check:** four tile positions times six repetitions gives 24 unique covered offsets. **Pitfall:** adding the complement's logical index r directly instead of its mapped offset `4r` would overlap neighboring tiles.
+
+### Strided tile: fill holes before repeating
+
+Now the tile is `4:2`, selecting four even offsets:
+
+```cpp
+auto even = cute::make_layout(cute::Int<4>{}, cute::Int<2>{});
+auto even_rest = cute::complement(even, cute::Int<16>{});
+cute::print(even_rest);
+```
+
+1. `even(i)` selects `0,2,4,6`, leaving odd offsets inside the first eight-element region.
+2. A complement component with offsets `0,1` fills those even and odd positions without changing the tile's own stride.
+3. Repeat the complete eight-element region at offsets zero and eight.
+4. CuTe combines those choices as `(2,2):(1,8)`. Its scalar enumeration is `0,1,8,9`.
+
+| Complement offset | Four offsets after adding the `4:2` tile |
+| ---: | --- |
+| 0 | 0, 2, 4, 6 |
+| 1 | 1, 3, 5, 7 |
+| 8 | 8, 10, 12, 14 |
+| 9 | 9, 11, 13, 15 |
+
+The actual pinned CPU output was:
+
+```text
+even_rest=(_2,_2):(_1,_8)
+0 1 8 9
+COMPLEMENT PASS: 16 unique offsets from strided tile plus complement
+```
+
+The separate probe compiled and executed on November 18, 2026 UTC, using pinned v4.3.6; it launched no GPU kernel. Its counter array checked that all 16 combined offsets appeared exactly once. The printed order is the complement's logical enumeration, not sorted physical order of the complete tensor.
+
+**Pitfall:** “target size divided by tile size” alone predicts four repetition positions but not their required strides. Using `4:8` would leave holes and escape the target. Complement is not arbitrary set subtraction, and an overlapping/broadcast mapping does not gain a bijective inverse merely because its logical size matches a target. Check the layout's image and the API's actual compatibility rules.
 
 ## 6 — Division reorganizes tile and remainder coordinates
 
@@ -96,6 +181,22 @@ auto offset = divided(make_coord(2, 1));  // 6
 ```
 
 The first coordinate selects an element inside a tile; the second selects its repetition. Tiles reference `0..3`, `4..7` and `8..11`. With several original modes, `logical_divide` retains the per-mode tile/remainder relationship; `zipped_divide` groups tile modes together and remainder modes together. `tiled_divide` and `flat_divide` provide other groupings. These are distinct result shapes, not interchangeable names for the same tuple interface.
+
+### Build a product and calculate its coordinate map
+
+```cpp
+auto atom = cute::make_layout(cute::Int<4>{}, cute::Int<1>{});
+auto repetitions = cute::make_layout(cute::Int<3>{}, cute::Int<1>{});
+auto repeated = cute::logical_product(atom, repetitions);
+cute::print(repeated);
+```
+
+1. `atom` supplies offsets 0 through 3 inside one four-element tile.
+2. The repetition layout selects three logical copies. The product scales their placement so each starts after a complete atom, yielding starts 0, 4 and 8.
+3. The product therefore has shape `(4,3)` and stride `(1,4)`.
+4. `repeated(make_coord(2,1))` is `2+4=6`; `repeated(make_coord(3,2))` is `3+8=11`.
+
+The pinned probe printed `product=(_4,_3):(_1,_4)` and checked all 12 coordinate pairs against `within+4*tile`. **Check:** the combined image is precisely `0..11`, once each. **Pitfall:** directly adding `atom(i)+repetitions(j)` without product scaling gives `i+j`, creating aliases rather than three separate tiles. More complicated strided products follow the algebra's complement/composition rules, not this compact shortcut.
 
 Products construct repeated layouts rather than merely partitioning an existing one. Both division and product depend on complement/composition rules. Learn their small-domain behavior first; a reshaped type can still describe an unexpected order.
 
@@ -178,3 +279,13 @@ ALGEBRA PASS: 24 nested coordinates, 12 coalesced coordinates, 4 composition coo
 ```
 
 <!-- workshop:end:cute_algebra -->
+
+<!-- companion-summary:start -->
+## Summary
+
+- Hierarchical shape and stride retain meaningful coordinate factors; first-mode-fastest scalar enumeration is distinct from a row-major physical offset.
+
+- Coalescing preserves the represented mapping rather than repacking storage. Composition applies the inner map first, while complement and division obey specific domain and hierarchy contracts.
+
+- Prove offsets, bounds and uniqueness on a small domain, then [attach a tensor engine and create slices](17-cute-tensors-tiling.md).
+<!-- companion-summary:end -->

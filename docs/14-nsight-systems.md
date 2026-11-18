@@ -1,12 +1,16 @@
 # 14. Nsight Systems — Find the Application Bottleneck
+## Lesson 14 Companion Guide — From Kernel Counters to the Application Timeline
 
-[![Systems profiling connects CPU submission, transfers, kernels and communication.](images/ch14/overview.svg)](images/ch14/overview.svg)
+[![CHAPTER 14: 14. Nsight Systems — Find the Application Bottleneck — conceptual chapter illustration](images/chapter-openers/14-workshop.svg)](images/chapter-openers/14-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Explain a slow iteration using a timeline before collecting detailed counters for one kernel. Read [Chapter 13](13-nsight-compute.md) for kernel-level analysis and [Chapter 11](11-multi-gpu-nccl.md) for communication dependencies.
 
 ## 1 — Two profilers, two questions
+
+[![Systems profiling connects CPU submission, transfers, kernels and communication.](images/ch14/overview.svg)](images/ch14/overview.svg)
 
 A kernel can get faster while the application barely changes. Suppose a 10 ms iteration spends 6 ms waiting for input, 3 ms computing and 1 ms exchanging results, with no overlap. Halving compute gives 8.5 ms, about 1.18× overall speedup. It does not give 2×. The first task is to identify the critical path, including work that prevents the next useful operation from starting.
 
@@ -83,6 +87,37 @@ nvcc -std=c++17 -O2 -lineinfo -arch=sm_90a \
 
 **Checks enforced by the executable:** both modes must print `OVERLAP PASS`, `checked=4194304` and `errors=0`. The elapsed values must come from the machine being tested. Two streams do not promise a speedup: copy engines, transfer directions, link bandwidth, memory contention, chunk size and CPU enqueue rate all matter. The [actual workshop execution record](cutlass-workshop-validation.md) and the captured block below retain the observed values and source revision; the original 27-program records remain separate.
 
+### Walk through two chunks before reading the full trace
+
+A **chunk** is one contiguous piece of the input. A **slot** is a reusable set of device buffers and one stream; it is not another GPU. The complete downloadable source uses these expressions inside its initialized loop context; this excerpt is not a standalone program:
+
+```cpp
+constexpr int chunk = 1 << 18, chunks = 16, repetitions = 8;
+int s = c % slots;
+// In stream s: copy chunk c in, transform it, copy its result out.
+```
+
+Work through their consequences in order:
+
+1. **Count one chunk.** `1 << 18` is 262,144 floats. At four bytes per float, one H2D copy transfers 1,048,576 bytes, or 1 MiB. Its matching D2H copy transfers another 1 MiB.
+2. **Choose a slot.** In overlap mode, `slots=2`. Chunk 0 uses `0 % 2 = 0`; chunk 1 uses `1 % 2 = 1`; chunk 2 returns to slot 0. The slot chooses the stream and the pair of device buffers.
+3. **Follow one value.** For global input index 5, the source initializes `input[5]=5 % 1009=5`. The kernel computes `2×5+1=11`. That result must return to `output[5]`, regardless of which slot processed it.
+4. **Follow one dependency.** Chunk 0's H2D, kernel and D2H are enqueued on stream 0. They execute in that order. Chunk 2's H2D is later in the same stream, so it cannot overwrite slot 0 while chunk 0 still needs it.
+5. **Look across streams.** Chunk 1 uses separate buffers on stream 1. It may overlap chunk 0. The word *may* matters: independent work is eligible for concurrency, but a timeline must show whether the hardware actually overlapped it.
+6. **Count the captured work.** Sixteen chunks repeated eight times give `16×8=128` kernel launches, 128 H2D copies and 128 D2H copies. The transfer payload totals `256×1 MiB=256 MiB`. The same 4,194,304 output positions are overwritten on each repetition; the final CPU check visits those positions once.
+7. **Find the true finish.** Each worker records a `done` event after its last D2H. The timing stream waits for both events before recording `stop`. Therefore the interval includes the slower worker's finish, rather than ending when the CPU merely submits the last kernel.
+
+The dependency picture for the first three chunks is:
+
+```text
+stream 0: [H2D 0 → kernel 0 → D2H 0] → [H2D 2 → kernel 2 → D2H 2]
+stream 1: [H2D 1 → kernel 1 → D2H 1] → ...
+           independent work may overlap across the two rows
+finish:   wait for BOTH rows → stop event → CPU validation
+```
+
+**Pause and check.** Serial mode has one slot, so `c % 1` is always zero. Predict what changes in the picture before opening its report. Every chunk is now ordered in a single row; the workload and expected output values stay the same.
+
 ## 4 — Capture a small, interpretable region
 
 Use a fresh output directory; `mktemp` creates a unique directory for this capture. The capture flags are the CUDA Profiler API capture mode documented by NVIDIA, not a request to trace all machine activity.
@@ -119,6 +154,26 @@ Consult the [post-collection analysis guide](https://docs.nvidia.com/nsight-syst
 6. Compare with serial mode and the unprofiled run. Keep payload size, repetition count, device, clocks and software stack fixed.
 
 Do not add all GPU activity durations and call the sum wall time. If a 2 ms kernel overlaps a 2 ms transfer, their activity sum is 4 ms but their joint span may approach 2 ms. Conversely, unused gaps and launch overhead may make the span longer. The exercise reports a span precisely to avoid conflating these quantities.
+
+### Compare the prediction with the captured intervals
+
+The CPU analysis of the recorded Nsight Systems exports on **18 November 2026, 14:28:20 UTC** found the following. These are counts from the captured trace, not invented durations:
+
+| Check | Serial capture | Two-stream capture |
+| --- | ---: | ---: |
+| Kernel instances | 128 | 128 |
+| Copy instances | 256 | 256 |
+| Logical copy payload | 256 MiB | 256 MiB |
+| Worker streams | 1 | 2 |
+| Kernel intervals intersecting a copy in another stream | 0 | 97 |
+
+1. First compare the counts with `16 chunks × 8 repetitions`: the intended workload is present in both captures.
+2. Next identify the actual worker streams. Two different stream IDs establish separate queues; they do not yet establish concurrency.
+3. For each kernel interval `[start,end)`, search copies on a different stream. Positive overlap requires `max(kernel_start,copy_start) < min(kernel_end,copy_end)`.
+4. Count a kernel once if **any** such copy intersects it. The 97 count is not a duration or percentage speedup, and overlapping pair durations must not be added together as wall time.
+5. Conclude only what this proves: cross-stream copy/compute overlap occurred in this recorded capture. Use the separate unprofiled timings below to discuss the measured application span.
+
+The [analysis source](validation/2026-11-18-h100-workshop/timeline-analysis/analyze_workshop_timeline.py) and [dated results with input SHA-256 hashes](validation/2026-11-18-h100-workshop/timeline-analysis/results.json) make the calculation inspectable. The original SQLite exports remain in the full capture archive; the public `.nsys-rep` files can also be exported with the matching analysis tools. The analysis is a host-side reading of existing evidence, not another GPU execution.
 
 ## 6 — Name application phases with NVTX
 
@@ -281,3 +336,13 @@ OVERLAP PASS: mode=overlap slots=2 checked=4194304 errors=0 device_span_ms=4.426
 ```
 
 <!-- workshop:end:nsys_overlap -->
+
+<!-- companion-summary:start -->
+## Summary
+
+- Nsight Systems explains CPU submission, transfers, kernel launches and communication on a shared timeline; Nsight Compute explains the selected kernel in detail.
+
+- An overlap experiment must join all participating streams before timing completion and compare the same checked useful work in both modes.
+
+- Retain the actual timeline, timing scope and numerical result together; a visually busy GPU is not by itself evidence of a faster application.
+<!-- companion-summary:end -->

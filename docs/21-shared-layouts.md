@@ -1,12 +1,16 @@
 # 21. Shared Layouts — Banks, Swizzles and Descriptor Agreement
+## Lesson 21 Companion Guide — Keep Banks, Swizzles and Descriptors in Agreement
 
-[![Shared-memory layouts connect producer addresses, bank accesses and matrix-consumer descriptors.](images/ch21/overview.svg)](images/ch21/overview.svg)
+[![CHAPTER 21: 21. Shared Layouts — Banks, Swizzles and Descriptor Agreement — conceptual chapter illustration](images/chapter-openers/21-workshop.svg)](images/chapter-openers/21-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Compute bank indices for a specific warp access, prove a swizzle's mapping, and preserve agreement between generic stores, TMA and WGMMA. Read [MMA atoms](20-mma-atoms.md), [TMA descriptors](04-cutensormap-tma-swizzling.md) and the [proxy-ordering rules](03-asynchronicity-mbarrier.md).
 
 ## 1 — Three layouts must describe the same tile
+
+[![Shared-memory layouts connect producer addresses, bank accesses and matrix-consumer descriptors.](images/ch21/overview.svg)](images/ch21/overview.svg)
 
 A shared tile has a producer, a physical allocation and a consumer. The producer might use ordinary stores, an asynchronous copy atom or TMA. The consumer might use scalar loads, `ldmatrix`, or WGMMA descriptors. All must agree on which physical location represents a logical coordinate.
 
@@ -80,6 +84,23 @@ It is a valid permutation over the same 1,024 coordinates, but `offset % 32` is 
 
 CuTe can represent this mapping too: compose the linear layout above with `Swizzle<3,2,-3>`. The negative shift moves column bits 2–4 left into row bits 5–7. For `(3,20)`, the linear offset is 116 and the transformed offset is 212. Neither representability nor uniqueness proves a bank benefit.
 
+### Make the counterexample an actual CuTe call
+
+Using the `linear` layout from §4:
+
+```cpp
+auto bank_unchanged = cute::composition(cute::Swizzle<3, 2, -3>{}, linear);
+auto offset = bank_unchanged(cute::make_coord(3, 20)); // 212
+```
+
+1. The unswizzled word offset is `3×32+20=116`.
+2. Column 20 has `20>>2=5` in the selected three-bit field.
+3. XOR that field into the row bits: `3 XOR 5=6`.
+4. The resulting word offset is `6×32+20=212`.
+5. Both 116 and 212 select bank 20 modulo 32. The addresses changed, but the relevant bank bits did not.
+
+**Expected result:** the mapping remains a permutation, yet a fixed-column warp still sends distinct addresses to one bank. **Check:** enumerate all 32 lane addresses for the actual fixed column; uniqueness of addresses and uniqueness of banks are separate tests. **Pitfall:** labeling every XOR composition “bank-conflict free” without examining which bits changed.
+
 This distinction is a useful review habit: ask **which address bits select the resource you are trying to distribute?** Then enumerate those bits for the actual participating lanes.
 
 ## 6 — Use the supported Hopper layout atoms
@@ -125,3 +146,13 @@ The [Hopper PTX contracts](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-
     Not necessarily. The row-XOR counterexample in §5 is bijective but leaves fixed-column banks unchanged. Even the bank-distributing mapping needs a benchmark because instruction transactions, occupancy, extra address arithmetic and other bottlenecks can dominate.
 
 Before a GPU run, enumerate bounds, uniqueness, bank indices and stage starts. During the run, compare the full nonuniform result and use memory-safety checks. During tuning, record actual shared storage, instruction selection, relevant bank metrics and the application timing distribution. These arithmetic examples are worked models; they are not captured Hopper performance measurements.
+
+<!-- companion-summary:start -->
+## Summary
+
+- Derive bank indices from byte addresses and access width. Distinct words in one bank differ from a shared-word broadcast.
+
+- Padding and XOR permutations can improve particular accesses, but a bijection alone proves neither a bank benefit nor instruction compatibility.
+
+- Producer layout, allocation, TMA/WGMMA interpretation, alignment and stage lifetime must agree. Use those obligations in the [complete tiled GEMM](22-gemm-construction.md).
+<!-- companion-summary:end -->

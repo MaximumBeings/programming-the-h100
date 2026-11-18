@@ -1,12 +1,16 @@
 # 24. Read Hopper CUTLASS Pipelines, Fusion and Tuning
+## Lesson 24 Companion Guide — Trace Readiness, Reuse and the Cost of More Stages
 
-[![Pipeline ownership links TMA, shared stages, WGMMA and the epilogue.](images/ch24/overview.svg)](images/ch24/overview.svg)
+[![CHAPTER 24: 24. Read Hopper CUTLASS Pipelines, Fusion and Tuning — conceptual chapter illustration](images/chapter-openers/24-workshop.svg)](images/chapter-openers/24-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Trace one tile through a real Hopper mainloop, identify the readiness/reuse protocol, and make one controlled tuning change without breaking the numerical contract. Complete the [verified-GEMM exercise](23-cutlass-gemm.md) first.
 
 ## 1 — A source-reading route with a purpose
+
+[![Pipeline ownership links TMA, shared stages, WGMMA and the epilogue.](images/ch24/overview.svg)](images/ch24/overview.svg)
 
 Start from the pinned [collective-builder example 49](https://github.com/NVIDIA/cutlass/blob/v4.3.6/examples/49_hopper_gemm_with_collective_builder/49_collective_builder.cu), then follow the selected dispatch policy to the kernel and collective. Do not begin by reading every template header from top to bottom.
 
@@ -99,6 +103,19 @@ K shorter than pipeline depth is an important test. If there is one K tile and t
 
 The CPU indexing workbook checks slot/generation arithmetic and valid state transitions for 15 small depth/tile-count combinations. It does not simulate the GPU memory model or validate concurrent TMA/WGMMA behavior. The actual library kernel and sanitizer records supply separate evidence.
 
+### Walk one stage reuse without confusing readiness and release
+
+Use the three-stage/eight-tile model above. Let the operand tile be `128*128*64` with FP16 A/B, so each K tile contains `16384+16384=32768` raw operand bytes. The actual collective supplies its own transaction count, padding and participant contract; this arithmetic is a simple model, not a replacement for that implementation.
+
+1. **Acquire slot 0 for tile 0.** The producer state is `(index=0,phase=1)`. `producer_acquire` waits for the slot's empty condition before a producer starts a new transfer into that storage.
+2. **Publish the real transfer.** Issue the supported TMA operation using the collective's full barrier and expected transaction bytes. In this pinned pipeline, calling `producer_commit` alone does not complete or substitute for the transfer.
+3. **Wait as the consumer.** Consumer state `(0,0)` waits for tile 0's full condition. Arrival permits reads of that generation; it says nothing about whether subsequent asynchronous MMA reads have finished.
+4. **Release only after the reads are safe.** The selected mainloop follows its WGMMA completion protocol before releasing slot 0. This is the edge that prevents a producer from overwriting operands still used by an asynchronous instruction.
+5. **Wrap to tile 3.** After slots 1 and 2, tile 3 maps to slot `3%3=0`, generation `floor(3/3)=1`. The producer phase is now 0 and the consumer phase 1. An old full signal for tile 0 must not satisfy the wait for tile 3.
+6. **Drain exactly the actual work.** Tile 7 maps to slot 1, generation 2. There is no tile 8. Finish pending reader/store obligations and release the actual occupied slots; do not issue or await an imaginary transfer merely to visit every slot once more.
+
+**Check:** slot sequence `0,1,2,0,1,2,0,1` and generation sequence `0,0,0,1,1,1,2,2` must match the earlier table. Halving K until only one tile exists should remove seven transfers, not add waits for unused stages. This is the reasoning behind the workbook's bounded transition checks; actual concurrent ordering remains the GPU implementation's responsibility.
+
 ### Locate the actual mechanisms in the source
 
 Starting from the selected mainloop, find its `SharedStorage`, pipeline type, producer start state, consumer state and transaction-byte calculation. Then locate the TMA copy operation, consumer wait, WGMMA group completion and consumer release. Follow tail/drain calls in the **actual selected specialization**, including any cluster barrier and epilogue store pipeline.
@@ -133,11 +150,12 @@ An implementation exercise is to add a supported bias/activation fusion, update 
 
 The CUTLASS profiler is a separate tool from Nsight Systems and Compute. It instantiates many candidate kernels and measures supported operations. Compiling every kernel, precision, architecture and instantiation level is unnecessary for this chapter.
 
-Start with one actual kernel name from the pinned generator rather than a whole family. Even a single-kernel build compiles common reference-provider support; broad Hopper family filters can generate hundreds of additional build tasks. This candidate has no C source (`void`), so the runtime example uses beta zero. Its tile, cluster and layouts differ from the small correctness harness; it is a separate configuration, not a timing of that harness. Enable cuBLAS explicitly if using it as the verification provider; it is off by default in the pinned build configuration.
+Start with one actual kernel name from the pinned generator rather than a whole family. Even a single-kernel build compiles common reference-provider support. The recorded configuration uses FP16 A/B, **FP32 C and D**, beta 0.5, and the cooperative no-shared-memory epilogue schedule. It differs from the small correctness harness; it is a separate configuration, not a timing of that harness.
 
 ```bash
-kernel="cutlass3x_sm90_tensorop_gemm_f16_f16_f32_void_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_tma"
-cmake -S "$CUTLASS_ROOT" -B build/cutlass-profiler -G Ninja \
+kernel="cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_nosmem"
+cmake -S "$CUTLASS_ROOT" -B build/cutlass-profiler \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCUTLASS_NVCC_ARCHS=90a \
   -DCUTLASS_ENABLE_LIBRARY=ON \
   -DCUTLASS_ENABLE_PROFILER=ON \
@@ -152,21 +170,35 @@ build/cutlass-profiler/tools/profiler/cutlass_profiler \
   --mode=enumerate --operation=Gemm
 ```
 
-Require at least one matching operation before interpreting a benchmark. If none appear, inspect the generator filter, architecture and instantiation policy; an empty result is not a fast kernel. Avoid `all` or maximum instantiation as a first response. After one configuration works, a deliberate family sweep can use `cutlass3x_sm90_tensorop_gemm_f16_f16_f32_void_f32_*`, with build size, memory and disk costs recorded separately.
+Require exactly the intended matching operation before interpreting a benchmark. If none appears, inspect the generator filter, architecture and instantiation policy; a compatible API combination is not necessarily instantiated by the generator. An empty result is not a fast kernel. Avoid `all` or maximum instantiation as a first response. The captured host used eight build jobs after checking available RAM; two jobs above is a conservative starting point.
 
 ```bash
 mkdir -p reports
 build/cutlass-profiler/tools/profiler/cutlass_profiler \
-  --operation=Gemm \
-  --kernels="$kernel" \
-  --m=512 --n=512 --k=512 --alpha=1 --beta=0 \
+  --operation=Gemm --kernels="$kernel" \
+  --m=512 --n=512 --k=512 --alpha=1 --beta=0.5 \
   --providers=cutlass --verification-enabled=true \
-  --verification-providers=cublas \
+  --verification-required=true --verification-providers=reference_device \
   --warmup-iterations=5 --profiling-iterations=20 \
   --output=reports/cutlass-hopper
 ```
 
-Read the [pinned profiler documentation](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/profiler.md) and local help. The tool appends an operation-specific CSV suffix; inspect the files actually produced. Check each row’s disposition and provider result. An available cuBLAS library, an enabled verification flag and a process exit of zero do not by themselves establish that a comparison actually ran and passed.
+Read the [pinned profiler documentation](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/profiler.md) and local help. The tool appends an operation-specific CSV suffix; inspect the file actually produced. The following is an abbreviated transcription of the **18 November 2026, 14:38:47 UTC** run on the H100 PCIe system described in [the workshop record](cutlass-workshop-validation.md):
+
+```text
+Verification: reference_device: Passed
+CSV rows: 1
+Disposition: passed
+Status: success
+m=512, n=512, k=512, alpha=1, beta=0.5
+Runtime (ms): 0.0566496
+```
+
+Download the [exact command and timestamps](validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/commands.json), [raw console log](validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/profiler-run.log) and [one-row CSV](validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/cutlass-hopper.gemm.csv). This is a bounded tool check, not a representative benchmark distribution or a claim of tuned performance. The tool's FLOP convention includes additional work; use the declared count when comparing rates.
+
+**Walk through the acceptance decision.** First confirm the kernel name and input types. Next require one actual CSV row, then `passed/success`, then a provider that explicitly says `Passed`. Only after these checks should you read the runtime. A zero process exit, a verification flag or a CSV header without a row proves none of those steps by itself.
+
+The pinned profiler has a separate cuBLAS reporting limitation: its verification loop can overwrite a cuBLAS disposition with `Not run` when a later reference-provider lookup is unavailable. The captured diagnostics showed actual cuBLASLt calls, but this book does **not** label that provider as passed. The reproducible command above requires the device reference and records its explicit pass. See the pinned [verification loop](https://github.com/NVIDIA/cutlass/blob/v4.3.6/tools/profiler/src/gemm_operation_profiler.cu) when diagnosing provider results.
 
 ## 8 — Measure the optimization that users receive
 
@@ -191,3 +223,13 @@ Do not put a large CUTLASS profiler sweep under a full Compute metric set. First
 ## Continue through the advanced track
 
 [Chapter 25](25-epilogue-fusion.md) develops a complete fused ReLU variant and its independent reference. [Chapter 26](26-precision-block-scaling.md) separates format, scale-layout and kernel error. [Chapter 27](27-benchmarking-integration.md) defines a reproducible comparison, and [Chapter 28](28-workbook-capstone.md) closes the sequence with staged labs and worked answers.
+
+<!-- companion-summary:start -->
+## Summary
+
+- Read one selected tile’s complete lifetime: acquire the correct generation, establish transfer completion, consume it, finish asynchronous readers and release storage.
+
+- Pipeline types and schedule pairs have distinct contracts. Prologue, steady state and drain must reflect the tiles that actually exist.
+
+- More stages or larger tiles trade latency hiding against shared storage, registers, residency and tails. Validate each change before measuring [fusion](25-epilogue-fusion.md) or other optimizations.
+<!-- companion-summary:end -->

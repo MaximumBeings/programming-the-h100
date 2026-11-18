@@ -1,12 +1,16 @@
 # 22. Build and Validate a Complete Tiled GEMM
+## Lesson 22 Companion Guide — Build a Complete Reference-Checked SIMT Baseline
 
-[![A complete GEMM connects a clear mathematical contract to cooperative loads and checked output stores.](images/ch22/overview.svg)](images/ch22/overview.svg)
+[![CHAPTER 22: 22. Build and Validate a Complete Tiled GEMM — conceptual chapter illustration](images/chapter-openers/22-workshop.svg)](images/chapter-openers/22-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Follow every address and barrier in a complete, bounded GEMM before replacing its scalar arithmetic with a Tensor Core collective. Read [CTA indexing](18-cta-indexing.md), [copy ownership](19-tiled-copy.md) and [shared layouts](21-shared-layouts.md) first.
 
 ## 1 — Choose a contract small enough to prove
+
+[![A complete GEMM connects a clear mathematical contract to cooperative loads and checked output stores.](images/ch22/overview.svg)](images/ch22/overview.svg)
 
 The lab computes batched `D = 0.5 * A * B + 0.25 * C` using row-major FP32 operands. Each batch has M×K, K×N and M×N mathematical shapes. Physical rows are padded: `lda=K+3`, `ldb=N+5`, `ldc=N+7`. The padding makes a mistaken assumption of compact storage visible.
 
@@ -72,6 +76,18 @@ Suppose K=41. Three 16-wide K iterations are needed. The last has nine useful re
 An accumulator reset inside the K-tile loop retains only the final tile. A kernel may pass an input where the first two tiles contain zeros, so include nonzero contributions across the whole reduction. Nonuniform binary-rational input values in the lab exercise that condition without requiring an arbitrary tolerance.
 
 For K=0, the loop executes zero times and the epilogue becomes `D=0.25*C`. This case checks that the launch and epilogue do not assume a first operand tile always exists. It does not imply that every Tensor Core library configuration accepts a zero reduction dimension; support is part of each API’s contract.
+
+### Work one ragged output through all three reduction tiles
+
+Take the actual ragged case `M=37,N=29,K=41,L=2`. Let batch `l=1`, block `(blockIdx.x,blockIdx.y)=(1,2)` and thread `(tx,ty)=(12,4)`. These are logical coordinates, not byte addresses. All offsets below are relative to the operand pointers passed to the kernel, after the 16-element leading guards.
+
+1. **Find the output.** `m=2*16+4=36`, `n=1*16+12=28`. Both are valid: this thread owns the last logical output of the second batch.
+2. **Find the padded rows.** The source uses `lda=44`, `ldb=34`, `ldc=36`. Thus A's batch stride is `37*44=1628` elements; B's is `41*34=1394`; C/D's is `37*36=1332`. Output `(1,36,28)` is at element offset `1332+36*36+28=2656`, or byte offset `10624` for FP32.
+3. **Distinguish loading from consuming.** At `k0=32`, this thread's A load names `(m,k)=(36,44)` and is invalid, so it writes zero to `As[4][12]`. Its B load names `(k,n)=(36,28)` and is valid: offset `1394+36*34+28=2646`. Its own A load being invalid does **not** make its output invalid.
+4. **Consume the shared tile collectively.** To compute its output, it reads `As[4][q]` and `Bs[q][12]` for `q=0..15`. The nine positions `q=0..8` represent valid `k=32..40`; `q=9..15` are zero-filled. Other threads supplied many of those inputs. The previous tiles supplied `k=0..31`.
+5. **Apply the epilogue once.** After all three tiles, write `D[2656]=0.5*acc+0.25*C[2656]`. A thread at `(tx,ty)=(13,4)` owns `n=29`, so it skips this store but still joins both barriers in every tile.
+
+**Check:** the block contains 256 threads but only `5*13=65` valid output owners, because rows 32–36 and columns 16–28 remain. Every valid owner must see all 41 reduction terms. Using the actual initialization formulas gives `acc=1.125`, `C=0.5` and `D=0.6875` at this coordinate. This hand calculation complements the independently captured executable, which checks every output.
 
 ## 7 — Store only valid output coordinates
 
@@ -290,3 +306,13 @@ TILED GEMM PASS: 3 cases, errors=0
 The exact tested revision also passed [Compute Sanitizer memcheck](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/memcheck-tiled_gemm.log) with zero errors and its numerical checks intact. [The dated supplemental manifest](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/commands.json) retains commands, source hashes and actual UTC stage times. This does not prove every untested schedule.
 
 The same revision passed [racecheck](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/racecheck-tiled_gemm.log): zero hazards, zero errors and zero warnings for the captured cases.
+
+<!-- companion-summary:start -->
+## Summary
+
+- The SIMT baseline makes batch strides, cooperative loads, padded rows and partial M/N/K tiles explicit before adding Tensor Core abstractions.
+
+- Two block barriers protect input readiness and safe shared-tile reuse; output-tail threads still participate in the cooperative protocol.
+
+- Initialize the accumulator once, apply beta once, and check every result plus padding and guards. Then compare the contract with the [CUTLASS builder implementation](23-cutlass-gemm.md).
+<!-- companion-summary:end -->

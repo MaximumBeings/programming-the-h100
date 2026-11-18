@@ -1,12 +1,21 @@
 # 18. CTA Indexing — Rectangular GEMM Offsets and the K Loop
+## Lesson 18 Companion Guide — Trace Every GEMM Operand from CTA to Byte Address
 
-[![A CTA selects an output origin, two input panels and successive K tiles using explicit strides.](images/ch18/overview.svg)](images/ch18/overview.svg)
+[![CHAPTER 18: 18. CTA Indexing — Rectangular GEMM Offsets and the K Loop — conceptual chapter illustration](images/chapter-openers/18-workshop.svg)](images/chapter-openers/18-workshop.svg)
+
+
+
+!!! tip "Your goal in this chapter"
+
+    Compute rectangular CTA, reduction and batch origins using each operand’s actual strides, then handle boundary tiles and wide address arithmetic. Read [tensor tiling and predication](17-cute-tensors-tiling.md) first.
 
 A GEMM kernel can have legal instructions, valid memory accesses and completely wrong results because one tile origin uses the wrong leading dimension. This chapter makes that arithmetic explicit before copy and MMA machinery hide it behind types. Work from the operation contract to coordinates, then to element offsets, then to byte addresses.
 
 [Chapter 17](17-cute-tensors-tiling.md) explained tensor views and predication. Here the mathematical operation is `D[M,N]=A[M,K]B[K,N]`, without an alpha/beta epilogue for now. The examples use **row-major A, column-major B and row-major D**. Those are deliberately explicit choices, not universal CUTLASS defaults. The pinned primary references are CuTe's [tensor](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/03_tensor.md) and [GEMM](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/0x_gemm_tutorial.md) tutorials.
 
 ## 1 — Write the physical contract first
+
+[![A CTA selects an output origin, two input panels and successive K tiles using explicit strides.](images/ch18/overview.svg)](images/ch18/overview.svg)
 
 For compact storage, the element-address functions are:
 
@@ -91,9 +100,33 @@ auto b_panel = local_tile(
 
 A is logically `(M,K)` and B `(N,K)`, so their first tile coordinates differ. These calls select views. The producer still needs to transfer data, establish readiness and protect stage reuse before any asynchronous consumer relies on it. A selected K panel is not itself a completed TMA transaction.
 
+### Carry a local coordinate through the API-selected panel
+
+The `local_tile` calls above use A as `(M,K)` and column-major mathematical B as logical `(N,K)`. Keep the same CTA `(bm,bn)=(5,3)`, set K iteration `q=1`, and select local `(mi,nj,kk)=(5,7,9)`:
+
+1. Recover the CTA origins: `m0=5×128=640`, `n0=3×128=384`.
+2. Recover the K origin: `k0=1×64=64`. The two selected input panel origins are therefore `(640,64)` and mathematical B `(64,384)`.
+3. Add local coordinates: global `m=640+5=645`, `n=384+7=391`, `k=64+9=73`.
+4. A is row-major with `lda=1024`, so `A[645,73]` uses offset `645×1024+73=660553` elements.
+5. B is column-major with `ldb=1024`, so mathematical `B[73,391]` uses `73+391×1024=400457` elements. The CuTe logical B view calls that coordinate `(391,73)`; its physical address is the same.
+6. D is row-major with `ldd=2048`, so the owned output `D[645,391]` uses `645×2048+391=1321351` elements. Its coordinate stays fixed while K changes.
+7. For FP16 allocations, the byte displacements are 1,321,106 for A, 800,914 for B and 2,642,702 for D. If D is FP32 instead, only its byte displacement doubles; its element offset stays 1,321,351.
+
+**Expected result:** the operands at reduction coordinate 73 contribute to the same D element as the other K iterations. **Check:** compute these offsets directly from the global coordinates, independently of the tile's base-plus-local formula; both routes must agree. **Pitfall:** using `128` as `lda` because the CTA has 128 rows selects a different allocation position. A tile extent is not a global storage stride.
+
 ## 5 — Ceiling division preserves the tail
 
 For a separate M extent of 3100 with BM=64, floor division gives 48 and loses the final rows. Ceiling division gives 49. Tile 48 begins at row 3072 and has `3100−3072=28` valid rows; the other 36 local rows must not access global data.
+
+### Work the final row tile by hand
+
+1. Divide `3100=48×64+28`: there are 48 complete tiles and a nonempty remainder.
+2. Launch 49 tile rows, with final tile index 48.
+3. Its origin is `48×64=3072`. Local row 27 maps to global `3072+27=3099`, the last valid row.
+4. Local row 28 maps to 3100, which fails `row<M`; rows 28 through 63 must not access a global A row or D row.
+5. Preserve the cooperative protocol. A thread assigned to an invalid output can still own a shared-input load or participate in a block barrier; predicate its accesses rather than returning before required collective synchronization.
+
+**Expected result:** 28 valid rows in the final tile, 36 invalid local rows, and no lost useful output. **Check:** `48×64+28=3100` reconstructs the original extent. **Pitfall:** a memory checker may remain quiet if a mistaken valid-row assumption writes into allocated padding. Verify logical output bounds and untouched padding as separate checks.
 
 For nonnegative extents and positive tile sizes, an overflow-conscious ceiling-division form is `M/BM + (M%BM != 0)`. The familiar `(M+BM−1)/BM` is fine only when the addition cannot overflow. Apply the same reasoning independently to N and K.
 
@@ -103,7 +136,7 @@ An identity-coordinate tensor partitioned in the same way as an operand can carr
 
 ## 6 — Promote before multiplying and check the byte contract
 
-A large tensor can overflow 32-bit intermediate arithmetic even when a pointer type is 64-bit. Casting only the final product is too late. A conventional implementation first widens tile indices and dimensions:
+A large tensor can overflow 32-bit intermediate arithmetic even when a pointer type is 64-bit. Casting only the final product is too late. A conventional implementation first widens tile indices and dimensions. This kernel-context excerpt additionally requires `<cstdint>` and the previously defined dimensions/strides:
 
 ```cpp
 std::int64_t m0 = std::int64_t(blockIdx.x) * BM;
@@ -275,3 +308,13 @@ WORKBOOK PASS: 7 CPU-only reference groups; no GPU execution or performance meas
 ```
 
 <!-- workshop:end:indexing_workbook -->
+
+<!-- companion-summary:start -->
+## Summary
+
+- Define mathematical axes, physical storage and grid conventions before deriving A, B and D addresses. The logical CuTe B view does not transpose its allocation.
+
+- K increments and batch offsets follow operand strides; tile sizes alone cannot determine global pointer increments.
+
+- Use ceiling division, original-domain predicates and sufficiently wide checked arithmetic, then carry the address contract into [tiled-copy ownership](19-tiled-copy.md).
+<!-- companion-summary:end -->

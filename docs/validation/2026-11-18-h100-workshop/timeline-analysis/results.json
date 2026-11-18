@@ -1,0 +1,30 @@
+{
+  "analyzed_utc": "2026-11-18T14:28:20.367407+00:00",
+  "analysis_source_sha256": "a7197d8ec152926b9ce37cfa311fdce8299449fcc71766b80c14902f5dc34886",
+  "scope": "CPU analysis of captured trace intervals; not an additional GPU run or unprofiled benchmark.",
+  "serial": {
+    "sqlite": "timeline-serial.sqlite",
+    "sqlite_sha256": "c12f87618129b9158ca5c06c049064e28b4cde7a92230d91565522ec73c27fda",
+    "kernels": 128,
+    "copies": 256,
+    "worker_streams": [
+      13
+    ],
+    "payload_bytes": 268435456,
+    "kernels_intersecting_other_stream_copy": 0,
+    "copies_intersecting_other_stream_copy": 0
+  },
+  "overlap": {
+    "sqlite": "timeline-overlap.sqlite",
+    "sqlite_sha256": "b5755edb792ff76b7ece773ec67db9593791a25122ed18d49d644e14d8525f03",
+    "kernels": 128,
+    "copies": 256,
+    "worker_streams": [
+      13,
+      14
+    ],
+    "payload_bytes": 268435456,
+    "kernels_intersecting_other_stream_copy": 97,
+    "copies_intersecting_other_stream_copy": 254
+  }
+}

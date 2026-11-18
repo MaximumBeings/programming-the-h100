@@ -1,0 +1,30 @@
+[
+  {
+    "name": "profiler-run",
+    "kind": "cutlass_profiler_workload",
+    "command": [
+      "/home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler/tools/profiler/cutlass_profiler",
+      "--operation=Gemm",
+      "--kernels=cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_nosmem",
+      "--m=512",
+      "--n=512",
+      "--k=512",
+      "--alpha=1",
+      "--beta=0.5",
+      "--providers=cutlass",
+      "--verification-enabled=true",
+      "--verification-required=true",
+      "--verification-providers=reference_device",
+      "--warmup-iterations=5",
+      "--profiling-iterations=20",
+      "--output=/home/ubuntu/h100-expanded-review-20261118/profiler-checks/20261118T143847Z/cutlass-hopper"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:38:47.586839+00:00",
+    "finished_utc": "2026-11-18T14:38:48.354681+00:00",
+    "seconds": 0.7678623589999916,
+    "log": "profiler-run.log",
+    "log_sha256": "efefcdf250ced1f1533d695f2fa14d82321784c2525732ec83371885a1ee4580",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  }
+]

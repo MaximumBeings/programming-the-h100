@@ -1,12 +1,16 @@
 # 19. Thread/Value Ownership and a Real CuTe Tiled Copy
+## Lesson 19 Companion Guide — Prove Thread Ownership Before Issuing a Copy
 
-[![A tiled copy assigns each coordinate to a thread and a value slot, then applies predicates.](images/ch19/overview.svg)](images/ch19/overview.svg)
+[![CHAPTER 19: 19. Thread/Value Ownership and a Real CuTe Tiled Copy — conceptual chapter illustration](images/chapter-openers/19-workshop.svg)](images/chapter-openers/19-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Derive which thread copies each element, distinguish partitioning from execution, and prove that every valid destination has exactly one writer. Read [tensor views](17-cute-tensors-tiling.md) and [CTA indexing](18-cta-indexing.md) first.
 
 ## 1 — Four independent mappings
+
+[![A tiled copy assigns each coordinate to a thread and a value slot, then applies predicates.](images/ch19/overview.svg)](images/ch19/overview.svg)
 
 A copy kernel combines several mappings that are easy to confuse:
 
@@ -71,6 +75,38 @@ Now copy a matrix of 37 rows and 70 columns with four-by-32 tiles. The grid has 
 CuTe’s identity tensor stores logical coordinates as its values. Tile and partition that coordinate tensor in the same way as the source. A predicate can then test `row < M && column < N` for each owned element. This is more reliable than deriving a second, unrelated indexing formula after the layout has become hierarchical.
 
 A rounded tensor tile is a view of a larger coordinate domain; it does not make the allocation larger or automatically mask every operation. The copy must actually use the predicate. A conditional store after an unconditional out-of-bounds load is still invalid.
+
+### Construct the predicate and follow one tail thread
+
+Inside a kernel with the full `source` and `destination` tensors and the scalar `tiled_copy` above, the executed lab uses this construction:
+
+```cpp
+auto logical_shape = cute::shape(source);
+auto coordinates = cute::make_identity_tensor(logical_shape);
+auto predicates = cute::lazy::transform(coordinates, [&](auto coordinate) {
+    return cute::elem_less(coordinate, logical_shape);
+});
+auto tile_shape = cute::make_shape(cute::Int<4>{}, cute::Int<32>{});
+auto tile_coordinate = cute::make_coord(blockIdx.x, blockIdx.y);
+auto source_tile = cute::local_tile(source, tile_shape, tile_coordinate);
+auto destination_tile = cute::local_tile(destination, tile_shape, tile_coordinate);
+auto predicate_tile = cute::local_tile(predicates, tile_shape, tile_coordinate);
+auto thread_copy = tiled_copy.get_thread_slice(threadIdx.x);
+auto thread_source = thread_copy.partition_S(source_tile);
+auto thread_destination = thread_copy.partition_D(destination_tile);
+auto thread_predicate = thread_copy.partition_S(predicate_tile);
+cute::copy_if(tiled_copy, thread_predicate, thread_source, thread_destination);
+```
+
+The lambda is a lazy coordinate-to-Boolean mapping, not a separately allocated Boolean matrix. `elem_less` tests the corresponding row and column against their original extents. Trace the final tile `(blockIdx.x,blockIdx.y)=(9,2)`:
+
+1. Its origin is `(9×4,2×32)=(36,64)`.
+2. Thread 5 has local coordinate `(0,5)`, so it names global `(36,69)`; `36<37` and `69<70` are both true.
+3. Thread 6 names `(36,70)`; the column test is false, so it performs no source load or destination store through this predicated copy.
+4. Thread 32 names `(37,64)`; the row test is false even though the column is valid.
+5. Exactly threads 0 through 5 may copy. The same logical predicate remains valid when source and destination have different row strides, because it tests coordinates rather than a guessed physical offset.
+
+**Expected result:** six valid copied values in this final tile, zero writes to its other 122 logical positions, and no change to destination padding. The lab's ownership counters and complete nonuniform output comparison check this behavior on the actual kernel. **Pitfall:** applying the predicate only to `partition_D` after an unconditional source read cannot protect an out-of-bounds load.
 
 For vectorized instructions, the validity and alignment contract applies to the instruction’s whole accessed segment. Per-element predicates do not make an arbitrary partially valid 16-byte access safe. Handle tails with a supported predicated atom, a separate scalar path, or an explicitly padded allocation whose semantics permit the access.
 
@@ -326,3 +362,13 @@ COPY PASS: 3 cases, errors=0
 ## Additional memory-safety record
 
 The exact tested revision also passed [Compute Sanitizer memcheck](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/memcheck-cute_copy.log) with zero errors and its numerical checks intact. [The dated supplemental manifest](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/commands.json) retains commands, source hashes and actual UTC stage times. This does not prove every untested schedule.
+
+<!-- companion-summary:start -->
+## Summary
+
+- A tiled copy combines a grid tile, thread/value ownership and separate source/destination layouts; constructing partitions issues no memory transfer.
+
+- Check complete nonuniform values, unique destination ownership, untouched padding/guards and CUDA completion. Predicate tails before any invalid access.
+
+- Coalescing and vectorization have different alignment and transaction requirements. Apply the same ownership discipline to [MMA fragments](20-mma-atoms.md).
+<!-- companion-summary:end -->

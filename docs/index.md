@@ -1,73 +1,128 @@
 # Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+## A Hardware-Level Companion Guide to NVIDIA Hopper
 
 [![Programming the H100: CUDA, CuTe, and CUTLASS from First Principles](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
 
+Understand the machine, prove the mapping, build the kernel, then measure the useful result. This book connects Hopper architecture and PTX to safe asynchronous pipelines, Tensor Core programming, application profiling and a complete CuTe/CUTLASS learning sequence.
 
-> **Original program suite — November 17–18, 2026.** The recorded revisions of all **27 original complete CUDA programs compiled and executed successfully** across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The [complete validation summary](final-audit.md) links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The [training record](eight-gpu-validation.md) targets `sm_80` and checks all final weights and per-step losses against an independent CPU reference.
-> The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **All 27 current revisions have verified workload records** across the H100 and eight-A100 hosts. The [additional H100 record](revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
-> **Follow-up system:** 2× H100 80GB HBM3, 132 SMs each, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
-> The [original single-GPU records](validation/2026-11-17/results.json) remain available as historical evidence. Each tested source and captured output is linked beside its example or in the follow-up audit. Diagrams open as original SVGs for zooming.
+The twenty-eight chapters combine explanatory diagrams, worked calculations, downloadable programs and dated execution records. Follow the foundations in order, or choose a focused route below when a particular kernel or application needs attention.
 
+<div class="grid cards" markdown>
 
-## A hardware-level companion guide to NVIDIA Hopper
+-   :material-play-circle:{ .lg .middle } **Set up and run**
 
-<p class="hero-tagline">
-The gap between "my kernel runs" and "my kernel saturates the tensor cores" is
-the subject of this book. Twenty-eight chapters connect the H100 die and its
-instructions to kernel design, application profiling and CUTLASS. Follow worked
-layouts, explicit ownership protocols, diagrams and downloadable examples,
-then test the result and the performance hypothesis separately.
-</p>
+    ---
 
-> **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
-> **Run with:** `./<out>` on Hopper hardware matching the compiled target. Use the complete per-example command, including any driver, NCCL or cuBLAS linker flags.
+    [Getting Started & Installation](getting-started.md) covers a fresh Ubuntu host, a preconfigured GPU instance and the first verified CUDA program. Reading and website previews need no GPU.
 
-!!! success "Expanded workshop — executed on H100, November 18, 2026"
+-   :material-chip:{ .lg .middle } **Understand Hopper**
 
-    The sequenced Chapters 15–28 contain fourteen CUTLASS/CuTe chapters, from introductory algebra to advanced pipelines, fusion, precision and measurement. The [current H100 workshop record](cutlass-workshop-validation.md) captures eight CUDA compilations, two Python byte-compilations and eleven passing workload invocations, plus two real Nsight Systems reports. CPU-only layout/format checks retain their stated scope. The original 27-program records remain unchanged.
+    ---
+
+    Begin with [the architecture](01-h100-architecture.md), then connect data movement, completion, ownership and matrix instructions before assembling a kernel.
+
+-   :material-matrix:{ .lg .middle } **Learn CuTe and CUTLASS**
+
+    ---
+
+    Start with [CuTe foundations](15-cute-layouts.md). Progress from coordinate proofs through checked kernels to pipelines, fusion, precision and a capstone.
+
+-   :material-check-decagram:{ .lg .middle } **Inspect the actual results**
+
+    ---
+
+    Read the [original-program audit](final-audit.md) and [expanded workshop results](cutlass-workshop-validation.md). Every result retains its source revision, commands, system and execution scope.
+
+</div>
 
 ## How to read this
 
 [![Book reading map: hardware and PTX lead to safe asynchronous data movement and Tensor Core computation, then kernel design, multi-GPU training, attention and profiling.](images/book/overview.svg)](images/book/overview.svg)
 
-*The whole book in one view. Read downward to build the dependencies; return to the relevant layer when profiling exposes a bottleneck.*
+*Build the dependencies from the machine upward. When a profile exposes a bottleneck, return to the layer that explains it.*
 
-**CUDA prerequisites:** Be comfortable with thread/block indexing, launch dimensions, shared-memory lifetime, block synchronisation and CUDA error checking. If these are new, first work through [NVIDIA’s CUDA programming introduction](https://docs.nvidia.com/cuda/cuda-programming-guide/index.html), then follow this book’s [first verified run](getting-started.md#5-compile-and-execute-your-first-verified-program).
+**Prerequisites.** Be comfortable with thread/block indexing, launch dimensions, shared-memory lifetime, block synchronization and CUDA error checking. If those are new, begin with [NVIDIA's CUDA programming introduction](https://docs.nvidia.com/cuda/cuda-programming-guide/index.html), then follow [the first verified run](getting-started.md#5-compile-and-execute-your-first-verified-program).
 
-The chapters build on each other. Chapter 1 is pure architecture — no code,
-just the machine. Chapters 2–3 give you the instruction-level vocabulary
-(clusters, inline PTX, state spaces, `mbarrier`). Chapters 4–5 are about
-getting bytes into shared memory efficiently. Chapters 6–7 are the tensor
-cores. Chapters 8–10 put it together into real warp-specialized kernels.
-Chapter 11 leaves the single GPU behind. Chapters 12–13 are the payoff: an
-annotated FA3 design with a tested numerical reference, and kernel profiling.
-Chapter 14 adds the application timeline with Nsight Systems. Chapters 15–28
-progress from introductory CuTe algebra and indexing through complete kernels
-to advanced CUTLASS pipelines, fusion, precision and a reproducible capstone.
-
-If you already write CUDA and want the Hopper-specific parts, start at
-Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order. If you
-have a slow kernel in front of you right now, start at Chapter 13.
-
-**Start here:** [Getting Started & Installation](getting-started.md) takes you from choosing a machine to a real verified CUDA result. You can read the book and build its website on a computer without an NVIDIA GPU; the hardware-facing examples require a compatible execution host.
-
-| Your goal | Suggested route | Finish by producing |
+| Your goal | Suggested route | What to produce |
 | --- | --- | --- |
-| First successful GPU run | Getting Started → 1 → 2 | A passing output and a saved preflight report |
-| Understand Hopper data movement | 2 → 3 → 4 → 5 | A valid descriptor, a byte count and a completion/ownership explanation |
-| Write and diagnose GEMM kernels | 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 13 | Full-output reference checks and a profile tied to the right roofline |
-| Understand fast attention | 3 → 4 → 6 → 7 → 9 → 12 → 13 | A recurrence check and a clear account of what the skeleton still omits |
-| Trace application stalls and overlap | 11 → 13 → 14 | A bounded timeline and a useful-result timing comparison |
-| Read and validate CUTLASS kernels | 4 → 6 → 7 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 | A pinned build, coordinate checks and a full-output GEMM oracle |
-| Study distributed GPU workloads | 1 → 2 → 11 → 13 | A topology record and a collective result checked on the required hardware |
+| First successful GPU run | Getting Started → 1 → 2 | A checked result and saved preflight information |
+| Understand Hopper data movement | 2 → 3 → 4 → 5 | Valid descriptors, byte counts and an ownership/completion explanation |
+| Design and diagnose a GEMM | 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 13 | Full-output reference checks and a profile tied to the right bottleneck |
+| Understand fast attention | 3 → 4 → 6 → 7 → 9 → 12 → 13 | A checked recurrence and a clear account of the design's remaining kernel work |
+| Find application stalls | 11 → 13 → 14 | A bounded timeline and consistently timed useful-result comparison |
+| Learn CuTe/CUTLASS progressively | 15–18 foundations → 19–23 implementations → 24–28 advanced work | Coordinate proofs, checked kernels and a reproducible capstone |
+| Study distributed GPU work | 1 → 2 → 11 → 13 | A topology record and a result checked on the required participants |
 
-**Read an example in three passes.** First trace where each value lives and which thread owns it. Then identify what makes it safe to read and safe to overwrite. Finally predict the reference output before looking at the captured result. Performance tuning comes after those three agree.
+**Read each example in three passes.** Trace where values live and who owns them. Identify what makes them safe to read and safe to overwrite. Predict the reference result, then compare it with the captured output. Tune performance after those agree.
+
+The companion guides state a goal, explain the mechanisms, provide worked checks and finish with a summary. Open a linked SVG for its full-resolution vector view. Code snippets explain local ideas; complete programs and execution records identify what was actually compiled and run. Use each example's complete command, including its architecture target and required driver, NCCL or cuBLAS linker flags.
+
+## Contents
+
+### The machine and instruction foundations
+
+| Chapter | What you learn |
+| --- | --- |
+| [1. NVIDIA H100 GPU Architecture](01-h100-architecture.md) | SM organization, memory hierarchy, Tensor Cores and interconnect specifications |
+| [2. Clusters, Inline PTX, Data Types & Pointers](02-clusters-inline-ptx.md) | Cluster cooperation, state spaces, PTX operands and byte addressing |
+| [3. Asynchronicity, Barriers & the mbarrier Pipeline](03-asynchronicity-mbarrier.md) | Generic/async proxies, readiness, reuse and generation-aware completion |
+| [4. cuTensorMap, TMA & Swizzling](04-cutensormap-tma-swizzling.md) | Tensor-map descriptors, transfer shapes, physical layouts and bounds |
+| [5. cp.async.bulk, TMA Transfers & L2 Cache Hinting](05-cp-async-bulk-l2-hinting.md) | Transfer mechanisms, completion scopes, multicast and cache policies |
+| [6. WGMMA — Warp Group Matrix Multiply-Accumulate](06-wgmma-part-1.md) | Warpgroup cooperation, supported operands, descriptors and asynchronous arithmetic |
+| [7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse](07-wgmma-part-2.md) | Commit/wait groups, fragment stores, precision and structured sparsity |
+
+### Kernel design, applications and profiling
+
+| Chapter | What you learn |
+| --- | --- |
+| [8. Kernel Design, Warp Specialization & Pipelining](08-kernel-design-part-1.md) | Rooflines, producer/consumer roles, resource allocation and staged buffers |
+| [9. Pipelines, Epilogues & Persistent Scheduling](09-kernel-design-part-2.md) | Bidirectional ownership handshakes, epilogues and persistent tile scheduling |
+| [10. Stream-K Scheduling & Multi-Kernel Launch](10-stream-k-scheduling.md) | Reduction-work scheduling, partial results and dependent launches |
+| [11. Multi-GPU Systems, NCCL & Distributed Training](11-multi-gpu-nccl.md) | Topology, peer access, collectives and parallelism across devices |
+| [12. FlashAttention-3 on the H100](12-flashattention-3.md) | Online softmax, traffic-aware attention and Hopper design techniques |
+| [13. Profiling with Nsight Compute](13-nsight-compute.md) | Kernel counters, replay, rooflines, stalls and measured diagnoses |
+| [14. Profiling with Nsight Systems](14-nsight-systems.md) | Application timelines, dependencies, transfers and useful overlap |
+
+### CuTe and CUTLASS — increasing depth
+
+Each level builds on the previous one. Introductory chapters establish mappings; intermediate chapters connect those mappings to complete implementations; advanced chapters change execution and numerical contracts deliberately.
+
+| Level | Chapter | What you learn |
+| --- | --- | --- |
+| Introductory | [15. CuTe Foundations](15-cute-layouts.md) | Layout conventions, explicit formulas and the pinned workspace |
+| Introductory | [16. Hierarchical Layout Algebra](16-cute-layout-algebra.md) | Static/dynamic hierarchy, composition, division and storage bounds |
+| Introductory | [17. Tensors, Slicing & Predication](17-cute-tensors-tiling.md) | Engines, slices, tile views and coordinate-derived predicates |
+| Introductory | [18. CTA and Byte-Address Indexing](18-cta-indexing.md) | Batch, CTA and K-tile origins through element offsets to byte addresses |
+| Intermediate | [19. Thread Ownership & Tiled Copy](19-tiled-copy.md) | Real CuTe copy partitions and complete ownership/value checks |
+| Intermediate | [20. MMA Atoms & Register Fragments](20-mma-atoms.md) | Pinned instruction traits, register packing and fragment coordinates |
+| Intermediate | [21. Shared Layouts, Banks & Swizzles](21-shared-layouts.md) | Bank arithmetic, XOR mappings and descriptor agreement |
+| Intermediate | [22. Build a Complete Tiled GEMM](22-gemm-construction.md) | A padded, batched SIMT baseline with boundary and empty-reduction cases |
+| Intermediate | [23. CUTLASS Collective-Builder GEMM](23-cutlass-gemm.md) | Compatible builders, launch lifecycle and independent numerical checks |
+| Advanced | [24. Hopper Pipelines & Scheduling](24-cutlass-pipelines.md) | Stage generations, prologue/drain and resource budgets |
+| Advanced | [25. Epilogue Fusion](25-epilogue-fusion.md) | A fused ReLU variant, visitor-tree dataflow and operation order |
+| Advanced | [26. Precision & Block Scaling](26-precision-block-scaling.md) | E2M1, scale axes, packed storage and architecture boundaries |
+| Advanced | [27. Benchmarking & Framework Integration](27-benchmarking-integration.md) | Fair timing, concurrency, current streams and allocation lifetimes |
+| Advanced | [28. Worked Labs & Capstone](28-workbook-capstone.md) | Progressive exercises, worked solutions and an evidence-driven comparison |
+
+## Execution records and tested scope
+
+!!! success "Original suite — November 17–18, 2026"
+
+    The recorded current revisions of all **27 original complete CUDA programs compiled and executed successfully** across the recorded hosts: 26 workloads on H100 and the revised training workload on eight A100 GPUs. The [complete audit](final-audit.md) links the successful program records, stronger Chapter 7 coordinate test and twelve attention-reference cases. The [training supplement](eight-gpu-validation.md) uses `sm_80` and independently checks final weights and per-step losses; it is not an eight-H100 result.
+
+    The four barrier-ordering corrections in Chapters 3–5 passed the [November 18 two-H100 rerun](revalidation-2026-11-18.md) and memory checks. That host had **2× H100 80GB HBM3, 132 SMs each, NV18 peer topology**, Ubuntu 24.04.5 LTS, driver 580.105.08 and CUDA compiler 12.8.93; the recorded builds used `sm_90a`, C++17 and `-O2`.
+
+!!! success "Expanded workshop — H100, November 18, 2026"
+
+    The [CuTe/CUTLASS workshop record](cutlass-workshop-validation.md) captures **eight CUDA compilations, two Python byte-compilations and eleven passing workload invocations**, plus two real Nsight Systems reports. CPU-only layout, ownership and format checks retain their stated scope. These additions have their own source identities and records; the original suite is preserved.
+
+The [original single-GPU manifest](validation/2026-11-17/results.json) remains available as historical evidence. Current chapters link exact tested sources, commands, compile/run timestamps, system information and captured outputs beside the relevant examples. Derived arithmetic, architecture specifications and cited paper benchmarks are identified separately from this book's measured results.
 
 ??? info "What the evidence labels mean"
 
-    **Compiled** means the complete listed translation unit built with the recorded command. **Executed and passed** means its actual workload ran and passed its stated checks. **Reference/skeleton** means surrounding implementation is missing. A passing recurrence test does not validate a different handwritten kernel or reproduce a paper benchmark.
+    **Compiled** means the listed complete translation unit built with the recorded command. **Executed and passed** means the actual workload ran and passed its stated checks. **Reference/skeleton** means surrounding implementation is still required. A CPU coordinate model, an attention recurrence check and a real GPU kernel validate different scopes; passing one does not establish the others or reproduce a paper benchmark.
 
-    Every chapter includes learning goals and two self-checks with expandable worked answers. These exercises are reasoning aids, not extra claims of measured hardware behavior.
+    Exercises and their worked answers are reasoning aids. A hypothetical timing used to check TFLOP/s arithmetic is not a captured hardware measurement.
 
 ??? info "A compact glossary — use it while reading"
 
@@ -92,165 +147,9 @@ have a slow kernel in front of you right now, start at Chapter 13.
     | Online softmax | Combining tiles using a running maximum, normalizer and output numerator | [12](12-flashattention-3.md) |
     | Replay / occupancy | Profiler re-execution / resident execution-resource use; neither alone proves speed | [13](13-nsight-compute.md) |
 
-## Contents
+## Read and build locally
 
-<div class="grid cards" markdown>
-
--   :material-chip:{ .lg .middle } __Part I — The Machine__
-
-    ---
-
-    **[1. NVIDIA H100 GPU Architecture](01-h100-architecture.md)**
-
-    The TMA unit, asynchronous execution, 4th-gen Tensor Cores, the memory
-    hierarchy from HBM3 through L2/L1 to registers, SM microarchitecture
-    (quadrants, warp schedulers, dispatch units, SFUs, LSUs), NVLink 4.0,
-    shared memory banking and swizzling, and how thread blocks are
-    distributed across SMs.
-
--   :material-code-braces:{ .lg .middle } __Part II — The Instruction Layer__
-
-    ---
-
-    **[2. Clusters, Inline PTX, Data Types & Pointers](02-clusters-inline-ptx.md)**
-
-    Thread block clusters, distributed shared memory, TMA multicast, the PTX
-    ISA, inline `asm()` syntax with operands/constraints/clobbers, state
-    spaces, deep-learning data types, byte addressing, shared memory banks,
-    `cvta` and `mapa`.
-
-    **[3. Asynchronicity, Barriers & the mbarrier Pipeline](03-asynchronicity-mbarrier.md)**
-
-    Latency hiding, blocking vs non-blocking operations, the Generic vs Async
-    proxy memory model, RAW/WAR hazards, fences, the `mbarrier` primitive end
-    to end, phase flipping, `barrier.cluster`, commit/wait groups, and named
-    barriers.
-
--   :material-transfer:{ .lg .middle } __Part III — Moving Data__
-
-    ---
-
-    **[4. cuTensorMap, TMA & Swizzling](04-cutensormap-tma-swizzling.md)**
-
-    What TMA is and why it exists, how descriptors replace manual address
-    math, all 12 parameters of `cuTensorMapEncodeTiled()`, tensor rank,
-    strides and box dimensions, 32B/64B/128B swizzling with the XOR formula,
-    interleaving, L2 promotion, and out-of-bounds fill.
-
-    **[5. cp.async.bulk, TMA Transfers & L2 Cache Hinting](05-cp-async-bulk-l2-hinting.md)**
-
-    The `cp.async.bulk` family vs Ampere's `cp.async`, tensor-aware vs raw
-    copies, every state-space combination, mbarrier vs bulk-group completion,
-    L2 eviction hints and `createpolicy`, TMA multicast and the `ctaMask`,
-    prefetching, and `cp.reduce.async`.
-
--   :material-matrix:{ .lg .middle } __Part IV — Tensor Cores__
-
-    ---
-
-    **[6. WGMMA — Warp Group Matrix Multiply-Accumulate](06-wgmma-part-1.md)**
-
-    The shift from warp to warp group, why `wgmma.mma_async` is non-blocking,
-    the load → fence → compute → collect pipeline, every qualifier, operand
-    location rules, `ldmatrix` and swizzle addressing, the 64-bit WGMMA
-    descriptor field by field, and all supported tile shapes.
-
-    **[7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse](07-wgmma-part-2.md)**
-
-    Commit/wait group mechanics and what actually overlaps, the dual role of
-    `wgmma.fence`, `stmatrix` writeback, the FP8 paradigm shift (E4M3 vs
-    E5M2, scaling, `cvt.satfinite`, K-major layout, precision pitfalls), and
-    sparse WGMMA with 2:4 structured sparsity.
-
--   :material-cog-play:{ .lg .middle } __Part V — Kernel Design__
-
-    ---
-
-    **[8. Kernel Design, Warp Specialization & Pipelining](08-kernel-design-part-1.md)**
-
-    The roofline model and arithmetic intensity, classifying compute-bound vs
-    memory-bound kernels, producer/consumer warp specialization,
-    `setmaxnreg` dynamic register allocation, warp group count selection, and
-    circular multi-stage buffering.
-
-    **[9. Pipelines, Epilogues & Persistent Scheduling](09-kernel-design-part-2.md)**
-
-    The two-barrier handshake, ABA ambiguity and phase bits, full producer and
-    consumer flows, cooperative vs ping-pong pipeline architectures, the
-    six-stage epilogue fusion lifecycle, persistent scheduling, and
-    rasterization for L2 locality.
-
-    **[10. Stream-K Scheduling & Multi-Kernel Launch](10-stream-k-scheduling.md)**
-
-    Stream-K work units and splits, the first/middle/final triplet, the lock
-    array, deterministic vs non-deterministic reduction, HyTiS, the stream
-    serialization utilization gap, GDC hardware grid handoff, programmatic
-    dependent launch, and tuning the overlap window.
-
--   :material-lan:{ .lg .middle } __Part VI — Scaling Out__
-
-    ---
-
-    **[11. Multi-GPU Systems, NCCL & Distributed Training](11-multi-gpu-nccl.md)**
-
-    NVLink and NVSwitch topology, the DGX H100 node, ConnectX-7 and the
-    inter-node bottleneck, the SuperPOD, rail networks and SHARP, InfiniBand
-    leaf/spine/core, UVA and peer access, SLURM and PMIx, NCCL and the big six
-    collectives, and data / tensor / pipeline / expert parallelism.
-
--   :material-rocket-launch:{ .lg .middle } __Part VII — Putting It to Work__
-
-    ---
-
-    **[12. FlashAttention-3 on the H100](12-flashattention-3.md)**
-
-    How tiling avoids quadratic attention intermediates, and how to build a traffic-aware roofline model;
-    the online softmax recurrence worked by hand; then the three Hopper
-    techniques — producer/consumer warp specialization, ping-pong scheduling,
-    and 2-stage intra-warpgroup pipelining — behind the cited FA3 paper’s reported increase from about 35% to 75% of peak. Those paper benchmarks are separate from this book’s executed numerical reference. Causal masking and load balance, and the FP8 path: block
-    quantization, the K-major transpose of V, and Hadamard incoherent
-    processing.
-
-    **[13. Profiling with Nsight Compute](13-nsight-compute.md)**
-
-    Getting `ncu` to run, including the permission error that stops most
-    first attempts; replay and what it does to your program; Speed of Light
-    triage; the roofline chart and which ceiling actually applies on Hopper;
-    sectors per request and bank conflicts; every warp stall reason mapped to
-    the chapter that explains it; occupancy and why chasing it is wrong; the
-    metric naming scheme; SASS and stall sampling; and four worked diagnoses
-    from symptom to fix.
-
-</div>
-
-### Continue from introductory CuTe to advanced CUTLASS
-
-[Chapter 14: Nsight Systems](14-nsight-systems.md) complements Compute’s kernel counters with an application timeline. The CUTLASS sequence below is ordered by prerequisites: first derive the mapping, then build and check complete kernels, then optimize their pipeline, precision and integration.
-
-| Level | Chapters | Finish by explaining or producing |
-| --- | --- | --- |
-| Introductory | 15–18 | Exact coordinates, storage spans, tensor views, predicates and byte addresses |
-| Intermediate | 19–23 | Unique ownership, actual fragment layouts, safe shared storage and full-reference copy/GEMM results |
-| Advanced | 24–28 | Stage generations, supported fusion, numerical contracts and reproducible application measurements |
-
-| Chapter | Topic |
-| --- | --- |
-| [15. CuTe Foundations](15-cute-layouts.md) | Layout conventions, explicit formulas and a reproducible workspace |
-| [16. Hierarchical Layout Algebra](16-cute-layout-algebra.md) | Static/dynamic hierarchy, composition, division and storage bounds |
-| [17. Tensors, Slicing & Predication](17-cute-tensors-tiling.md) | Data engines, slices, tiles and coordinate-derived predicates |
-| [18. CTA and Byte-Address Indexing](18-cta-indexing.md) | Batch → CTA → K tile → thread → element offset → byte address |
-| [19. Thread Ownership & Tiled Copy](19-tiled-copy.md) | A real CuTe TiledCopy with complete value and ownership checks |
-| [20. MMA Atoms & Register Fragments](20-mma-atoms.md) | Pinned MMA traits, register packing and the warp/warpgroup distinction |
-| [21. Shared Layouts, Banks & Swizzles](21-shared-layouts.md) | Bank arithmetic, XOR mappings and TMA/WGMMA layout contracts |
-| [22. Build a Complete Tiled GEMM](22-gemm-construction.md) | A complete padded, batched SIMT baseline including partial tiles and K=0 |
-| [23. CUTLASS Collective-Builder GEMM](23-cutlass-gemm.md) | Pinned builders, compatible schedules and an independent full-output oracle |
-| [24. Hopper Pipelines & Scheduling](24-cutlass-pipelines.md) | Prologue, steady state, drain, phase bits and resource budgets |
-| [25. Epilogue Fusion](25-epilogue-fusion.md) | A complete fused ReLU variant, EVT dataflow and operation order |
-| [26. Precision & Block Scaling](26-precision-block-scaling.md) | E2M1 codebook, scale axes, packing and the Hopper/Blackwell boundary |
-| [27. Benchmarking & Framework Integration](27-benchmarking-integration.md) | Timing scopes, concurrency, genuine framework APIs and integration contracts |
-| [28. Worked Labs & Capstone](28-workbook-capstone.md) | Progressive laboratories, worked solutions and an evidence-driven capstone |
-
-## Running this book locally
+From a source checkout, create the documentation environment:
 
 ```bash
 python3 -m venv .venv
@@ -259,13 +158,8 @@ python3 -m pip install -r requirements.txt
 mkdocs serve
 ```
 
-Then open <http://127.0.0.1:8000>. See [Getting Started](getting-started.md) for Windows activation, remote preview and GPU prerequisites.
+Open <http://127.0.0.1:8000> on the same machine. [Getting Started](getting-started.md) covers source checkout, Windows activation, remote preview, strict-build checks and the separate GPU prerequisites.
 
-To publish it to GitHub Pages, push to `main` — the workflow in
-`.github/workflows/ci.yml` builds the site and deploys it for you. Edit the
-`site_url` and `repo_url` lines at the top of `mkdocs.yml` to point at your own
-repository first.
-
----
+For your own fork, set `site_url` and `repo_url` in `mkdocs.yml` to that repository before publishing. This repository's `.github/workflows/ci.yml` verifies and deploys changes pushed to `main`.
 
 Built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).

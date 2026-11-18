@@ -1,16 +1,22 @@
 # 15. CuTe — Layout Algebra You Can Check by Hand
+## Lesson 15 Companion Guide — From Address Arithmetic to CuTe Foundations
 
-[![CuTe maps logical coordinates to physical storage before assigning work to threads.](images/ch15/overview.svg)](images/ch15/overview.svg)
+[![CHAPTER 15: 15. CuTe — Layout Algebra You Can Check by Hand — conceptual chapter illustration](images/chapter-openers/15-workshop.svg)](images/chapter-openers/15-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Read a CuTe layout as an address function, distinguish a view from a transfer, and explain how a thread/value partition reaches an instruction operand. Review [shared-memory layout](04-cutensormap-tma-swizzling.md) and [WGMMA fragments](06-wgmma-part-1.md) first.
 
 ## 1 — The missing bridge to library kernels
 
+[![CuTe maps logical coordinates to physical storage before assigning work to threads.](images/ch15/overview.svg)](images/ch15/overview.svg)
+
 A hand-written kernel often hides its layout in arithmetic: `m * leading_dimension + n`, a swizzle XOR, or a lane-dependent register index. CuTe makes such mappings explicit types and objects. That lets CUTLASS describe global tiles, shared-memory stages, copy ownership and MMA fragments using related operations instead of unrelated indexing formulas.
 
 This chapter covers the **C++ CuTe API** distributed with CUTLASS **v4.3.6**, pinned in [Chapter 23](23-cutlass-gemm.md). CuTe’s Python DSL is a separate programming interface; do not mix its examples, imports or JIT rules with these C++ headers. Newer releases can add schedules and change builders, so this is a reproducible reading baseline rather than a claim that v4.3.6 is the latest release.
+
+Unless a listing is explicitly identified as a complete program, C++ snippets in this chapter are separate excerpts. They require `#include <cute/tensor.hpp>` and a surrounding function; use the linked complete oracle for a copyable translation unit and its full compile command. Repeated variable names in different excerpts are not instructions to concatenate them into one scope.
 
 The primary references are the pinned [layout tutorial](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/01_layout.md), [layout algebra](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/02_layout_algebra.md), and [tensor tutorial](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/03_tensor.md).
 
@@ -68,6 +74,59 @@ Both layouts have 12 logical elements and the same largest offset, but most inte
 For a row-major batched tensor `(L,M,N)` with packed batches, `offset(l,m,n)=l*M*N+m*N+n`. With physical row length `ld>=N` and batch stride `sb`, it becomes `l*sb+m*ld+n`. A tensor’s mathematical shape therefore does not uniquely determine its storage. A framework view can have padding or noncompact strides without changing its logical dimensions.
 
 A transpose view swaps the coordinate interpretation and the corresponding shape/stride modes. It does not physically rearrange the allocation. On a rectangular 3×4 row-major matrix, a 4×3 transposed view uses stride `(1,4)`: transposed coordinate `(2,1)` refers to original `(1,2)`, offset 6. Keep the original allocation’s lifetime valid while any such view is used.
+
+### Walk one coordinate all the way to bytes
+
+Construct both layouts explicitly, keeping coordinate names fixed:
+
+```cpp
+auto row_major = cute::make_layout(
+    cute::make_shape(cute::Int<3>{}, cute::Int<4>{}),
+    cute::make_stride(cute::Int<4>{}, cute::Int<1>{}));
+auto column_major = cute::make_layout(
+    cute::make_shape(cute::Int<3>{}, cute::Int<4>{}),
+    cute::make_stride(cute::Int<1>{}, cute::Int<3>{}));
+auto row_offset = row_major(cute::make_coord(1, 2));
+auto column_offset = column_major(cute::make_coord(1, 2));
+```
+
+1. The shape says that `(1,2)` is valid: row one is below three and column two is below four.
+2. Row-major stride `(4,1)` contributes `1×4` from the row and `2×1` from the column, totaling six **elements**.
+3. Column-major stride `(1,3)` contributes `1×1+2×3=7` elements. The logical coordinate is unchanged; only its address map differs.
+4. For FP16 storage, multiply by two bytes per element. The offsets become 12 and 14 bytes. From a hypothetical byte base `0x1000`, those would be `0x100C` and `0x100E`; these illustrative addresses are not pointers to dereference.
+5. The layout object returns an offset. A tensor access uses that offset with its engine to read or write a value. Computing the offset alone has moved no data.
+
+**Expected result:** `row_offset=6`, `column_offset=7`. **Check:** enumerate an entire interior row rather than checking only the corners. **Pitfall:** calling `(1,3)` “row-major” while defining the first coordinate as a row reverses the convention; inspect what happens when the column increases by one.
+
+### Keep the same mapping with runtime dimensions
+
+```cpp
+int rows = 3, columns = 4, leading_dimension = 4;
+auto runtime_row = cute::make_layout(
+    cute::make_shape(rows, columns),
+    cute::make_stride(leading_dimension, cute::Int<1>{}));
+auto offset = runtime_row(cute::make_coord(1, 2)); // 6
+```
+
+1. The first mode's stride is the supplied physical row length `leading_dimension`, here four.
+2. The arithmetic remains `1×4+2=6`.
+3. The dimensions now have runtime values; the type does not encode three and four as `Int<3>` and `Int<4>`.
+4. The last stride remains statically one, so the compiler still has useful static information. Static and dynamic facts can coexist.
+
+**Check:** reconstructing the layout with `leading_dimension=8` and the same logical shape `(3,4)` changes this offset to ten; that describes padded storage. Changing the original C++ variable after construction does not automatically update an existing layout object. **Pitfall:** static dimensions do not promise that every later coordinate or address calculation disappears from generated code. Inspect the actual instruction and resource report before making a performance claim.
+
+### Extend the calculation to a packed batch
+
+A row-major tensor with logical shape `(L,M,N)=(2,3,4)` has element strides `(12,4,1)`:
+
+```cpp
+auto batches = cute::make_layout(
+    cute::make_shape(cute::Int<2>{}, cute::Int<3>{}, cute::Int<4>{}),
+    cute::make_stride(cute::Int<12>{}, cute::Int<4>{}, cute::Int<1>{}));
+auto last = batches(cute::make_coord(1, 2, 3)); // 23
+```
+
+First select batch one: `1×12=12`. Then move two rows: `2×4=8`. Finally move three columns: `3×1=3`. The sum is 23 elements, or 46 bytes for FP16. The 24-element packed allocation ends at exactly that coordinate. **Check:** batch zero's last coordinate is offset 11, while batch one's first coordinate is 12. **Pitfall:** using the output tile size as a batch stride would overlap independent matrices.
 
 ## 3 — Size and storage span are different
 
@@ -227,3 +286,13 @@ LAYOUT PASS: 24 matrix coordinates, 12 tile coordinates; errors=0
 ```
 
 <!-- workshop:end:cute_layouts -->
+
+<!-- companion-summary:start -->
+## Summary
+
+- A layout maps logical coordinates to offsets; its shape does not determine physical storage without strides and an explicit coordinate convention.
+
+- Views, coalescing and composition do not move values. Allocation bounds, ownership and actual copy/MMA operations remain separate responsibilities.
+
+- Use the pinned workspace and small coordinate oracles before progressing to [hierarchical algebra](16-cute-layout-algebra.md) and [tensor views](17-cute-tensors-tiling.md).
+<!-- companion-summary:end -->

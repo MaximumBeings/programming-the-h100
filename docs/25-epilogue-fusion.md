@@ -1,12 +1,16 @@
 # 25. Epilogue Fusion — Preserve the Operation, Remove a Pass
+## Lesson 25 Companion Guide — Preserve Numerical Semantics While Removing a Memory Pass
 
-[![An epilogue graph applies alpha and beta before activation and the final store.](images/ch25/overview.svg)](images/ch25/overview.svg)
+[![CHAPTER 25: 25. Epilogue Fusion — Preserve the Operation, Remove a Pass — conceptual chapter illustration](images/chapter-openers/25-workshop.svg)](images/chapter-openers/25-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Translate a mathematical epilogue into a compatible CUTLASS fusion operation, validate its exact semantics and compare complete workloads. Read [the builder](23-cutlass-gemm.md) and [pipeline ownership](24-cutlass-pipelines.md) first.
 
 ## 1 — State the graph before writing a tag
+
+[![An epilogue graph applies alpha and beta before activation and the final store.](images/ch25/overview.svg)](images/ch25/overview.svg)
 
 The baseline computes `Z = alpha*AB + beta*C`. The executable fusion lab computes `D = ReLU(Z)`, with `ReLU(x)=max(0,x)` for the finite values used by its test. All operands, accumulator and scalar conventions remain explicit: FP16 A/B, FP32 accumulation, FP32 C and output, and scalar alpha/beta applied once.
 
@@ -78,6 +82,19 @@ C → multiply by beta ───────────────────
 Nodes describe fetch, broadcast, computation or storage. Child order and operation type determine the expression. A `multiply_add` node with the wrong child order can compile while implementing a different formula. A cast in a child node can also move rounding earlier in the graph.
 
 Pinned example 49 contains a custom tree implementing the linear combination. Start by matching that tree against its scalar formula and argument structure, then identify how a supported activation is attached. Do not write a new callback merely to reproduce a predefined operation that already matches the contract.
+
+### Evaluate the fusion tree one node at a time
+
+Start with the small matrices from Chapter 23, whose independently computed `AB=[[-1,17],[7,0]]` and `C=[[2,-4],[6,8]]`. Choose the lab's operation `D=ReLU(0.5*AB+0.25*C)`. This is a manual semantic example, not a transcript of the larger executable's initialization.
+
+1. **Fetch the completed accumulator.** At `(m,n)=(0,1)`, the entire K reduction is `acc=17`. Do not apply the epilogue to each partial K tile.
+2. **Apply alpha.** The accumulator branch produces `0.5*17=8.5` in the selected FP32 compute type.
+3. **Fetch and scale C.** The source branch reads `C[0,1]=-4` and produces `0.25*(-4)=-1`. This is the C operand, not an accumulator register with the same index.
+4. **Join the branches.** The linear combination is `Z=8.5+(-1)=7.5`. Apply ReLU **after** this addition, so `D[0,1]=7.5`.
+5. **Repeat across the output.** The intermediate Z is `[[0,7.5],[5,2]]`; all entries survive ReLU. To test that activation really occurs, change only the illustrative `C[0,0]` to `-2`: `Z[0,0]=0.5*(-1)+0.25*(-2)=-1`, so the fused output there must be zero. A purely positive test would not distinguish a missing activation.
+6. **Connect the API.** `LinCombEltAct<ReLu,float,float,float>` names the activation/output/compute/source contract; `args.epilogue.thread.alpha` and `.beta` provide the runtime scalars. The explicit supported mainloop/epilogue schedules implement the storage and synchronization path around this expression.
+
+**Check:** compare the fused output to the independently evaluated Z followed by activation, not to the unfused output Z itself. The example's binary fractions are exactly representable; a general low-precision output needs an explicit conversion/rounding policy too. If a future bias is added, write its coordinate and insert its addition at the intended node before changing any callback types.
 
 ## 6 — Bias and residuals need a coordinate contract
 
@@ -283,3 +300,13 @@ FUSED GEMM PASS: 3 full CPU-reference cases
 ## Additional memory-safety record
 
 The exact tested revision also passed [Compute Sanitizer memcheck](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/memcheck-cutlass_gemm_relu.log) with zero errors and its numerical checks intact. [The dated supplemental manifest](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/commands.json) retains commands, source hashes and actual UTC stage times. This does not prove every untested schedule.
+
+<!-- companion-summary:start -->
+## Summary
+
+- Specify the epilogue graph, precision and output coordinates before selecting a predefined fusion or visitor tree.
+
+- Activation order, beta/C participation, broadcast axes and conversion boundaries can change results even when a template compiles.
+
+- Validate the fused variant independently and compare the complete fused and unfused workloads. [Precision and block scaling](26-precision-block-scaling.md) add further representation contracts.
+<!-- companion-summary:end -->

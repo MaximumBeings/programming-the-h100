@@ -1,12 +1,21 @@
 # 17. CuTe Tensors — Views, Slicing, Tiling and Predication
+## Lesson 17 Companion Guide — Connect Tensor Engines, Tile Views and Safe Access
 
-[![A tensor view is tiled, partitioned and paired with coordinate predicates before memory access.](images/ch17/overview.svg)](images/ch17/overview.svg)
+[![CHAPTER 17: 17. CuTe Tensors — Views, Slicing, Tiling and Predication — conceptual chapter illustration](images/chapter-openers/17-workshop.svg)](images/chapter-openers/17-workshop.svg)
+
+
+
+!!! tip "Your goal in this chapter"
+
+    Explain which storage a tensor owns or references, derive slices and tile origins, and predicate the original logical domain after partitioning. Read [layout algebra](16-cute-layout-algebra.md) first.
 
 A layout describes an indexing function. A tensor adds a data engine: a pointer-like object or owned storage on which that function operates. This distinction connects [layout algebra](16-cute-layout-algebra.md) to a real kernel without turning every shape transformation into an imaginary memory transfer.
 
 The examples use the pinned **CUTLASS v4.3.6 CuTe C++ API** and assume `#include <cute/tensor.hpp>` and `using namespace cute;`. Consult the official [tensor tutorial](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/03_tensor.md) and [predication tutorial](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/0y_predication.md) for their full contracts. The snippets below are explanatory fragments inside the appropriate host/device context, not standalone kernels or captured execution output.
 
 ## 1 — Start with the engine and its lifetime
+
+[![A tensor view is tiled, partitioned and paired with coordinate predicates before memory access.](images/ch17/overview.svg)](images/ch17/overview.svg)
 
 A nonowning tensor combines an existing pointer with a layout:
 
@@ -31,7 +40,7 @@ This declares owned storage with a static shape; it is not an alias of `matrix`.
 
 ## 2 — Slicing selects coordinates; it does not copy values
 
-Consider a compact row-major tensor of shape `(3,4)` with base pointer P. A fixed coordinate is selected; an underscore keeps that mode:
+For this separate example, construct `matrix` with `M=3`, `N=4` and `ld=4` using the preceding `make_tensor` pattern, and call its allocation base P. A fixed coordinate is selected; an underscore keeps that mode:
 
 ```cpp
 auto row_one = matrix(1, _);
@@ -51,6 +60,29 @@ Reading `column_two(1)` selects original coordinate `(1,2)` at offset 6. The col
 Nested coordinates need nested slicing decisions. Retaining an entire hierarchical mode with `_` differs structurally from retaining its leaves with `make_coord(_,_)`. Even if both views enumerate the same elements, their ranks and mode profiles can differ. This matters when a later copy or MMA partition expects a specific hierarchy.
 
 A useful debugging practice is to write each slice's retained modes, pointer offset and strides before checking values. That makes it harder to mistake a storage transformation for a view transformation.
+
+### Walk through a padded FP32 view without moving its data
+
+Use a separate concrete case: three rows, four logical columns, eight allocated FP32 words per row. Assume the existing allocation has logical value `100*m+n` at `(m,n)` and padding value −1. The pointer `ptr` refers to that allocation; this is a kernel-context reading sketch, not an allocation or launch:
+
+```cpp
+auto padded = cute::make_tensor(
+    cute::make_gmem_ptr(ptr),
+    cute::make_layout(cute::make_shape(3, 4),
+                      cute::make_stride(8, cute::Int<1>{})));
+auto selected_row = padded(1, cute::_);
+auto selected_column = padded(cute::_, 2);
+```
+
+1. `padded` names offsets `0..3`, `8..11` and `16..19`. It does not read or initialize those words merely by construction.
+2. Fixing the row at one advances the view's base by eight words. `selected_row(2)` adds two more, reaching offset ten and logical value 102.
+3. Fixing the column at two advances its base by two words and retains a row stride of eight. `selected_column(1)` also reaches `2+8=10`, so the two slices alias at this element.
+4. With FP32 words, offset ten is a 40-byte displacement. Element offsets do not turn into byte offsets until the element type is included.
+5. A store through either nonconst slice changes the same original word. A new slice is not an independent copy and must not outlive the allocation.
+
+**Expected result:** the selected row contains `100,101,102,103`; the selected column contains `2,102,202`. **Check:** the shared intersection must be 102. **Pitfall:** treating the column as contiguous would read original offsets `2,3,4`, including padding, instead of `2,10,18`.
+
+Now suppose a consumer needs a compact 3×4 destination. Give that destination stride `(4,1)` and issue a predicated copy from the padded source using shared logical coordinates. Logical `(2,3)` then reads source offset `2×8+3=19` and writes destination offset `2×4+3=11`, preserving value 203. Merely replacing the source view's stride eight with four would instead read offset 11, value 103. This is the concrete difference between **selecting a new view** and **moving the intended values**.
 
 ## 3 — Tiling groups a region and its repetitions
 
@@ -116,3 +148,13 @@ The [CPU workbook](examples/advanced/indexing_workbook.py) enumerates the 128-th
 **Exercise.** Can a full-tile shared-memory initialization replace the global predicate?
 
 **Worked answer.** No. It can initialize safe shared storage, but it cannot make an invalid global load legal. Predicate the global access first and arrange the intended shared/register value for invalid inputs. Retain uniform participation in any required block/warp synchronization even when an individual thread has no valid payload. Continue with [CTA offsets and the K loop](18-cta-indexing.md) to connect those coordinates to GEMM addresses.
+
+<!-- companion-summary:start -->
+## Summary
+
+- A tensor combines an engine with a layout. Pointer tags and slices describe storage access without allocating, copying or extending the allocation lifetime.
+
+- Tile dimensions do not replace global strides. Partitioning assigns work, while an actual operation performs the transfer or computation.
+
+- Partition an identity-coordinate tensor alongside the data and use the original extents for bounds checks; continue with [CTA and K-loop indexing](18-cta-indexing.md).
+<!-- companion-summary:end -->

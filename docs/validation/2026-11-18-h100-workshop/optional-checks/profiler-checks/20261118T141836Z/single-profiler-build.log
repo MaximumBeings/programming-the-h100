@@ -1,0 +1,3 @@
+$ cmake --build /home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler --target cutlass_profiler -j 2
+[0/2] Re-checking globbed directories...
+ninja: build stopped: interrupted by user.

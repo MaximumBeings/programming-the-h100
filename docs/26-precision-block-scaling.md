@@ -1,12 +1,21 @@
 # 26. Precision, Block Scaling and the Hopper–Blackwell Boundary
+## Lesson 26 Companion Guide — Separate Stored Codes, Scale Layouts and Executed Arithmetic
 
-[![Precision and block scaling: values, scales and architecture boundaries](images/ch26/overview.svg)](images/ch26/overview.svg)
+[![CHAPTER 26: 26. Precision, Block Scaling and the Hopper–Blackwell Boundary — conceptual chapter illustration](images/chapter-openers/26-workshop.svg)](images/chapter-openers/26-workshop.svg)
+
+
+
+!!! tip "Your goal in this chapter"
+
+    Decode E2M1 and packed nibbles, identify the reduction-axis scale contract, and separate representation error from kernel error. Read [GEMM contracts](23-cutlass-gemm.md) and [epilogue precision](25-epilogue-fusion.md) first.
 
 A low-bit GEMM has two independent questions: what numbers do the stored bits represent, and what instructions execute the multiplication? A four-bit allocation answers neither question completely. This chapter separates representation, quantization, scale layout and accumulation so a storage experiment cannot accidentally become a claim about native Tensor Core support.
 
 The working Hopper path in this book uses supported FP16/BF16 operands and FP32 accumulation. The CPU exercise below explores E2M1 representation with exact floating-point block scales. It is a format reference, not an NVFP4 kernel or an implementation of NVIDIA's complete quantization recipe.
 
 ## 1 — Write the numerical contract before the datatype
+
+[![Precision and block scaling: values, scales and architecture boundaries](images/ch26/overview.svg)](images/ch26/overview.svg)
 
 Start with logical operands `A[M,K]` and `B[K,N]`, then state which matrix is actually multiplied. If quantization reconstructs `A_hat` and `B_hat`, a low-bit kernel approximates `A_hat @ B_hat`; comparing only against the original `A @ B` mixes quantization error with implementation error.
 
@@ -56,6 +65,60 @@ Two four-bit codes fit in a byte. This exercise places the first logical code in
 If a row stores K logical values in K/2 bytes, its byte stride is K/2, not K. Derive row and column contributions in consistent units before forming an address. For odd K, specify padding and a logical valid-element count; never let a padding nibble become an extra reduction term. The reference requires an even code count and complete blocks so omissions cannot be hidden by implicit padding.
 
 A blocked or swizzled scale tensor introduces another coordinate map. Flattening a permuted scale tensor does not make ordinary row-major indexing valid. Prove the producer and consumer maps agree for every logical scale coordinate, including padded regions. A hardware-required scale layout is specific to the chosen instruction and library interface, not a universal `to_blocked()` transformation or guaranteed speedup.
+
+### Worked block: encode, pack, reconstruct, multiply
+
+Use M=1, K=16 and N=2. Only the first six positions may be nonzero; positions 6 through 15 are zero. The original operands are:
+
+| K position | 0 | 1 | 2 | 3 | 4 | 5 | 6 through 15 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| A row | 1 | 2 | 3 | 4 | 0 | 6 | All zero |
+| B column 0 | 1 | −2 | 3 | −4 | 12 | 0 | All zero |
+| B column 1 | 4 | −8 | 12 | −16 | 48 | 0 | All zero |
+
+The purpose is to see a complete representation path by hand, not to simulate Blackwell's scale storage. Use the CPU reference's exact Python-float scales and its low-nibble-first packing convention.
+
+1. **Choose each K-block scale.** A's maximum magnitude is six, so `s_A=6/6=1`. B's column maxima are 12 and 48, so their scales are two and eight. Logical `S_B[block_k,n]` is therefore `[2,8]` for the single K block. The helper stores these as rows of the transposed B view, `[[2],[8]]`.
+2. **Normalize and encode A.** Its first six normalized values are `1,2,3,4,0,6`, with E2M1 codes `2,4,5,6,0,7`. For example, code 5 is floating-point value three, not integer five.
+3. **Pack A pairs.** Codes `(2,4)` become byte `0x42`; `(5,6)` become `0x65`; `(0,7)` become `0x70`. The remaining ten zeros occupy five zero bytes. Sixteen values require eight bytes.
+4. **Normalize and encode B.** Both columns produce the same normalized values `0.5,-1,1.5,-2,6,0`, but have different scales. Their first six codes are `1,A,3,C,7,0` in hexadecimal. The packed bytes begin `A1 C3 07`. Sign extension would incorrectly read code `A` as integer −6; the E2M1 decoder correctly returns −1.
+5. **Reconstruct before multiplying.** Column 0 becomes twice its decoded code values, restoring `1,-2,3,-4,12,0`. Column 1 uses scale eight and restores four times column 0. No quantization error arises for these deliberately representable inputs.
+6. **Calculate each dot.** The normalized dot is `1×0.5 + 2×(-1) + 3×1.5 + 4×(-2) + 0×6 + 6×0 = -5`. Restoring the scale products gives outputs `1×2×(-5)=-10` and `1×8×(-5)=-40`.
+
+You can reproduce the same steps using the complete reference rather than writing a second decoder. From the repository root:
+
+```python
+import math
+import sys
+sys.path.insert(0, "docs/examples/advanced")
+from fp4_reference import quantize_rows, quantize_b_kn, pack
+
+a = [1, 2, 3, 4, 0, 6] + [0] * 10
+b0 = [1, -2, 3, -4, 12, 0] + [0] * 10
+b1 = [4 * value for value in b0]
+qa, sa, a_hat = quantize_rows([a])
+qb, sb, b_hat = quantize_b_kn([list(pair) for pair in zip(b0, b1)])
+print("A bytes:", pack(qa[0]).hex(" "))
+print("B column 0 bytes:", pack(qb[0]).hex(" "))
+print("A row scales:", sa)
+print("B transpose-row scales:", sb)
+print("Reconstructed dot products:", [
+    math.fsum(a_hat[0][k] * b_hat[k][n] for k in range(16))
+    for n in range(2)
+])
+```
+
+The CPU calculation produces:
+
+```text
+A bytes: 42 65 70 00 00 00 00 00
+B column 0 bytes: a1 c3 07 00 00 00 00 00
+A row scales: [[1.0]]
+B transpose-row scales: [[2.0], [8.0]]
+Reconstructed dot products: [-10.0, -40.0]
+```
+
+**Check:** the original-input dots also equal −10 and −40, and both B columns share codes while retaining different scales. **Pitfall:** swapping the two scale entries preserves every packed nibble but changes both outputs. With several K blocks, apply each block's own scale product before combining its partial dot; one final scale cannot generally replace all block scales. This worked result remains a CPU E2M1/exact-scale exercise, not evidence of E4M3 scale conversion or native NVFP4 execution.
 
 ## 6 — Keep error sources distinguishable
 
@@ -257,3 +320,13 @@ FP4 REFERENCE PASS: 3 CPU-only reference groups
 ```
 
 <!-- workshop:end:fp4_reference -->
+
+<!-- companion-summary:start -->
+## Summary
+
+- E2M1 is a floating-point codebook, not signed INT4. Payload packing, scale representation, reduction axes and zero-block policy all belong to the interface.
+
+- The CPU exact-scale oracle does not implement a complete NVFP4 quantizer or execute native low-bit GPU arithmetic. Hopper and Blackwell paths retain separate evidence.
+
+- Compare against decoded operands before assessing original-input error, and include conversions and metadata in [a reproducible performance experiment](27-benchmarking-integration.md).
+<!-- companion-summary:end -->

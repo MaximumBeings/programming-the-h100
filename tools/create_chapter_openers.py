@@ -194,24 +194,28 @@ SPECS = [
     ('13-profiling','CHAPTER 13','Turn intuition','into evidence.','Profile the kernel. Test the explanation.','profile'),
 ]
 
-for filename,chapter,line1,line2,subtitle,kind in SPECS:
-    svg=f'''<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="520" viewBox="0 0 1440 520" role="img" aria-labelledby="title description">
-<title id="title">{escape(chapter+': '+line1+' '+line2)}</title>
-<desc id="description">{escape(subtitle)}. Original conceptual illustration, not a die photograph, measured trace or scale drawing.</desc>
-<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#071a20"/><stop offset="1" stop-color="#0e3033"/></linearGradient><radialGradient id="glow"><stop stop-color="#19685b" stop-opacity=".42"/><stop offset="1" stop-color="#071a20" stop-opacity="0"/></radialGradient><pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#9ccfc0" opacity=".16"/></pattern><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8" fill="none" stroke="#2dd4bf" stroke-width="1.5"/></marker></defs>
-<rect width="1440" height="520" rx="20" fill="url(#bg)"/><rect width="1440" height="520" rx="20" fill="url(#dots)"/><ellipse cx="1040" cy="250" rx="610" ry="400" fill="url(#glow)"/>
-<g font-family="Arial, Liberation Sans, sans-serif"><rect x="55" y="62" width="5" height="315" rx="2" fill="#a3e635"/>
-<text x="83" y="94" font-size="19" letter-spacing="3" fill="#a3e635" font-weight="700">{escape(chapter)}</text>
-<text x="83" y="176" font-size="45" fill="#eef9f5" font-weight="700">{escape(line1)}</text><text x="83" y="232" font-size="45" fill="#eef9f5" font-weight="700">{escape(line2)}</text>
-<foreignObject x="83" y="265" width="400" height="110"><div xmlns="http://www.w3.org/1999/xhtml" style="font:22px/1.5 Arial,sans-serif;color:#a8c6c8">{escape(subtitle)}</div></foreignObject>
-<text x="83" y="440" font-size="18" fill="#a8c6c8">PROGRAMMING THE H100</text>
-<g transform="translate(555 30)">{illustration(kind)}</g><text x="1390" y="490" text-anchor="end" font-size="15" fill="#89b0b2">CONCEPTUAL ILLUSTRATION</text></g></svg>'''
-    # Plain SVG text keeps the illustrations portable to static renderers.
-    lines=subtitle.split(' · ')
-    if len(lines)==1 and len(subtitle)>34:
-        words=subtitle.split(); half=len(words)//2; lines=[' '.join(words[:half]),' '.join(words[half:])]
-    replacement=''.join(f'<text x="83" y="{290+i*31}" font-size="21" fill="#a8c6c8">{escape(line)}</text>' for i,line in enumerate(lines))
-    import re
-    svg=re.sub(r'<foreignObject.*?</foreignObject>',replacement,svg,flags=re.S)
-    (OUTPUT/(filename+'.svg')).write_text(svg+'\n')
-print(f'Created {len(SPECS)} chapter and guide illustrations.')
+def main():
+    for filename,chapter,line1,line2,subtitle,kind in SPECS:
+        svg=f'''<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="520" viewBox="0 0 1440 520" role="img" aria-labelledby="title description">
+    <title id="title">{escape(chapter+': '+line1+' '+line2)}</title>
+    <desc id="description">{escape(subtitle)}. Original conceptual illustration, not a die photograph, measured trace or scale drawing.</desc>
+    <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#071a20"/><stop offset="1" stop-color="#0e3033"/></linearGradient><radialGradient id="glow"><stop stop-color="#19685b" stop-opacity=".42"/><stop offset="1" stop-color="#071a20" stop-opacity="0"/></radialGradient><pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#9ccfc0" opacity=".16"/></pattern><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8" fill="none" stroke="#2dd4bf" stroke-width="1.5"/></marker></defs>
+    <rect width="1440" height="520" rx="20" fill="url(#bg)"/><rect width="1440" height="520" rx="20" fill="url(#dots)"/><ellipse cx="1040" cy="250" rx="610" ry="400" fill="url(#glow)"/>
+    <g font-family="Arial, Liberation Sans, sans-serif"><rect x="55" y="62" width="5" height="315" rx="2" fill="#a3e635"/>
+    <text x="83" y="94" font-size="19" letter-spacing="3" fill="#a3e635" font-weight="700">{escape(chapter)}</text>
+    <text x="83" y="176" font-size="45" fill="#eef9f5" font-weight="700">{escape(line1)}</text><text x="83" y="232" font-size="45" fill="#eef9f5" font-weight="700">{escape(line2)}</text>
+    <foreignObject x="83" y="265" width="400" height="110"><div xmlns="http://www.w3.org/1999/xhtml" style="font:22px/1.5 Arial,sans-serif;color:#a8c6c8">{escape(subtitle)}</div></foreignObject>
+    <text x="83" y="440" font-size="18" fill="#a8c6c8">PROGRAMMING THE H100</text>
+    <g transform="translate(555 30)">{illustration(kind)}</g><text x="1390" y="490" text-anchor="end" font-size="15" fill="#89b0b2">CONCEPTUAL ILLUSTRATION</text></g></svg>'''
+        # Plain SVG text keeps the illustrations portable to static renderers.
+        lines=subtitle.split(' · ')
+        if len(lines)==1 and len(subtitle)>34:
+            words=subtitle.split(); half=len(words)//2; lines=[' '.join(words[:half]),' '.join(words[half:])]
+        replacement=''.join(f'<text x="83" y="{290+i*31}" font-size="21" fill="#a8c6c8">{escape(line)}</text>' for i,line in enumerate(lines))
+        import re
+        svg=re.sub(r'<foreignObject.*?</foreignObject>',replacement,svg,flags=re.S)
+        (OUTPUT/(filename+'.svg')).write_text(svg+'\n')
+    print(f'Created {len(SPECS)} chapter and guide illustrations.')
+
+if __name__ == '__main__':
+    main()

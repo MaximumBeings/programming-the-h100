@@ -1,12 +1,16 @@
 # 20. MMA Atoms — Prove Who Owns Every Result
+## Lesson 20 Companion Guide — Decode the Instruction’s Real Fragment Contract
 
-[![An MMA atom connects participating threads, operand fragments and output coordinates.](images/ch20/overview.svg)](images/ch20/overview.svg)
+[![CHAPTER 20: 20. MMA Atoms — Prove Who Owns Every Result — conceptual chapter illustration](images/chapter-openers/20-workshop.svg)](images/chapter-openers/20-workshop.svg)
 
-!!! tip "Your goal"
+
+!!! tip "Your goal in this chapter"
 
     Derive a real instruction's thread/value mapping, prove complete output coverage, and distinguish a warp MMA from Hopper WGMMA. Read [thread/value copy ownership](19-tiled-copy.md) first; revisit [WGMMA](06-wgmma-part-1.md) for the asynchronous instruction contract.
 
 ## 1 — An atom is more than a tile shape
+
+[![An MMA atom connects participating threads, operand fragments and output coordinates.](images/ch20/overview.svg)](images/ch20/overview.svg)
 
 A statement such as “this instruction computes a 16 × 8 result” omits three essential questions: which threads participate, which values each thread supplies, and where each output register belongs. CuTe connects the instruction wrapper to those answers through `MMA_Traits`. An `MMA_Atom` combines the operation and its traits; a `TiledMMA` repeats and arranges atoms into a larger computation.
 
@@ -66,6 +70,16 @@ for (int value = 0; value < 4; ++value) {
 }
 ```
 
+### Calculate lane 10 before trusting the printed map
+
+1. Split the lane into `g=10/4=2` and `q=10%4=2`.
+2. For value index 0, `a=0,b=0`. The trait offset is `32×2+2=66`; decode `66%16=2` and `66/16=4`, yielding output `(2,4)`.
+3. For value index 1, add `16a=16`, obtaining 82. It decodes to `(2,5)`.
+4. For value index 2, add `8b=8` instead, obtaining 74. It decodes to `(10,4)`.
+5. For value index 3, both additions apply: offset 90 decodes to `(10,5)`.
+
+**Expected coordinates:** `(2,4), (2,5), (10,4), (10,5)`. The integer quotients use the atom's first-mode-fast logical encoding; they are not byte addresses in a row-major output allocation. **Check:** compare each result with the independently derived table, then enumerate all lanes for complete coverage. **Pitfall:** treating offsets 66, 82, 74 and 90 as row-major global offsets would use the correct numbers in the wrong coordinate convention.
+
 The type definitions require the matching atom-traits header; the complete program linked below supplies it.
 
 ## 4 — Coverage is a proof obligation
@@ -117,7 +131,7 @@ nvcc -std=c++17 -O2 --expt-relaxed-constexpr \
 ./build/advanced/cute_fragments
 ```
 
-**Expected check, not a captured execution:** `FRAGMENT PASS` with 128 C, 128 A and 64 B ownership pairs and zero errors. This program launches no GPU kernel. Its compilation/execution record must still be captured separately from the original book programs.
+**Expected check:** `FRAGMENT PASS` with 128 C, 128 A and 64 B ownership pairs and zero errors. The actual compilation and host execution are captured in the dated block below, separately from the original book programs. This program launches no GPU kernel.
 
 ## 8 — Exercises with worked answers
 
@@ -218,3 +232,13 @@ FRAGMENT PASS: C_pairs=128 A_pairs=128 B_pairs=64 errors=0
 ```
 
 <!-- workshop:end:cute_fragments -->
+
+<!-- companion-summary:start -->
+## Summary
+
+- An MMA atom specifies participating threads, operand packing and result coordinates, not merely an M×N tile size.
+
+- The pinned warp-level atom assigns four FP32 outputs per lane; independent coordinate checks and bijective coverage catch different mapping errors.
+
+- Count both spatial atoms and K repetitions, and keep warp MMA distinct from asynchronous Hopper WGMMA. Next, align producers and consumers through [shared-memory layouts](21-shared-layouts.md).
+<!-- companion-summary:end -->
