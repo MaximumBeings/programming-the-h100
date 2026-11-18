@@ -1,0 +1,35 @@
+{
+  "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+  "upstream_directory": "examples/88_hopper_fmha",
+  "scope": "Exact pinned NVIDIA source; GPU compilation/execution remains pending.",
+  "files": {
+    "88_hopper_fmha.cu": "b29f795d77867fbac7954c55c39042d7a5b145659f84742c568c305cfc47b4c5",
+    "CMakeLists.txt": "5817cc8f28e46a8de7f3020571fc24b6cd632c4ee583ea74d86894a45e0c4ca9",
+    "collective/fmha_collective_bwd_tma_warpspecialized.hpp": "c09fc571017a3af4587c9b8d064e58540b770fb1b6da3cf92a55b0db3e3e7691",
+    "collective/fmha_collective_load.hpp": "52c598c13380ee12d293c30f6c30829bbeb321a5e0981e52825d4e4c33ea5b8b",
+    "collective/fmha_collective_softmax.hpp": "4b0a6e516cc5dd521df6ca0da0d8690a7da8fc54d5c384fd3b3dd9cae16f3b76",
+    "collective/fmha_collective_tma.hpp": "4f5aef8e89a66f96b219e4797623dfe5da130fc3c6517a80fb9a4cbfbc1083ba",
+    "collective/fmha_collective_tma_warpspecialized.hpp": "a367ea181f40cb04bfc9ad7a956444f12d1cdaff0b28dbfe8d30bb6fe2b0753e",
+    "collective/fmha_common.hpp": "f4c477341bca281f26400c032ac6ad0d39d5ebddaaa3d0f0b2fa975889905c9e",
+    "collective/fmha_epilogue.hpp": "ea0340cc613724f1ee023fa69261fd51952c3e46445c0172cbb85b23de1540ae",
+    "collective/fmha_epilogue_bwd.hpp": "7f8e1e4d6430d14a8b2c769c370ac6d0191920a0b11cc23e73ff56b70858bb04",
+    "collective/fmha_fusion.hpp": "75c81ac6bf46debc0c1a2e96a344de1a4c085cdb144deb3bac0c7ec2b75469fc",
+    "device/device_universal.hpp": "8392660289b68ac224c1f1c1cd6a837fc43aa8a0ccadc6b07ea95fcc9594cc42",
+    "device/fmha_device_bwd.hpp": "232465fe16cf5674d58a203cd0e1c9fe11df190f3255542588088317395e7ad2",
+    "kernel/fmha_kernel_builder.hpp": "80e380f68fd2c7672fe66a9296f9a360cb11a715a1650323f0363ab98750d618",
+    "kernel/fmha_kernel_bwd_convert.hpp": "1b245ef72d6b0eb6ff2790dd28500597c916be44ea31c5922548e065a6f27e9d",
+    "kernel/fmha_kernel_bwd_sum_OdO.hpp": "d4fea289b5cf0a73a0ff3d3233d1e5f35d13c7af21ee841bdca15e04e2faa6ea",
+    "kernel/fmha_kernel_tma.hpp": "cd460c5e2008f6509564696be90bb78f1c7e5c4e4fb6583666e61a4999e9dd6a",
+    "kernel/fmha_kernel_tma_warpspecialized.hpp": "718d462433c9c1f074e53df0749c855c417914cd7fcd5caef7fa797c6ca56aef",
+    "kernel/fmha_options.hpp": "a24895c8f260d0c02a2a37d85a7855ebe32c9b0ac791689875446cd8f60a9f59",
+    "kernel/fmha_tile_scheduler.hpp": "ea81c95b50860f3ed68bf3946929b9090022cba5d6c7ce6cbcce962fa4142e99",
+    "reference/fmha_bwd_reference.hpp": "f988ae7fa21fc4986af2fa7077b37d378ca3dde5ce735c440e685b1c9a821f2f",
+    "reference/fmha_reference.hpp": "f9075311dcaaed415d59e8effb5f287fd857a439e67ad2cc38c0cad0db658180",
+    "reference/reference_abs_error.hpp": "c0af73e790c07a96c16dd32f7b2d2b426d0538f9789111a472c04481972ad19a",
+    "LICENSE.txt": "7bc733829f16663593865344541c6dcc433beb6b6b555c8f86a43e9b399993cf",
+    "README.upstream.txt": "ba666e7de5a40c048fc306142929182197328b904ff212d71f08a478db9a5fb7"
+  },
+  "upstream_names": {
+    "README.upstream.txt": "README.md"
+  }
+}
