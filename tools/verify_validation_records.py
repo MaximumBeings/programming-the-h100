@@ -34,6 +34,8 @@ def verify(root, date):
             complete[key] = digest(code)
     current_only = {('docs/11-multi-gpu-nccl.md', name) for name in (
         'ex11_nvlink_bandwidth.cu', 'ex12_nccl_allreduce.cu', 'ex13_hybrid_parallel_training.cu')}
+    from pending_revalidation import pending
+    revisions = pending(root, complete, {(row['page'], row['example']): row['sha256'] for row in rows})
     passed, blocked = 0, 0
     fresh_rows = None
     superseded = set()
@@ -46,7 +48,7 @@ def verify(root, date):
         source = folder / row['example']
         if not source.is_file() or digest(source.read_text()) != row['sha256']:
             errors.append(f'Downloadable source does not match execution record: {key}')
-        if complete.get(key) != row['sha256']:
+        if complete.get(key) != row['sha256'] and key not in revisions:
             # Historical downloads stay immutable. A changed chapter source needs
             # a fully verified fresh PASS record and an explicit displayed notice.
             if fresh_rows is None:
@@ -141,7 +143,7 @@ def verify(root, date):
     if errors:
         return 1
     print(f'PASS: {len(rows)} archive records match their downloads and logs; current displays match verified executions, including {len(superseded)} superseding PASS records.')
-    print(f'Current coverage: {passed + len(superseded)} successful program executions across the recorded hosts.')
+    print(f'Current coverage: {27 - len(revisions)} verified revisions; {len(revisions)} corrected revisions awaiting GPU revalidation.')
     print('Scope: evidence consistency only; this command does not execute CUDA or prove numerical correctness.')
     return 0
 

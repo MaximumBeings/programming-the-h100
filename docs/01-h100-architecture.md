@@ -259,8 +259,11 @@ The H100 introduces **Warp Group** operations, where 4 warps (128 threads) coope
 ### 3.3 Structured Sparsity
 
 Sparsity is a way of buying throughput by agreeing not to store some of your
-numbers. The hardware supports exactly one pattern — "2:4" — and the payoff is
-simple: the tensor core reads half as much data, so it runs about twice as fast.
+numbers. The common FP16/BF16/FP8 sparse path uses 2:4 structure: at most two
+nonzero values per quartet, stored as two retained values plus metadata.
+TF32 sparse WGMMA instead uses a 1:2 encoding (Chapter 7). Sparse
+Tensor Core peak is quoted as about twice the dense-equivalent arithmetic
+rate; total kernel speed also depends on metadata, other operands and memory traffic.
 
 [![Two values survive each quartet](images/ch01/10-structured-sparsity.svg)](images/ch01/10-structured-sparsity.svg)
 

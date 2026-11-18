@@ -725,7 +725,7 @@ x1, x2, x4 — How Many 8×8 Matrices to Load
   ldmatrix.sync.aligned.m8n8.x4.shared.b16 {d0, d1, d2, d3}, [addr];
 
   Loads: 4 × 8×8 = 256 BF16 elements = 512 bytes from SMEM.
-  Per thread: 4 × 2 elements = 4 × 16 bits = 64 bits → 2 × 32-bit regs
+  Per thread: 4 × 2 elements = 8 × 16 bits = 128 bits → 4 × 32-bit regs
               Wait: each 8×8 BF16 matrix → 128 bytes / 32 threads = 4 bytes = 2 BF16
               So .x4 → 4 registers of 32 bits each (2 BF16 packed per register).
   Output: {d0, d1, d2, d3} — 4 × 32-bit registers per thread.

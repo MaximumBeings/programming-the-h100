@@ -828,6 +828,7 @@ mbarrier.init — Syntax and Semantics
           : : "r"(mbar_addr), "r"(1u)   // count = 1
       );
   }
+  asm volatile("fence.proxy.async.shared::cta;" ::: "memory"); // before TMA use
   __syncthreads();  // ALL threads must wait for init to complete!
   // Without __syncthreads here, other threads might use the barrier
   // before thread 0 has initialized it. Classic race condition.
@@ -856,7 +857,9 @@ The mbarrier Pipeline — Complete Flow
   ──────────────────
   Thread 0: mbarrier.init [mbar_addr], expected_thread_count
   Purpose:  Create the barrier in SMEM. Set thread count. Phase = 0.
-  Who:      ONLY thread 0. All others wait with __syncthreads().
+  Who:      ONLY thread 0 initializes. Publish that initialization with
+            fence.proxy.async.shared::cta, then __syncthreads() before
+            any thread issues a bulk-async copy using the barrier.
 
   STEP 2: Set expected transaction count (bytes to receive)
   ──────────────────────────────────────────────────────────
@@ -900,6 +903,8 @@ The mbarrier Pipeline — Complete Flow
 [![One tile through the mbarrier protocol](images/ch03/10-mbarrier-pipeline-timeline.svg)](images/ch03/10-mbarrier-pipeline-timeline.svg)
 
 *The exact instruction variant determines how the transfer is linked to completion.*
+
+The barrier object itself crosses proxy domains: publish its initialization before the first bulk copy, even when the tile has no preceding generic stores. See [CUDA’s barrier initialization requirement for bulk asynchronous copies](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#asynchronous-data-copies-using-the-tensor-memory-accelerator-tma).
 
 ### 9.2 mbarrier.arrive.expect_tx — Setting the Transaction Count
 
@@ -1068,8 +1073,10 @@ Transaction Count — Manual Worked Example with Two Copies
   ─── What Happens if Counts Don't Match Reality ───────────────────
 
   If you set tx_count=512 but TMA actually copies 1024 bytes:
-    → pending tx goes 512→0 (done!) immediately when 512 bytes arrive
-    → barrier fires early, consumer reads incomplete data. WRONG.
+    → accounting no longer matches the linked completion operations.
+    → do not assume completion at an intermediate 512-byte milestone;
+      hardware completion granularity does not promise that transition.
+    → the phase can complete incorrectly or fail to complete. INVALID protocol.
 
   If you set tx_count=1024 but TMA only copies 512 bytes:
     → pending tx goes 1024→512 and STOPS (never reaches 0)
@@ -1258,6 +1265,7 @@ mbarrier Reuse — Step-by-Step Pattern
   if (threadIdx.x == 0) {
       mbarrier.init [mbar_addr], 1;  // init with 1 thread arrival
   }
+  asm volatile("fence.proxy.async.shared::cta;" ::: "memory"); // before TMA use
   __syncthreads();
 
   Main loop (K iterations, barrier reused each time):
@@ -1968,6 +1976,8 @@ __global__ void mbarrier_pipeline_kernel(
     }
     // CRITICAL: All threads must wait for init to complete before
     // anyone tries to use the barrier.
+    // Publish initialized barrier state to the bulk-async proxy.
+    asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
     __syncthreads();
 
     // ── Phase tracking — LOCAL REGISTER (not SMEM!) ────────────────
@@ -2124,6 +2134,9 @@ int main() {
 }
 ```
 
+> **Barrier-initialization correction — ex01_mbarrier_basic.cu.** This revision publishes initialized barrier state with `fence.proxy.async.shared::cta` before the block synchronization and bulk-copy launch. The linked earlier GPU record covers the pre-fix source; **GPU revalidation pending** for this corrected revision; fresh compilation and execution evidence will replace the earlier result.
+
+
 <!-- validation:start:ex01_mbarrier_basic.cu -->
 **Captured output — ex01_mbarrier_basic.cu**
 
@@ -2259,6 +2272,8 @@ __global__ void war_prevention_kernel(
         asm volatile("mbarrier.init.shared::cta.b64 [%0], %1;"
                      : : "r"(release_addr), "r"(nthreads));
     }
+    // Publish initialized barrier state to the bulk-async proxy.
+    asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
     __syncthreads();
 
     int data_phase    = 0;   // phase for data_bar
@@ -2405,6 +2420,9 @@ int main() {
 }
 ```
 
+> **Barrier-initialization correction — ex02_war_prevention.cu.** This revision publishes initialized barrier state with `fence.proxy.async.shared::cta` before the block synchronization and bulk-copy launch. The linked earlier GPU record covers the pre-fix source; **GPU revalidation pending** for this corrected revision; fresh compilation and execution evidence will replace the earlier result.
+
+
 <!-- validation:start:ex02_war_prevention.cu -->
 **Captured output — ex02_war_prevention.cu**
 
@@ -2523,6 +2541,7 @@ The canonical loop. Copy this rather than reconstructing it from memory.
 ```
 INIT (once):
   [thread 0] mbarrier.init [mbar], 1
+  asm volatile("fence.proxy.async.shared::cta;" ::: "memory"); // before TMA use
   __syncthreads()
   int phase = 0;                          // REGISTER, not SMEM
 

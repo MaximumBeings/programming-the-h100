@@ -7,9 +7,13 @@ This guide takes you from a terminal to the book's first verified GPU result. Yo
 
 !!! success "What was actually tested"
 
-    All **27 complete CUDA programs compiled and executed successfully across the recorded hosts**. On November 17, 2026, the original validation used **one H100 PCIe**: all 27 complete programs compiled and 24 single-GPU workloads passed. The [follow-up audit](final-audit.md) used **two H100 80GB HBM3 GPUs connected through NV18**, compiling all 27 programs and executing 26 workloads, including peer transfer and NCCL AllReduce. Both hosts used **Ubuntu 24.04.5 LTS**, driver **580.105.08**, CUDA Toolkit **12.8.93**, GCC **13.3.0**, C++17, `-O2`, and `sm_90a`. On November 18 (UTC), the revised portable training program passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run.
+    The recorded revisions of all **27 complete CUDA programs compiled and executed successfully across the recorded hosts**. On November 17, 2026, the original validation used **one H100 PCIe**: all 27 complete programs compiled and 24 single-GPU workloads passed. The [follow-up audit](final-audit.md) used **two H100 80GB HBM3 GPUs connected through NV18**, compiling all 27 programs and executing 26 workloads, including peer transfer and NCCL AllReduce. Both hosts used **Ubuntu 24.04.5 LTS**, driver **580.105.08**, CUDA Toolkit **12.8.93**, GCC **13.3.0**, C++17, `-O2`, and `sm_90a`. On November 18 (UTC), the revised portable training program passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run.
 
     The SSH client instructions describe standard usage; the linked system records identify the exact execution configurations. [System record](validation/2026-11-17/system-information.txt) · [Execution manifest](validation/2026-11-17/results.json) · [Preflight JSON](validation/2026-11-17/preflight.json).
+
+The final review added required async-proxy publication fences to four examples in Chapters 3–5. **23 current revisions retain verified PASS records; four corrected revisions await GPU revalidation.** Earlier dated logs refer to their exact archived sources.
+
+Select a diagram to open its full-size SVG.
 
 ## 1 — Choose the right machine
 

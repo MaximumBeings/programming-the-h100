@@ -1960,6 +1960,8 @@ __global__ void tma_3d_kernel(
     if (tid == 0) {
         asm volatile("mbarrier.init.shared::cta.b64 [%0], 1;" : : "r"(mbar_addr));
     }
+    // Publish initialized barrier state to the bulk-async proxy.
+    asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
     __syncthreads();
 
     // Producer: set expected tx and launch TMA
@@ -2097,6 +2099,9 @@ int main() {
     return ok ? 0 : 1;
 }
 ```
+
+> **Barrier-initialization correction — ex02_tma_3d.cu.** This revision publishes initialized barrier state with `fence.proxy.async.shared::cta` before the block synchronization and bulk-copy launch. The linked earlier GPU record covers the pre-fix source; **GPU revalidation pending** for this corrected revision; fresh compilation and execution evidence will replace the earlier result.
+
 
 <!-- validation:start:ex02_tma_3d.cu -->
 **Captured output — ex02_tma_3d.cu**

@@ -678,7 +678,10 @@ The Roofline
     You are moving bytes as fast as the machine can. To go
     faster, move fewer bytes: better reuse, better coalescing,
     a fused kernel. Chapter 12 §1.2 is the canonical example —
-    fusing attention moved it from 63 to 4095 FLOP/byte.
+    fusion avoids materializing the score matrix. The ideal compulsory
+    traffic bound is 4096 FLOP/byte, while the stated BM=BN=128
+    tiled request model is about 126 FLOP/byte (Ch 12 §1.3).
+    Actual HBM intensity additionally depends on cache reuse.
 
   ON THE HORIZONTAL (compute bound)
     You are issuing math as fast as the machine can. To go
@@ -732,45 +735,43 @@ Why the Default Roofline Can Mislead on Hopper
 From Counters to a Point on the Chart
 ══════════════════════════════════════════════════════════════════════
 
-  Measured for one kernel (numbers illustrative):
+  Illustrative BF16 tensor-core kernel; these are not captured counters:
 
-    Duration                            1.42 ms
-    dram__bytes.sum                    2.85 GB
-    sm__sass_thread_inst_executed_op_
-      fadd_pred_on.sum  +  fmul  +  2×ffma      = 184 GFLOP
+    Duration                             1.42 ms
+    dram__bytes.sum                     2.85 GB
+    Known executed matrix work          184 GFLOP (2 FLOPs per FMA)
 
   Compute:
 
-    Achieved FLOP/s   = 184e9  / 1.42e-3 = 129.6 TFLOP/s
-    Achieved bytes/s  = 2.85e9 / 1.42e-3 =   2.0 TB/s
+    Achieved work rate = 184e9 / 1.42e-3 = 129.6 TFLOP/s
+    Achieved bytes/s   = 2.85e9 / 1.42e-3 = 2.0 TB/s
     Arithmetic intensity = 184e9 / 2.85e9 = 64.6 FLOP/byte
 
-  Place it:
+  Select the ceiling from the actual instruction/data-type path:
 
-    Ridge point (FP32): 67e12 / 3.35e12 = 20 FLOP/byte
-    64.6 > 20  →  right of the ridge  →  compute-bound region
+    BF16 tensor ridge = 989e12 / 3.35e12 = 295 FLOP/byte
+    64.6 < 295: this point lies on the memory side of that ridge.
+    Roof at this intensity = 64.6 * 3.35 = 216.4 TFLOP/s.
+    129.6 TFLOP/s is below this roof, leaving headroom. The point
+    alone does not prove DRAM saturation; inspect memory metrics,
+    dependencies, issue efficiency and occupancy before diagnosing.
 
-    Ceiling there is the flat part: 67 TFLOP/s (FP32)
-    ... but we measured 129.6 TFLOP/s, which is impossible
-    for FP32.
+  Counter sanity check:
 
-    → The kernel is using tensor cores. Re-plot against the
-      BF16 ceiling:
-        129.6 / 989 = 13% of tensor peak
-        Ridge point (BF16): 989e12/3.35e12 = 295 FLOP/byte
-        64.6 < 295  →  MEMORY bound after all
+    FADD + FMUL + 2*FFMA thread-instruction counters count scalar
+    FP32 arithmetic; they do not include tensor instructions.
+    If those counters alone implied 129.6 TFLOP/s against a 67
+    TFLOP/s scalar roof, audit units, aggregation and duration.
+    Do not reinterpret that scalar count as tensor work. Obtain
+    tensor work from the matching instruction-aware roofline metrics
+    or a justified operation count, then use its appropriate ceiling.
 
-  ══════════════════════════════════════════════════════════════════
-  Two lessons, both painful to learn the slow way:
-
-  1. Establish which ceiling applies BEFORE interpreting the
-     chart. The same kernel is "compute bound" or "memory bound"
-     depending on which one you use.
-
-  2. Achieved throughput above a ceiling is not a triumph, it is
-     a diagnostic: you are measuring against the wrong pipe.
-  ══════════════════════════════════════════════════════════════════
+  A roofline ceiling is an upper bound, not a bottleneck verdict.
+  Establish the work count and instruction path before interpreting it.
+══════════════════════════════════════════════════════════════════════
 ```
+
+Source: [NVIDIA Nsight Compute counter definitions](https://docs.nvidia.com/nsight-compute/2023.1.1/pdf/NsightComputeCli.pdf) and [NVIDIA’s explanation that these scalar counters exclude tensor instructions](https://forums.developer.nvidia.com/t/confusion-about-the-d-f-h-mul-add-fma-count-in-the-nsight-compute/265702/7).
 
 ---
 
@@ -1574,9 +1575,11 @@ DIAGNOSIS 4 — MIO Throttle in an attention kernel
        does softmax under the other's GEMMs.
     2. 2-stage intra-warpgroup pipelining (Ch 12 §7) —
        and check you wrote wgmma.wait_group<1>, not <0>.
-    3. Use exp2f() rather than expf(): fold the ln(2) factor
-       into the scale applied to the scores. exp2 maps to a
-       single SFU instruction; expf costs a multiply first.
+    3. Use the base-2 identity exp(s) = exp2(s * log2(e)) and
+       fold log2(e) = 1/ln(2) into the score scale. A suitable
+       approximate path can use ex2.approx.f32; validate its accuracy
+       and inspect generated instructions. A source-level exp2f call
+       alone does not promise one instruction for every compilation.
 
   RESULT
     Stall MIO Throttle          41% →  14%

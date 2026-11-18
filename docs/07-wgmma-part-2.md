@@ -1287,7 +1287,7 @@ values — which is what §16 and §17 are for.
 
 ### 15.1 What Sparse WGMMA Is
 
-Sparse WGMMA is a variant where matrix A is **structured sparse**: for every group of 4 consecutive elements in each row, exactly 2 are zero. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.
+Sparse WGMMA is a variant where matrix A is **structured sparse**: for every group of 4 consecutive elements in each row, at most 2 are nonzero; two retained values and their positions are encoded. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.
 
 The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. This information is encoded in a "metadata" register (sp-meta) that accompanies the sparse A matrix.
 
@@ -1299,7 +1299,7 @@ The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. Th
 2:4 Structured Sparsity — The Pattern and Its Benefits
 ══════════════════════════════════════════════════════════════════════
 
-  The 2:4 rule: in every consecutive 4 elements of a row, exactly 2 are non-zero.
+  The 2:4 rule: in every consecutive 4 elements of a row, at most 2 are nonzero.
   ─────────────────────────────────────────────────────────────────
 
   Example row of A (K=8, stored as 2 quartets):

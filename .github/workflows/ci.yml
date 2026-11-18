@@ -33,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Reject unregistered pending source changes
+        run: python3 tools/test_pending_revalidation.py
+
       - name: Verify published execution records
         run: python3 tools/verify_validation_records.py
 

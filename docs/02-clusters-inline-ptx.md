@@ -2242,7 +2242,7 @@ Global Memory — Key Properties and Usage Patterns
   ld.global.cg  → cache at L2 only (bypass L1)
   ld.global.cs  → cache streaming (evict soon, good for large strides)
   ld.global.lu  → last use (hint: won't be accessed again)
-  ld.global.cv  → cache volatile (no caching, always from DRAM)
+  ld.global.cv  → refetch cached global System Memory lines (see scope below)
 
   Memory coalescing — CRITICAL for performance:
   ─────────────────────────────────────────────────────────────────
@@ -2265,6 +2265,9 @@ Global Memory — Key Properties and Usage Patterns
     ld.global.v4.f32 {%f0,%f1,%f2,%f3}, [%addr]; // load 4 floats = 128-bit
     These maximize memory bandwidth by requesting wider chunks.
 ```
+
+For global **System Memory** addresses, `.cv` discards a matching L2 line and re-fetches it on each load. This is not a universal promise that arbitrary GPU-memory loads bypass every cache and reach HBM. Cache operators also do not replace a memory-ordering protocol. See [PTX cache operators](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#cache-operators).
+
 
 ### 7.4 Shared State Space (.shared) — The GPU's Scratchpad
 

@@ -106,7 +106,7 @@ mbarrier Interfaces — PTX vs C++
 ══════════════════════════════════════════════════════════════════════
 
   ─── Declare in shared memory ─────────────────────────────────────
-  // PTX-level (raw): 64-byte aligned mbarrier object in SMEM
+  // PTX-level (raw): 8-byte aligned mbarrier object in SMEM
   __shared__ __align__(8) uint64_t full_barrier[N_STAGES];
   __shared__ __align__(8) uint64_t empty_barrier[N_STAGES];
 
@@ -128,6 +128,7 @@ mbarrier Interfaces — PTX vs C++
   if (threadIdx.x == 0) {
       init(&barrier[0], 1);   // 1 expected arrival
   }
+  asm volatile("fence.proxy.async.shared::cta;" ::: "memory"); // before TMA use
   __syncthreads();  // all threads must see the initialized barrier
 
   ─── Producer: arrive + expect_tx (with TMA) ──────────────────────
@@ -2598,6 +2599,10 @@ Consumer lag: release_ptr = read_ptr - 1 (wait for WGMMA before release)
 ```
 Initialize (thread 0):
   asm("mbarrier.init.shared::cta.b64 [%0], %1;"::"r"(bar32), "n"(count))
+
+Publish initialization before bulk-async/TMA use, then synchronize threads:
+  asm volatile("fence.proxy.async.shared::cta;" ::: "memory")
+  __syncthreads()
 
 Arrive (producer signals full, or consumer signals empty):
   asm("mbarrier.arrive.shared::cta.b64 _, [%0];"::"r"(bar32))

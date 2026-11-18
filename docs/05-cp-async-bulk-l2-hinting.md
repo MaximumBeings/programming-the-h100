@@ -922,6 +922,7 @@ Unstructured Copy Variants — All State Space Combinations
 
       // Init mbarrier (1 thread arrival + 8192 tx bytes expected)
       asm("mbarrier.init.shared::cta.b64 [%0], 1;" : : "r"(mbar_addr));
+      asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
       asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 _, [%0], %1;"
           : : "r"(mbar_addr), "r"(8192u));
 
@@ -1125,7 +1126,7 @@ ctaMask — How to Construct It
   if (cluster.block_rank() == 0) {
       // Only rank 0 issues the instruction for all blocks
       asm volatile(
-          "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes"
+          "cp.async.bulk.tensor.2d.shared::cluster.global"
           ".mbarrier::complete_tx::bytes.multicast::cluster"
           " [%0], [%1, {%2, %3}], [%4], %5;"
           :
@@ -1158,6 +1159,7 @@ Multicast mbarrier Rules — What Can Go Wrong and How to Avoid It
   if (tid == 0) {
       uint32_t mbar_addr = __cvta_generic_to_shared(&mbar);
       asm("mbarrier.init.shared::cta.b64 [%0], 1;" : : "r"(mbar_addr));
+      asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
   }
   __syncthreads();
   // mbar is at the same RELATIVE offset in every block's SMEM.
@@ -1182,7 +1184,7 @@ Multicast mbarrier Rules — What Can Go Wrong and How to Avoid It
   // Only rank-0 issues the instruction:
   if (rank == 0 && tid == 0) {
       asm volatile(
-          "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes"
+          "cp.async.bulk.tensor.2d.shared::cluster.global"
           ".mbarrier::complete_tx::bytes.multicast::cluster"
           " [%0], [%1, {%2, %3}], [%4], %5;"
           : : "r"(smem_dest), "l"(&tma_desc), "r"(col), "r"(row),
@@ -1202,11 +1204,12 @@ Multicast mbarrier Rules — What Can Go Wrong and How to Avoid It
 
   RULE 5: All participating blocks must perform barrier.cluster FIRST.
   ─────────────────────────────────────────────────────────────────
-  // Before any DSMEM/multicast operation:
+  // After local barrier initialization/publication and accounting,
+  // before the elected CTA issues multicast:
   barrier.cluster.arrive;     // signal this block is ready
   barrier.cluster.wait;       // wait for all cluster blocks to be ready
-  // Now safe: all blocks are physically scheduled and running.
-  // Writing to another block's SMEM before this → crash!
+  // This establishes readiness of every destination barrier/buffer.
+  // Cluster scheduling alone does not establish initialization order.
 ```
 
 ---
@@ -1589,6 +1592,8 @@ __global__ void bulk_raw_kernel(
         asm volatile("mbarrier.init.shared::cta.b64 [%0], 1;"
                      : : "r"(mbar_addr));
     }
+    // Publish initialized barrier state to the bulk-async proxy.
+    asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
     __syncthreads();
 
     // Create L2 evict_last policy (for weight-like data: keep in L2)
@@ -1694,6 +1699,9 @@ int main() {
     return ok ? 0 : 1;
 }
 ```
+
+> **Barrier-initialization correction — ex01_bulk_raw.cu.** This revision publishes initialized barrier state with `fence.proxy.async.shared::cta` before the block synchronization and bulk-copy launch. The linked earlier GPU record covers the pre-fix source; **GPU revalidation pending** for this corrected revision; fresh compilation and execution evidence will replace the earlier result.
+
 
 <!-- validation:start:ex01_bulk_raw.cu -->
 **Captured output — ex01_bulk_raw.cu**

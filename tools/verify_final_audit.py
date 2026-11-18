@@ -35,6 +35,10 @@ def verify(root, public=None, summary=None):
     rows = json.loads((public / 'results.json').read_text())
     recorded = {(x['page'], x['example']): x['sha256'] for x in rows}
     expected_current = dict(recorded)
+    from pending_revalidation import pending
+    revisions = pending(root, current, recorded)
+    for key, revision in revisions.items():
+        expected_current[key] = revision['current_sha256']
     supplemental = False
     # Only this portable training program may be superseded by the separately
     # verified eight-A100 PASS. Every other archived source remains exact.
@@ -46,7 +50,7 @@ def verify(root, public=None, summary=None):
         except (OSError, ValueError, KeyError, TypeError) as error:
             errors.append('Eight-A100 supplement cannot supersede ex13: ' + str(error))
     if len(rows) != 27 or len(recorded) != 27 or current != expected_current:
-        errors.append('Fresh audit must cover all 27 hashes, with only verified eight-A100 ex13 supersession allowed.')
+        errors.append('Audit sources differ from verified records or explicitly pinned pending corrections.')
     passed = blocked = 0
     for row in rows:
         key = row['example']
@@ -116,8 +120,10 @@ def verify(root, public=None, summary=None):
     text = summary.read_text()
     active_passed = passed + (1 if supplemental else 0)
     active_blocked = blocked - (1 if supplemental else 0)
-    if f'**{active_passed} PASS**' not in text or active_blocked != 0 or '**BLOCKED_HARDWARE**' in text:
-        errors.append('Current combined summary must show verified PASS coverage for all 27 programs.')
+    current_passed = active_passed - len(revisions)
+    if (f'**{current_passed} PASS**' not in text or active_blocked != 0 or '**BLOCKED_HARDWARE**' in text
+            or revisions and f'**{len(revisions)} GPU revalidation pending**' not in text):
+        errors.append('Current summary must distinguish verified revisions from pending GPU corrections.')
     return errors
 
 

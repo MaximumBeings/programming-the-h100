@@ -1,8 +1,8 @@
 # Complete execution validation — H100 and A100
 
-All 27 complete CUDA programs have successful execution records across the recorded hosts: 26 on H100 and the revised eight-GPU training program on A100. The [original raw archives](validation/2026-11-17/results.json) remain downloadable for provenance.
+The recorded revisions of all 27 complete CUDA programs have successful execution records across the recorded hosts: 26 on H100 and the revised eight-GPU training program on A100. The [original raw archives](validation/2026-11-17/results.json) remain downloadable for provenance.
 
-All **27 complete CUDA programs compiled and executed**. Current workload results: **27 PASS** across the recorded hosts.
+Recorded revisions: **27 PASS** across the recorded hosts. Current revisions: **23 PASS** and **4 GPU revalidation pending**. The final review added required async-proxy publication fences in Chapters 3–5; earlier successful runs do not establish validation of these corrected revisions.
 
 [System and tool information](validation/2026-11-17-final-audit/system-info.log) · [Raw execution manifest](validation/2026-11-17-final-audit/results.json) · [Integrity inventory](validation/2026-11-17-final-audit/integrity.json). The system log records CUDA-visible discovery, GPU names, memory, driver, compiler, OS and topology.
 
@@ -115,6 +115,8 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex06_comprehensive.cu -o example
 
 ### ex01_mbarrier_basic.cu
 
+**GPU revalidation pending.** The chapter now includes the required barrier-initialization async-proxy fence. The PASS record below covers the archived pre-correction source, not the current revision. Current source SHA-256: `406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7`.
+
 **PASS** · UTC: `2026-11-17T23:33:36.084170+00:00` · compile exit: `0` · run exit: `0`.
 
 Compile UTC: `2026-11-17T23:33:36.084382+00:00` · Run UTC: `2026-11-17T23:33:37.123884+00:00` · Finished UTC: `2026-11-17T23:33:37.686317+00:00`.
@@ -129,6 +131,8 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex01_mbarrier_basic.cu -o example
 ```
 
 ### ex02_war_prevention.cu
+
+**GPU revalidation pending.** The chapter now includes the required barrier-initialization async-proxy fence. The PASS record below covers the archived pre-correction source, not the current revision. Current source SHA-256: `d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395`.
 
 **PASS** · UTC: `2026-11-17T23:33:37.686605+00:00` · compile exit: `0` · run exit: `0`.
 
@@ -160,6 +164,8 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex01_tma_basic.cu -o example -lcuda
 
 ### ex02_tma_3d.cu
 
+**GPU revalidation pending.** The chapter now includes the required barrier-initialization async-proxy fence. The PASS record below covers the archived pre-correction source, not the current revision. Current source SHA-256: `ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173`.
+
 **PASS** · UTC: `2026-11-17T23:33:41.213313+00:00` · compile exit: `0` · run exit: `0`.
 
 Compile UTC: `2026-11-17T23:33:41.213487+00:00` · Run UTC: `2026-11-17T23:33:42.549323+00:00` · Finished UTC: `2026-11-17T23:33:43.106113+00:00`.
@@ -174,6 +180,8 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex02_tma_3d.cu -o example -lcuda
 ```
 
 ### ex01_bulk_raw.cu
+
+**GPU revalidation pending.** The chapter now includes the required barrier-initialization async-proxy fence. The PASS record below covers the archived pre-correction source, not the current revision. Current source SHA-256: `f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805`.
 
 **PASS** · UTC: `2026-11-17T23:33:43.106426+00:00` · compile exit: `0` · run exit: `0`.
 
@@ -444,4 +452,4 @@ All **12 cases passed** against PyTorch math SDPA, including causal masks and pa
 
 ## Verification scope
 
-CI verifies all 27 current source hashes against the successful H100/A100 records, captured logs, statuses and this summary. Raw archives retain their original host-specific results. CI checks evidence consistency without rerunning CUDA. Numerical claims remain limited to each program’s explicit oracle and tested inputs.
+CI verifies the successful H100/A100 records, captured logs and statuses, and separately pins the exact four pending source corrections. It rejects other source changes and requires visible pending notices. Raw archives retain their original host-specific results. CI checks evidence consistency without rerunning CUDA. Numerical claims remain limited to each program’s explicit oracle and tested inputs.
