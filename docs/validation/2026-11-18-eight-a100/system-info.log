@@ -1,0 +1,59 @@
+$ nvidia-smi --query-gpu=name,uuid,compute_cap,driver_version,memory.total --format=csv
+Exit: 0
+name, uuid, compute_cap, driver_version, memory.total [MiB]
+NVIDIA A100-SXM4-40GB, GPU-508c4da4-58a3-91d0-3bc8-9d5269f77941, 8.0, 580.105.08, 40960 MiB
+NVIDIA A100-SXM4-40GB, GPU-d9be8cc7-216f-d142-097a-8d78fa0ad7e9, 8.0, 580.105.08, 40960 MiB
+NVIDIA A100-SXM4-40GB, GPU-e41f7a97-2a6e-821a-ed78-8679bbcf16c6, 8.0, 580.105.08, 40960 MiB
+NVIDIA A100-SXM4-40GB, GPU-b6930381-0353-b214-209f-cb800e93517c, 8.0, 580.105.08, 40960 MiB
+NVIDIA A100-SXM4-40GB, GPU-8991f4fc-ef10-e684-5c4c-3e9984a5ddfb, 8.0, 580.105.08, 40960 MiB
+NVIDIA A100-SXM4-40GB, GPU-377b78f8-2703-feb4-2957-9073da8b9715, 8.0, 580.105.08, 40960 MiB
+NVIDIA A100-SXM4-40GB, GPU-edcc6168-34be-09fa-9df9-72147154d5c2, 8.0, 580.105.08, 40960 MiB
+NVIDIA A100-SXM4-40GB, GPU-d8bf8c43-cfc5-45fe-499f-75a605b0198a, 8.0, 580.105.08, 40960 MiB
+
+$ nvidia-smi topo -m
+Exit: 0
+	[4mGPU0	GPU1	GPU2	GPU3	GPU4	GPU5	GPU6	GPU7	NIC0	CPU Affinity	NUMA Affinity	GPU NUMA ID[0m
+GPU0	 X 	NV12	NV12	NV12	NV12	NV12	NV12	NV12	PHB	0-123	0-1		N/A
+GPU1	NV12	 X 	NV12	NV12	NV12	NV12	NV12	NV12	PHB	0-123	0-1		N/A
+GPU2	NV12	NV12	 X 	NV12	NV12	NV12	NV12	NV12	PHB	0-123	0-1		N/A
+GPU3	NV12	NV12	NV12	 X 	NV12	NV12	NV12	NV12	PHB	0-123	0-1		N/A
+GPU4	NV12	NV12	NV12	NV12	 X 	NV12	NV12	NV12	PHB	0-123	0-1		N/A
+GPU5	NV12	NV12	NV12	NV12	NV12	 X 	NV12	NV12	PHB	0-123	0-1		N/A
+GPU6	NV12	NV12	NV12	NV12	NV12	NV12	 X 	NV12	PHB	0-123	0-1		N/A
+GPU7	NV12	NV12	NV12	NV12	NV12	NV12	NV12	 X 	PHB	0-123	0-1		N/A
+NIC0	PHB	PHB	PHB	PHB	PHB	PHB	PHB	PHB	 X 				
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks
+
+NIC Legend:
+
+  NIC0: mlx5_0
+
+
+$ nvcc --version
+Exit: 0
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2025 NVIDIA Corporation
+Built on Fri_Feb_21_20:23:50_PST_2025
+Cuda compilation tools, release 12.8, V12.8.93
+Build cuda_12.8.r12.8/compiler.35583870_0
+
+$ gcc --version
+Exit: 0
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+Copyright (C) 2023 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+$ uname -a
+Exit: 0
+Linux 129-203-141-160 6.8.0-1064-nvidia #67-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 23:03:45 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux

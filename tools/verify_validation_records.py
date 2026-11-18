@@ -55,6 +55,10 @@ def verify(root, date):
                     if not fresh_errors:
                         fresh = json.loads((root / 'docs/validation/2026-11-17-final-audit/results.json').read_text())
                         fresh_rows = {(r['page'], r['example']): r for r in fresh}
+                        from verify_eight_gpu_audit import KEY, superseding_hash
+                        if complete.get(KEY) != fresh_rows.get(KEY, {}).get('sha256'):
+                            fresh_rows[KEY] = dict(sha256=superseding_hash(root), compile_exit=0,
+                                                   run_exit=0, status='PASS')
                     else:
                         errors.append('Fresh evidence cannot supersede history: ' + '; '.join(fresh_errors))
                 except (OSError, ValueError, KeyError, TypeError) as error:
@@ -80,7 +84,7 @@ def verify(root, date):
             errors.append(f'Expected one displayed execution record: {key}')
         else:
             section = sections[0]
-            if key in superseded and not ('historical' in section.lower() and 'supersed' in section.lower() and 'final-audit.md' in section):
+            if key in superseded and not ('historical' in section.lower() and 'supersed' in section.lower() and ('final-audit.md' in section or ('eight-gpu-validation.md' in section and key == ('docs/11-multi-gpu-nccl.md', 'ex13_hybrid_parallel_training.cu')))):
                 errors.append(f'Changed source needs a historical/superseded notice and fresh audit link inside its displayed record: {key}')
             shown = re.search(r'```text\n(.*?)\n```', section, re.S)
             normalise = lambda value: '\n'.join(line.rstrip() for line in value.splitlines()).strip('\n')

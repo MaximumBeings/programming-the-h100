@@ -7,7 +7,7 @@ This guide takes you from a terminal to the book's first verified GPU result. Yo
 
 !!! success "What was actually tested"
 
-    On November 17, 2026, the original validation used **one H100 PCIe**: all 27 complete programs compiled and 24 single-GPU workloads passed. The [follow-up audit](final-audit.md) used **two H100 80GB HBM3 GPUs connected through NV18**, compiling all 27 programs and executing 26 workloads, including peer transfer and NCCL AllReduce. Both hosts used **Ubuntu 24.04.5 LTS**, driver **580.105.08**, CUDA Toolkit **12.8.93**, GCC **13.3.0**, C++17, `-O2`, and `sm_90a`. The eight-GPU training workload remains hardware-blocked.
+    On November 17, 2026, the original validation used **one H100 PCIe**: all 27 complete programs compiled and 24 single-GPU workloads passed. The [follow-up audit](final-audit.md) used **two H100 80GB HBM3 GPUs connected through NV18**, compiling all 27 programs and executing 26 workloads, including peer transfer and NCCL AllReduce. Both hosts used **Ubuntu 24.04.5 LTS**, driver **580.105.08**, CUDA Toolkit **12.8.93**, GCC **13.3.0**, C++17, `-O2`, and `sm_90a`. On November 18 (UTC), the revised portable training program passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run.
 
     The SSH client instructions describe standard usage; Windows and alternative GPU/toolkit configurations were not independently run in this validation pass. [System record](validation/2026-11-17/system-information.txt) · [Execution manifest](validation/2026-11-17/results.json) · [Preflight JSON](validation/2026-11-17/preflight.json).
 
@@ -20,7 +20,7 @@ This guide takes you from a terminal to the book's first verified GPU result. Yo
 | One H100 PCIe or H100 SXM | Run the single-GPU examples; H100 PCIe is the tested SKU | On that GPU host |
 | Another Hopper GPU, such as H200 | The `sm_90a` architecture target is relevant, but this is a different hardware configuration | Re-run the checks and record your own results |
 | Two or more suitable NVIDIA GPUs | Attempt the relevant Chapter 11 P2P/NCCL examples after checking topology | On the multi-GPU host; count alone does not establish peer access |
-| Eight suitable GPUs | Attempt the TP=2 × PP=2 × DP=2 teaching workload | Requires a separate eight-GPU run; neither recorded host had enough GPUs |
+| Eight suitable GPUs | Attempt the TP=2 × PP=2 × DP=2 teaching workload | Completed separately on eight A100 GPUs with `sm_80`; see [the supplement](eight-gpu-validation.md) |
 | A100 or Blackwell | Read the material, but do not assume the Hopper WGMMA programs will run | A100 lacks WGMMA; Blackwell needs a different Tensor Core implementation |
 
 The `a` in `sm_90a` enables architecture-specific features. It does not mean “this GPU and every later GPU.” Use a provider image with a suitable CUDA toolkit already installed when possible. No GPU rental is required just to read or preview the book.

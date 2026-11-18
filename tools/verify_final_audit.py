@@ -34,8 +34,17 @@ def verify(root, public=None, summary=None):
     current = {(x['page'], x['example']): x['sha256'] for x in programs()}
     rows = json.loads((public / 'results.json').read_text())
     recorded = {(x['page'], x['example']): x['sha256'] for x in rows}
-    if len(rows) != 27 or len(recorded) != 27 or current != recorded:
-        errors.append('Fresh audit does not cover all 27 current source hashes exactly once.')
+    expected_current = dict(recorded)
+    # Only this portable training program may be superseded by the separately
+    # verified eight-A100 PASS. Every other archived source remains exact.
+    from verify_eight_gpu_audit import KEY, superseding_hash
+    if current.get(KEY) != recorded.get(KEY):
+        try:
+            expected_current[KEY] = superseding_hash(root)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            errors.append('Eight-A100 supplement cannot supersede ex13: ' + str(error))
+    if len(rows) != 27 or len(recorded) != 27 or current != expected_current:
+        errors.append('Fresh audit must cover all 27 hashes, with only verified eight-A100 ex13 supersession allowed.')
     passed = blocked = 0
     for row in rows:
         key = row['example']

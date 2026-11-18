@@ -39,6 +39,9 @@ jobs:
       - name: Verify fresh audit evidence
         run: python3 tools/verify_final_audit.py
 
+      - name: Verify eight-A100 supplemental evidence
+        run: python3 tools/verify_eight_gpu_audit.py
+
       - name: Verify SVG readability
         run: python3 tools/verify_svg_readability.py
 

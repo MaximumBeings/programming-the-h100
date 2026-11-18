@@ -3,7 +3,7 @@
 [![FIELD GUIDE: Programming the H100](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
 
 
-> **Validation — November 17, 2026.** The [final audit](final-audit.md) records compilation of all 27 complete CUDA programs, execution of 26 workloads, the stronger Chapter 7 coordinate test, and 12 attention-reference cases. The eight-GPU training workload requires additional hardware.
+> **Validation — November 17–18, 2026.** The [final audit](final-audit.md) records compilation of all 27 complete CUDA programs, execution of 26 workloads, the stronger Chapter 7 coordinate test, and 12 attention-reference cases. The revised portable Chapter 11 training program also passed an independent CPU-reference check on [eight A100 GPUs](eight-gpu-validation.md), compiled for `sm_80`; this is separate from the H100 records.
 > **Follow-up system:** 2× H100 80GB HBM3, 132 SMs each, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > The [original single-GPU records](validation/2026-11-17/results.json) remain available as historical evidence. Each tested source and captured output is linked beside its example or in the follow-up audit. Diagrams open as original SVGs for zooming.
 

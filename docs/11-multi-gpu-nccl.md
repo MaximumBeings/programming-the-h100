@@ -13,7 +13,7 @@
 
 ## Lesson 5 Companion Guide — Hardware Topology to Collective Primitives
 
-> **Validation — November 17, 2026.** The [two-H100 follow-up audit](final-audit.md) compiled all three complete programs and executed the corrected peer-transfer benchmark and NCCL AllReduce with full-buffer checks. The eight-GPU training workload remains hardware-blocked. Historical single-GPU transcripts are preserved and labeled below.
+> **Validation — November 17–18, 2026.** The [two-H100 follow-up audit](final-audit.md) compiled all three complete programs and executed the corrected peer-transfer benchmark and NCCL AllReduce with full-buffer checks. The revised portable training program subsequently passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run. Historical single-GPU transcripts are preserved and labeled below.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -2494,29 +2494,15 @@ Backward pass:
   DP AllReduce: gradients averaged across the 2 DP replicas
   Optimizer step: W -= lr × grad_avg
 
-Expected verification:
-  DP replicas must produce IDENTICAL weight tensors after each step.
-  TP shards, when concatenated, must equal what a single-GPU run produces.
-  (Correction: an earlier draft also claimed "loss should decrease
-  monotonically" over N_STEPS=8 -- verified FALSE by direct host-side
-  simulation of this file's own weight-init/forward/backward/SGD-clip
-  arithmetic (HIDDEN=64, BATCH=16, LR=0.01, CLIP=1.0, the exact formulas
-  below). The deterministic init `0.01*(i + tp*weight_elems + pp*10000 + 1)`
-  -- chosen so each shard's values are visibly distinct for the two checks
-  above -- pushes stage-1 weight magnitudes into the ~100-140 range, which
-  drives the initial loss to ~5x10^13. With gradient clipping at CLIP=1.0,
-  SGD can only move each weight by at most LR=0.01 per step regardless of
-  gradient size, so 8 steps is nowhere near enough to meaningfully reduce
-  a loss at that scale: the simulation shows it oscillating in the
-  ~5.0-5.8x10^13 range, not decreasing. The other two checks ARE confirmed
-  true by the same simulation -- but note the DP check is weaker than it
-  looks: input generation `sinf(step + i*0.01f)` and the weight-init
-  formula above are both independent of `dp`, so the two DP replicas
-  compute bit-identical forward/backward passes from the start, before the
-  DP AllReduce ever runs. The "replicas match" check therefore passes
-  trivially and would pass even if `ncclAllReduce` on the DP communicator
-  were silently skipped -- it confirms the replicas stay in sync, not that
-  the AllReduce itself is what kept them there.)
+Expected verification in the revised program:
+  Eight final weight shards are compared against a separate CPU serial
+  reference: 2048 values per GPU, 16384 total.
+  Both DP replicas' eight per-step losses are compared against the reference.
+  Four final DP replica pairs are compared directly, with finite-value checks.
+  DP replicas use different inputs; gradients are averaged before SGD.
+  The CPU reference applies the same per-TP-shard clipping semantics.
+  Inputs change at each step, so loss need not decrease monotonically.
+  This is a teaching/reference test, not a convergence or throughput benchmark.
 ```
 
 ```
@@ -2529,10 +2515,10 @@ Expected verification:
            (Requires >= 8 GPUs. Launches 8 threads, one per GPU.)
   EXPECT:
     Step-by-step loss values printed per GPU group.
-    Loss decreases each step (SGD converges toward zero).
+    All final GPU weight shards match the CPU reference within tolerance.
     DP replica weight divergence = 0.000 (replicas stay identical).
-    TP shard concatenation matches reference single-GPU result.
-    Final: ALL CHECKS PASS.
+    All per-step replica losses match the independent CPU reference.
+    Final: All-rank training validation: PASS.
 ═══════════════════════════════════════════════════════════════════════
 ```
 
@@ -2540,7 +2526,7 @@ Expected verification:
 // ═══════════════════════════════════════════════════════════════════════
 // ex13_hybrid_parallel_training.cu
 //
-// PURPOSE: Production-grade hybrid parallel training harness.
+// PURPOSE: Checked TP/PP/DP teaching harness with an independent CPU oracle.
 //
 // PARALLELISM:
 //   TP=2  Tensor Parallelism: column + row linear layers split across 2 GPUs
@@ -2570,12 +2556,12 @@ Expected verification:
 //     4. Stage 0: backward through W0
 //     5. All: AllReduce gradients across DP replicas
 //     6. All: SGD update with gradient clipping
-//     7. Verify: DP replicas identical, loss decreasing
+//     7. Verify: all final weights and every per-replica step loss match CPU SGD
 //
 // WHAT TO LOOK FOR:
-//   - Loss decreases each step (gradient descent works correctly)
+//   - Per-step losses match CPU reference (inputs change, so monotonicity is not assumed)
 //   - DP replica weight divergence stays at exactly 0.0 (symmetry)
-//   - PP communication adds latency; comm/compute overlap hides it
+//   - This synchronized teaching loop does not claim production overlap
 //   - TP shards reconstruct to the same result as single-GPU reference
 //
 // THREAD MODEL: Single process, 8 pthreads (one per GPU).
@@ -2590,6 +2576,8 @@ Expected verification:
 #include <cmath>
 #include <cassert>
 #include <atomic>
+#include <vector>
+#include <algorithm>
 #include <pthread.h>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
@@ -2676,7 +2664,96 @@ struct SharedState {
     // Loss values for monitoring (indexed by pp_rank, dp_rank)
     float losses[PP][DP][N_STEPS];
     pthread_mutex_t loss_mutex;
+    bool rank_ok[NGPU] = {};
+    float reference_weights[PP][HIDDEN * HIDDEN];
+    float reference_losses[DP][N_STEPS];
 };
+
+// Host-only reference: full, unsharded row-major matrices and scalar loops.
+// Inputs and initial weights are shared definitions; no cuBLAS/NCCL path is reused.
+float initial_weight(int stage, int row, int col) {
+    int index = stage * HIDDEN * HIDDEN + row * HIDDEN + col + 1;
+    return 0.05f * sinf(index * 0.1f);
+}
+float training_input(int step, int dp, int i) {
+    return sinf((float)step + dp * 0.17f + i * 0.01f);
+}
+void compute_cpu_reference(SharedState* shared) {
+    const int H = HIDDEN, B = BATCH;
+    for (int stage = 0; stage < 2; ++stage)
+        for (int r = 0; r < H; ++r)
+            for (int col = 0; col < H; ++col)
+                shared->reference_weights[stage][r * H + col] = initial_weight(stage, r, col);
+    std::vector<double> x(B*H), y(B*H), z(B*H), dz(B*H), dy(B*H);
+    std::vector<double> mean_g0(H*H), mean_g1(H*H);
+    for (int step = 0; step < N_STEPS; ++step) {
+        std::fill(mean_g0.begin(), mean_g0.end(), 0.0);
+        std::fill(mean_g1.begin(), mean_g1.end(), 0.0);
+        const float* w0 = shared->reference_weights[0];
+        const float* w1 = shared->reference_weights[1];
+        for (int dp = 0; dp < DP; ++dp) {
+            for (int i = 0; i < B*H; ++i) x[i] = training_input(step, dp, i);
+            // Y = X W0; Z = Y W1. Reference accumulation is double precision.
+            for (int b = 0; b < B; ++b)
+                for (int j = 0; j < H; ++j) {
+                    double sum = 0;
+                    for (int k = 0; k < H; ++k) sum += x[b*H+k] * w0[k*H+j];
+                    y[b*H+j] = sum;
+                }
+            double loss = 0;
+            for (int b = 0; b < B; ++b)
+                for (int j = 0; j < H; ++j) {
+                    double sum = 0;
+                    for (int k = 0; k < H; ++k) sum += y[b*H+k] * w1[k*H+j];
+                    z[b*H+j] = sum;
+                    loss += sum * sum;
+                    dz[b*H+j] = 2.0 * sum / (B*H);
+                }
+            shared->reference_losses[dp][step] = (float)(loss / (B*H));
+            // dY = dZ W1^T; dW1 = Y^T dZ; dW0 = X^T dY.
+            for (int b = 0; b < B; ++b)
+                for (int k = 0; k < H; ++k) {
+                    double sum = 0;
+                    for (int j = 0; j < H; ++j) sum += dz[b*H+j] * w1[k*H+j];
+                    dy[b*H+k] = sum;
+                }
+            for (int k = 0; k < H; ++k)
+                for (int j = 0; j < H; ++j) {
+                    double g0 = 0, g1 = 0;
+                    for (int b = 0; b < B; ++b) {
+                        g0 += x[b*H+k] * dy[b*H+j];
+                        g1 += y[b*H+k] * dz[b*H+j];
+                    }
+                    mean_g0[k*H+j] += g0 / DP;
+                    mean_g1[k*H+j] += g1 / DP;
+                }
+        }
+        // Match the implementation's clipping of EACH TP weight shard after
+        // DP averaging: W0 column shards, W1 row shards. This is not global clipping.
+        for (int stage = 0; stage < 2; ++stage) {
+            const auto& gradient = stage == 0 ? mean_g0 : mean_g1;
+            for (int tp = 0; tp < TP; ++tp) {
+                double norm_sq = 0;
+                for (int r = 0; r < H; ++r)
+                    for (int col = 0; col < H; ++col) {
+                        if ((stage == 0 ? col / H_SHARD : r / H_SHARD) == tp) {
+                            double g = gradient[r*H+col];
+                            norm_sq += g*g;
+                        }
+                    }
+                double norm = std::sqrt(norm_sq);
+                double scale = norm > CLIP ? CLIP / norm : 1.0;
+                for (int r = 0; r < H; ++r)
+                    for (int col = 0; col < H; ++col)
+                        if ((stage == 0 ? col / H_SHARD : r / H_SHARD) == tp) {
+                            int i = r*H+col;
+                            shared->reference_weights[stage][i] = (float)
+                                (shared->reference_weights[stage][i] - (double)LR * scale * gradient[i]);
+                        }
+            }
+        }
+    }
+}
 
 // ── Per-GPU training state ────────────────────────────────────────────────
 struct GpuState {
@@ -2782,17 +2859,7 @@ void stage0_forward(GpuState& s) {
 // dW0 = X^T [HIDDEN, BATCH] × dY [BATCH, H_SHARD] = [HIDDEN, H_SHARD]
 // dX  = dY  [BATCH, H_SHARD] × W0^T [H_SHARD, HIDDEN] = [BATCH, HIDDEN]
 void stage0_backward(GpuState& s) {
-    // Gradient w.r.t. weight W0
-    sgemm(s.cublas, HIDDEN, H_SHARD, BATCH,
-          s.d_input,        // A: X [BATCH, HIDDEN], treat as transposed
-          s.d_grad_output,  // B: dY [BATCH, H_SHARD]
-          s.d_grad,
-          /*alpha=*/1.0f, /*beta=*/0.0f);
-    // Conceptually: dW = X^T × dY
-    // With our sgemm wrapper (computes A×B in row-major):
-    // We need [HIDDEN, BATCH] × [BATCH, H_SHARD] = [HIDDEN, H_SHARD]
-    // Reinterpret: A = X^T as [HIDDEN, BATCH] (but X is [BATCH, HIDDEN])
-    // cuBLAS handles this via transposition flags; use explicit CUBLAS call:
+    // dW0 = X^T dY, with explicit transpose flags for row-major storage.
     float alpha = 1.0f, beta = 0.0f;
     CHECK_CUBLAS(cublasSgemm(s.cublas,
         CUBLAS_OP_N, CUBLAS_OP_T,   // dY, X^T
@@ -2925,6 +2992,7 @@ void* worker(void* arg_ptr) {
     CHECK_CUDA(cudaStreamCreate(&s.stream_comm));
     CHECK_CUBLAS(cublasCreate(&s.cublas));
     CHECK_CUBLAS(cublasSetStream(s.cublas, s.stream_compute));
+    CHECK_CUBLAS(cublasSetMathMode(s.cublas, CUBLAS_PEDANTIC_MATH));
 
     int weight_elems = (pp == 0) ? (HIDDEN * H_SHARD)   // W0: [H, H/TP]
                                   : (H_SHARD * HIDDEN);  // W1: [H/TP, H]
@@ -2940,15 +3008,15 @@ void* worker(void* arg_ptr) {
     CHECK_CUDA(cudaMalloc(&s.d_gnorm_sq,    1                 * sizeof(float)));
 
     // ── Phase 3: Initialize weights ──────────────────────────────────
-    // Deterministic init: weight[i] = 0.01 × (i + tp_rank * weight_elems + pp * 10000 + 1)
-    // This gives different weights per shard but reproducible values.
+    // Balanced, deterministic full-matrix initialization; both DP replicas agree.
     {
         float* h_w = new float[weight_elems];
         for (int i = 0; i < weight_elems; ++i) {
-            h_w[i] = 0.01f * (i + tp * weight_elems + pp * 10000 + 1);
+            int row = pp == 0 ? i / H_SHARD : tp * H_SHARD + i / HIDDEN;
+            int col = pp == 0 ? tp * H_SHARD + i % H_SHARD : i % HIDDEN;
+            h_w[i] = initial_weight(pp, row, col);
         }
-        CHECK_CUDA(cudaMemcpy(s.d_weight, h_w, weight_elems * sizeof(float),
-                              cudaMemcpyHostToDevice));
+        CHECK_CUDA(cudaMemcpy(s.d_weight, h_w, weight_elems * sizeof(float), cudaMemcpyHostToDevice));
         delete[] h_w;
     }
 
@@ -2958,13 +3026,13 @@ void* worker(void* arg_ptr) {
     for (int step = 0; step < N_STEPS; ++step) {
 
         // ── 4a. Generate input data ───────────────────────────────────
-        // Each step uses input[i] = sin(step + i * 0.01) for reproducibility.
+        // Distinct DP inputs make gradient averaging necessary for oracle agreement.
         // PP stage 0 generates its own input.
         // PP stage 1 receives activations via PP send/recv.
         if (pp == 0) {
             float* h_inp = new float[BATCH * HIDDEN];
             for (int i = 0; i < BATCH * HIDDEN; ++i)
-                h_inp[i] = sinf(step + i * 0.01f);
+                h_inp[i] = training_input(step, dp, i);
             CHECK_CUDA(cudaMemcpyAsync(s.d_input, h_inp,
                                        BATCH * HIDDEN * sizeof(float),
                                        cudaMemcpyHostToDevice, s.stream_compute));
@@ -3026,6 +3094,7 @@ void* worker(void* arg_ptr) {
             int n = BATCH * HIDDEN;
             mse_grad_kernel<<<(n+255)/256, 256, 0, s.stream_compute>>>(
                 s.d_output, s.d_grad_output, n);
+            CHECK_CUDA(cudaGetLastError());
             CHECK_CUDA(cudaStreamSynchronize(s.stream_compute));
         }
 
@@ -3094,10 +3163,12 @@ void* worker(void* arg_ptr) {
         int grid  = (weight_elems + block - 1) / block;
         sum_sq_kernel<<<grid, block, block*sizeof(float), s.stream_compute>>>(
             s.d_grad, s.d_gnorm_sq, weight_elems);
+        CHECK_CUDA(cudaGetLastError());
 
         // ── 4f. SGD update ────────────────────────────────────────────
         sgd_clip_kernel<<<grid, block, 0, s.stream_compute>>>(
             s.d_weight, s.d_grad, s.d_gnorm_sq, LR, CLIP, weight_elems);
+        CHECK_CUDA(cudaGetLastError());
         CHECK_CUDA(cudaStreamSynchronize(s.stream_compute));
 
         // Zero gradients for next step
@@ -3134,10 +3205,14 @@ void* worker(void* arg_ptr) {
     pthread_barrier_wait(&shared->barrier);
 
     bool dp_ok = true;
+    for (int i = 0; i < weight_elems; ++i)
+        if (!std::isfinite(h_weight_local[i])) dp_ok = false;
     if (dp == 0) {
         int peer_gpu = gpu_of(/*dp=*/1, pp, tp);
         float max_diff = 0.0f;
         for (int i = 0; i < weight_elems; ++i) {
+            if (!std::isfinite(g_weights[gpu_id][i]) ||
+                !std::isfinite(g_weights[peer_gpu][i])) dp_ok = false;
             float diff = fabsf(g_weights[gpu_id][i] - g_weights[peer_gpu][i]);
             if (diff > max_diff) max_diff = diff;
         }
@@ -3147,42 +3222,62 @@ void* worker(void* arg_ptr) {
     }
     pthread_barrier_wait(&shared->barrier);
 
-    // 5b. Check loss is strictly decreasing (on stage 1, tp=0 only)
+    // 5b. Verify every local shard element against the independent full CPU model.
+    bool weight_ok = true;
+    float max_weight_error = 0.0f;
+    for (int i = 0; i < weight_elems; ++i) {
+        int row = pp == 0 ? i / H_SHARD : tp * H_SHARD + i / HIDDEN;
+        int col = pp == 0 ? tp * H_SHARD + i % H_SHARD : i % HIDDEN;
+        float expected = shared->reference_weights[pp][row * HIDDEN + col];
+        float got = h_weight_local[i];
+        float error = fabsf(got - expected);
+        max_weight_error = std::max(max_weight_error, error);
+        if (!std::isfinite(got) || !std::isfinite(expected) ||
+            error > 1e-6f + 1e-4f * fabsf(expected)) weight_ok = false;
+    }
+    printf("  [Verify] GPU %d CPU final-weight reference: %s; elements=%d max_abs_error=%.9g\n",
+           gpu_id, weight_ok ? "PASS" : "FAIL", weight_elems, max_weight_error);
+
+    // 5c. Inputs change each step: compare all losses to the oracle, not to
+    // the previous step. Distinct DP inputs also test the DP gradient average.
+    bool loss_ok = true;
     if (pp == 1 && tp == 0) {
-        bool loss_ok = true;
-        for (int step = 1; step < N_STEPS; ++step) {
-            if (shared->losses[1][dp][step] >= shared->losses[1][dp][step-1]) {
+        float max_loss_error = 0.0f;
+        for (int step = 0; step < N_STEPS; ++step) {
+            float got = shared->losses[1][dp][step];
+            float expected = shared->reference_losses[dp][step];
+            float error = fabsf(got - expected);
+            max_loss_error = std::max(max_loss_error, error);
+            if (!std::isfinite(got) || !std::isfinite(expected) ||
+                error > 1e-6f + 1e-4f * fabsf(expected)) {
                 loss_ok = false;
+                printf("  CPU loss mismatch dp=%d step=%d got=%.9g expected=%.9g\n",
+                       dp, step, got, expected);
             }
         }
-        printf("  [Verify] DP replica %d loss monotonically decreasing: %s\n",
-               dp, loss_ok ? "PASS ✓" : "FAIL ✗");
-        if (!loss_ok) {
-            printf("  Loss values: ");
-            for (int s = 0; s < N_STEPS; ++s)
-                printf("%.4f ", shared->losses[1][dp][s]);
-            printf("\n");
-        }
+        printf("  [Verify] DP replica %d per-step CPU loss reference: %s; steps=%d max_abs_error=%.9g\n",
+               dp, loss_ok ? "PASS" : "FAIL", N_STEPS, max_loss_error);
     }
     pthread_barrier_wait(&shared->barrier);
+    shared->rank_ok[gpu_id] = dp_ok && weight_ok && loss_ok;
 
     // ── Phase 6: Cleanup ─────────────────────────────────────────────────
     delete[] h_weight_local;
     delete[] h_weight_peer;
-    cudaFree(s.d_weight);
-    cudaFree(s.d_grad);
-    cudaFree(s.d_input);
-    cudaFree(s.d_output);
-    cudaFree(s.d_partial);
-    cudaFree(s.d_grad_output);
-    cudaFree(s.d_grad_input);
-    cudaFree(s.d_gnorm_sq);
-    cublasDestroy(s.cublas);
-    cudaStreamDestroy(s.stream_compute);
-    cudaStreamDestroy(s.stream_comm);
-    ncclCommDestroy(shared->tp_comm[gpu_id]);
-    ncclCommDestroy(shared->pp_comm[gpu_id]);
-    ncclCommDestroy(shared->dp_comm[gpu_id]);
+    CHECK_CUDA(cudaFree(s.d_weight));
+    CHECK_CUDA(cudaFree(s.d_grad));
+    CHECK_CUDA(cudaFree(s.d_input));
+    CHECK_CUDA(cudaFree(s.d_output));
+    CHECK_CUDA(cudaFree(s.d_partial));
+    CHECK_CUDA(cudaFree(s.d_grad_output));
+    CHECK_CUDA(cudaFree(s.d_grad_input));
+    CHECK_CUDA(cudaFree(s.d_gnorm_sq));
+    CHECK_CUBLAS(cublasDestroy(s.cublas));
+    CHECK_CUDA(cudaStreamDestroy(s.stream_compute));
+    CHECK_CUDA(cudaStreamDestroy(s.stream_comm));
+    CHECK_NCCL(ncclCommDestroy(shared->tp_comm[gpu_id]));
+    CHECK_NCCL(ncclCommDestroy(shared->pp_comm[gpu_id]));
+    CHECK_NCCL(ncclCommDestroy(shared->dp_comm[gpu_id]));
     return nullptr;
 }
 
@@ -3201,7 +3296,7 @@ int main() {
     // live as "found -1" when this exact uninitialized version ran
     // with zero CUDA-capable devices present.)
     int n_gpus = 0;
-    cudaGetDeviceCount(&n_gpus);
+    CHECK_CUDA(cudaGetDeviceCount(&n_gpus));
     if (n_gpus < NGPU) {
         printf("ERROR: Need %d GPUs, found %d. Exiting.\n", NGPU, n_gpus);
         return 1;
@@ -3224,6 +3319,8 @@ int main() {
     // Set up shared state
     SharedState* shared = new SharedState();
     memset(shared->losses, 0, sizeof(shared->losses));
+    compute_cpu_reference(shared);
+    printf("CPU serial reference prepared: full matrices, distinct DP inputs, per-shard clipping.\n");
     pthread_barrier_init(&shared->barrier, nullptr, NGPU);
     pthread_mutex_init(&shared->loss_mutex, nullptr);
 
@@ -3231,24 +3328,33 @@ int main() {
     printf("Training:\n");
     pthread_t threads[NGPU];
     for (int i = 0; i < NGPU; ++i) {
-        pthread_create(&threads[i], nullptr, worker, shared);
+        if (pthread_create(&threads[i], nullptr, worker, shared) != 0) {
+            fprintf(stderr, "pthread_create failed\n"); exit(1);
+        }
     }
     for (int i = 0; i < NGPU; ++i) {
-        pthread_join(threads[i], nullptr);
+        if (pthread_join(threads[i], nullptr) != 0) {
+            fprintf(stderr, "pthread_join failed\n"); exit(1);
+        }
     }
 
     printf("\n═══════════════════════════════════════════════════════════════════\n");
     printf("  Training complete. See verification output above.\n");
     printf("═══════════════════════════════════════════════════════════════════\n");
 
+    bool all_ok = true;
+    for (int i = 0; i < NGPU; ++i) all_ok = all_ok && shared->rank_ok[i];
+    printf("All-rank training validation: %s\n", all_ok ? "PASS" : "FAIL");
     pthread_barrier_destroy(&shared->barrier);
     pthread_mutex_destroy(&shared->loss_mutex);
     delete shared;
-    return 0;
+    return all_ok ? 0 : 1;
 }
 ```
 
 <!-- validation:start:ex13_hybrid_parallel_training.cu -->
+> **Historical, superseded source and prerequisite record.** The earlier captured run below did not execute training. The revised current source passed the separate [eight-A100 CPU-reference validation](eight-gpu-validation.md), targeting `sm_80`. Both historical H100 datasets remain unchanged.
+
 **Captured output — ex13_hybrid_parallel_training.cu**
 
 > **Executed:** 2026-11-17T21:29:59.278741+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
@@ -3282,7 +3388,7 @@ ERROR: Need 8 GPUs, found 1. Exiting.
 
 
 
-The dated run above stopped at the eight-GPU prerequisite check on a one-GPU host. No distributed training steps, loss trajectory, replica comparison or TP reconstruction were measured in that run. Those checks require an eight-GPU execution; CPU arithmetic alone cannot establish NCCL communication correctness.
+The dated run above stopped at the eight-GPU prerequisite check on a one-GPU host. No distributed training steps, loss trajectory, replica comparison or TP reconstruction were measured in that run. The revised program subsequently completed an eight-A100 execution with initialized device results compared against an independent CPU reference; see [the supplemental record](eight-gpu-validation.md). This validates the tested teaching configuration, not every distributed-training implementation or topology.
 
 ### What Each Part Teaches
 
@@ -3329,20 +3435,20 @@ Code Component → Concept It Demonstrates
 
   sum_sq_kernel + sgd_clip_kernel
     → Gradient clipping prevents exploding gradients in large models.
-      In production: AllReduce of gnorm_sq ACROSS all DP ranks before
-      clipping, so all replicas use the same global gradient norm.
-      (Here simplified: each rank clips its own shard independently.)
+      For a global model norm, sum squared norms across distinct model
+      shards without double-counting replicated parameters. DP averaging
+      already makes corresponding replica gradients equal.
+      Here each TP shard is clipped independently; the reference matches it.
 
   g_weights static array for DP verification
     → In production: use ncclBroadcast or AllGather from a reference
       rank, then elementwise compare. This static approach works only
       in single-process multi-thread test harnesses.
 
-  loss monotonicity check
-    → The most basic correctness test for any training loop.
-      If loss does NOT decrease: gradient sign is flipped (check
-      backward formulas), learning rate is too large (reduce LR),
-      or DP AllReduce is broken (all replicas have different gradients).
+  CPU serial final-weight and per-step loss checks
+    → Compare actual results with independently computed reference values.
+      Changing inputs mean a loss increase alone is not an error.
+      Check finite values, explicit tolerances and all rank results.
 ```
 
 <!-- practice:start -->
@@ -3358,7 +3464,7 @@ Code Component → Concept It Demonstrates
 
 ??? success "Worked answer — 11.2"
 
-    2 × 2 × 2 = 8 GPUs. Count alone does not specify NVLink connectivity, PCIe peer access, network bandwidth or collective behavior. Record topology and placement as well. The eight-GPU training workload remains hardware-blocked in the published validation record.
+    2 × 2 × 2 = 8 GPUs. Count alone does not specify NVLink connectivity, PCIe peer access, network bandwidth or collective behavior. Record topology and placement as well. The revised portable training program has a separate [eight-A100 numerical PASS record](eight-gpu-validation.md); this does not change the topology or scope of either historical H100 dataset.
 
 <!-- practice:end -->
 
