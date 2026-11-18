@@ -1647,15 +1647,17 @@
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>python3<span class="w"> </span>tools/verify_validation_records.py
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>mkdocs<span class="w"> </span>serve
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>python3<span class="w"> </span>tools/verify_site_links.py
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>mkdocs<span class="w"> </span>serve
 </span></code></pre></div>
 <p>Open <a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a> on the same machine. Stop the server with <code>Ctrl+C</code>. On Windows, virtual-environment activation has a different path; you can instead invoke the environment's Python directly to install packages and run MkDocs.</p>
 <p>If the preview server is on a remote host, keep it bound to localhost and forward it from your own computer:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>ssh<span class="w"> </span>-L<span class="w"> </span><span class="m">8000</span>:127.0.0.1:8000<span class="w"> </span>-i<span class="w"> </span>/path/to/your-key.pem<span class="w"> </span>ubuntu@YOUR_INSTANCE_IP
 </span></code></pre></div>
 <p>Start <code>mkdocs serve</code> in that remote shell, then open the local address above in your own browser. Alternatively, clone and preview on your laptop so the GPU instance is not needed for documentation work.</p>
-<p>The evidence checker compares chapter sources, downloadable sources and recorded hashes. It can detect stale execution records after a code edit, but it does not execute CUDA on a CPU-only CI runner. A strict MkDocs build checks site construction and links. Neither replaces the GPU reference checks.</p>
+<p>The evidence checker compares chapter sources, downloadable sources and recorded hashes. It can detect stale execution records after a code edit, but it does not execute CUDA on a CPU-only CI runner. A strict MkDocs build checks site construction and treats build warnings as errors; <code>tools/verify_site_links.py</code> separately checks built internal links and anchors. These checks do not replace the GPU reference checks.</p>
 <h2 id="8-troubleshoot-the-first-failing-step">8 — Troubleshoot the first failing step<a class="headerlink" href="#8-troubleshoot-the-first-failing-step" title="Permanent link">&para;</a></h2>
+<p>Work through the rows for the first error you actually see. Preserve the full compiler/runtime message and the exact command before changing the environment.</p>
 <table>
 <thead>
 <tr>
@@ -1666,42 +1668,63 @@
 <tbody>
 <tr>
 <td><code>nvidia-smi</code> is missing or finds no devices</td>
-<td>Confirm you are in the remote GPU shell and that the host has a working NVIDIA driver. A documentation-only laptop is not a CUDA execution host.</td>
+<td>Confirm you are in the GPU host's shell. Check the provider's driver setup and, inside a container or scheduler job, its GPU allocation/exposure. A missing management command alone does not prove CUDA is unavailable; use the preflight's Driver API diagnostic too.</td>
+</tr>
+<tr>
+<td><code>nvidia-smi</code> lists GPUs but preflight sees fewer or none</td>
+<td>Check <code>CUDA_VISIBLE_DEVICES</code>, the job/container allocation and CUDA driver-library access in the same shell that will run the example. Management-tool visibility and CUDA-process visibility can differ.</td>
 </tr>
 <tr>
 <td><code>nvcc: command not found</code></td>
-<td>Check the selected toolkit, environment module and <code>PATH</code>; the driver alone is not a compiler.</td>
+<td>Check the selected toolkit, environment module and <code>PATH</code>; the driver alone is not a compiler. Run <code>nvcc --version</code> after selecting the toolkit.</td>
 </tr>
 <tr>
 <td>Unsupported <code>sm_90a</code> target</td>
-<td>Check the actual compiler version and its supported targets. Do not remove the <code>a</code> to silence a WGMMA assembly error.</td>
+<td>Check which <code>nvcc</code> your shell selects and its version. Use a toolkit supporting the example's architecture and instructions; CUDA 12.8.93 is the recorded compiler. Do not remove the <code>a</code> to silence a WGMMA assembly error.</td>
 </tr>
 <tr>
 <td><code>no kernel image is available</code> or architecture mismatch</td>
-<td>Match the built binary to the executing GPU. A Hopper-specific binary is not a Blackwell implementation.</td>
+<td>Check the CUDA-visible GPU and rebuild the intended source with its full command. Rule out a stale executable or shared library. Hopper-specific <code>sm_90a</code>/<code>compute_90a</code> code is not forward- or backward-compatible with other architectures.</td>
 </tr>
 <tr>
-<td>Undefined <code>cuTensorMap...</code>, NCCL or cuBLAS symbols</td>
-<td>Use that example's complete compile/link command, and install its development library if absent.</td>
+<td>Undefined <code>cuTensorMap...</code>, NCCL or cuBLAS symbols while linking</td>
+<td>Use the example's complete link command: driver API calls need <code>-lcuda</code>, NCCL needs <code>-lnccl</code>, and cuBLAS needs <code>-lcublas</code>. Check matching headers and libraries from the selected installation.</td>
+</tr>
+<tr>
+<td>The executable cannot load <code>libnccl.so</code>, <code>libcublas.so</code> or another shared library</td>
+<td>This is runtime library discovery, distinct from compilation. On Linux, inspect <code>ldd ./your_example</code> and use the library-path setup documented for the installed toolkit/library.</td>
 </tr>
 <tr>
 <td>Preflight says <code>BLOCKED</code></td>
-<td>Read the specific prerequisite error. For multi-GPU work, both CUDA-visible count and topology matter.</td>
+<td>Read its specific error: driver discovery, visible count, Hopper capability or compiler availability/version. Preflight does <strong>not</strong> test topology, peer access or NCCL; check those separately for multi-GPU work. Its Hopper requirement also means an A100 can fail this checker while still being suitable for the separately documented portable training example.</td>
 </tr>
 <tr>
-<td>Illegal access, wrong numbers, timeout or a stalled barrier</td>
-<td>Start with the dated source, preserve the first error, compare the full output, and use the chapter's ownership/layout explanation. Run memory checks before performance tuning.</td>
+<td>Illegal memory access</td>
+<td>Keep the first CUDA error and reproduce in a fresh process. Use the current corrected listing, then run Compute Sanitizer memcheck before performance tuning. An earlier dated source is useful for reproducing that exact record, not for undoing a documented correction.</td>
+</tr>
+<tr>
+<td>Wrong numerical results</td>
+<td>Compare the exact problem shape, data type, input initialization, layout and numerical tolerance with the example's reference check. A clean memory-check report does not establish numerical correctness.</td>
+</tr>
+<tr>
+<td>Timeout or stalled barrier</td>
+<td>Check required GPU/rank counts, launch dimensions, participant arrival counts, expected transfer bytes and buffer ownership. Use the chapter's synchronization protocol and stop a hung test rather than treating it as a performance measurement. Sanitizer coverage depends on the tool, version and instructions; a clean report does not prove every asynchronous ordering rule.</td>
 </tr>
 <tr>
 <td><code>ERR_NVGPUCTRPERM</code></td>
-<td>Read Chapter 13 and the administrator's profiling policy. It is a counter-access problem, not proof that the kernel is incorrect.</td>
+<td>Read <a href="../13-nsight-compute/">Chapter 13</a> and the administrator's profiling policy. This is a performance-counter permission problem, not evidence that the kernel is incorrect.</td>
 </tr>
 <tr>
 <td>Your times differ from the captured output</td>
-<td>Compare shape, SKU, clocks, timing scope, warmup and profiler settings. A single-CTA correctness demo is not a peak-throughput benchmark.</td>
+<td>Compare shape, SKU, clocks, timing scope, warmup, interconnect and profiler settings. A single-CTA correctness demo is not a peak-throughput benchmark.</td>
 </tr>
 </tbody>
 </table>
+<p>For the unchanged first program from Step 5, run this <strong>from the repository root</strong>, after compiling it:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>compute-sanitizer<span class="w"> </span>--tool<span class="w"> </span>memcheck<span class="w"> </span>--error-exitcode<span class="w"> </span><span class="m">1</span><span class="w"> </span>./build/first-run/ex01_cluster_inspect
+</span></code></pre></div>
+<p><code>--error-exitcode 1</code> makes detected sanitizer errors produce a nonzero status even if the application itself exits successfully. Instrumented runtime is not ordinary benchmark timing. For the four barrier-ordering corrections in Chapters 3–5, use the current chapter listings and read their <a href="../final-audit/">revision-specific validation status</a>; their earlier logs cover the archived revisions.</p>
+<p>References: <a href="https://docs.nvidia.com/cuda/archive/12.8.0/hopper-compatibility-guide/index.html">NVIDIA's Hopper compatibility guide</a>, <a href="https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html">Compute Sanitizer guide</a>, and <a href="https://developer.nvidia.com/ERR_NVGPUCTRPERM">performance-counter permission guidance</a>.</p>
 <h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
 <p>Choose a <a href="../#how-to-read-this">learning path</a>. For the first pass, work through <a href="../01-h100-architecture/">Chapter 1</a>, then the complete examples in <a href="../02-clusters-inline-ptx/">Chapter 2</a>. Each chapter now has learning goals and self-checks with worked answers. Keep your own environment report with every result you want to reproduce.</p>
 
