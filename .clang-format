@@ -2,7 +2,7 @@ BasedOnStyle: LLVM
 Standard: c++17
 IndentWidth: 4
 ContinuationIndentWidth: 4
-ColumnLimit: 72
+ColumnLimit: 68
 UseTab: Never
 BreakBeforeBraces: Attach
 AllowShortFunctionsOnASingleLine: None

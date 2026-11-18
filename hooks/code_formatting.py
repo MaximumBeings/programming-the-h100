@@ -49,13 +49,22 @@ def executable():
 
 @lru_cache(maxsize=1024)
 def format_source(source, language):
-    result = subprocess.run(
-        [executable(), '--style=file:' + str(ROOT / '.clang-format'),
-         '--assume-filename=' + LANGUAGES[language]],
-        input=source, text=True, capture_output=True, check=True, timeout=15).stdout
-    if lexical_signature(source) != lexical_signature(result):
-        raise ValueError('Code presentation changed tokens/comments; review the formatter configuration.')
-    return result
+    signature = lexical_signature(source)
+    result = source
+    # A wrapped trailing comment can settle on the next pass. Require a fixed
+    # point, so rebuilding or copying a formatted listing never churns it.
+    for _ in range(4):
+        previous = result
+        result = subprocess.run(
+            [executable(), '--style=file:' + str(ROOT / '.clang-format'),
+             '--assume-filename=' + LANGUAGES[language]],
+            input=previous, text=True, capture_output=True, check=True, timeout=15).stdout
+        if lexical_signature(result) != signature:
+            raise ValueError('Code presentation changed tokens/comments; review the formatter configuration.')
+        if result == previous:
+            return result
+    raise ValueError('Code presentation did not reach a stable layout.')
+
 
 
 def on_page_markdown(markdown, **kwargs):
