@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the one literal reader-comment correction and its rendered result."""
+"""Check literal reader-comment corrections and their rendered results."""
 import argparse
 import hashlib
 from html.parser import HTMLParser
@@ -27,6 +27,11 @@ def verify(root, site=None):
         raise AssertionError('Nonmatching comment must fail closed.')
     page = SimpleNamespace(file=SimpleNamespace(src_path='another-page.md'))
     assert hook.on_page_markdown(source, page) == source, 'Unregistered page changed.'
+    cluster = (root/'docs'/hook.CLUSTER_PAGE).read_text()
+    shown_cluster = hook.on_page_markdown(cluster, SimpleNamespace(file=SimpleNamespace(src_path=hook.CLUSTER_PAGE)))
+    assert cluster.count(hook.CLUSTER_OLD) == shown_cluster.count(hook.CLUSTER_NEW) == 1
+    assert cluster.replace(hook.CLUSTER_OLD, '', 1) == shown_cluster.replace(hook.CLUSTER_NEW, '', 1)
+    assert cluster.count('\n') == shown_cluster.count('\n')
     if site:
         class Text(HTMLParser):
             def __init__(self): super().__init__(); self.parts=[]
@@ -36,6 +41,9 @@ def verify(root, site=None):
         assert 'Check the visible device count before creating the eight-GPU layout.' in text, 'Reader comment absent.'
         assert "return code isn't checked here" not in text, 'Obsolete comment remains visible.'
         assert 'with zero CUDA-capable devices present.' not in text, 'Obsolete environment comment remains visible.'
+        cluster_parser = Text(); cluster_parser.feed((site/'02-clusters-inline-ptx/index.html').read_text())
+        cluster_text = ' '.join(' '.join(cluster_parser.parts).split())
+        assert hook.CLUSTER_NEW in cluster_text and hook.CLUSTER_OLD not in cluster_text
     return before
 
 

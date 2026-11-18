@@ -1,5 +1,9 @@
-"""Correct one obsolete editorial comment for readers; preserve executed source files."""
+"""Apply literal comment-only reader corrections; preserve executed source files."""
 import re
+
+CLUSTER_PAGE = '02-clusters-inline-ptx.md'
+CLUSTER_OLD = '// Block 0 writes 0.0, Block 1 writes 100.0, Block 2 writes 200.0, ...'
+CLUSTER_NEW = '// Example values by block: 0.0, 100.0, 200.0 (and so on).'
 
 PAGE = '11-multi-gpu-nccl.md'
 EXAMPLE = 'ex13_hybrid_parallel_training.cu'
@@ -31,6 +35,10 @@ def display_source(source):
 
 
 def on_page_markdown(markdown, page, **kwargs):
+    if page.file.src_path == CLUSTER_PAGE:
+        if markdown.count(CLUSTER_OLD) != 1:
+            raise ValueError('Expected the exact cluster-value comment once.')
+        return markdown.replace(CLUSTER_OLD, CLUSTER_NEW, 1)
     if page.file.src_path != PAGE:
         return markdown
     found = []
