@@ -111,7 +111,7 @@ Stop if this block fails. Do not continue with a repository for a different Ubun
 
 **Preconfigured cloud image:** retain its working, compatible driver. If it needs an upgrade, use the provider's supported procedure. The recorded driver was 580.105.08. For the CUDA 12.8 Update 1 toolchain, this guide uses a driver meeting the release's corresponding **570.124.06 or newer** requirement; do not assume the general CUDA 12.x minor-compatibility minimum supports every PTX/JIT feature used here. See [NVIDIA's release compatibility tables](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-toolkit-release-notes/index.html#cuda-driver).
 
-**Fresh Ubuntu host you administer:** after repository setup, install kernel headers and NVIDIA's open-module driver package. H100 and A100 are supported by the open-module driver family. These commands are for the host, not a container:
+**Fresh Ubuntu host you administer:** if Secure Boot requires module-key enrollment, arrange the distribution/provider console access before rebooting. After repository setup, install kernel headers and NVIDIA's open-module driver package. H100 and A100 are supported by the open-module driver family. These commands are for the host, not a container:
 
 ```bash
 sudo apt-get install -y "linux-headers-$(uname -r)"
@@ -195,6 +195,21 @@ sudo apt-get install -y \
 ```
 
 These versions were present in NVIDIA's Ubuntu 22.04 and 24.04 x86-64 repositories when this guide was checked on **November 18, 2026**. If unavailable, select a matching pair built for CUDA 12.x from NVIDIA's repository/archive and record the actual version. Do not silently install the default CUDA 13 build or pass `--allow-downgrades` over a provider-managed stack. An existing compatible NCCL installation can be retained; its headers and runtime must resolve consistently. NVIDIA's [NCCL installation guide](https://docs.nvidia.com/deeplearning/nccl/install-guide/index.html#ubuntu) explains explicit package-version selection.
+
+### Check fabric setup on NVSwitch servers
+
+On a **native HGX/DGX NVSwitch server**, the GPU driver and CUDA toolkit alone are not the entire fabric setup. DGX OS normally supplies Fabric Manager; a fresh HGX installation needs the compatible Fabric Manager components for its platform and driver. Use [NVIDIA's bare-metal Fabric Manager procedure](https://docs.nvidia.com/datacenter/tesla/fabric-manager-user-guide/index.html#installing-fabric-manager) to choose the packages. Package/version rules differ by NVSwitch generation, and Fabric Manager versioning changed with driver release 620; do not copy a branch number from an unrelated server.
+
+After installing the matching components on the **host that owns the fabric**, enable/start the service and inspect its state:
+
+```bash
+sudo systemctl enable nvidia-fabricmanager
+sudo systemctl start nvidia-fabricmanager
+systemctl is-active nvidia-fabricmanager
+nvidia-smi -q -i 0 | grep -i -A 3 Fabric
+```
+
+For Hopper NVSwitch systems, check that fabric registration completes successfully before relying on NVLink peer paths. On a managed cloud instance or guest/container, the provider/host administrator may own this service; its absence inside the guest is not an instruction to install or restart it there. PCIe-only and direct-NVLink setups do not universally need Fabric Manager. Do not restart an active fabric service as a routine troubleshooting step.
 
 ### Verify files, versions and topology
 
