@@ -230,11 +230,13 @@ The driver supplies GPU access; the toolkit supplies compilation; cuBLAS and NCC
 ## 4 — Download the source and run preflight
 
 ```bash
-git clone https://github.com/MaximumBeings/programming-the-h100.git
+git clone --branch main https://github.com/MaximumBeings/programming-the-h100.git
 cd programming-the-h100
 python3 tools/h100_preflight.py
 python3 tools/h100_preflight.py --json > preflight.json
 ```
+
+The clone explicitly selects the source branch. If already cloned, check `git branch --show-current`: `gh-pages` contains generated HTML rather than the source/build tools.
 
 The checker uses the CUDA Driver API to count CUDA-visible devices, including the effect of `CUDA_VISIBLE_DEVICES`. It checks Hopper capability, the compiler, and the availability of optional inspection tools. It needs Python's standard library, not PyTorch. It **does not** prove that a kernel is correct or that multiple GPUs have a suitable interconnect.
 
