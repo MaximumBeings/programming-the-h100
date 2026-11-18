@@ -1,0 +1,46 @@
+{
+  "timestamp_utc": "2026-11-18T00:03:00.400131+00:00",
+  "source": "ex13_hybrid_parallel_training.cu",
+  "source_sha256": "9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2",
+  "arch": "sm_80",
+  "pass_marker": "All-rank training validation: PASS",
+  "host_python": "3.12.3",
+  "status": "PASS",
+  "system_sha256": "61d8a540a520be82931cb4b6dcd9f977bd7715506efceba3030b1695d0c7c35d",
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_80",
+      "-O2",
+      "/home/ubuntu/codex-eight-gpu-audit-20261117/eight-device-training-reference/ex13_hybrid_parallel_training.cu",
+      "-o",
+      "/home/ubuntu/codex-eight-gpu-audit-20261117/eight-device-training-reference/example",
+      "-lnccl",
+      "-Xcompiler",
+      "-pthread",
+      "-lcublas"
+    ],
+    "started_utc": "2026-11-18T00:03:01.576145+00:00",
+    "finished_utc": "2026-11-18T00:03:04.266831+00:00",
+    "seconds": 2.6906888560000652,
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "compile.log",
+    "log_sha256": "702d023603194f99da14d3fa4b3fea034510da0121898f503c60c51f9cf82bcc"
+  },
+  "binary_sha256": "2c574d8d9b720c44089a8bc5d4572fbf98c0154b908183d811fda45409b5b1ad",
+  "run": {
+    "command": [
+      "/home/ubuntu/codex-eight-gpu-audit-20261117/eight-device-training-reference/example"
+    ],
+    "started_utc": "2026-11-18T00:03:04.268589+00:00",
+    "finished_utc": "2026-11-18T00:03:13.511241+00:00",
+    "seconds": 9.242659763000006,
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "run.log",
+    "log_sha256": "2050b4e49424a2ed503abe1a6ff66c183449ba27a1f26254468020128452f809"
+  },
+  "finished_utc": "2026-11-18T00:03:13.511354+00:00"
+}
