@@ -21,7 +21,7 @@ def copy():
                       '37×70 FP32 copy: final tile origin (36,64). Offsets are elements from the guarded view origin.')
     d.section('1  Find the six valid logical coordinates')
     d.table(['Thread', 'Coordinate', 'Predicate'],
-            [('0…5', '(36,64)…(36,69)', 'true'),
+            [('0..5', '(36,64)..(36,69)', 'true'),
              ('6', '(36,70)', 'false: column'),
              ('32', '(37,64)', 'false: row')], [120, 328, 256])
     d.section('2  Apply each allocation’s own row pitch')
@@ -62,7 +62,7 @@ def banks():
     d.note('Plain: 32 different words, bank 0',
            '32t+0 modulo 32 is zero for every lane. This is not a same-word broadcast.', 'amber')
     d.note('Padding and XOR: 32 different banks',
-           'Padding uses 33t. Word-model XOR uses 32t+(0 XOR t). Both visit banks 0…31 here, but their complete storage maps differ.', 'teal')
+           'Padding uses 33t. Word-model XOR uses 32t+(0 XOR t). Both visit banks 0..31 here, but their complete storage maps differ.', 'teal')
     d.section('2  Distinguish the maps away from column zero')
     d.table(['Coordinate', 'Plain', 'Padded', 'XOR'],
             [('(3,5)', '101; bank 5', '104; bank 8', '102; bank 6')], [160, 180, 180, 184])
@@ -78,16 +78,16 @@ def gemm():
            'block(x=1,y=2), thread(tx=12,ty=4) to (36,28). ldc=36; batch stride=1332. Output offset=1332+36×36+28=2656 elements.', 'blue')
     d.section('1  Keep the same accumulator across all tiles')
     d.table(['K origin', 'Real K coordinates', 'Partial dot', 'Running sum'],
-            [('0', '0…15', '0.625', '0.625'),
-             ('16', '16…31', '0.21875', '0.84375'),
-             ('32', '32…40; 7 zero slots', '0.28125', '1.125')], [110, 250, 172, 172])
+            [('0', '0..15', '0.625', '0.625'),
+             ('16', '16..31', '0.21875', '0.84375'),
+             ('32', '32..40; 7 zero slots', '0.28125', '1.125')], [110, 250, 172, 172])
     d.section('2  Apply the epilogue once')
     d.table(['Branch', 'Substitution', 'Value'],
             [('Accumulator', 'alpha×sum = 0.5×1.125', '0.5625'),
              ('C source', 'beta×C = 0.25×0.5', '0.125'),
              ('Final output', '0.5625+0.125', 'D[2656]=0.6875')], [150, 320, 234])
     d.note('Load ownership differs from output ownership',
-           'At K origin 32, this thread’s A load uses k=44 and is zero-filled. Its valid output still consumes k=32…40 from inputs supplied cooperatively.', 'amber')
+           'At K origin 32, this thread’s A load uses k=44 and is zero-filled. Its valid output still consumes k=32..40 from inputs supplied cooperatively.', 'amber')
     return d
 
 

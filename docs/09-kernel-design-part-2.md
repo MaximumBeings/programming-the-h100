@@ -22,7 +22,7 @@
 
 ### 9.1 Why __syncthreads() Is Not Enough
 
-`__syncthreads()` synchronizes ALL threads in a block. In a warp-specialized kernel, this is too coarse: when the producer fills a stage, only the consumer needs to know — not every thread in the block needs to rendezvous. Using `__syncthreads()` for producer-consumer signaling would force BOTH warpgroups to reach the barrier simultaneously, eliminating all pipeline overlap.
+`__syncthreads()` synchronizes ALL threads in a block. In a warp-specialized kernel, this is too coarse: when the producer fills a stage, only the consumer needs to know — not every thread in the block needs to rendezvous. A block-wide barrier requires all participating block threads to rendezvous. Using it for each producer/consumer handoff can serialize otherwise independent stages; specialized barriers permit narrower handoffs. A block barrier is still useful for shared initialization or other genuinely block-wide phases, and its presence does not imply that every kind of overlap is impossible.
 
 `mbarrier` (memory barrier) is a fine-grained, asynchronous synchronization primitive that fixes this. It allows specific threads (or TMA hardware) to signal a barrier, and specific threads to wait on it, without involving anyone else.
 
@@ -898,7 +898,7 @@ Cooperative Pipeline — Tile Division and Execution
 
 ### 14.1 Solving the Cooperative Gap
 
-The Ping-Pong pipeline eliminates idle tensor core time by having Consumer 0 run its epilogue at EXACTLY the same time Consumer 1 runs its WGMMA on the NEXT tile.
+A ping-pong pipeline staggers consumer roles so one consumer can perform epilogue work while another issues matrix work for a different tile. It aims to cover otherwise idle intervals; relative durations, available tiles, dependencies and resource contention determine actual overlap. It does not guarantee simultaneous execution or eliminate every idle cycle.
 
 [![Stagger consumers to cover epilogue work](images/ch09/05-ping-pong-overlap.svg)](images/ch09/05-ping-pong-overlap.svg)
 
@@ -1397,7 +1397,7 @@ Epilogue — The Data Path
 
 ### 15.2 The 10 Operations of Epilogue Fusion
 
-Any operation that can be expressed as a pointwise (element-by-element) or small-reduction computation on the output tile can be fused into the epilogue. This eliminates the HBM round-trip that would be required for a separate kernel.
+Pointwise operations and some tile-local reductions are candidates for epilogue fusion when the selected implementation supports their dataflow, communication, precision and resource requirements. An operation requiring statistics across unrelated output tiles needs an additional supported coordination strategy. A supported fusion can avoid the intermediate output write/read of a separate pass, but may add shared-memory/register pressure; it is not automatically faster.
 
 ```
 Epilogue Fusion Operation Catalog

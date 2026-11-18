@@ -18,7 +18,7 @@ SPECS=[
 (23,'Build the','whole reduction.','Shared tiles · SIMT math · guarded stores',['LOAD','REDUCE','STORE']),
 (24,'Assemble','a checked GEMM.','Collectives · kernel · device adapter',['MAINLOOP','EPILOGUE','ADAPTER']),
 (25,'Overlap work.','Protect the stage.','Producer · consumer · safe reuse',['ACQUIRE','READY','RELEASE']),
-(26,'Fuse the graph.','Preserve math.','Linear combination · activation · store',['αAB + βC','ReLU','STORE']),
+(26,'Fuse the graph.','Preserve math.','Linear combination · activation · store',['alpha AB + beta C','ReLU','STORE']),
 (27,'Pack fewer bits.','Keep the contract.','E2M1 values · scales · numerical checks',['PACK','SCALE','DECODE']),
 (28,'Measure a scope.','Explain results.','Correctness · timing · profiler evidence',['VERIFY','MEASURE','EXPLAIN']),
 (29,'Prove it.','Then improve it.','References · kernels · reproducible evidence',['REFERENCE','KERNEL','EVIDENCE'])]

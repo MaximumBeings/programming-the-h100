@@ -1,0 +1,132 @@
+{
+  "baseline": "e2885a2",
+  "changed_explanatory_fences": [
+    {
+      "page": "docs/01-h100-architecture.md",
+      "fence_one_based": 22,
+      "heading": "Register File",
+      "before_sha256": "c53a39b6bbe05f14f3b35a6bd05658436b2329314e1e0fb2587d063153c03dc0",
+      "after_sha256": "52320eb2e22adbaef54c69044ab8824381a0a04b34ab70da9107d6ae1191332d"
+    },
+    {
+      "page": "docs/01-h100-architecture.md",
+      "fence_one_based": 24,
+      "heading": "What Happens When You Run Out of Registers",
+      "before_sha256": "38d8e04711547baf41349abece56eb2256f9fc4567994bda35cc6adfe8f775c5",
+      "after_sha256": "404bf0884bae9f046e6619aa3cb9560130978fda55fba21d9b13c86a982a65e1"
+    },
+    {
+      "page": "docs/02-clusters-inline-ptx.md",
+      "fence_one_based": 3,
+      "heading": "Cluster launch and DSMEM lifetime \u2014 conceptual sequence",
+      "before_sha256": "bec8df70a554eac5cd7314bcaf397b04e5a59481f1280df44c878fc67341d3c8",
+      "after_sha256": "55f7e2bd96c62d6cfc012e74c8ac2e3cf78a4c57430bde49e3b051f3f531345b"
+    },
+    {
+      "page": "docs/02-clusters-inline-ptx.md",
+      "fence_one_based": 4,
+      "heading": "Cluster-size decisions \u2014 contracts, not latency predictions",
+      "before_sha256": "b64a2337d030f53d52c0441b5ed3264c776b99b10fd50ffeb53313d311a7bc36",
+      "after_sha256": "baec708e56da195867183c367765e50f93ed7881cadb042ae6ae80a13d8d31f5"
+    },
+    {
+      "page": "docs/02-clusters-inline-ptx.md",
+      "fence_one_based": 30,
+      "heading": "State Space Map \u2014 Physical Location vs. Software View",
+      "before_sha256": "c0eba4033e2a3df559de0401a07fea999e1b8450102669ba9752a9b4c4e2fdeb",
+      "after_sha256": "648a731e0682066048dfb6d2f161d84122748ab23c76f81d6b303fa93a3a9852"
+    },
+    {
+      "page": "docs/02-clusters-inline-ptx.md",
+      "fence_one_based": 31,
+      "heading": "Register budget \u2014 illustrative arithmetic, not occupancy prediction",
+      "before_sha256": "031ac4b53d62ce7a03ae7711095bcda90079b1a4ca33e5352ab5c03253447fd8",
+      "after_sha256": "42e8c15f0e8c41d9f45650868ca20debb129cd4bef31fa4b580c3989f82bfc66"
+    },
+    {
+      "page": "docs/02-clusters-inline-ptx.md",
+      "fence_one_based": 35,
+      "heading": "Local, Constant, and Parameter State Spaces",
+      "before_sha256": "2da79971959e79316c15312649299cd35e0cb07d96c6eb44cf5e4ad0854a3764",
+      "after_sha256": "c0f51fd05bbc4848a3e5240edde2f1c668077266d4c4c5ff3898495fb1f89cdc"
+    },
+    {
+      "page": "docs/02-clusters-inline-ptx.md",
+      "fence_one_based": 36,
+      "heading": "Data flow for thread 0:",
+      "before_sha256": "60d4402ee2060d328f863e707cc66395ae2125e168d3ee446947f3d6d04d0429",
+      "after_sha256": "c5c2797c882c3d2c538b07572f39d718e6ec799c6cea51053e810f8f86ad29cb"
+    },
+    {
+      "page": "docs/02-clusters-inline-ptx.md",
+      "fence_one_based": 55,
+      "heading": "  4-byte \"word\" at byte offset B:  word_index = B / 4",
+      "before_sha256": "930738044a625fcbbcc1bdf26d68304d743b307950fe16a61ad5b41f045016d7",
+      "after_sha256": "b7593b4834931f33ccba90dacd0097d1d3c702552179b820a86295f1dc1d8baf"
+    },
+    {
+      "page": "docs/02-clusters-inline-ptx.md",
+      "fence_one_based": 75,
+      "heading": "Space           PTX Qualifier        CUDA C++           Scope    Speed",
+      "before_sha256": "6a89b217eff7e5e10c0c2e9be3bc0bc6cadc2699209df3b1ee0f1b21c5db9891",
+      "after_sha256": "59037c2b70ebd4ca8a65516dd9a237ac5f009cfbf084264a5346ef7e32c1770d"
+    },
+    {
+      "page": "docs/03-asynchronicity-mbarrier.md",
+      "fence_one_based": 6,
+      "heading": "Blocking and completion \u2014 distinguish host from device",
+      "before_sha256": "b4ae80ef603a529ad0ca172edbc92376dcee08132703654d051271e9362136be",
+      "after_sha256": "b46cc12d48351565221b3470b532d93486352f197119ec35dd6a41c587eb7a44"
+    },
+    {
+      "page": "docs/03-asynchronicity-mbarrier.md",
+      "fence_one_based": 7,
+      "heading": "Asynchronous initiation \u2014 completion is a separate fact",
+      "before_sha256": "8bdf480f0199fa6b4b0f666e9db3f77a63c07d426902b528966276833636d95e",
+      "after_sha256": "aa383c45f6379db8c914335190da9bc85e4f146302dc68ada15b6c6da35706b1"
+    },
+    {
+      "page": "docs/03-asynchronicity-mbarrier.md",
+      "fence_one_based": 20,
+      "heading": "Phase Bit \u2014 How Reuse Works",
+      "before_sha256": "9cf3e02f0feeeedca1f8755bffec331d2fd7634ab23ad6ad9ea9781b38df0120",
+      "after_sha256": "c478c3e5d84558d85f89106f9b532a3d2e27da946d5da6f8ddf8a8fea8830324"
+    },
+    {
+      "page": "docs/04-cutensormap-tma-swizzling.md",
+      "fence_one_based": 3,
+      "heading": "TMA capabilities \u2014 supported descriptors and instruction variants",
+      "before_sha256": "4fc56446a165fe371fdca38a7120b8bfc98631609a4f4d2c42444c4a078ceec5",
+      "after_sha256": "397465170d0b7f15bb7a14c575f1c1099a6c71f1a868f8bbb5894f7dbedddd3c"
+    },
+    {
+      "page": "docs/04-cutensormap-tma-swizzling.md",
+      "fence_one_based": 17,
+      "heading": "Conflict-Free Access \u2014 The Ideal Case",
+      "before_sha256": "f856a85aac7f40bf8027466b5fc3768de028e9dbb039f4e74cf0676e42eb4f90",
+      "after_sha256": "a348eadbdcd90518cc8b883b55b562a52d7073e98e94bb026381e0edaad068a8"
+    },
+    {
+      "page": "docs/04-cutensormap-tma-swizzling.md",
+      "fence_one_based": 18,
+      "heading": "32 banks \u2014 scalar 32-bit request model",
+      "before_sha256": "8ef0f14c3b56e4ece54fd8d4ab267301532717c5e76a26a5c8a1b493626da893",
+      "after_sha256": "30429aa5bfd5c1aa04ca98a272cb375adca600968406262ef7b3baaee9cd9543"
+    },
+    {
+      "page": "docs/06-wgmma-part-1.md",
+      "fence_one_based": 10,
+      "heading": "Operand Location Rules \u2014 Where Data Must Reside",
+      "before_sha256": "b6008d0b4a3837e093b48f66f53ed48254081daa778ad48f42a05f25bacde1e1",
+      "after_sha256": "97134cf3816eb5861e0397d8f1b8546702369f4bc067948e52c4b5bcef21d200"
+    },
+    {
+      "page": "docs/13-nsight-compute.md",
+      "fence_one_based": 30,
+      "heading": "Cluster Kernels (Chapter 2 \u00a71-2)",
+      "before_sha256": "a673f4df48a4fb4cdc2e4e13e727de011eddda575f8e76ab7056cf69f4cda263",
+      "after_sha256": "7e1ae239f353107ca3d2ad406858e2401440639467d570ec6841ab983b7ad7df"
+    }
+  ],
+  "unchanged_fences_in_edited_pages": 351
+}

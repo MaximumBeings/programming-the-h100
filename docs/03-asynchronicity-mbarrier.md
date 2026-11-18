@@ -294,46 +294,39 @@ The advantage is simplicity: after a blocking call returns, you know the operati
 
 *The issuing thread can do other work before it needs the result.*
 
-```
-Blocking Operations — Reference
-══════════════════════════════════════════════════════════════════════
+```text
+Blocking and completion — distinguish host from device
 
-  CUDA examples of blocking operations:
-  ─────────────────────────────────────────────────────────────────
-  cudaDeviceSynchronize()     // host blocks until ALL GPU work done
-  cudaMemcpy(..., HostToDevice) // host blocks until copy complete
-  __syncthreads()             // thread blocks until ALL block threads arrive
-  bar.sync 0;                 // PTX: thread blocks at barrier
+cudaDeviceSynchronize() waits for preceding work in the current device/context,
+not all GPUs in the process. A successful wait is a completion boundary.
 
-  When blocking is acceptable:
-  ─────────────────────────────────────────────────────────────────
-  ├── Setup/teardown operations (one-time cost, not in hot loop)
-  ├── When you have no other useful work to do anyway
-  ├── When simplicity matters more than peak performance
-  └── Between pipeline stages when data dependency is unavoidable
+cudaMemcpy(...,HostToDevice): host-return semantics depend on pinned/pageable
+storage; staging may finish before the final pageable-H2D DMA finishes.
+Device-to-host synchronous copies return after the copy completes.
+
+__syncthreads()/bar.sync wait for participating block threads under their
+collective contract. They are not cross-block or whole-device waits.
+
+Use documented stream/event ordering before consuming asynchronous results.
 ```
 
 ### 3.2 Non-Blocking Operations — The Key to Latency Hiding
 
 A non-blocking operation returns control immediately to the launching thread before the operation has finished. The thread must later check for completion via a separate mechanism.
 
-```
-Non-Blocking Operations — Reference
-══════════════════════════════════════════════════════════════════════
+```text
+Asynchronous initiation — completion is a separate fact
 
-  CUDA examples of non-blocking operations:
-  ─────────────────────────────────────────────────────────────────
-  cp.async.bulk.tensor ...         // starts TMA copy, returns immediately
-  wgmma.mma_async ...              // starts tensor core op, returns immediately
-  mbarrier.test_wait.parity ...    // non-suspending completion test
-  cudaMemcpyAsync(...)             // host-side: starts copy, returns immediately
+TMA and WGMMA instructions initiate their specified asynchronous operations;
+use their documented barrier or commit/wait completion protocol.
 
-  The critical invariant:
-  ─────────────────────────────────────────────────────────────────
-  Non-blocking means the operation IS RUNNING in the background.
-  It does NOT mean the operation is skippable or optional.
-  You MUST eventually synchronize before using the result.
-  Failing to synchronize = reading garbage data (silent bug!).
+mbarrier.test_wait.parity tests a phase without suspending until it completes.
+cudaMemcpyAsync host behavior depends on direction/storage and may block for
+staging or internal resources; the Async suffix is not a zero-host-delay promise.
+
+An asynchronous request can be queued rather than physically running already.
+Preserve buffers and establish completion before a dependent consumer reads.
+Use matching readiness and reuse dependencies, not host launch order alone.
 ```
 
 ---
@@ -546,14 +539,15 @@ WGMMA does not automatically signal an arbitrary release barrier. The consumer p
 A fence is how you tell the hardware "do not reorder across this line."
 
 There are three you need, and they come in a natural pairing. A **release**
-fence (§7.2) is used by whoever produces data: it guarantees everything written
-before it is visible before the signal that says it's ready. An **acquire**
-fence (§7.3) is used by whoever consumes it: it guarantees nothing is read early.
+fence (§7.2) orders producer accesses as part of a matching publication
+protocol. An **acquire** fence (§7.3) orders consumer accesses after the
+corresponding synchronization observation. Neither is a standalone readiness signal.
 And a **cross-proxy** fence (§7.4) is the one specific to this chapter — it
 bridges the generic and async proxies from §5.
 
-§7.1 also introduces **scope**, which is the knob that decides how much a fence
-costs: ordering within a block is cheap, ordering across the whole GPU is not.
+§7.1 also introduces **scope**, which identifies the participating threads.
+It can affect implementation cost, but neither scope nor instruction name
+provides a universal latency estimate.
 
 ### 7.1 What Is a Fence and Why Do We Need One?
 
@@ -606,7 +600,7 @@ Fence Scopes and Their Costs
 
 ### 7.2 Release Fence — Producer Side
 
-A **release fence** creates a one-way barrier: all memory operations (especially writes) that appear **before** the release are guaranteed to become visible **before** anything that appears after the release. The release says "I am done producing; anyone who synchronizes with me will see all my prior writes."
+A **release fence** participates in publishing preceding memory operations through a matching synchronization operation at a sufficient scope. A consumer that establishes the corresponding acquire relation can then rely on the ordered producer writes. The fence alone does not announce readiness, complete an arbitrary asynchronous engine, or make every earlier write globally visible before every later operation. The flag/barrier accesses and memory proxies must satisfy their own contract.
 
 ```
 Release Fence — Visualization
@@ -638,7 +632,7 @@ Release Fence — Visualization
 
 ### 7.3 Acquire Fence — Consumer Side
 
-An **acquire fence** creates the opposite one-way barrier: no memory operation that appears **after** the acquire can be observed as happening **before** it. The acquire says "I am about to consume; let me see all writes that were released before I proceed."
+An **acquire fence** orders subsequent applicable memory accesses after the synchronization observation that precedes it. It does not search for or collect unrelated producer releases. The consumer must observe the correct published flag/barrier generation using a matching scope/protocol; then the acquire relation makes the relevant producer writes available to the following reads. See [PTX memory consistency and fences](https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#memory-consistency-model).
 
 ```
 Acquire Fence — Visualization
@@ -970,7 +964,8 @@ Phase Bit — How Reuse Works
     int phase = 0;           // register — cheap, private to each thread
 
   Why registers?
-  ├── Cheaper: register XOR costs 1 cycle; SMEM access costs ~10 cycles
+  ├── Phase XOR avoids a shared-memory token load; its performance depends on
+  │  the generated instructions and actual wait protocol
   ├── No bank conflicts or races (each thread has its own copy)
   └── phase ^= 1 is a single instruction vs an SMEM load-modify-store
 

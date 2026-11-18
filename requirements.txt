@@ -1,3 +1,7 @@
 mkdocs-material==9.8.1
 pymdown-extensions==13.1
 clang-format==19.1.7
+
+# Offline SVG typography validation (no renderer or GPU required).
+Pillow==13.0.0
+fonttools[woff]==4.68.0

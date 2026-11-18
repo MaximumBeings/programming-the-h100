@@ -123,12 +123,12 @@ Throughout this guide, each code block has a compile/run box like this:
 
 For fifteen years CUDA had exactly three levels: threads, blocks, grids. Hopper
 adds a fourth — the **cluster**, a small group of thread blocks that the hardware
-guarantees to co-schedule on neighbouring SMs, and which can therefore read one
+guarantees to co-schedule within one GPC, and which can therefore read one
 another's shared memory directly.
 
 That one capability is the whole point. Before clusters, two blocks that needed
 to exchange data had no choice but to write it to global memory and read it back
-— roughly a thousand cycles of round trip. Inside a cluster it costs tens.
+— with costs determined by cache residency, ordering and the access pattern. DSMEM provides another path whose latency and benefit must be measured.
 
 This section builds the idea up in layers: where clusters sit in the hierarchy
 (§1.1), the problem they were invented to solve (§1.2), what the hardware
@@ -139,7 +139,7 @@ code (§1.5–§1.6), and the PTX registers underneath the C++ API (§1.7).
 
 Before Hopper arrived in 2022, every CUDA programmer worked with three levels of parallelism: individual **threads** group into **thread blocks**, and thread blocks form a **grid**. This hierarchy has been stable since CUDA 1.0. The H100 introduces a fourth level — the **Thread Block Cluster** — which sits between blocks and the grid.
 
-Why does this matter? Because previously, the only way for two thread blocks to share data was through global memory (HBM3 on the H100), which has ~500 cycle latency. The cluster gives blocks a direct communication path through each other's shared memory with only ~50-80 cycle latency — a 3-10× speedup for cross-block communication.
+Why does this matter? Before clusters, shared memory was block-private, so an inter-block exchange normally used global-memory storage plus a synchronization protocol. Global memory is an address space, not a promise that every operation reaches HBM: L1/L2 behavior and cache operators affect the physical traffic. Cluster DSMEM permits direct access to another participating block's shared allocation within one GPC. It removes the need for that global intermediate, but does not promise a fixed latency or speedup. The [CUDA cluster contract](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#thread-block-clusters) specifies co-scheduling and supported size, rather than a physical-neighbor placement guarantee.
 
 Think of it this way: before clusters, each block was an island. If block A needed data computed by block B, it had to write to global memory and block B had to read from global memory. With clusters, blocks within the same cluster can directly read and write each other's shared memory as if it were their own (with some address translation, covered in Section 16).
 
@@ -151,10 +151,7 @@ Think of it this way: before clusters, each block was an island. If block A need
 
 To understand why clusters were invented, you need to understand what happens at the hardware level when two thread blocks want to share data. This section digs into the mechanics.
 
-On any GPU before Hopper, shared memory is completely private to one thread block. There is no hardware pathway for two blocks to see each other's shared memory. This means any inter-block communication must go through global memory (HBM), which involves:
-1. Block A writes results to a global buffer (HBM write)
-2. Block B reads from that global buffer (HBM read)
-3. Total round-trip: 2 × ~500 cycles + serialization overhead
+Before Hopper's cluster DSMEM support, ordinary block shared memory was not directly addressable by another block. A global-memory handoff therefore stores an intermediate in global address space and uses a correct publication/consumption protocol. Its stores and loads may hit caches; modeling each as an unavoidable HBM miss would overstate the cost. Likewise, a DSMEM handoff still needs initialized target storage, producer readiness and a lifetime that extends through every remote access.
 
 For algorithms like attention (where blocks need to cooperate on softmax normalization) or top-k (where blocks need to know each other's partial results), this round-trip to global memory is a serious bottleneck.
 
@@ -170,26 +167,23 @@ Let's be very precise about what clusters do and don't do, because there are sev
 
 **Misconception 1: "Clusters create a shared memory pool."** Wrong. Each block still has its OWN private shared memory. What changes is that threads in Block A can now issue loads/stores that target Block B's shared memory. It's cross-access, not pooling.
 
-**Misconception 2: "The cluster is a hardware concept."** Wrong. The cluster is a SOFTWARE abstraction. The hardware concept is the GPC (Graphics Processing Cluster), which is a group of ~18 SMs that share an L2 slice and the DSMEM interconnect. The cluster tells the scheduler to place the cluster's blocks on SMs within the same GPC so the DSMEM interconnect is available.
+**Misconception 2: "Cluster size specifies physical neighboring SMs."** It specifies a cooperating group of blocks with a hardware-backed co-scheduling guarantee within one GPC. It does not expose a portable map from cluster rank to physical SM number, guarantee a private L2 slice for the cluster, or make register/shared-memory occupancy constraints disappear.
 
 **Misconception 3: "You can have unlimited cluster size."** Wrong. The maximum portable cluster size is 8 blocks. Size 16 exists but requires a non-portable flag and may leave SMs idle.
 
-```
-Step 1: Kernel launch with cluster size = 2
-  my_kernel<<<dim3(128,1,1), dim3(256,1,1)>>>(...);
-  // 128 blocks total, cluster size 2 -> 64 clusters of 2 blocks each
+```text
+Cluster launch and DSMEM lifetime — conceptual sequence
 
-Step 3: Both blocks launch simultaneously
-  The "concurrent" guarantee means:
-    - Block 0 and Block 1 are both running at the same time
-    - Neither will be pre-empted while the other runs
-    - DSMEM accesses are valid during the entire kernel
+1. Configure a supported cluster dimension (compile-time or launch attribute).
+   For a one-dimensional cluster size 2 and grid.x=128, there are 64 clusters.
+2. Initialize each block's local shared allocation.
+3. All cluster blocks execute cluster.sync() before remote accesses.
+   Co-scheduling is within one GPC, not a physical-neighbor/preemption promise.
+4. Map a valid target rank and issue the supported DSMEM accesses.
+5. All cluster blocks finish their remote accesses and synchronize before
+   any target block exits or reuses storage still referenced by a peer.
 
-Step 4: thread in Block 0 reaching into Block 1's SMEM
-  uint32_t remote_addr = mapa(my_smem_addr, /*rank=*/1);
-  // remote_addr now points into Block 1's shared memory
-  float val = ld.shared::cluster [remote_addr];
-  // This load travels via the SM-to-SM DSMEM interconnect
+Co-scheduling alone does not initialize data or extend a block's lifetime.
 ```
 
 [![A cluster is a scheduling and lifetime contract](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)](images/ch02/03-cluster-mechanics-gpc-scheduling.svg)
@@ -198,51 +192,29 @@ Step 4: thread in Block 0 reaching into Block 1's SMEM
 
 ### 1.4 Cluster Sizes — Practical Considerations
 
-Choosing a cluster size is a tradeoff between more shared-memory capacity (bigger is better) vs. worse SM utilization (bigger wastes slots) and higher synchronization cost (bigger is slower to sync).
+Choose cluster size from the communication pattern and the actual launch's resource requirements. More blocks can cooperate on distributed shared storage, but can also reduce available scheduling flexibility. Larger size does not imply monotonically worse utilization or a fixed synchronization cost; measure the selected workload.
 
-A key hardware fact: the full GH100 die has 8 GPCs of up to 18 SMs each (144 SMs total) — but the shipping H100 product disables some for yield, so the real count per GPC is lower and uneven: H100 SXM5 ships 132 SMs across its 8 GPCs (~16-17 per GPC on average), and H100 PCIe ships only 114. The table below uses the full die's 18-SM GPC as the clean illustrative case for the capacity model; on a real card, substitute whatever SM count that specific GPC actually has. A cluster of size 2 fits 9 times per GPC (18/2 = 9), with no waste. A cluster of size 4 fits 4 times (18/4 = 4 clusters, 2 SMs idle per GPC — but the scheduler can fill these with non-cluster blocks). A cluster of size 16 requires all 18 SMs but only uses 16, so 2 SMs sit idle per GPC.
+The full GH100 design has up to 144 SMs; H100 SXM and PCIe variants expose different enabled counts. Dividing a notional 18-SM GPC by cluster size is not a reliable active-cluster calculation: a block's threads, registers, shared storage and the supported placement all matter, and blocks need not consume one whole SM each. Use `cudaOccupancyMaxPotentialClusterSize` and `cudaOccupancyMaxActiveClusters` with the actual kernel and launch configuration. Supported portable cluster size can also be reduced by a small GPU/MIG configuration. See the [Hopper occupancy guidance](https://docs.nvidia.com/cuda/archive/12.8.0/hopper-tuning-guide/index.html#thread-block-clusters).
 
-```
-Cluster Size Trade-offs — Practical Decision Table
-══════════════════════════════════════════════════════════════════════
+```text
+Cluster-size decisions — contracts, not latency predictions
 
-  Size    Clusters/GPC  SMs Used  SMs Idle  Sync Cost   Notes
-  ────────────────────────────────────────────────────────────────
-    1         18           1         17      N/A         Just a normal block, no DSMEM
-    2          9           2         16     ~87 cycles   ★ Best default choice
-    4          4           4         14     ~87 cycles   Good for large tile GEMM
-    8          2           8         10     ~87 cycles   Max fully-portable size
-   16          1          16          2    ~150 cycles   Needs non-portable flag
+Size 1       One block; no cross-block cooperation is needed.
+Sizes 2/4/8  Candidate cluster sizes when supported by this launch.
+Size 8       Maximum portable size, subject to device/MIG limits.
+Size 16      Nonportable candidate only on supporting configurations;
+            requires cudaFuncAttributeNonPortableClusterSizeAllowed.
 
-  (*) Non-portable: requires cudaFuncAttributeNonPortableClusterSizeAllowed
+For each candidate:
+  - Check kernel/block/shared-memory/register resource requirements.
+  - Query supported size and active clusters with the occupancy APIs.
+  - Validate communication, synchronization and remote-storage lifetime.
+  - Measure useful work and synchronization cost; do not assume 87/150 cycles.
 
-  Why ~87 cycles for sizes 2-8?
-    The synchronization cost is dominated by the worst-case SM-to-SM
-    latency within a GPC, which is ~87 cycles regardless of whether
-    you're syncing 2 or 8 blocks. All blocks must "arrive" and the
-    last one sets the barrier. Cost = latency of the furthest SM pair.
-
-  Why 150 cycles for size 16?
-    Size 16 spans more of the GPC's internal network, adding latency.
-
-  ─── The Rule of Thumb ───────────────────────────────────────────
-  │                                                                 │
-  │  • Default to cluster size 2.                                   │
-  │  • Use size 4 or 8 only if your algorithm needs >456 KB SMEM.  │
-  │  • Never use size 16 unless you've profiled and verified it     │
-  │    helps — the idle SMs hurt occupancy everywhere.              │
-  │                                                                 │
-  └─────────────────────────────────────────────────────────────────
-
-  Grid Size Constraint (VERY IMPORTANT):
-    The grid dimension MUST be a multiple of the cluster size.
-
-    cluster size = 2 → grid.x must be 2, 4, 6, 8, ... (any even)
-    cluster size = 4 → grid.x must be 4, 8, 12, 16, ...
-    cluster size = 8 → grid.x must be 8, 16, 24, ...
-
-    WRONG:  cluster_size=4, grid.x=10  → undefined behavior
-    RIGHT:  cluster_size=4, grid.x=12  → 3 clusters per row in grid
+Grid dimensions are in blocks and must be divisible componentwise by
+cluster dimensions. For a 1D cluster (4,1,1), grid.x=12 gives 3 clusters;
+grid.x=10 does not satisfy that launch contract. Check launch errors.
+There is no universal rule to start at 2 or to use 4/8 only above 456 KiB.
 ```
 
 ### 1.5 Creating Clusters in Code — Two Methods
@@ -799,7 +771,7 @@ just going to global memory?
 
 Distributed Shared Memory is the hardware feature that makes clusters useful. It's easy to misunderstand what DSMEM actually is, so let's be precise: DSMEM is **not** a new type of memory or a new pool of SRAM. It is the existing per-SM shared memory, extended with a hardware interconnect that allows one SM to access another SM's shared memory — but only within the same cluster.
 
-The key insight is that each SM has 228 KB of SRAM, and this SRAM is used for shared memory. When a thread block runs on SM 0, its `__shared__` allocations live in SM 0's SRAM. When two blocks form a cluster on SMs 0 and 1, the thread block on SM 0 can now issue memory operations that target SM 1's SRAM. The DSMEM interconnect (a dedicated SM-to-SM network within the GPC) routes these operations.
+The key insight is that each H100 SM can configure up to 228 KiB of shared memory from its combined 256-KiB L1/shared-memory resource. When a thread block runs on SM 0, its `__shared__` allocations live in SM 0's SRAM. When two blocks form a cluster on SMs 0 and 1, the thread block on SM 0 can now issue memory operations that target SM 1's SRAM. The DSMEM interconnect (a dedicated SM-to-SM network within the GPC) routes these operations.
 
 [![Distributed access, separate ownership](images/ch02/04-dsmem-architecture.svg)](images/ch02/04-dsmem-architecture.svg)
 
@@ -2183,7 +2155,7 @@ State Space Map — Physical Location vs. Software View
 
   State Space   PTX Qualifier    Physical Location     Speed
   ──────────────────────────────────────────────────────────────────
-  Register      .reg             On-SM register file   1 cycle (fastest)
+  Register      .reg             On-SM register file   Instruction-dependent
   Shared (CTA)  .shared::cta     On-SM SRAM (228KB)    ~10 cycles (banked)
   Shared(clust) .shared::cluster On-SM SRAM via DSMEM  ~50-80 cycles
   Global        .global          HBM3 (off-chip)       ~500 cycles (slowest)
@@ -2198,43 +2170,29 @@ State Space Map — Physical Location vs. Software View
 
 ### 7.2 Register State Space (.reg) — The Fastest Storage
 
-Registers are the only storage that costs exactly 1 cycle to access. They live entirely within the SM's register file — a massive SRAM array that holds up to 65,536 × 32-bit registers per SM, divided among all the threads running on that SM.
+Registers hold thread-local operands in the SM register file; H100 provides 65,536 32-bit registers per SM. They avoid a separate load from global/shared address space, but PTX does not promise every register access or register-dependent instruction has one-cycle latency. Instruction latency, issue throughput, dependencies and register allocation are different quantities.
 
-The key limitation is quantity: each thread can use at most 255 registers. If your kernel tries to use more, the compiler "spills" extra values to local memory (which is slow — it goes to HBM). Always check your register count with `nvcc --ptxas-options=-v`.
+An H100 thread's architectural limit is 255 registers. Allocation is constrained by the whole block/SM resource budget, and the compiler may spill before that ceiling depending on the code and chosen limits. Spill slots live in local address space backed by device memory and may be cached; a spill is not necessarily an HBM transaction. Inspect `nvcc --ptxas-options=-v`, generated accesses and the relevant profiler evidence.
 
-```
-Register Space — What You Need to Know
-══════════════════════════════════════════════════════════════════════
+```text
+Register budget — illustrative arithmetic, not occupancy prediction
 
-  H100 Register File Capacity:
-    65,536 registers × 32 bits = 256 KB per SM
-    With max 256 threads/block: 65536/256 = 256 registers per thread
-    But realistic limit: 128-160 registers (higher = less occupancy)
+65,536 32-bit registers = 256 KiB per SM.
+For a 256-thread block, 32 registers/thread uses 8192 raw registers/block.
+The register-only quotient is 65536/8192 = 8 blocks, before allocation rounding
+and other thread/block/shared-memory limits are applied.
 
-  Occupancy vs Register Count:
-  ┌────────────────────────────────────────────────────────────┐
-  │ Registers/thread │ Threads/SM │ Blocks/SM │ Occupancy     │
-  │ ─────────────────────────────────────────────────────────  │
-  │       32          │   2048     │     8     │   100%        │
-  │       64          │   1024     │     4     │    50%        │
-  │      128          │    512     │     2     │    25%        │
-  │      255          │    256     │     1     │    12.5%      │
-  └────────────────────────────────────────────────────────────┘
-  Lower occupancy → fewer threads to hide latency → slower kernel.
+64 registers/thread instead uses 16384 raw registers/block, suggesting at
+most 4 blocks by this one budget. Query actual occupancy for the kernel.
+The hardware block-thread limit is not 256; 256 is this example's block size.
 
-  Checking register usage (VERY USEFUL for optimization):
-    nvcc -std=c++17 -arch=sm_90a --ptxas-options=-v mykernel.cu
+Lower occupancy does not universally mean lower performance. More registers
+can reduce spills or increase reuse; compare the complete measured kernel.
 
-  Output:
-    ptxas info    : Used 64 registers, 4096 bytes smem, 400 bytes cmem[0]
-    #              └───────────────────────────────────────────────────────
-    #              64 registers per thread → 1024 threads/SM occupancy
-
-  Explicit .reg declarations (only needed for PTX temporaries):
-    .reg .u32 r1, r2;    // two 32-bit unsigned int registers
-    .reg .f32 f<8>;      // eight 32-bit float registers (f0 through f7)
-    .reg .pred p1, p2;   // two 1-bit predicate registers
-    .reg .b128 v1;       // one 128-bit register (4 × 32-bit slots)
+Compiler resource report:
+  nvcc -std=c++17 -arch=sm_90a --ptxas-options=-v mykernel.cu
+  A reported 64 registers/thread is an input to occupancy analysis,
+  not proof that 1024 threads will be resident in every launch.
 ```
 
 ### 7.3 Global State Space (.global) — Device Memory
@@ -2363,7 +2321,7 @@ Local, Constant, and Parameter State Spaces
   What it is:
     64 KB of read-only memory cached in a special constant cache.
     Optimized for BROADCAST: when all threads in a warp read the
-    same address, it costs ~1 cycle (served from constant cache).
+    same address, a uniform read can use the constant-cache broadcast path.
 
   When to use:
     ├── Look-up tables (sine/cosine tables, quantization scales)
@@ -2409,7 +2367,7 @@ Let's trace a specific scenario: a kernel that loads a value from global memory 
 Data flow for thread 0:
   1. ld.param.u64 → reads the global pointer from kernel args
   2. ld.global.f32 → reads input[0] = 1.0f from HBM (500 cycles)
-  3. ld.const.f32 → reads scale_factor from constant cache (1 cycle if broadcast)
+  3. ld.const.f32 → uniform reads can broadcast from the constant cache
   4. fma.rn.f32 → computes input * scale_factor + bias
   5. st.global.f32 → writes result to output[0] in HBM (500 cycles, async)
 
@@ -3349,16 +3307,17 @@ Bank Layout — Visual Map
 
   RULE 1 — No conflict (fastest):
     Each thread accesses a different bank.
-    32 accesses, 32 banks, all different → 1 cycle.
+    32 scalar 32-bit accesses to distinct banks: no bank conflict.
 
   RULE 2 — Broadcast (fast):
     Multiple threads access the SAME byte address.
-    Hardware broadcasts: 1 cycle.
+    Same-word reads can broadcast; this is not a one-cycle latency promise.
     (Not the same as multiple threads in the same bank with different addrs!)
 
   RULE 3 — N-way conflict (slow):
     N threads access different addresses in the same bank.
-    Hardware serializes: N cycles.
+    Distinct-word bank conflicts require additional service work.
+    Exact cycles depend on the instruction and implementation.
 
   ─── Common Stride Patterns ──────────────────────────────────────
   float smem[1024];
@@ -4370,7 +4329,7 @@ remember.
 ```
 Space           PTX Qualifier        CUDA C++           Scope    Speed
 ──────────────────────────────────────────────────────────────────────
-Register        .reg                 (automatic)         Thread   1 cycle
+Register        .reg                 (automatic)         Thread   Instruction-dependent
 Shared (CTA)    .shared / ::cta      __shared__          Block    ~10 cycles
 Shared (cluster).shared::cluster     cluster DSMEM       Cluster  ~50-80 cycles
 Global          .global              __device__, malloc  Grid     ~500 cycles

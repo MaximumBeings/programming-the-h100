@@ -1376,13 +1376,13 @@ Cluster Kernels (Chapter 2 §1-2)
   the SM-to-SM interconnect. Watch for:
 
   ├── Higher shared memory latency than a local access
-  │   (~50-80 cycles vs ~10 — Chapter 2 §7.1)
+  │   (compare actual local/remote access patterns under this workload)
   ├── Stall Short Scoreboard on the loads that use mapa
   └── barrier.cluster showing as Stall Barrier
 
-  If cluster sync cost dominates, reduce the cluster size.
-  Chapter 1 §7.2's table: size 2 costs ~87 cycles to sync,
-  size 16 costs ~150.
+  If cluster synchronization limits useful work, test a supported smaller
+  cluster and rerun correctness/timing. Query occupancy for the actual kernel;
+  cluster size does not prescribe a fixed 87/150-cycle synchronization cost.
 ```
 
 ---

@@ -182,45 +182,28 @@ Evolution of GPU Data Movement — Pre-Hopper to Hopper
 
 TMA is not just a faster `memcpy`. It is a programmable data-movement engine with capabilities that no previous GPU had:
 
-```
-TMA Capabilities Overview
-══════════════════════════════════════════════════════════════════════
+```text
+TMA capabilities — supported descriptors and instruction variants
 
-  1. MULTI-DIMENSIONAL TENSOR SUPPORT (1D through 5D)
-  ─────────────────────────────────────────────────────────────────
-  TMA understands tensor layouts natively. You give it the shape and
-  strides of your tensor, and it fetches the right elements even if
-  they are non-contiguous in memory. No manual stride arithmetic
-  needed in kernel code.
+1. Tensor shapes: 1D through 5D for the supported tiled operations.
+   The descriptor supplies dimensions/strides; the issuer still supplies
+   tile coordinates and obeys datatype, alignment and extent constraints.
 
-  Example: 3D convolution input [N, H, W] stored as [N][stride_H][stride_W]
-  TMA reads exactly the tile [n0:n1][h0:h1][w0:w1] with the right strides
-  without threads computing a single address.
+2. Global-to-shared delivery uses the bulk-async path, bypassing L1.
+   Data may be supplied by L2; a global address does not imply an HBM miss.
+   Whether this is the best path depends on the workload and reuse pattern.
 
-  2. DIRECT SMEM DELIVERY (bypasses L1 cache)
-  ─────────────────────────────────────────────────────────────────
-  TMA fetches from HBM → L2 → Shared Memory directly.
-  Data is NOT polluting the L1 cache (which is valuable for register spills).
-  This is the optimal path for streaming data used once per kernel launch.
+3. Multicast can distribute one requested tile to selected cluster blocks.
+   Match the destination mask, initialized barriers and expected bytes.
+   Do not infer one physical HBM transaction or cluster_size-fold speedup.
 
-  3. MULTICAST (one HBM fetch → multiple SMs simultaneously)
-  ─────────────────────────────────────────────────────────────────
-  With cluster-enabled kernels, one TMA instruction can deliver the
-  same data to ALL blocks in a cluster simultaneously. This eliminates
-  redundant HBM reads when multiple blocks need the same tile.
-  Bandwidth savings = cluster_size× for broadcast-pattern access.
+4. Supported swizzles permute shared-memory placement during the transfer.
+   The consumer must use the corresponding layout/descriptor. A legal
+   permutation does not guarantee conflict freedom for every access pattern.
 
-  4. SWIZZLED WRITES TO SMEM (automatic bank-conflict elimination)
-  ─────────────────────────────────────────────────────────────────
-  TMA can apply swizzling (XOR address permutation) as it writes data
-  to shared memory. The data lands in a conflict-free layout without
-  any software effort. Kernels reading the data see it in the right banks.
-
-  5. INTERLEAVED LAYOUT SUPPORT (NCHW / NCxHWCx formats)
-  ─────────────────────────────────────────────────────────────────
-  For convolution and image data in interleaved formats (like NC8HWC8),
-  TMA can de-interleave the data as it copies, presenting it in a
-  linearized form to the kernel.
+5. Supported interleaved formats are encoded through descriptor fields.
+   Check the selected mode's datatype/stride restrictions; this is not
+   a general-purpose conversion between arbitrary tensor layouts.
 ```
 
 ### 1.3 The Perfect Asynchronicity — Why TMA Enables True Pipelining
@@ -1009,8 +992,10 @@ shared memory.
 
 This section is the setup for that, and it recaps the bank-conflict material
 from Chapter 1 §13.3 in the detail you need for §10. The short version: shared
-memory is 32 independent banks, a warp can hit all 32 in one cycle, and any two
-threads wanting different addresses in the same bank are serialised.
+memory has 32 banks. For the scalar 32-bit word model, distinct addresses
+in one bank conflict, while same-word reads can broadcast. Wider/narrower
+instructions and transaction decomposition require their actual bank mapping;
+this is not a universal one-cycle latency guarantee.
 
 If Chapter 1's version is still fresh, skim to §10.
 
@@ -1035,7 +1020,8 @@ Warp accesses smem[0], smem[1], smem[2], ..., smem[31]:
   thread 2 → smem[2]  → bank 2
   ...
   thread 31 → smem[31] → bank 31
-All different banks → ALL serviced in 1 cycle. Ideal!
+All distinct banks in this scalar model: no bank conflict.
+This does not specify the instruction's end-to-end latency.
 
 Bank Conflict — The Problem Case
 ──────────────────────────────────────────────────────────────────────
@@ -1061,34 +1047,24 @@ the same bank maps to DIFFERENT physical banks.
 
 ### 9.2 Why 32 Banks Exist
 
-Why the number is 32 and not something else — it lines up with the warp size and
-with a 128-byte cache line, which is not a coincidence.
+For the scalar 32-bit model, one warp can request one distinct word per bank.
+This bank-service model does not derive a universal latency from warp size or
+from an unrelated cache-line size.
 
 ```
-32 Banks — The Design Rationale
-══════════════════════════════════════════════════════════════════════
+32 banks — scalar 32-bit request model
 
-  A warp has 32 threads.
-  For conflict-free operation: we need at least 32 independent memory
-  paths (one per thread in a warp).
-  32 banks provides exactly this: 32 threads × 1 bank each = 1 cycle.
+For a single scalar 32-bit shared-memory request per lane:
+  - Word offset w maps to bank w modulo 32.
+  - Distinct words in distinct banks introduce no bank conflict.
+  - Several lanes reading the same word may use broadcast.
+  - Different words in one bank require additional service work.
 
-  Each bank is 4 bytes wide:
-  ├── The minimum register transfer unit is 32 bits (4 bytes)
-  ├── Matching bank width to register width means no waste
-  └── A single warp accessing 32 unique 4-byte values = 32×4 = 128 bytes
-      transferred in 1 cycle = 128 bytes/cycle throughput per SM
-
-  Access patterns and their cost:
-  ─────────────────────────────────────────────────────────────────
-  1 thread   per bank → 1 cycle (conflict-free)  ← ideal
-  N threads  per bank → N cycles (N-way conflict) ← need swizzle
-  N threads read SAME address → 1 cycle (broadcast) ← hardware handles
-
-  Note: Broadcast is conflict-free! If all threads in a warp read the
-  SAME address (not just same bank, but identical address), hardware
-  broadcasts the value in a single cycle. This is different from
-  N threads reading DIFFERENT addresses in the SAME bank.
+A conflict-free address pattern is not a one-cycle load-latency guarantee.
+A vector request may be decomposed into several hardware transactions;
+analyze its relevant transactions rather than all bytes as one request.
+FP16 coordinates require conversion to byte/word addresses first.
+Measure actual instruction throughput, latency and bank-conflict metrics.
 ```
 
 ---
@@ -1102,10 +1078,11 @@ turns a column read into a 32-way conflict. Swizzling scrambles the layout as
 the TMA writes — XORing part of the row index into the address — so that a
 column spreads across all 32 banks instead.
 
-The crucial part is that the TMA does this *for free*, in hardware, on the way
-in. You enable it in the descriptor and never think about it again — except in
-Chapter 6 §11, where you have to reproduce the same XOR to read the tile back
-out.
+TMA can apply a supported swizzle while delivering the tile, avoiding a
+separate software rearrangement pass. The consumer must still use the matching
+physical layout/descriptor and satisfy alignment and extent constraints. A
+swizzle is not a universal conflict-free guarantee or a zero-cost performance
+promise; Chapter 6 §11 and Chapter 22 trace the consumer mapping.
 
 §10.2 covers 128B swizzle, which is the right default for FP16 and BF16 GEMM.
 §10.3 covers the narrower modes and when they apply.

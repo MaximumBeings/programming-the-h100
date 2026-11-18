@@ -554,7 +554,8 @@ Operand Location Rules — Where Data Must Reside
   Will A be used in MULTIPLE wgmma calls with the SAME data?
   (e.g., A is fixed while B changes across N tiles of a row)
     YES → Load A to registers with ldmatrix once, reuse in registers.
-          Cost of ldmatrix paid once; subsequent reads are register reads (~1 cycle).
+          Load once and reuse register fragments; subsequent instruction costs
+          depend on their opcode, dependencies and scheduling.
           Avoid: SMEM bank pressure from reading A AND B each wgmma call.
 
   Will A be used in ONLY ONE wgmma call (not reused)?

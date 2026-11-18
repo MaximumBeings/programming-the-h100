@@ -1041,13 +1041,13 @@ Register File
 
   Per SM:        256 KB (65,536 × 32-bit registers)
   Per quadrant:  64 KB  (16,384 × 32-bit registers)
-  Bandwidth:     Up to 128 reads/writes per cycle per SM
-  Latency:       1 cycle (lowest of any storage)
-  Energy:        30-50× more efficient than shared memory
-                 1000×+ more efficient than HBM3
+  Access cost:   Instruction/dependency-dependent, not a one-cycle contract.
+  Bandwidth and energy depend on operations and implementation;
+                 no universal register/shared/HBM ratio is assumed here.
 
   Every thread gets a PRIVATE set of registers.
-  Register allocation is determined at COMPILE TIME.
+  PTXAS reports the compiled register footprint. Supported warp-specialized
+  kernels can redistribute a reserved budget with setmaxnreg; see Chapter 9.
 
   Base unit: 32-bit slots
     ├── FP32:    1 register per value
@@ -1111,9 +1111,9 @@ What Happens When You Run Out of Registers
   it "spills" values to slower memory:
 
   Priority (best to worst):
-    1. Registers          ← 1 cycle, lowest energy
-    2. Shared memory      ← ~20 cycles (CUDA 13.0+ spill target)
-    3. Local memory       ← ~200-400 cycles (lives in L2/HBM!)
+    1. Registers          ← thread-local operands; instruction-dependent cost
+    2. Shared memory      ← optional supported CUDA 13.0+ spill target
+    3. Local memory       ← device-memory-backed address space, potentially cached
 
   CUDA 13.0 opt-in feature (not used by the CUDA 12.8 examples here):
     In supported whole-program compilation, enable_smem_spilling permits

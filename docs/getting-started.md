@@ -109,7 +109,7 @@ Stop if this block fails. Do not continue with a repository for a different Ubun
 
 ### Install a driver only when needed
 
-**Preconfigured cloud image:** retain its working, compatible driver. If it needs an upgrade, use the provider's supported procedure. The recorded driver was 580.105.08. For the CUDA 12.8 Update 1 toolchain, this guide uses a driver meeting the release's corresponding **570.124.06 or newer** requirement; do not assume the general CUDA 12.x minor-compatibility minimum supports every PTX/JIT feature used here. See [NVIDIA's release compatibility tables](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-toolkit-release-notes/index.html#cuda-driver).
+**Preconfigured cloud image:** retain its working, compatible driver. If it needs an upgrade, use the provider's supported procedure. The recorded driver was 580.105.08. For CUDA 12.8 Update 1, this guide selects the release's corresponding **570.124.06 or newer** driver baseline. CUDA 12.x minor-version compatibility permits some applications on older drivers, with feature and PTX/JIT limitations; it is a different compatibility path, not the setup baseline used here. See [NVIDIA's release compatibility tables](https://docs.nvidia.com/cuda/archive/12.8.1/cuda-toolkit-release-notes/index.html#cuda-driver).
 
 **Fresh Ubuntu host you administer:** if Secure Boot requires module-key enrollment, arrange the distribution/provider console access before rebooting. After repository setup, install kernel headers and NVIDIA's open-module driver package. H100 and A100 are supported by the open-module driver family. These commands are for the host, not a container:
 
