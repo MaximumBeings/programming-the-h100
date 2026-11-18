@@ -157,6 +157,7 @@ source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 python3 tools/verify_validation_records.py
 mkdocs build --strict
+python3 tools/verify_site_links.py
 mkdocs serve
 ```
 
@@ -170,21 +171,37 @@ ssh -L 8000:127.0.0.1:8000 -i /path/to/your-key.pem ubuntu@YOUR_INSTANCE_IP
 
 Start `mkdocs serve` in that remote shell, then open the local address above in your own browser. Alternatively, clone and preview on your laptop so the GPU instance is not needed for documentation work.
 
-The evidence checker compares chapter sources, downloadable sources and recorded hashes. It can detect stale execution records after a code edit, but it does not execute CUDA on a CPU-only CI runner. A strict MkDocs build checks site construction and links. Neither replaces the GPU reference checks.
+The evidence checker compares chapter sources, downloadable sources and recorded hashes. It can detect stale execution records after a code edit, but it does not execute CUDA on a CPU-only CI runner. A strict MkDocs build checks site construction and treats build warnings as errors; `tools/verify_site_links.py` separately checks built internal links and anchors. These checks do not replace the GPU reference checks.
 
 ## 8 — Troubleshoot the first failing step
 
+Work through the rows for the first error you actually see. Preserve the full compiler/runtime message and the exact command before changing the environment.
+
 | What happens | What to check next |
 | --- | --- |
-| `nvidia-smi` is missing or finds no devices | Confirm you are in the remote GPU shell and that the host has a working NVIDIA driver. A documentation-only laptop is not a CUDA execution host. |
-| `nvcc: command not found` | Check the selected toolkit, environment module and `PATH`; the driver alone is not a compiler. |
-| Unsupported `sm_90a` target | Check the actual compiler version and its supported targets. Do not remove the `a` to silence a WGMMA assembly error. |
-| `no kernel image is available` or architecture mismatch | Match the built binary to the executing GPU. A Hopper-specific binary is not a Blackwell implementation. |
-| Undefined `cuTensorMap...`, NCCL or cuBLAS symbols | Use that example's complete compile/link command, and install its development library if absent. |
-| Preflight says `BLOCKED` | Read the specific prerequisite error. For multi-GPU work, both CUDA-visible count and topology matter. |
-| Illegal access, wrong numbers, timeout or a stalled barrier | Start with the dated source, preserve the first error, compare the full output, and use the chapter's ownership/layout explanation. Run memory checks before performance tuning. |
-| `ERR_NVGPUCTRPERM` | Read Chapter 13 and the administrator's profiling policy. It is a counter-access problem, not proof that the kernel is incorrect. |
-| Your times differ from the captured output | Compare shape, SKU, clocks, timing scope, warmup and profiler settings. A single-CTA correctness demo is not a peak-throughput benchmark. |
+| `nvidia-smi` is missing or finds no devices | Confirm you are in the GPU host's shell. Check the provider's driver setup and, inside a container or scheduler job, its GPU allocation/exposure. A missing management command alone does not prove CUDA is unavailable; use the preflight's Driver API diagnostic too. |
+| `nvidia-smi` lists GPUs but preflight sees fewer or none | Check `CUDA_VISIBLE_DEVICES`, the job/container allocation and CUDA driver-library access in the same shell that will run the example. Management-tool visibility and CUDA-process visibility can differ. |
+| `nvcc: command not found` | Check the selected toolkit, environment module and `PATH`; the driver alone is not a compiler. Run `nvcc --version` after selecting the toolkit. |
+| Unsupported `sm_90a` target | Check which `nvcc` your shell selects and its version. Use a toolkit supporting the example's architecture and instructions; CUDA 12.8.93 is the recorded compiler. Do not remove the `a` to silence a WGMMA assembly error. |
+| `no kernel image is available` or architecture mismatch | Check the CUDA-visible GPU and rebuild the intended source with its full command. Rule out a stale executable or shared library. Hopper-specific `sm_90a`/`compute_90a` code is not forward- or backward-compatible with other architectures. |
+| Undefined `cuTensorMap...`, NCCL or cuBLAS symbols while linking | Use the example's complete link command: driver API calls need `-lcuda`, NCCL needs `-lnccl`, and cuBLAS needs `-lcublas`. Check matching headers and libraries from the selected installation. |
+| The executable cannot load `libnccl.so`, `libcublas.so` or another shared library | This is runtime library discovery, distinct from compilation. On Linux, inspect `ldd ./your_example` and use the library-path setup documented for the installed toolkit/library. |
+| Preflight says `BLOCKED` | Read its specific error: driver discovery, visible count, Hopper capability or compiler availability/version. Preflight does **not** test topology, peer access or NCCL; check those separately for multi-GPU work. Its Hopper requirement also means an A100 can fail this checker while still being suitable for the separately documented portable training example. |
+| Illegal memory access | Keep the first CUDA error and reproduce in a fresh process. Use the current corrected listing, then run Compute Sanitizer memcheck before performance tuning. An earlier dated source is useful for reproducing that exact record, not for undoing a documented correction. |
+| Wrong numerical results | Compare the exact problem shape, data type, input initialization, layout and numerical tolerance with the example's reference check. A clean memory-check report does not establish numerical correctness. |
+| Timeout or stalled barrier | Check required GPU/rank counts, launch dimensions, participant arrival counts, expected transfer bytes and buffer ownership. Use the chapter's synchronization protocol and stop a hung test rather than treating it as a performance measurement. Sanitizer coverage depends on the tool, version and instructions; a clean report does not prove every asynchronous ordering rule. |
+| `ERR_NVGPUCTRPERM` | Read [Chapter 13](13-nsight-compute.md) and the administrator's profiling policy. This is a performance-counter permission problem, not evidence that the kernel is incorrect. |
+| Your times differ from the captured output | Compare shape, SKU, clocks, timing scope, warmup, interconnect and profiler settings. A single-CTA correctness demo is not a peak-throughput benchmark. |
+
+For the unchanged first program from Step 5, run this **from the repository root**, after compiling it:
+
+```bash
+compute-sanitizer --tool memcheck --error-exitcode 1 ./build/first-run/ex01_cluster_inspect
+```
+
+`--error-exitcode 1` makes detected sanitizer errors produce a nonzero status even if the application itself exits successfully. Instrumented runtime is not ordinary benchmark timing. For the four barrier-ordering corrections in Chapters 3–5, use the current chapter listings and read their [revision-specific validation status](final-audit.md); their earlier logs cover the archived revisions.
+
+References: [NVIDIA's Hopper compatibility guide](https://docs.nvidia.com/cuda/archive/12.8.0/hopper-compatibility-guide/index.html), [Compute Sanitizer guide](https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html), and [performance-counter permission guidance](https://developer.nvidia.com/ERR_NVGPUCTRPERM).
 
 ## Where to go next
 
