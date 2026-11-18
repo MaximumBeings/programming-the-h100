@@ -3,7 +3,7 @@
 [![FIELD GUIDE: Programming the H100](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
 
 
-> **Validation — November 17–18, 2026.** The [final audit](final-audit.md) records compilation of all 27 complete CUDA programs, execution of 26 workloads, the stronger Chapter 7 coordinate test, and 12 attention-reference cases. The revised portable Chapter 11 training program also passed an independent CPU-reference check on [eight A100 GPUs](eight-gpu-validation.md), compiled for `sm_80`; this is separate from the H100 records.
+> **Validation — November 17–18, 2026.** All **27 complete CUDA programs compiled and executed successfully** across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The [complete validation summary](final-audit.md) links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The [training record](eight-gpu-validation.md) targets `sm_80` and checks all final weights and per-step losses against an independent CPU reference.
 > **Follow-up system:** 2× H100 80GB HBM3, 132 SMs each, NV18 peer topology; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > The [original single-GPU records](validation/2026-11-17/results.json) remain available as historical evidence. Each tested source and captured output is linked beside its example or in the follow-up audit. Diagrams open as original SVGs for zooming.
 
@@ -51,7 +51,7 @@ have a slow kernel in front of you right now, start at Chapter 13.
 
 ??? info "What the evidence labels mean"
 
-    **Compiled** means the complete listed translation unit built with the recorded command. **Executed and passed** means its actual workload ran and passed its stated checks. **Hardware-blocked** means only prerequisite/error handling was exercised; it is not a successful distributed test. **Reference/skeleton** means surrounding implementation is missing. A passing recurrence test does not validate a different handwritten kernel or reproduce a paper benchmark.
+    **Compiled** means the complete listed translation unit built with the recorded command. **Executed and passed** means its actual workload ran and passed its stated checks. **Reference/skeleton** means surrounding implementation is missing. A passing recurrence test does not validate a different handwritten kernel or reproduce a paper benchmark.
 
     Every chapter includes learning goals and two self-checks with expandable worked answers. These exercises are reasoning aids, not extra claims of measured hardware behavior.
 

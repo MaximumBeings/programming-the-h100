@@ -25,4 +25,4 @@ The manifest preserves the exact original absolute-path commands and UTC stage t
 python3 tools/verify_eight_gpu_audit.py
 ```
 
-The [two-H100 final audit](final-audit.md) still records 26 PASS workloads and one eight-GPU prerequisite block for its own historical sources and host. This supplement supersedes that prerequisite limitation for the revised portable Chapter 11 program only.
+The [complete validation summary](final-audit.md) combines the 26 successful H100 program runs with this eight-A100 training result: all 27 complete programs compiled and executed successfully across the recorded hosts.

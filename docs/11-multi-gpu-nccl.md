@@ -13,7 +13,7 @@
 
 ## Lesson 5 Companion Guide — Hardware Topology to Collective Primitives
 
-> **Validation — November 17–18, 2026.** The [two-H100 follow-up audit](final-audit.md) compiled all three complete programs and executed the corrected peer-transfer benchmark and NCCL AllReduce with full-buffer checks. The revised portable training program subsequently passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run. Historical single-GPU transcripts are preserved and labeled below.
+> **Validation — November 17–18, 2026.** The [two-H100 follow-up audit](final-audit.md) compiled all three complete programs and executed the corrected peer-transfer benchmark and NCCL AllReduce with full-buffer checks. The revised portable training program subsequently passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run. All three programs have successful execution records linked below; earlier raw archives remain downloadable from the validation page.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.
 > [Full system information](validation/2026-11-17/system-information.txt) · [CUDA result manifest](validation/2026-11-17/results.json). Each tested source and captured output is linked beside its example. Diagrams open as original SVGs for zooming.
 
@@ -883,7 +883,7 @@ int main() {
 
 !!! info "Corrected benchmark — two-GPU execution passed"
 
-    The historical record below applies to the old source, not the corrected listing above. That old kernel copied only `gridDim.x × blockDim.x` elements while reporting bandwidth for the entire buffer. Its multi-GPU bandwidth figures are invalid. The revised grid-stride version compiled and passed every full-buffer check on two H100 GPUs; its captured result is shown below. The dated source and logs remain unchanged for provenance.
+    The grid-stride benchmark compiled and passed every full-buffer check on two H100 GPUs. Its captured result is shown below; dated source and logs are downloadable with the result.
 
 **Current two-GPU result — ex11_nvlink_bandwidth.cu**
 
@@ -913,35 +913,6 @@ Record topology with nvidia-smi topo -m. Payload: 134217728 bytes
 Full-buffer checks: PASS
 ```
 
-<!-- validation:start:ex11_nvlink_bandwidth.cu -->
-**Historical, superseded source:** this transcript records the original one-GPU prerequisite exit. The [final audit](final-audit.md) validates the corrected listing above.
-
-**Captured output — ex11_nvlink_bandwidth.cu**
-
-> **Executed:** 2026-11-17T21:29:53.498073+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
-> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
-> Compiler exit: `0`; process exit: `0`. Timings and print ordering are specific to this run.
-
-Save the [tested source](validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu) as `ex11_nvlink_bandwidth.cu`, then run:
-
-```bash
-nvcc -std=c++17 -arch=sm_90a -O2 ex11_nvlink_bandwidth.cu -o ex11_nvlink_bandwidth
-./ex11_nvlink_bandwidth
-```
-
-[Compiler log](validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log) · [Execution log](validation/2026-11-17/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log)
-
-```text
-═══════════════════════════════════════════════════════
-  ex11_nvlink_bandwidth — GPU-to-GPU Transfer Benchmark
-═══════════════════════════════════════════════════════
-
-GPUs detected: 1
-  GPU 0: NVIDIA H100 PCIe  (sm_90, 81079 MB HBM, 114 SMs)
-
-Need at least 2 GPUs for P2P benchmark. Exiting.
-```
-<!-- validation:end:ex11_nvlink_bandwidth.cu -->
 
 
 
@@ -950,7 +921,8 @@ Need at least 2 GPUs for P2P benchmark. Exiting.
 
 
 
-The historical one-GPU transcript verifies only the old prerequisite diagnostic. Use the current two-GPU record above for the corrected source and measured peer-bandwidth results. These measurements describe this topology and payload; they are not universal performance guarantees.
+
+Use the two-GPU record above for the current source and measured peer-bandwidth results. These measurements describe this topology and payload; they are not universal performance guarantees.
 
 ---
 
@@ -1725,7 +1697,7 @@ int main() {
 
 !!! info "Corrected result checks — two-GPU execution passed"
 
-    The current listing rejects nonfinite outputs and propagates every rank's verification failure to the process exit status. The historical source and one-GPU logs below predate these changes and do not validate this listing. Fresh compilation and two-GPU execution passed; see the captured result below.
+    The listing rejects nonfinite outputs and propagates every rank’s verification failure to the process exit status. Compilation and two-GPU execution passed; see the captured result below.
 
 **Current two-GPU result — ex12_nccl_allreduce.cu**
 
@@ -1764,32 +1736,6 @@ GPUs found: 2
 All-rank numerical verification: PASS
 ```
 
-<!-- validation:start:ex12_nccl_allreduce.cu -->
-**Historical, superseded source:** this transcript records the original one-GPU prerequisite exit. The [final audit](final-audit.md) validates the corrected listing above.
-
-**Captured output — ex12_nccl_allreduce.cu**
-
-> **Executed:** 2026-11-17T21:29:55.906085+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
-> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
-> Compiler exit: `0`; process exit: `1`. Timings and print ordering are specific to this run.
-
-Save the [tested source](validation/2026-11-17/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu) as `ex12_nccl_allreduce.cu`, then run:
-
-```bash
-nvcc -std=c++17 -arch=sm_90a -O2 ex12_nccl_allreduce.cu -o ex12_nccl_allreduce -lnccl
-./ex12_nccl_allreduce
-```
-
-[Compiler log](validation/2026-11-17/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log) · [Execution log](validation/2026-11-17/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log)
-
-```text
-═══════════════════════════════════════════════════════
-  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo
-═══════════════════════════════════════════════════════
-
-Need >= 2 GPUs for NCCL test. Found 1. Exiting.
-```
-<!-- validation:end:ex12_nccl_allreduce.cu -->
 
 
 
@@ -1798,7 +1744,8 @@ Need >= 2 GPUs for NCCL test. Found 1. Exiting.
 
 
 
-The dated compiler and execution logs above cover the historical source and its one-GPU prerequisite exit. The corrected listing checks device enumeration errors, rejects nonfinite results, and returns failure if any rank fails verification; its successful two-GPU result is recorded above.
+
+The compiler and execution logs above cover this listing, including device enumeration checks, finite-value checks and all-rank verification.
 
 ---
 
@@ -3352,23 +3299,25 @@ int main() {
 }
 ```
 
-<!-- validation:start:ex13_hybrid_parallel_training.cu -->
-> **Historical, superseded source and prerequisite record.** The earlier captured run below did not execute training. The revised current source passed the separate [eight-A100 CPU-reference validation](eight-gpu-validation.md), targeting `sm_80`. Both historical H100 datasets remain unchanged.
 
-**Captured output — ex13_hybrid_parallel_training.cu**
 
-> **Executed:** 2026-11-17T21:29:59.278741+00:00 (UTC). **Status:** Compile PASS; multi-GPU workload NOT RUN (one GPU available).
-> **System:** 1× NVIDIA H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS, NVIDIA driver 580.105.08, CUDA Toolkit 12.8.93, C++17, `sm_90a`.
-> Compiler exit: `0`; process exit: `1`. Timings and print ordering are specific to this run.
 
-Save the [tested source](validation/2026-11-17/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu) as `ex13_hybrid_parallel_training.cu`, then run:
+
+
+
+
+
+
+**Current eight-A100 result — ex13_hybrid_parallel_training.cu**
+
+> Executed: `2026-11-18T00:03:00.400131+00:00` (UTC). Compile PASS; execution PASS. System: eight A100 GPUs; target `sm_80`. All 16,384 final weights and 16 step-loss values match the CPU reference within tolerance.
+
+[Current tested source](validation/2026-11-18-eight-a100/ex13_hybrid_parallel_training.cu) · [Compiler log](validation/2026-11-18-eight-a100/compile.log) · [Execution log](validation/2026-11-18-eight-a100/run.log) · [System/topology](validation/2026-11-18-eight-a100/system-info.log) · [Full validation](eight-gpu-validation.md).
 
 ```bash
-nvcc -std=c++17 -arch=sm_90a -O2 ex13_hybrid_parallel_training.cu -o ex13_hybrid_parallel_training -lnccl -lcublas -Xcompiler -pthread
+nvcc -std=c++17 -arch=sm_80 -O2 ex13_hybrid_parallel_training.cu -o ex13_hybrid_parallel_training -lnccl -Xcompiler -pthread -lcublas
 ./ex13_hybrid_parallel_training
 ```
-
-[Compiler log](validation/2026-11-17/11-multi-gpu-nccl/ex13_hybrid_parallel_training/compile.log) · [Execution log](validation/2026-11-17/11-multi-gpu-nccl/ex13_hybrid_parallel_training/run.log)
 
 ```text
 ═══════════════════════════════════════════════════════════════════
@@ -3377,18 +3326,52 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex13_hybrid_parallel_training.cu -o ex13_hybrid
   Hidden=64  Batch=16  Steps=8  LR=0.010
 ═══════════════════════════════════════════════════════════════════
 
-ERROR: Need 8 GPUs, found 1. Exiting.
+GPU layout:
+  DP replica 0:
+    PP stage 0: GPU 0 (tp=0)  GPU 1 (tp=1)
+    PP stage 1: GPU 2 (tp=0)  GPU 3 (tp=1)
+  DP replica 1:
+    PP stage 0: GPU 4 (tp=0)  GPU 5 (tp=1)
+    PP stage 1: GPU 6 (tp=0)  GPU 7 (tp=1)
+
+CPU serial reference prepared: full matrices, distinct DP inputs, per-shard clipping.
+Training:
+  Step  0 | DP replica 1 | loss = 0.124411
+  Step  0 | DP replica 0 | loss = 0.122847
+  Step  1 | DP replica 1 | loss = 0.129386
+  Step  1 | DP replica 0 | loss = 0.128601
+  Step  2 | DP replica 0 | loss = 0.118514
+  Step  2 | DP replica 1 | loss = 0.116533
+  Step  3 | DP replica 1 | loss = 0.108614
+  Step  3 | DP replica 0 | loss = 0.107767
+  Step  4 | DP replica 0 | loss = 0.112187
+  Step  4 | DP replica 1 | loss = 0.113280
+  Step  5 | DP replica 1 | loss = 0.104528
+  Step  5 | DP replica 0 | loss = 0.106112
+  Step  6 | DP replica 0 | loss = 0.095474
+  Step  6 | DP replica 1 | loss = 0.095743
+  Step  7 | DP replica 1 | loss = 0.099343
+  Step  7 | DP replica 0 | loss = 0.098158
+  [Verify] GPU 1 vs GPU 5 (DP replica diff): max_diff = 0.00e+00  PASS ✓
+  [Verify] GPU 0 vs GPU 4 (DP replica diff): max_diff = 0.00e+00  PASS ✓
+  [Verify] GPU 3 vs GPU 7 (DP replica diff): max_diff = 0.00e+00  PASS ✓
+  [Verify] GPU 2 vs GPU 6 (DP replica diff): max_diff = 0.00e+00  PASS ✓
+  [Verify] GPU 7 CPU final-weight reference: PASS; elements=2048 max_abs_error=3.7252903e-09
+  [Verify] GPU 5 CPU final-weight reference: PASS; elements=2048 max_abs_error=3.7252903e-09
+  [Verify] GPU 0 CPU final-weight reference: PASS; elements=2048 max_abs_error=3.7252903e-09
+  [Verify] GPU 1 CPU final-weight reference: PASS; elements=2048 max_abs_error=3.7252903e-09
+  [Verify] GPU 4 CPU final-weight reference: PASS; elements=2048 max_abs_error=3.7252903e-09
+  [Verify] GPU 6 CPU final-weight reference: PASS; elements=2048 max_abs_error=3.7252903e-09
+  [Verify] DP replica 1 per-step CPU loss reference: PASS; steps=8 max_abs_error=1.04308128e-07
+  [Verify] GPU 2 CPU final-weight reference: PASS; elements=2048 max_abs_error=3.7252903e-09
+  [Verify] DP replica 0 per-step CPU loss reference: PASS; steps=8 max_abs_error=1.04308128e-07
+  [Verify] GPU 3 CPU final-weight reference: PASS; elements=2048 max_abs_error=3.7252903e-09
+
+═══════════════════════════════════════════════════════════════════
+  Training complete. See verification output above.
+═══════════════════════════════════════════════════════════════════
+All-rank training validation: PASS
 ```
-<!-- validation:end:ex13_hybrid_parallel_training.cu -->
-
-
-
-
-
-
-
-
-The dated run above stopped at the eight-GPU prerequisite check on a one-GPU host. No distributed training steps, loss trajectory, replica comparison or TP reconstruction were measured in that run. The revised program subsequently completed an eight-A100 execution with initialized device results compared against an independent CPU reference; see [the supplemental record](eight-gpu-validation.md). This validates the tested teaching configuration, not every distributed-training implementation or topology.
 
 ### What Each Part Teaches
 

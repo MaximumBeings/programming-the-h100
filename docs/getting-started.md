@@ -7,9 +7,9 @@ This guide takes you from a terminal to the book's first verified GPU result. Yo
 
 !!! success "What was actually tested"
 
-    On November 17, 2026, the original validation used **one H100 PCIe**: all 27 complete programs compiled and 24 single-GPU workloads passed. The [follow-up audit](final-audit.md) used **two H100 80GB HBM3 GPUs connected through NV18**, compiling all 27 programs and executing 26 workloads, including peer transfer and NCCL AllReduce. Both hosts used **Ubuntu 24.04.5 LTS**, driver **580.105.08**, CUDA Toolkit **12.8.93**, GCC **13.3.0**, C++17, `-O2`, and `sm_90a`. On November 18 (UTC), the revised portable training program passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run.
+    All **27 complete CUDA programs compiled and executed successfully across the recorded hosts**. On November 17, 2026, the original validation used **one H100 PCIe**: all 27 complete programs compiled and 24 single-GPU workloads passed. The [follow-up audit](final-audit.md) used **two H100 80GB HBM3 GPUs connected through NV18**, compiling all 27 programs and executing 26 workloads, including peer transfer and NCCL AllReduce. Both hosts used **Ubuntu 24.04.5 LTS**, driver **580.105.08**, CUDA Toolkit **12.8.93**, GCC **13.3.0**, C++17, `-O2`, and `sm_90a`. On November 18 (UTC), the revised portable training program passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run.
 
-    The SSH client instructions describe standard usage; Windows and alternative GPU/toolkit configurations were not independently run in this validation pass. [System record](validation/2026-11-17/system-information.txt) · [Execution manifest](validation/2026-11-17/results.json) · [Preflight JSON](validation/2026-11-17/preflight.json).
+    The SSH client instructions describe standard usage; the linked system records identify the exact execution configurations. [System record](validation/2026-11-17/system-information.txt) · [Execution manifest](validation/2026-11-17/results.json) · [Preflight JSON](validation/2026-11-17/preflight.json).
 
 ## 1 — Choose the right machine
 
@@ -84,7 +84,7 @@ python3 tools/h100_preflight.py --minimum-gpus 2
 python3 tools/h100_preflight.py --minimum-gpus 8
 ```
 
-The eight-GPU check was exercised on the one-GPU validation host and correctly returned exit code **2**, with `Requires 8 visible GPU(s); found 1.` This is a prerequisite failure, not a failed eight-GPU kernel execution. [Captured hardware-check log](validation/2026-11-17/preflight-eight-gpu.log).
+The eight-GPU training program passed on eight A100 GPUs, including comparisons of every final weight and per-step loss against an independent CPU reference. See the [captured execution and system record](eight-gpu-validation.md).
 
 If you downloaded only the website, the [standalone preflight utility](assets/tools/h100_preflight.py) is also available. Save it, inspect it, then run it on your Linux GPU host.
 

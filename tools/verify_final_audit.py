@@ -35,12 +35,14 @@ def verify(root, public=None, summary=None):
     rows = json.loads((public / 'results.json').read_text())
     recorded = {(x['page'], x['example']): x['sha256'] for x in rows}
     expected_current = dict(recorded)
+    supplemental = False
     # Only this portable training program may be superseded by the separately
     # verified eight-A100 PASS. Every other archived source remains exact.
     from verify_eight_gpu_audit import KEY, superseding_hash
     if current.get(KEY) != recorded.get(KEY):
         try:
             expected_current[KEY] = superseding_hash(root)
+            supplemental = True
         except (OSError, ValueError, KeyError, TypeError) as error:
             errors.append('Eight-A100 supplement cannot supersede ex13: ' + str(error))
     if len(rows) != 27 or len(recorded) != 27 or current != expected_current:
@@ -70,7 +72,13 @@ def verify(root, public=None, summary=None):
                 errors.append(f'Blocked status lacks prerequisite diagnostic: {key}')
         else:
             errors.append(f'Unsuccessful or unexecuted workload: {key}')
-        if row['timestamp'] not in summary.read_text() or row['sha256'] not in summary.read_text():
+        if supplemental and (row['page'], row['example']) == KEY:
+            from verify_eight_gpu_audit import NAME as EXTRA
+            extra = json.loads((root / 'docs/validation' / EXTRA / 'manifest.json').read_text())
+            shown_time, shown_hash = extra['timestamp_utc'], extra['source_sha256']
+        else:
+            shown_time, shown_hash = row['timestamp'], row['sha256']
+        if shown_time not in summary.read_text() or shown_hash not in summary.read_text():
             errors.append(f'Summary omits execution metadata: {key}')
     if not (public / 'system-info.log').read_text().strip():
         errors.append('Empty system information.')
@@ -106,8 +114,10 @@ def verify(root, public=None, summary=None):
     if sha(attention_source) != inventory['attention_source_sha256'] or attention_source.read_bytes() != (root / 'tools/validate_attention.py').read_bytes():
         errors.append('Attention executed source differs from current reference.')
     text = summary.read_text()
-    if f'**{passed} PASS**' not in text or f'**{blocked} hardware-blocked**' not in text:
-        errors.append('Summary workload counts contradict records.')
+    active_passed = passed + (1 if supplemental else 0)
+    active_blocked = blocked - (1 if supplemental else 0)
+    if f'**{active_passed} PASS**' not in text or active_blocked != 0 or '**BLOCKED_HARDWARE**' in text:
+        errors.append('Current combined summary must show verified PASS coverage for all 27 programs.')
     return errors
 
 

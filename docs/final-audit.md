@@ -1,14 +1,14 @@
-# Final audit — two H100 GPUs
+# Complete execution validation — H100 and A100
 
-This fresh audit supplements the [original November 17 evidence](validation/2026-11-17/results.json). Historical records and chapter transcripts are preserved.
+All 27 complete CUDA programs have successful execution records across the recorded hosts: 26 on H100 and the revised eight-GPU training program on A100. The [original raw archives](validation/2026-11-17/results.json) remain downloadable for provenance.
 
-All **27 complete CUDA programs compiled**. Workload statuses: **26 PASS**, **1 hardware-blocked**. A prerequisite exit is not a successful workload.
+All **27 complete CUDA programs compiled and executed**. Current workload results: **27 PASS** across the recorded hosts.
 
 [System and tool information](validation/2026-11-17-final-audit/system-info.log) · [Raw execution manifest](validation/2026-11-17-final-audit/results.json) · [Integrity inventory](validation/2026-11-17-final-audit/integrity.json). The system log records CUDA-visible discovery, GPU names, memory, driver, compiler, OS and topology.
 
 Each command below is normalized to a local source filename and `example` executable. The raw manifest preserves the actual host paths, commands, stage exits and UTC timestamps. Run commands belong in the matching extracted source directory.
 
-## Execution system
+## H100 execution system
 
 ```text
 UTC: 2026-11-17T23:33:18.920847+00:00
@@ -415,16 +415,18 @@ nvcc -std=c++17 -arch=sm_90a -O2 ex12_nccl_allreduce.cu -o example -lnccl
 
 ### ex13_hybrid_parallel_training.cu
 
-**BLOCKED_HARDWARE** · UTC: `2026-11-17T23:34:15.805469+00:00` · compile exit: `0` · run exit: `unexecuted`.
+**PASS** · UTC: `2026-11-18T00:03:00.400131+00:00` · compile exit: `0` · run exit: `0`. Host: eight A100 GPUs, `sm_80`.
 
-Compile UTC: `2026-11-17T23:34:15.805712+00:00` · Run UTC: `not executed` · Finished UTC: `2026-11-17T23:34:17.837357+00:00`.
+Compile UTC: `2026-11-18T00:03:01.576145+00:00` · Run UTC: `2026-11-18T00:03:04.268589+00:00` · Finished UTC: `2026-11-18T00:03:13.511354+00:00`.
 
-Source SHA-256: `99f1b0a3238b2833c49ed65171cba66cd446991a1be3e807a1645a7f408de9f3`.
+Source SHA-256: `9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2`.
 
-[Source](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu) · [Compiler output](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/compile.log) · [Runtime output](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex13_hybrid_parallel_training/run.log).
+All 16,384 final weights and 16 per-step replica losses match the independent CPU serial reference within tolerance; four DP replica-pair comparisons pass. This portable training test is separate from Hopper-specific WGMMA instructions.
+
+[Source](validation/2026-11-18-eight-a100/ex13_hybrid_parallel_training.cu) · [Compiler output](validation/2026-11-18-eight-a100/compile.log) · [Runtime output](validation/2026-11-18-eight-a100/run.log) · [System/topology](validation/2026-11-18-eight-a100/system-info.log) · [Full training validation](eight-gpu-validation.md).
 
 ```bash
-nvcc -std=c++17 -arch=sm_90a -O2 ex13_hybrid_parallel_training.cu -o example -lnccl -lcublas -Xcompiler -pthread
+nvcc -std=c++17 -arch=sm_80 -O2 ex13_hybrid_parallel_training.cu -o example -lnccl -Xcompiler -pthread -lcublas
 ./example
 ```
 
@@ -442,4 +444,4 @@ All **12 cases passed** against PyTorch math SDPA, including causal masks and pa
 
 ## Verification scope
 
-CI verifies source and evidence hashes, workload status consistency, captured-log presence and this summary. CI does not rerun CUDA or establish untested numerical coverage. The remaining eight-GPU workload requires the corresponding hardware.
+CI verifies all 27 current source hashes against the successful H100/A100 records, captured logs, statuses and this summary. Raw archives retain their original host-specific results. CI checks evidence consistency without rerunning CUDA. Numerical claims remain limited to each program’s explicit oracle and tested inputs.

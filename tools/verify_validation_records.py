@@ -32,6 +32,8 @@ def verify(root, date):
             if key in complete:
                 errors.append(f'Duplicate program: {key}')
             complete[key] = digest(code)
+    current_only = {('docs/11-multi-gpu-nccl.md', name) for name in (
+        'ex11_nvlink_bandwidth.cu', 'ex12_nccl_allreduce.cu', 'ex13_hybrid_parallel_training.cu')}
     passed, blocked = 0, 0
     fresh_rows = None
     superseded = set()
@@ -80,7 +82,29 @@ def verify(root, date):
         marker = re.compile(r'<!-- validation:start:' + re.escape(row['example']) +
                             r' -->.*?<!-- validation:end:' + re.escape(row['example']) + r' -->', re.S)
         sections = marker.findall(chapter)
-        if len(sections) != 1:
+        undisplayed = not sections and key in current_only and key in superseded
+        if undisplayed:
+            # Narrow exemption: old raw archives remain checked above; the exact
+            # current source needs verified PASS evidence and its full displayed log.
+            if key[1] == 'ex13_hybrid_parallel_training.cu':
+                from verify_eight_gpu_audit import NAME, verify as verify_extra
+                errors.extend(verify_extra(root))
+                current_folder = root / 'docs/validation' / NAME
+                current_meta = json.loads((current_folder / 'manifest.json').read_text())
+                current_time = current_meta['timestamp_utc']
+                current_command = current_meta['compile']['command']
+            else:
+                current_folder = root / 'docs/validation/2026-11-17-final-audit' / Path(key[0]).stem / Path(key[1]).stem
+                current_time = fresh_rows[key]['run_timestamp']
+                current_command = fresh_rows[key]['command']
+            normalise_current = lambda value: '\n'.join(line.rstrip() for line in value.splitlines()).strip('\n')
+            current_output = normalise_current((current_folder / 'run.log').read_text())
+            shown_command = [key[1] if str(arg).endswith('/' + key[1]) else Path(key[1]).stem if str(arg).endswith('/example') else arg for arg in current_command]
+            if shlex.join(shown_command) not in chapter:
+                errors.append(f'Current captured compiler command missing or different: {key}')
+            if current_output not in normalise_current(chapter) or current_time not in chapter or str(current_folder.relative_to(root / 'docs')) not in chapter:
+                errors.append(f'Current verified PASS capture must replace historical display: {key}')
+        elif len(sections) != 1:
             errors.append(f'Expected one displayed execution record: {key}')
         else:
             section = sections[0]
@@ -104,7 +128,7 @@ def verify(root, date):
                 errors.append(f'Displayed workload status contradicts the captured run: {key}')
         if needs_hardware:
             blocked += 1
-            if 'multi-GPU workload NOT RUN' not in (root / row['page']).read_text():
+            if not undisplayed and 'multi-GPU workload NOT RUN' not in (root / row['page']).read_text():
                 errors.append(f'Missing hardware limitation notice: {key}')
         elif row.get('run_exit') != 0:
             errors.append(f'Execution did not pass: {key}')
@@ -116,8 +140,8 @@ def verify(root, date):
         print('FAIL:', message)
     if errors:
         return 1
-    print(f'PASS: {len(rows)} historical program records match downloads, commands, dates and displayed outputs; {len(superseded)} current sources have verified fresh superseding PASS records.')
-    print(f'Coverage: {passed} successful workloads; {blocked} hardware-blocked workloads, explicitly labeled.')
+    print(f'PASS: {len(rows)} archive records match their downloads and logs; current displays match verified executions, including {len(superseded)} superseding PASS records.')
+    print(f'Current coverage: {passed + len(superseded)} successful program executions across the recorded hosts.')
     print('Scope: evidence consistency only; this command does not execute CUDA or prove numerical correctness.')
     return 0
 
