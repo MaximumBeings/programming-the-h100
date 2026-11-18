@@ -21,19 +21,20 @@ docs/
   13-nsight-compute.md
   14-nsight-systems.md
   15-cute-layouts.md                 Introductory → intermediate → advanced
-  16-cute-layout-algebra.md
-  17-cute-tensors-tiling.md
-  18-cta-indexing.md
-  19-tiled-copy.md
-  20-mma-atoms.md
-  21-shared-layouts.md
-  22-gemm-construction.md
-  23-cutlass-gemm.md
-  24-cutlass-pipelines.md
-  25-epilogue-fusion.md
-  26-precision-block-scaling.md
-  27-benchmarking-integration.md
-  28-workbook-capstone.md
+  16-cute-strides.md
+  17-cute-layout-algebra.md
+  18-cute-tensors-tiling.md
+  19-cta-indexing.md
+  20-tiled-copy.md
+  21-mma-atoms.md
+  22-shared-layouts.md
+  23-gemm-construction.md
+  24-cutlass-gemm.md
+  25-cutlass-pipelines.md
+  26-epilogue-fusion.md
+  27-precision-block-scaling.md
+  28-benchmarking-integration.md
+  29-workbook-capstone.md
   examples/advanced/            new exercise sources and validation plan
   stylesheets/extra.css          typography + code-block tuning
 hooks/fix_anchors.py             build-time link repair (see below)
@@ -129,6 +130,6 @@ Website builds format C, C++ and CUDA listings with pinned clang-format 19.1.7: 
 
 ## Systems and CUTLASS extension
 
-Chapters 15–28 are sequenced as introductory (15–18), intermediate (19–23) and advanced (24–28). They adapt the supplied tutorial’s useful progression while correcting layout formulas, instruction mappings, framework attribution and precision/performance claims. Chapter 14 adds Nsight Systems.
+Chapters 15–29 are sequenced as introductory (15–19), intermediate (20–24) and advanced (25–29). They adapt the supplied tutorial’s useful progression while correcting layout formulas, instruction mappings, framework attribution and precision/performance claims. Chapter 14 adds Nsight Systems.
 
 The [November 18 H100 workshop record](docs/cutlass-workshop-validation.md) captures all ten current workshop sources: eight CUDA translation units, two Python references and eleven passing invocations, with actual sources, commands, system metadata, UTC dates, outputs and two imported Systems reports. The original 27-program evidence remains intact. Use `tools/run_advanced_validation.py` for a new capture or omit execution flags for a side-effect-free plan.

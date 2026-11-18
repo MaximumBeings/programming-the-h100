@@ -5,7 +5,7 @@
 
 Understand the machine, prove the mapping, build the kernel, then measure the useful result. This book connects Hopper architecture and PTX to safe asynchronous pipelines, Tensor Core programming, application profiling and a complete CuTe/CUTLASS learning sequence.
 
-The twenty-eight chapters combine explanatory diagrams, worked calculations, downloadable programs and dated execution records. Follow the foundations in order, or choose a focused route below when a particular kernel or application needs attention.
+The twenty-nine chapters combine explanatory diagrams, worked calculations, downloadable programs and dated execution records. Follow the foundations in order, or choose a focused route below when a particular kernel or application needs attention.
 
 <div class="grid cards" markdown>
 
@@ -50,10 +50,12 @@ The twenty-eight chapters combine explanatory diagrams, worked calculations, dow
 | Design and diagnose a GEMM | 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 13 | Full-output reference checks and a profile tied to the right bottleneck |
 | Understand fast attention | 3 → 4 → 6 → 7 → 9 → 12 → 13 | A checked recurrence and a clear account of the design's remaining kernel work |
 | Find application stalls | 11 → 13 → 14 | A bounded timeline and consistently timed useful-result comparison |
-| Learn CuTe/CUTLASS progressively | 15–18 foundations → 19–23 implementations → 24–28 advanced work | Coordinate proofs, checked kernels and a reproducible capstone |
+| Learn CuTe/CUTLASS progressively | 15–19 foundations → 20–24 implementations → 25–29 advanced work | Coordinate proofs, checked kernels and a reproducible capstone |
 | Study distributed GPU work | 1 → 2 → 11 → 13 | A topology record and a result checked on the required participants |
 
 **Read each example in three passes.** Trace where values live and who owns them. Identify what makes them safe to read and safe to overwrite. Predict the reference result, then compare it with the captured output. Tune performance after those agree.
+
+The CPU coordinate exercises in Chapters 15–19 provide an entry into CuTe without requiring a Hopper instance. Later copy, MMA and pipeline labs reconnect those mappings to the hardware and synchronization chapters. Keep the two routes distinct: calculating an offset on a laptop is useful preparation for a GPU run, not a substitute for it.
 
 The companion guides state a goal, explain the mechanisms, provide worked checks and finish with a summary. Open a linked SVG for its full-resolution vector view. Code snippets explain local ideas; complete programs and execution records identify what was actually compiled and run. Use each example's complete command, including its architecture target and required driver, NCCL or cuBLAS linker flags.
 
@@ -90,19 +92,20 @@ Each level builds on the previous one. Introductory chapters establish mappings;
 | Level | Chapter | What you learn |
 | --- | --- | --- |
 | Introductory | [15. CuTe Foundations](15-cute-layouts.md) | Layout conventions, explicit formulas and the pinned workspace |
-| Introductory | [16. Hierarchical Layout Algebra](16-cute-layout-algebra.md) | Static/dynamic hierarchy, composition, division and storage bounds |
-| Introductory | [17. Tensors, Slicing & Predication](17-cute-tensors-tiling.md) | Engines, slices, tile views and coordinate-derived predicates |
-| Introductory | [18. CTA and Byte-Address Indexing](18-cta-indexing.md) | Batch, CTA and K-tile origins through element offsets to byte addresses |
-| Intermediate | [19. Thread Ownership & Tiled Copy](19-tiled-copy.md) | Real CuTe copy partitions and complete ownership/value checks |
-| Intermediate | [20. MMA Atoms & Register Fragments](20-mma-atoms.md) | Pinned instruction traits, register packing and fragment coordinates |
-| Intermediate | [21. Shared Layouts, Banks & Swizzles](21-shared-layouts.md) | Bank arithmetic, XOR mappings and descriptor agreement |
-| Intermediate | [22. Build a Complete Tiled GEMM](22-gemm-construction.md) | A padded, batched SIMT baseline with boundary and empty-reduction cases |
-| Intermediate | [23. CUTLASS Collective-Builder GEMM](23-cutlass-gemm.md) | Compatible builders, launch lifecycle and independent numerical checks |
-| Advanced | [24. Hopper Pipelines & Scheduling](24-cutlass-pipelines.md) | Stage generations, prologue/drain and resource budgets |
-| Advanced | [25. Epilogue Fusion](25-epilogue-fusion.md) | A fused ReLU variant, visitor-tree dataflow and operation order |
-| Advanced | [26. Precision & Block Scaling](26-precision-block-scaling.md) | E2M1, scale axes, packed storage and architecture boundaries |
-| Advanced | [27. Benchmarking & Framework Integration](27-benchmarking-integration.md) | Fair timing, concurrency, current streams and allocation lifetimes |
-| Advanced | [28. Worked Labs & Capstone](28-workbook-capstone.md) | Progressive exercises, worked solutions and an evidence-driven comparison |
+| Introductory | [16. Strides, Storage & Addresses](16-cute-strides.md) | Contiguous, padded, transposed, batched and broadcast storage with explicit units |
+| Introductory | [17. Hierarchical Layout Algebra](17-cute-layout-algebra.md) | Static/dynamic hierarchy, composition, division and storage bounds |
+| Introductory | [18. Tensors, Slicing & Predication](18-cute-tensors-tiling.md) | Engines, slices, tile views and coordinate-derived predicates |
+| Introductory | [19. CTA and Byte-Address Indexing](19-cta-indexing.md) | Batch, CTA and K-tile origins through element offsets to byte addresses |
+| Intermediate | [20. Thread Ownership & Tiled Copy](20-tiled-copy.md) | Real CuTe copy partitions and complete ownership/value checks |
+| Intermediate | [21. MMA Atoms & Register Fragments](21-mma-atoms.md) | Pinned instruction traits, register packing and fragment coordinates |
+| Intermediate | [22. Shared Layouts, Banks & Swizzles](22-shared-layouts.md) | Bank arithmetic, XOR mappings and descriptor agreement |
+| Intermediate | [23. Build a Complete Tiled GEMM](23-gemm-construction.md) | A padded, batched SIMT baseline with boundary and empty-reduction cases |
+| Intermediate | [24. CUTLASS Collective-Builder GEMM](24-cutlass-gemm.md) | Compatible builders, launch lifecycle and independent numerical checks |
+| Advanced | [25. Hopper Pipelines & Scheduling](25-cutlass-pipelines.md) | Stage generations, prologue/drain and resource budgets |
+| Advanced | [26. Epilogue Fusion](26-epilogue-fusion.md) | A fused ReLU variant, visitor-tree dataflow and operation order |
+| Advanced | [27. Precision & Block Scaling](27-precision-block-scaling.md) | E2M1, scale axes, packed storage and architecture boundaries |
+| Advanced | [28. Benchmarking & Framework Integration](28-benchmarking-integration.md) | Fair timing, concurrency, current streams and allocation lifetimes |
+| Advanced | [29. Worked Labs & Capstone](29-workbook-capstone.md) | Progressive exercises, worked solutions and an evidence-driven comparison |
 
 ## Execution records and tested scope
 
@@ -146,6 +149,19 @@ The [original single-GPU manifest](validation/2026-11-17/results.json) remains a
     | TP / PP / DP | Tensor, pipeline and data parallelism | [11](11-multi-gpu-nccl.md) |
     | Online softmax | Combining tiles using a running maximum, normalizer and output numerator | [12](12-flashattention-3.md) |
     | Replay / occupancy | Profiler re-execution / resident execution-resource use; neither alone proves speed | [13](13-nsight-compute.md) |
+    | CuTe / CUTLASS | Tensor/layout and instruction abstractions / the larger CUDA kernel and operator ecosystem | [15](15-cute-layouts.md), [24](24-cutlass-gemm.md) |
+    | Layout / engine / tensor | Coordinate-to-offset map / data-access or storage mechanism / their combination | [17](17-cute-layout-algebra.md), [18](18-cute-tensors-tiling.md) |
+    | size / cosize | Logical coordinate count / the layout's codomain extent used for supported storage-sizing calculations | [17](17-cute-layout-algebra.md) |
+    | Leading dimension / stride | Physical spacing in declared units; typed-pointer element offsets and descriptor byte offsets differ | [19](19-cta-indexing.md) |
+    | Thread/value partition | Assignment of logical values to participating threads and per-thread slots | [20](20-tiled-copy.md) |
+    | Copy / MMA atom | An instruction-specific transfer or matrix-operation contract with its participation and value mapping | [20](20-tiled-copy.md), [21](21-mma-atoms.md) |
+    | Identity tensor / predicate | Coordinate-valued reference view / a validity condition actually applied to the operation | [18](18-cute-tensors-tiling.md), [20](20-tiled-copy.md) |
+    | Collective / adapter | Coordinated mainloop or epilogue / host interface for arguments, workspace and kernel launch | [24](24-cutlass-gemm.md) |
+    | Generation | Which reuse of a storage slot a readiness/empty event belongs to | [25](25-cutlass-pipelines.md) |
+    | EVT | Epilogue visitor tree: a dataflow expression whose nesting fixes operation order | [26](26-epilogue-fusion.md) |
+    | E2M1 / block scale | A floating-point nibble codebook / a scale shared by a specified group along a declared axis | [27](27-precision-block-scaling.md) |
+    | Makespan / latency / throughput | Joined batch duration / time for a defined request / completed work per stated interval | [28](28-benchmarking-integration.md) |
+
 
 ## Read and build locally
 

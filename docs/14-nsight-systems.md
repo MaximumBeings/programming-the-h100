@@ -107,14 +107,42 @@ Work through their consequences in order:
 6. **Count the captured work.** Sixteen chunks repeated eight times give `16×8=128` kernel launches, 128 H2D copies and 128 D2H copies. The transfer payload totals `256×1 MiB=256 MiB`. The same 4,194,304 output positions are overwritten on each repetition; the final CPU check visits those positions once.
 7. **Find the true finish.** Each worker records a `done` event after its last D2H. The timing stream waits for both events before recording `stop`. Therefore the interval includes the slower worker's finish, rather than ending when the CPU merely submits the last kernel.
 
-The dependency picture for the first three chunks is:
+### Put host coordinates beside the reused device storage
+
+The ranges below count **FP32 elements**, not bytes or stored values. Each device slot has only one chunk's capacity even though successive chunks come from different host ranges:
 
 ```text
-stream 0: [H2D 0 → kernel 0 → D2H 0] → [H2D 2 → kernel 2 → D2H 2]
-stream 1: [H2D 1 → kernel 1 → D2H 1] → ...
-           independent work may overlap across the two rows
-finish:   wait for BOTH rows → stop event → CPU validation
+HOST INPUT / matching HOST OUTPUT indices
+chunk 0:       0 .. 262143  → slot 0, stream 0
+chunk 1:  262144 .. 524287  → slot 1, stream 1
+chunk 2:  524288 .. 786431  → slot 0, stream 0 AGAIN
+
+DEVICE STORAGE (separate input/output buffers per slot)
+slot 0: input[0..262143]  → transform → output[0..262143]
+         chunk 0 uses it first; chunk 2 reuses it later
+slot 1: input[0..262143]  → transform → output[0..262143]
+         chunk 1 uses this DIFFERENT pair of buffers
 ```
+
+1. Chunk 2 begins at host element `2×262144=524288`, or byte offset 2,097,152 in the FP32 host input. Its device-local first element is still index zero in slot 0.
+2. The actual input rule gives `input[524288]=524288%1009=617`. Slot 0's transform therefore produces `2×617+1=1235` at device-local output index zero.
+3. The D2H destination is host `output[524288]`, not host `output[0]`. Reusing a device buffer must not reuse the wrong host destination coordinate.
+
+The first three chunks' **dependency order** is shown below. This is a schematic prefix of the complete repeated workload, not a measured duration or a claim that similarly positioned boxes execute simultaneously:
+
+```text
+stream 0 / slot 0:
+  H2D chunk 0 → kernel 0 → D2H 0 → H2D chunk 2 → ... → done[0]
+                               ^ slot 0 is reusable only here
+
+stream 1 / slot 1:
+  H2D chunk 1 → kernel 1 → D2H 1 → H2D chunk 3 → ... → done[1]
+
+timing stream:
+  start → workers wait on start → wait done[0] AND done[1] → stop
+```
+
+Each `done` marker follows **all** submitted work on its stream, including later chunks and repetitions omitted by `...`. Within one stream, H2D → kernel → D2H order protects the slot. Across streams, independent buffers permit overlap; the captured timeline establishes whether it occurred. The start/join arrows make the timer include both worker paths.
 
 **Pause and check.** Serial mode has one slot, so `c % 1` is always zero. Predict what changes in the picture before opening its report. Every chunk is now ordered in a single row; the workload and expected output values stay the same.
 
@@ -175,6 +203,17 @@ The CPU analysis of the recorded Nsight Systems exports on **18 November 2026, 1
 
 The [analysis source](validation/2026-11-18-h100-workshop/timeline-analysis/analyze_workshop_timeline.py) and [dated results with input SHA-256 hashes](validation/2026-11-18-h100-workshop/timeline-analysis/results.json) make the calculation inspectable. The original SQLite exports remain in the full capture archive; the public `.nsys-rep` files can also be exported with the matching analysis tools. The analysis is a host-side reading of existing evidence, not another GPU execution.
 
+### A speedup is a ratio, not an overlap count
+
+The unprofiled captured pair at the end of this chapter reports 7.553 ms for serial mode and 4.426 ms for two-stream mode. Work the interpretation separately from the trace analysis:
+
+1. Divide equal-work spans: `7.553 / 4.426 ≈ 1.71`. This pair shows approximately 1.71× speedup for that recorded workload.
+2. Compute elapsed-time reduction using the serial denominator: `(7.553−4.426)/7.553 ≈ 41.4%`. A 1.71× speedup does not mean a 71% time reduction.
+3. Keep the 97 overlapping-kernel count separate. It establishes that overlap occurred in the profiled capture; it is neither 97% utilization nor a speedup estimate.
+4. Repeat unprofiled measurements before generalizing. One pair supplies no stable latency distribution, and the profiled capture is a different execution from that pair.
+
+The payload, repetition count and correctness checks must match in both modes. A change that skips transfers or checks fewer outputs is a changed workload, even if its reported time is lower.
+
 ## 6 — Name application phases with NVTX
 
 NVTX labels express application meaning: `input`, `forward`, `gradient-ready`, `all-reduce`, `optimizer`. They do not synchronize CUDA work. A CPU range around an asynchronous launch measures submission until the CPU leaves that range; it is not automatically a range of completed GPU work. Systems can correlate/projection-map related GPU activity, subject to the selected report and version.
@@ -205,7 +244,7 @@ A long NCCL kernel may be doing communication, waiting for peers or both. A rank
 
 Suppose Systems shows that the same GEMM dominates every iteration. Run the application separately under Compute, selecting the kernel name observed in the trace and an appropriate launch filter. Do not stack both profilers around one process by default: collection/replay can change behavior and tools can contend for instrumentation.
 
-After changing the GEMM, repeat the correctness check, unprofiled application measurement and Systems capture. Perhaps the epilogue is faster but the next host-side preprocessing phase now determines the iteration. That is a new bottleneck, not a contradiction. [Chapters 23–24](23-cutlass-gemm.md) apply this loop to CUTLASS.
+After changing the GEMM, repeat the correctness check, unprofiled application measurement and Systems capture. Perhaps the epilogue is faster but the next host-side preprocessing phase now determines the iteration. That is a new bottleneck, not a contradiction. [Chapters 23–24](24-cutlass-gemm.md) apply this loop to CUTLASS.
 
 ??? question "Self-check: CPU range or completed GPU work?"
 

@@ -26,7 +26,7 @@ specs={
 for chapter,(title,lede,items) in specs.items():
  if chapter not in (14,15):continue
  (ROOT/f'docs/images/ch{chapter}').mkdir(exist_ok=True)
- d=Drawing(f'ch{chapter}/overview.svg',title,lede,'Original reading schematic · Chapters 14–17 extension')
+ d=Drawing(f'ch{chapter}/overview.svg',title,lede,'Original reading schematic · Chapters 14–29 workshop')
  d.parts=[part.replace('FIGURE overview.svg','READING MAP') for part in d.parts]
  d.flow(items);d.write()
  print('Created chapter',chapter,'overview')

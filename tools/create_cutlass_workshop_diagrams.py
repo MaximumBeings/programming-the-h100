@@ -3,19 +3,19 @@
 from illustrations.drawing import Drawing, ROOT, INK, MUTED, LINE, COLORS
 
 specs={
-16:('Hierarchy is an address function','Keep logical size, storage span and nested coordinates separate.','nested'),
-17:('A tensor is a view plus an engine','Tiling and slicing reorganize coordinates; a predicate protects the actual access.','tensor'),
-18:('Trace the whole address chain','Example: M=4096, N=2048, K=1024; 128 × 128 output tiles; CTA (5,3).','cta'),
-19:('Give every destination one owner','A 4 × 32 scalar copy tile uses 128 threads, one value per thread.','copy'),
-20:('Which lane owns each output?','Warp MMA m16n8 FP32 accumulators: entries show lane:register, not memory addresses.','mma'),
-21:('A permutation is not a bank proof','32-bit words, 32 banks, fixed column j=7: compare actual bank indices.','banks'),
-22:('Build a complete reduction','A synchronous SIMT tile makes readiness, reuse and accumulator lifetime explicit.','gemm'),
-23:('Assemble a checked Hopper GEMM','Pin the library; define the operation; check status, completion and every output.','builder'),
-24:('Stages repeat; generations change','Three stages, eight K tiles: shared storage returns only after its readers finish.','pipeline'),
-25:('Fuse the specified graph','Compute the complete linear combination before ReLU and the final FP32 store.','fusion'),
-26:('A low-bit value needs its scale','Distinguish E2M1 storage and mathematical reconstruction from native Blackwell execution.','quant'),
-27:('Measure the boundary you report','Kernel-only, request latency and concurrent throughput describe different intervals.','bench'),
-28:('From a coordinate to evidence','Advance through the labs only when the previous contract is understood and checked.','workbook')}
+17:('Hierarchy is an address function','Keep logical size, storage span and nested coordinates separate.','nested'),
+18:('A tensor is a view plus an engine','Tiling and slicing reorganize coordinates; a predicate protects the actual access.','tensor'),
+19:('Trace the whole address chain','Example: M=4096, N=2048, K=1024; 128 × 128 output tiles; CTA (5,3).','cta'),
+20:('Give every destination one owner','A 4 × 32 scalar copy tile uses 128 threads, one value per thread.','copy'),
+21:('Which lane owns each output?','Warp MMA m16n8 FP32 accumulators: entries show lane:register, not memory addresses.','mma'),
+22:('A permutation is not a bank proof','32-bit words, 32 banks, fixed column j=7: compare actual bank indices.','banks'),
+23:('Build a complete reduction','A synchronous SIMT tile makes readiness, reuse and accumulator lifetime explicit.','gemm'),
+24:('Assemble a checked Hopper GEMM','Pin the library; define the operation; check status, completion and every output.','builder'),
+25:('Stages repeat; generations change','Three stages, eight K tiles: shared storage returns only after its readers finish.','pipeline'),
+26:('Fuse the specified graph','Compute the complete linear combination before ReLU and the final FP32 store.','fusion'),
+27:('A low-bit value needs its scale','Distinguish E2M1 storage and mathematical reconstruction from native Blackwell execution.','quant'),
+28:('Measure the boundary you report','Kernel-only, request latency and concurrent throughput describe different intervals.','bench'),
+29:('From a coordinate to evidence','Advance through the labs only when the previous contract is understood and checked.','workbook')}
 
 for chapter,(title,lede,kind) in specs.items():
     (ROOT/f'docs/images/ch{chapter}').mkdir(exist_ok=True)
@@ -96,8 +96,8 @@ for chapter,(title,lede,kind) in specs.items():
                 ('Useful-result boundary','Include dependencies, communication and conversion needed by the caller.','violet'),
                 ('Evidence boundary','Keep raw samples, correctness checks, exact configuration and capture overhead separate.','amber')])
     else:
-        d.flow([('Introductory: 15–18','Derive layouts, tensor views and complete coordinate/byte addresses.','blue'),
-                ('Intermediate: 19–23','Prove ownership, inspect fragments, validate copy and GEMM implementations.','teal'),
-                ('Advanced: 24–27','Explain pipeline generations, fusion semantics, precision and measurement.','violet'),
-                ('Capstone: 28','Deliver checked sources, diagrams, actual execution records and a reproducible comparison.','amber')])
+        d.flow([('Introductory: 15–19','Derive layouts, tensor views and complete coordinate/byte addresses.','blue'),
+                ('Intermediate: 20–24','Prove ownership, inspect fragments, validate copy and GEMM implementations.','teal'),
+                ('Advanced: 25–28','Explain pipeline generations, fusion semantics, precision and measurement.','violet'),
+                ('Capstone: 29','Deliver checked sources, diagrams, actual execution records and a reproducible comparison.','amber')])
     d.write();print('Created chapter',chapter,kind)

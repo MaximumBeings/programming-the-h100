@@ -13,16 +13,16 @@ The captured book checkout base and working-tree state are retained in metadata;
 | Program | Scope | Actual run UTC | Result |
 | --- | --- | --- | --- |
 | [cute_layouts.cu](15-cute-layouts.md) | cute host oracle | `2026-11-18T14:09:25.346704+00:00` | PASS |
-| [cute_algebra.cu](16-cute-layout-algebra.md) | cute host oracle | `2026-11-18T14:09:36.965003+00:00` | PASS |
-| [cute_fragments.cu](20-mma-atoms.md) | cute host oracle | `2026-11-18T14:09:43.466571+00:00` | PASS |
-| [cute_copy.cu](19-tiled-copy.md) | cuda workload | `2026-11-18T14:09:59.102270+00:00` | PASS |
-| [tiled_gemm.cu](22-gemm-construction.md) | cuda workload | `2026-11-18T14:10:02.146468+00:00` | PASS |
-| [cutlass_gemm.cu](23-cutlass-gemm.md) | cuda workload | `2026-11-18T14:10:34.405978+00:00` | PASS |
-| [cutlass_gemm_relu.cu](25-epilogue-fusion.md) | cuda workload | `2026-11-18T14:11:16.060379+00:00` | PASS |
+| [cute_algebra.cu](17-cute-layout-algebra.md) | cute host oracle | `2026-11-18T14:09:36.965003+00:00` | PASS |
+| [cute_fragments.cu](21-mma-atoms.md) | cute host oracle | `2026-11-18T14:09:43.466571+00:00` | PASS |
+| [cute_copy.cu](20-tiled-copy.md) | cuda workload | `2026-11-18T14:09:59.102270+00:00` | PASS |
+| [tiled_gemm.cu](23-gemm-construction.md) | cuda workload | `2026-11-18T14:10:02.146468+00:00` | PASS |
+| [cutlass_gemm.cu](24-cutlass-gemm.md) | cuda workload | `2026-11-18T14:10:34.405978+00:00` | PASS |
+| [cutlass_gemm_relu.cu](26-epilogue-fusion.md) | cuda workload | `2026-11-18T14:11:16.060379+00:00` | PASS |
 | [nsys_overlap.cu serial](14-nsight-systems.md) | cuda workload | `2026-11-18T14:11:19.004299+00:00` | PASS |
 | [nsys_overlap.cu overlap](14-nsight-systems.md) | cuda workload | `2026-11-18T14:11:19.521997+00:00` | PASS |
-| [indexing_workbook.py](18-cta-indexing.md) | python cpu reference | `2026-11-18T14:11:20.056089+00:00` | PASS |
-| [fp4_reference.py](26-precision-block-scaling.md) | python cpu reference | `2026-11-18T14:11:20.188561+00:00` | PASS |
+| [indexing_workbook.py](19-cta-indexing.md) | python cpu reference | `2026-11-18T14:11:20.056089+00:00` | PASS |
+| [fp4_reference.py](27-precision-block-scaling.md) | python cpu reference | `2026-11-18T14:11:20.188561+00:00` | PASS |
 
 ## Actual capture tools and reports
 
@@ -47,6 +47,10 @@ A basic Nsight Compute capture of the selected `transform` kernel completed afte
 
 [Actual Compute report](validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/ncu-transform-privileged.ncu-rep) · [Captured counter details](validation/2026-11-18-h100-workshop/supplemental-captures/counter-analysis/20261118T141612Z/ncu-details.log).
 
+
+## Additional introductory stride exercise
+
+The separate [Chapter 16 stride oracle](16-cute-strides.md) was byte-compiled and executed locally on November 18, 2026. Its [commands and timestamps](validation/2026-11-18-strides/commands.json), [system information](validation/2026-11-18-strides/system.json) and [output](validation/2026-11-18-strides/run.log) identify a CPU Python address model, not another H100 workload. The ten-source H100 dataset above remains unchanged.
 
 ## Reproduce the run
 

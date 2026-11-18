@@ -12,10 +12,10 @@ ROOT=Path(__file__).resolve().parents[1]
 DATASET='2026-11-18-h100-workshop'
 PAGES={
  'nsys_overlap':'14-nsight-systems.md','cute_layouts':'15-cute-layouts.md',
- 'cute_algebra':'16-cute-layout-algebra.md','indexing_workbook':'18-cta-indexing.md',
- 'cute_copy':'19-tiled-copy.md','cute_fragments':'20-mma-atoms.md',
- 'tiled_gemm':'22-gemm-construction.md','cutlass_gemm':'23-cutlass-gemm.md',
- 'cutlass_gemm_relu':'25-epilogue-fusion.md','fp4_reference':'26-precision-block-scaling.md'}
+ 'cute_algebra':'17-cute-layout-algebra.md','indexing_workbook':'19-cta-indexing.md',
+ 'cute_copy':'20-tiled-copy.md','cute_fragments':'21-mma-atoms.md',
+ 'tiled_gemm':'23-gemm-construction.md','cutlass_gemm':'24-cutlass-gemm.md',
+ 'cutlass_gemm_relu':'26-epilogue-fusion.md','fp4_reference':'27-precision-block-scaling.md'}
 MARKERS={
  'nsys_overlap':'OVERLAP PASS:', 'cute_layouts':'LAYOUT PASS:', 'cute_algebra':'ALGEBRA PASS:',
  'indexing_workbook':'WORKBOOK PASS: 7 CPU-only reference groups', 'cute_copy':'COPY PASS: 3 cases, errors=0',
@@ -156,7 +156,9 @@ def summary(rows,system,profiles,public):
         lines += [f"- **{mode}**: capture UTC `{p['started_utc']}`. [Capture log]({prefix}{p['log']}) · [Kernel summary]({prefix}{p['stats']['log']}) · [Report]({prefix}{report})."]
     extra=supplemental(public)
     if extra:lines+=['',extra]
-    lines+=['','## Reproduce the run','',
+    lines+=['','## Additional introductory stride exercise','',
+            'The separate [Chapter 16 stride oracle](16-cute-strides.md) was byte-compiled and executed locally on November 18, 2026. Its [commands and timestamps](validation/2026-11-18-strides/commands.json), [system information](validation/2026-11-18-strides/system.json) and [output](validation/2026-11-18-strides/run.log) identify a CPU Python address model, not another H100 workload. The ten-source H100 dataset above remains unchanged.','',
+            '## Reproduce the run','',
             'Follow [the introductory workspace](15-cute-layouts.md) and [the complete test plan](examples/advanced/README.md). The collector requires a clean pinned CUTLASS dependency, a fresh output directory and explicit `--execute --profiles`. It never treats a host model as a numerical GPU workload.','']
     return '\n'.join(lines)
 

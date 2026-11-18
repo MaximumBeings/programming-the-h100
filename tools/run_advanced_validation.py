@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture new Chapters 14–28 exercises separately from the original 27 programs.
+"""Capture new Chapters 14–29 exercises separately from the original 27 programs.
 
 No network access or package installation. Without --execute, print the plan only.
 """

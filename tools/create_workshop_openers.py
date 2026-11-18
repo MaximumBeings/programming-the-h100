@@ -8,19 +8,20 @@ ROOT=Path(__file__).resolve().parents[1]
 SPECS=[
 (14,'See the','whole application','CPU launch · copies · kernel timelines',['CPU','COPY','KERNEL']),
 (15,'Start with','a coordinate.','Shapes · strides · physical offsets',['SHAPE','STRIDE','OFFSET']),
-(16,'Compose shapes.','Prove the map.','Nested modes · composition · complement',['DOMAIN','LAYOUT','IMAGE']),
-(17,'Views are','not transfers.','Tensor engines · views · predicates',['POINTER','VIEW','TILE']),
-(18,'Follow every','address.','CTA origins · operand strides · edges',['CTA','ORIGIN','ADDRESS']),
-(19,'One value.','One owner.','Thread maps · value maps · copies',['THREAD','VALUE','COPY']),
-(20,'Know the','MMA fragments.','Instruction atoms · lanes · registers',['LANE','REGISTER','OUTPUT']),
-(21,'Rearrange data.','Respect banks.','Shared-memory layouts · bank mapping',['ADDRESS','BANK','ACCESS']),
-(22,'Build the','whole reduction.','Shared tiles · SIMT math · guarded stores',['LOAD','REDUCE','STORE']),
-(23,'Assemble','a checked GEMM.','Collectives · kernel · device adapter',['MAINLOOP','EPILOGUE','ADAPTER']),
-(24,'Overlap work.','Protect the stage.','Producer · consumer · safe reuse',['ACQUIRE','READY','RELEASE']),
-(25,'Fuse the graph.','Preserve math.','Linear combination · activation · store',['αAB + βC','ReLU','STORE']),
-(26,'Pack fewer bits.','Keep the contract.','E2M1 values · scales · numerical checks',['PACK','SCALE','DECODE']),
-(27,'Measure a scope.','Explain results.','Correctness · timing · profiler evidence',['VERIFY','MEASURE','EXPLAIN']),
-(28,'Prove it.','Then improve it.','References · kernels · reproducible evidence',['REFERENCE','KERNEL','EVIDENCE'])]
+(16,'Trace the stride.','Find the value.','Logical grids · physical storage · byte addresses',['COORDINATE','STRIDE','ADDRESS']),
+(17,'Compose shapes.','Prove the map.','Nested modes · composition · complement',['DOMAIN','LAYOUT','IMAGE']),
+(18,'Views are','not transfers.','Tensor engines · views · predicates',['POINTER','VIEW','TILE']),
+(19,'Follow every','address.','CTA origins · operand strides · edges',['CTA','ORIGIN','ADDRESS']),
+(20,'One value.','One owner.','Thread maps · value maps · copies',['THREAD','VALUE','COPY']),
+(21,'Know the','MMA fragments.','Instruction atoms · lanes · registers',['LANE','REGISTER','OUTPUT']),
+(22,'Rearrange data.','Respect banks.','Shared-memory layouts · bank mapping',['ADDRESS','BANK','ACCESS']),
+(23,'Build the','whole reduction.','Shared tiles · SIMT math · guarded stores',['LOAD','REDUCE','STORE']),
+(24,'Assemble','a checked GEMM.','Collectives · kernel · device adapter',['MAINLOOP','EPILOGUE','ADAPTER']),
+(25,'Overlap work.','Protect the stage.','Producer · consumer · safe reuse',['ACQUIRE','READY','RELEASE']),
+(26,'Fuse the graph.','Preserve math.','Linear combination · activation · store',['αAB + βC','ReLU','STORE']),
+(27,'Pack fewer bits.','Keep the contract.','E2M1 values · scales · numerical checks',['PACK','SCALE','DECODE']),
+(28,'Measure a scope.','Explain results.','Correctness · timing · profiler evidence',['VERIFY','MEASURE','EXPLAIN']),
+(29,'Prove it.','Then improve it.','References · kernels · reproducible evidence',['REFERENCE','KERNEL','EVIDENCE'])]
 
 def art(n,labels):
     d=Drawing()
@@ -33,17 +34,17 @@ def art(n,labels):
                 x=160+j*190+(r%2)*55
                 d.box(x,45+r*100,140,50,['LAUNCH','COPY','KERNEL'][(j+r)%3],TEAL if j%2 else GOLD,size=20)
         d.text(400,400,'Read the application before tuning one kernel',23,MUTED,'middle')
-    elif n in (15,16,17,18,19,20,21,26):
+    elif n in (15,16,17,18,19,20,21,22,27):
         d.text(180,47,labels[0],24,GREEN,'middle','700')
         d.text(600,47,labels[2],24,GOLD,'middle','700')
         d.grid(55,90,4,6,43,TEAL)
         d.grid(475,90,4,6,43,GOLD)
         d.line(325,175,455,175,TEAL,3,True)
         d.box(335,215,115,55,labels[1],TEAL,size=18)
-        if n==20:
+        if n==21:
             d.text(180,315,'32 lanes × 4 accumulators',22,MUTED,'middle')
             d.text(600,315,'16 × 8 output values',22,MUTED,'middle')
-        elif n==26:
+        elif n==27:
             d.text(180,315,'Two E2M1 codes per byte',22,MUTED,'middle')
             d.text(600,315,'Values × defined block scales',22,MUTED,'middle')
         else:
@@ -57,7 +58,7 @@ def art(n,labels):
             d.grid(x+52,115,3,4,35,GOLD if i==1 else TEAL)
             d.text(x+120,275,label,22,GOLD if i==1 else TEAL,'middle','700')
             if i<2:d.line(x+243,195,x+265,195,TEAL,3,True)
-        if n==24:
+        if n==25:
             d.line(680,330,140,330,GOLD,2,True)
             d.text(400,385,'Reuse only after the consumer releases ownership',23,MUTED,'middle')
         else:d.text(400,385,'Make the contract explicit at every boundary',23,MUTED,'middle')

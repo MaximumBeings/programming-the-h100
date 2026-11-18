@@ -6,7 +6,7 @@
 
 !!! tip "Your goal in this chapter"
 
-    Read a CuTe layout as an address function, distinguish a view from a transfer, and explain how a thread/value partition reaches an instruction operand. Review [shared-memory layout](04-cutensormap-tma-swizzling.md) and [WGMMA fragments](06-wgmma-part-1.md) first.
+    Read a CuTe layout as an address function and distinguish a view from a transfer. Begin with ordinary array indexing, element sizes and row strides; the numbered calculations below build the CuTe vocabulary from those facts. The earlier [shared-memory layout](04-cutensormap-tma-swizzling.md) and [WGMMA fragments](06-wgmma-part-1.md) chapters become useful again when Chapters 19–21 connect these maps to actual instructions.
 
 ## 1 — The missing bridge to library kernels
 
@@ -14,7 +14,7 @@
 
 A hand-written kernel often hides its layout in arithmetic: `m * leading_dimension + n`, a swizzle XOR, or a lane-dependent register index. CuTe makes such mappings explicit types and objects. That lets CUTLASS describe global tiles, shared-memory stages, copy ownership and MMA fragments using related operations instead of unrelated indexing formulas.
 
-This chapter covers the **C++ CuTe API** distributed with CUTLASS **v4.3.6**, pinned in [Chapter 23](23-cutlass-gemm.md). CuTe’s Python DSL is a separate programming interface; do not mix its examples, imports or JIT rules with these C++ headers. Newer releases can add schedules and change builders, so this is a reproducible reading baseline rather than a claim that v4.3.6 is the latest release.
+This chapter covers the **C++ CuTe API** distributed with CUTLASS **v4.3.6**, pinned by the workspace setup below. CuTe’s Python DSL is a separate programming interface; do not mix its examples, imports or JIT rules with these C++ headers. Newer releases can add schedules and change builders, so this is a reproducible reading baseline rather than a claim that v4.3.6 is the latest release.
 
 Unless a listing is explicitly identified as a complete program, C++ snippets in this chapter are separate excerpts. They require `#include <cute/tensor.hpp>` and a surrounding function; use the linked complete oracle for a copyable translation unit and its full compile command. Repeated variable names in different excerpts are not instructions to concatenate them into one scope.
 
@@ -22,7 +22,7 @@ The primary references are the pinned [layout tutorial](https://github.com/NVIDI
 
 ## Before the algebra: a reproducible workspace
 
-The introductory path is **15 → 16 → 17 → 18**. Continue through the intermediate copy/MMA/shared-memory/GEMM labs in **19–23**, then the advanced pipeline, fusion, precision and measurement chapters in **24–28**. You do not need to understand a CUTLASS builder before learning a coordinate map.
+The introductory path is **15 → 16 → 17 → 18**. Continue through the intermediate copy/MMA/shared-memory/GEMM labs in **20–24**, then the advanced pipeline, fusion, precision and measurement chapters in **25–29**. You do not need to understand a CUTLASS builder before learning a coordinate map.
 
 Use a terminal in the book repository root. On the CUDA host, prepare the same pinned dependency used throughout this sequence:
 
@@ -56,6 +56,8 @@ auto offset = row_major(cute::make_coord(2, 3)); // 11
 ```
 
 Offsets are in the layout’s indexing units—normally elements when paired with a typed pointer—not automatically bytes. Multiply by `sizeof(Element)` when comparing with a byte-addressed PTX descriptor. `make_layout(shape)` defaults to a left-major compact layout; it is not a request for the row-major convention used above. Always print or enumerate a new layout before relying on a familiar name.
+
+A shape describes the intended logical domain; it is not a runtime bounds-checking wrapper. For shape `(3,4)`, coordinate `(3,0)` is invalid even if applying the stride formula produces the integer offset 12. A larger backing allocation does not turn that coordinate into part of this logical tensor. Check coordinates before dereferencing, and retain the original extents when rounded tiles extend the view's coordinate envelope. Compile-time type compatibility and runtime coordinate validity are different checks.
 
 `Int<4>{}` carries the value in its type; `int k = 4` carries a runtime value. Both can participate in a layout. Static information lets template code prove constraints and specialize indexing, but it also increases the variety of instantiated types. Make dimensions static because an instruction or algorithm needs that fact, not simply because static syntax looks faster.
 
@@ -180,7 +182,7 @@ The useful debugging chain is:
 
 For a load, ask whether every needed element is covered. For a store, also ask whether two threads can target the same address. For MMA, ask whether the fragment matches the exact atom and operand convention. The register layouts from Chapters 6–7 are not replaced by a generic “row-major register array” merely because CuTe performs the partitioning.
 
-When reading a `TiledCopy` or `TiledMma`, locate its atom, thread layout and value layout. Then inspect the per-thread slice and its partition functions. A partition describes ownership; the actual copy/MMA call performs work. NVIDIA’s [copy/MMA atom tutorial](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/0t_mma_atom.md) connects these layers.
+When reading a `TiledCopy` or `TiledMMA`, locate its atom, thread layout and value layout. Then inspect the per-thread slice and its partition functions. A partition describes ownership; the actual copy/MMA call performs work. NVIDIA’s [copy/MMA atom tutorial](https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/0t_mma_atom.md) connects these layers.
 
 ## 8 — Swizzles are layout transforms, not faster copies
 
@@ -215,7 +217,7 @@ Create `build/advanced` and set `CUTLASS_ROOT` using the workspace steps above. 
 
 ## Continue in increasing depth
 
-[Chapter 16](16-cute-layout-algebra.md) develops static/dynamic types, hierarchy, composition and division, and explains restrictions on inversion. [Chapter 17](17-cute-tensors-tiling.md) attaches layouts to tensor engines and builds safe tile views. [Chapter 18](18-cta-indexing.md) traces complete matrix coordinates through batch, CTA, K tile, thread and byte address. The [workbook](28-workbook-capstone.md) supplies worked answers rather than asking you to trust a printed PASS without knowing its oracle.
+[Chapter 17](17-cute-layout-algebra.md) develops static/dynamic types, hierarchy, composition and division, and explains restrictions on inversion. [Chapter 18](18-cute-tensors-tiling.md) attaches layouts to tensor engines and builds safe tile views. [Chapter 19](19-cta-indexing.md) traces complete matrix coordinates through batch, CTA, K tile, thread and byte address. The [workbook](29-workbook-capstone.md) supplies worked answers rather than asking you to trust a printed PASS without knowing its oracle.
 
 <!-- workshop:start:cute_layouts -->
 ## Complete source and captured execution
@@ -294,5 +296,15 @@ LAYOUT PASS: 24 matrix coordinates, 12 tile coordinates; errors=0
 
 - Views, coalescing and composition do not move values. Allocation bounds, ownership and actual copy/MMA operations remain separate responsibilities.
 
-- Use the pinned workspace and small coordinate oracles before progressing to [hierarchical algebra](16-cute-layout-algebra.md) and [tensor views](17-cute-tensors-tiling.md).
+- Use the pinned workspace and small coordinate oracles before progressing to [hierarchical algebra](17-cute-layout-algebra.md) and [tensor views](18-cute-tensors-tiling.md).
 <!-- companion-summary:end -->
+
+## Read the storage picture as well as the formula
+
+The following concrete map distinguishes logical **values** from physical **offsets**. For shape `(4,3)`, highlighted value 201 belongs to coordinate `(2,1)`. Row-major strides `(3,1)` select offset seven; column-major strides `(1,4)` select offset six. Both strips contain the same logical data arranged for their respective layouts.
+
+[![A logical matrix and its two physical memory orders, highlighting one value and its address calculation](images/worked/row-vs-column.svg)](images/worked/row-vs-column.svg)
+
+## Continue with a dedicated study of strides
+
+Work through [Chapter 16: Strides — From Coordinates to Addresses](16-cute-strides.md) next. Its logical matrices, physical memory strips and address exercises make row spacing, padding, transposes and batches explicit before the algebra becomes hierarchical.

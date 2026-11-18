@@ -1,0 +1,15 @@
+{
+  "27-benchmarking-integration.md": "28-benchmarking-integration.md",
+  "28-workbook-capstone.md": "29-workbook-capstone.md",
+  "17-cute-tensors-tiling.md": "18-cute-tensors-tiling.md",
+  "19-tiled-copy.md": "20-tiled-copy.md",
+  "18-cta-indexing.md": "19-cta-indexing.md",
+  "26-precision-block-scaling.md": "27-precision-block-scaling.md",
+  "21-shared-layouts.md": "22-shared-layouts.md",
+  "24-cutlass-pipelines.md": "25-cutlass-pipelines.md",
+  "25-epilogue-fusion.md": "26-epilogue-fusion.md",
+  "23-cutlass-gemm.md": "24-cutlass-gemm.md",
+  "16-cute-layout-algebra.md": "17-cute-layout-algebra.md",
+  "20-mma-atoms.md": "21-mma-atoms.md",
+  "22-gemm-construction.md": "23-gemm-construction.md"
+}

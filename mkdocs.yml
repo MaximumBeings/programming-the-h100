@@ -141,18 +141,19 @@ nav:
       - 14. Application Profiling with Nsight Systems: 14-nsight-systems.md
   - Part VIII — Introductory CuTe:
       - 15. CuTe Foundations: 15-cute-layouts.md
-      - 16. Hierarchical Layout Algebra: 16-cute-layout-algebra.md
-      - 17. Tensors, Slicing & Predication: 17-cute-tensors-tiling.md
-      - 18. CTA and Byte-Address Indexing: 18-cta-indexing.md
+      - 16. Strides, Storage and Memory Addresses: 16-cute-strides.md
+      - 17. Hierarchical Layout Algebra: 17-cute-layout-algebra.md
+      - 18. Tensors, Slicing & Predication: 18-cute-tensors-tiling.md
+      - 19. CTA and Byte-Address Indexing: 19-cta-indexing.md
   - Part IX — Intermediate CuTe and GEMM:
-      - 19. Thread Ownership & Tiled Copy: 19-tiled-copy.md
-      - 20. MMA Atoms & Register Fragments: 20-mma-atoms.md
-      - 21. Shared Layouts, Banks & Swizzles: 21-shared-layouts.md
-      - 22. Build a Complete Tiled GEMM: 22-gemm-construction.md
-      - 23. CUTLASS Collective-Builder GEMM: 23-cutlass-gemm.md
+      - 20. Thread Ownership & Tiled Copy: 20-tiled-copy.md
+      - 21. MMA Atoms & Register Fragments: 21-mma-atoms.md
+      - 22. Shared Layouts, Banks & Swizzles: 22-shared-layouts.md
+      - 23. Build a Complete Tiled GEMM: 23-gemm-construction.md
+      - 24. CUTLASS Collective-Builder GEMM: 24-cutlass-gemm.md
   - Part X — Advanced CUTLASS Workshop:
-      - 24. Hopper Pipelines & Scheduling: 24-cutlass-pipelines.md
-      - 25. Epilogue Fusion: 25-epilogue-fusion.md
-      - 26. Precision & Block Scaling: 26-precision-block-scaling.md
-      - 27. Benchmarking & Framework Integration: 27-benchmarking-integration.md
-      - 28. Worked Labs & Capstone: 28-workbook-capstone.md
+      - 25. Hopper Pipelines & Scheduling: 25-cutlass-pipelines.md
+      - 26. Epilogue Fusion: 26-epilogue-fusion.md
+      - 27. Precision & Block Scaling: 27-precision-block-scaling.md
+      - 28. Benchmarking & Framework Integration: 28-benchmarking-integration.md
+      - 29. Worked Labs & Capstone: 29-workbook-capstone.md

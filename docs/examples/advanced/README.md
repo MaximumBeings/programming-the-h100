@@ -1,4 +1,4 @@
-# Exercises for Chapters 14–28
+# Exercises for Chapters 14–29
 
 [Actual November 18 H100 results](../../cutlass-workshop-validation.md) provide the source-specific commands, system information, dates and outputs. The original 27-program suite has separate historical records. This workshop uses eight CUDA translation units and two Python reference programs, with 11 workload invocations: the overlap program runs in both serial and two-stream modes. Three CuTe executables enumerate layouts/traits on the CPU; five programs launch CUDA workloads; both Python programs are CPU-only references.
 
@@ -29,3 +29,7 @@ Omit both `--execute` and `--profiles` for a side-effect-free plan. A fresh outp
 | [fp4_reference.py](fp4_reference.py) | 26 | CPU E2M1 format/layout reference, not native NVFP4 execution |
 
 Preserve the complete results directory before shutting down the instance. Expected checks in the prose explain the oracle; published execution blocks identify actual captured source revisions and outputs. A new source change needs its own rerun.
+
+## Additional introductory stride oracle
+
+[Chapter 16](../../16-cute-strides.md) adds [stride_walkthrough.py](stride_walkthrough.py), a separate CPU integer-address model. Run it with `python3 docs/examples/advanced/stride_walkthrough.py` from the repository root, without Python optimization flags that disable assertions. Its [dated local record](../../validation/2026-11-18-strides/commands.json) and [system information](../../validation/2026-11-18-strides/system.json) are separate from the frozen ten-source H100 collector above. It does not compile CuTe or execute a GPU kernel.
