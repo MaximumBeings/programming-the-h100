@@ -3291,8 +3291,11 @@ Chapters 6 and 7 do that. Here you only need to know what the hardware offers.</
 <p><em>Figure 3.1 — Four warps cooperate on one warpgroup-level matrix operation.</em></p>
 <h3 id="33-structured-sparsity">3.3 Structured Sparsity<a class="headerlink" href="#33-structured-sparsity" title="Permanent link">&para;</a></h3>
 <p>Sparsity is a way of buying throughput by agreeing not to store some of your
-numbers. The hardware supports exactly one pattern — "2:4" — and the payoff is
-simple: the tensor core reads half as much data, so it runs about twice as fast.</p>
+numbers. The common FP16/BF16/FP8 sparse path uses 2:4 structure: at most two
+nonzero values per quartet, stored as two retained values plus metadata.
+TF32 sparse WGMMA instead uses a 1:2 encoding (Chapter 7). Sparse
+Tensor Core peak is quoted as about twice the dense-equivalent arithmetic
+rate; total kernel speed also depends on metadata, other operands and memory traffic.</p>
 <p><a href="../images/ch01/10-structured-sparsity.svg?v=1bce98b132db"><img alt="Two values survive each quartet" src="../images/ch01/10-structured-sparsity.svg?v=1bce98b132db" /></a></p>
 <p><em>Figure 3.2 — 2:4 structured sparsity stores values plus position metadata.</em></p>
 <h3 id="34-precision-comparison">3.4 Precision Comparison<a class="headerlink" href="#34-precision-comparison" title="Permanent link">&para;</a></h3>

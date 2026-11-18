@@ -5230,7 +5230,7 @@ often you'll touch them.</p>
 </span><span id="__span-29-21"><a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a>  ld.global.cg  → cache at L2 only (bypass L1)
 </span><span id="__span-29-22"><a id="__codelineno-29-22" name="__codelineno-29-22" href="#__codelineno-29-22"></a>  ld.global.cs  → cache streaming (evict soon, good for large strides)
 </span><span id="__span-29-23"><a id="__codelineno-29-23" name="__codelineno-29-23" href="#__codelineno-29-23"></a>  ld.global.lu  → last use (hint: won't be accessed again)
-</span><span id="__span-29-24"><a id="__codelineno-29-24" name="__codelineno-29-24" href="#__codelineno-29-24"></a>  ld.global.cv  → cache volatile (no caching, always from DRAM)
+</span><span id="__span-29-24"><a id="__codelineno-29-24" name="__codelineno-29-24" href="#__codelineno-29-24"></a>  ld.global.cv  → refetch cached global System Memory lines (see scope below)
 </span><span id="__span-29-25"><a id="__codelineno-29-25" name="__codelineno-29-25" href="#__codelineno-29-25"></a>
 </span><span id="__span-29-26"><a id="__codelineno-29-26" name="__codelineno-29-26" href="#__codelineno-29-26"></a>  Memory coalescing — CRITICAL for performance:
 </span><span id="__span-29-27"><a id="__codelineno-29-27" name="__codelineno-29-27" href="#__codelineno-29-27"></a>  ─────────────────────────────────────────────────────────────────
@@ -5253,6 +5253,7 @@ often you'll touch them.</p>
 </span><span id="__span-29-44"><a id="__codelineno-29-44" name="__codelineno-29-44" href="#__codelineno-29-44"></a>    ld.global.v4.f32 {%f0,%f1,%f2,%f3}, [%addr]; // load 4 floats = 128-bit
 </span><span id="__span-29-45"><a id="__codelineno-29-45" name="__codelineno-29-45" href="#__codelineno-29-45"></a>    These maximize memory bandwidth by requesting wider chunks.
 </span></code></pre></div>
+<p>For global <strong>System Memory</strong> addresses, <code>.cv</code> discards a matching L2 line and re-fetches it on each load. This is not a universal promise that arbitrary GPU-memory loads bypass every cache and reach HBM. Cache operators also do not replace a memory-ordering protocol. See <a href="https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#cache-operators">PTX cache operators</a>.</p>
 <h3 id="74-shared-state-space-shared-the-gpus-scratchpad">7.4 Shared State Space (.shared) — The GPU's Scratchpad<a class="headerlink" href="#74-shared-state-space-shared-the-gpus-scratchpad" title="Permanent link">&para;</a></h3>
 <p>Shared memory is the programmer-controlled scratchpad that lives on each SM. It is fast (about 10 cycles, nearly as fast as L1 cache), and crucially it is under your direct control — unlike L1/L2 which are hardware-managed caches.</p>
 <p>The key usage pattern is the "collaborative load": all threads in a block cooperatively load a tile from global memory into shared memory, then each thread reads multiple elements from shared memory (which is cheap) instead of directly from global memory (which is expensive).</p>

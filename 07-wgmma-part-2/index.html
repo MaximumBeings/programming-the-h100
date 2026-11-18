@@ -3861,14 +3861,14 @@ work done, same answer.</p>
 survived, and that information has to be encoded and handed over alongside the
 values — which is what §16 and §17 are for.</p>
 <h3 id="151-what-sparse-wgmma-is">15.1 What Sparse WGMMA Is<a class="headerlink" href="#151-what-sparse-wgmma-is" title="Permanent link">&para;</a></h3>
-<p>Sparse WGMMA is a variant where matrix A is <strong>structured sparse</strong>: for every group of 4 consecutive elements in each row, exactly 2 are zero. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.</p>
+<p>Sparse WGMMA is a variant where matrix A is <strong>structured sparse</strong>: for every group of 4 consecutive elements in each row, at most 2 are nonzero; two retained values and their positions are encoded. This "2:4 sparsity" pattern lets the hardware skip the zero multiplications and effectively double the throughput — the tensor core only needs to do half the work.</p>
 <p>The catch: the hardware needs to know WHICH 2 of the 4 elements are non-zero. This information is encoded in a "metadata" register (sp-meta) that accompanies the sparse A matrix.</p>
 <p><a href="../images/ch07/07-sparse-wgmma-2-4-metadata.svg?v=b470ba798f35"><img alt="Two values survive each quartet" src="../images/ch07/07-sparse-wgmma-2-4-metadata.svg?v=b470ba798f35" /></a></p>
 <p><em>2:4 structured sparsity stores values plus position metadata.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>2:4 Structured Sparsity — The Pattern and Its Benefits
 </span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>  The 2:4 rule: in every consecutive 4 elements of a row, exactly 2 are non-zero.
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>  The 2:4 rule: in every consecutive 4 elements of a row, at most 2 are nonzero.
 </span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>  ─────────────────────────────────────────────────────────────────
 </span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>
 </span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>  Example row of A (K=8, stored as 2 quartets):
