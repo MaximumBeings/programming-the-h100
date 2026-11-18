@@ -481,6 +481,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#check-fabric-setup-on-nvswitch-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check fabric setup on NVSwitch servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#verify-files-versions-and-topology" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1637,6 +1648,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#check-fabric-setup-on-nvswitch-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check fabric setup on NVSwitch servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#verify-files-versions-and-topology" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1892,7 +1914,7 @@
 <p>Stop if this block fails. Do not continue with a repository for a different Ubuntu release, or mix a runfile driver installation with unrelated package-manager driver packages. NVIDIA documents the <a href="https://docs.nvidia.com/datacenter/tesla/driver-installation-guide/latest/ubuntu.html#network-repository-enablement-amd64">keyring and repository setup</a>.</p>
 <h3 id="install-a-driver-only-when-needed">Install a driver only when needed<a class="headerlink" href="#install-a-driver-only-when-needed" title="Permanent link">&para;</a></h3>
 <p><strong>Preconfigured cloud image:</strong> retain its working, compatible driver. If it needs an upgrade, use the provider's supported procedure. The recorded driver was 580.105.08. For the CUDA 12.8 Update 1 toolchain, this guide uses a driver meeting the release's corresponding <strong>570.124.06 or newer</strong> requirement; do not assume the general CUDA 12.x minor-compatibility minimum supports every PTX/JIT feature used here. See <a href="https://docs.nvidia.com/cuda/archive/12.8.1/cuda-toolkit-release-notes/index.html#cuda-driver">NVIDIA's release compatibility tables</a>.</p>
-<p><strong>Fresh Ubuntu host you administer:</strong> after repository setup, install kernel headers and NVIDIA's open-module driver package. H100 and A100 are supported by the open-module driver family. These commands are for the host, not a container:</p>
+<p><strong>Fresh Ubuntu host you administer:</strong> if Secure Boot requires module-key enrollment, arrange the distribution/provider console access before rebooting. After repository setup, install kernel headers and NVIDIA's open-module driver package. H100 and A100 are supported by the open-module driver family. These commands are for the host, not a container:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span><span class="s2">"linux-headers-</span><span class="k">$(</span>uname<span class="w"> </span>-r<span class="k">)</span><span class="s2">"</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>nvidia-open
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>sudo<span class="w"> </span>reboot
@@ -1950,95 +1972,104 @@
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span>libnccl-dev<span class="o">=</span><span class="m">2</span>.26.2-1+cuda12.8
 </span></code></pre></div>
 <p>These versions were present in NVIDIA's Ubuntu 22.04 and 24.04 x86-64 repositories when this guide was checked on <strong>November 18, 2026</strong>. If unavailable, select a matching pair built for CUDA 12.x from NVIDIA's repository/archive and record the actual version. Do not silently install the default CUDA 13 build or pass <code>--allow-downgrades</code> over a provider-managed stack. An existing compatible NCCL installation can be retained; its headers and runtime must resolve consistently. NVIDIA's <a href="https://docs.nvidia.com/deeplearning/nccl/install-guide/index.html#ubuntu">NCCL installation guide</a> explains explicit package-version selection.</p>
+<h3 id="check-fabric-setup-on-nvswitch-servers">Check fabric setup on NVSwitch servers<a class="headerlink" href="#check-fabric-setup-on-nvswitch-servers" title="Permanent link">&para;</a></h3>
+<p>On a <strong>native HGX/DGX NVSwitch server</strong>, the GPU driver and CUDA toolkit alone are not the entire fabric setup. DGX OS normally supplies Fabric Manager; a fresh HGX installation needs the compatible Fabric Manager components for its platform and driver. Use <a href="https://docs.nvidia.com/datacenter/tesla/fabric-manager-user-guide/index.html#installing-fabric-manager">NVIDIA's bare-metal Fabric Manager procedure</a> to choose the packages. Package/version rules differ by NVSwitch generation, and Fabric Manager versioning changed with driver release 620; do not copy a branch number from an unrelated server.</p>
+<p>After installing the matching components on the <strong>host that owns the fabric</strong>, enable/start the service and inspect its state:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>nvidia-fabricmanager
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>nvidia-fabricmanager
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>systemctl<span class="w"> </span>is-active<span class="w"> </span>nvidia-fabricmanager
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>nvidia-smi<span class="w"> </span>-q<span class="w"> </span>-i<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>-A<span class="w"> </span><span class="m">3</span><span class="w"> </span>Fabric
+</span></code></pre></div>
+<p>For Hopper NVSwitch systems, check that fabric registration completes successfully before relying on NVLink peer paths. On a managed cloud instance or guest/container, the provider/host administrator may own this service; its absence inside the guest is not an instruction to install or restart it there. PCIe-only and direct-NVLink setups do not universally need Fabric Manager. Do not restart an active fabric service as a routine troubleshooting step.</p>
 <h3 id="verify-files-versions-and-topology">Verify files, versions and topology<a class="headerlink" href="#verify-files-versions-and-topology" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>nvcc<span class="w"> </span>--version
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>gcc<span class="w"> </span>--version
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>python3<span class="w"> </span>--version
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>nvidia-smi
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>nvidia-smi<span class="w"> </span>topo<span class="w"> </span>-m
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>ls<span class="w"> </span><span class="s2">"</span><span class="nv">$CUDA_INCDIR</span><span class="s2">/cuda_runtime.h"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CUDA_INCDIR</span><span class="s2">/cuda.h"</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>ls<span class="w"> </span><span class="s2">"</span><span class="nv">$CUDA_INCDIR</span><span class="s2">/cublas_v2.h"</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>dpkg-query<span class="w"> </span>-W<span class="w"> </span>libnccl2<span class="w"> </span>libnccl-dev
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>dpkg<span class="w"> </span>-L<span class="w"> </span>libnccl-dev<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">'/nccl.h$'</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>nvcc<span class="w"> </span>--version
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>gcc<span class="w"> </span>--version
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>python3<span class="w"> </span>--version
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>nvidia-smi
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>nvidia-smi<span class="w"> </span>topo<span class="w"> </span>-m
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>ls<span class="w"> </span><span class="s2">"</span><span class="nv">$CUDA_INCDIR</span><span class="s2">/cuda_runtime.h"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CUDA_INCDIR</span><span class="s2">/cuda.h"</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>ls<span class="w"> </span><span class="s2">"</span><span class="nv">$CUDA_INCDIR</span><span class="s2">/cublas_v2.h"</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>dpkg-query<span class="w"> </span>-W<span class="w"> </span>libnccl2<span class="w"> </span>libnccl-dev
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>dpkg<span class="w"> </span>-L<span class="w"> </span>libnccl-dev<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">'/nccl.h$'</span>
 </span></code></pre></div>
 <p>The driver supplies GPU access; the toolkit supplies compilation; cuBLAS and NCCL supply libraries. <code>nvidia-smi</code>'s “CUDA Version” is driver compatibility, not the installed <code>nvcc</code> version. A topology listing describes connectivity, not a measured bandwidth or a successful peer-transfer test. Finish with the book's actual compile, launch and numerical checks below.</p>
 <h2 id="4-download-the-source-and-run-preflight">4 — Download the source and run preflight<a class="headerlink" href="#4-download-the-source-and-run-preflight" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/MaximumBeings/programming-the-h100.git
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nb">cd</span><span class="w"> </span>programming-the-h100
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>python3<span class="w"> </span>tools/h100_preflight.py
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>python3<span class="w"> </span>tools/h100_preflight.py<span class="w"> </span>--json<span class="w"> </span>&gt;<span class="w"> </span>preflight.json
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/MaximumBeings/programming-the-h100.git
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nb">cd</span><span class="w"> </span>programming-the-h100
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>python3<span class="w"> </span>tools/h100_preflight.py
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>python3<span class="w"> </span>tools/h100_preflight.py<span class="w"> </span>--json<span class="w"> </span>&gt;<span class="w"> </span>preflight.json
 </span></code></pre></div>
 <p>The checker uses the CUDA Driver API to count CUDA-visible devices, including the effect of <code>CUDA_VISIBLE_DEVICES</code>. It checks Hopper capability, the compiler, and the availability of optional inspection tools. It needs Python's standard library, not PyTorch. It <strong>does not</strong> prove that a kernel is correct or that multiple GPUs have a suitable interconnect.</p>
 <p>Selected lines captured on the validation host:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>H100 book preflight: PASS
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>Visible GPUs: 1; nvcc: 12.8.93
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>  NVIDIA H100 PCIe; CC 9.0; 81079.1 MiB
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>H100 book preflight: PASS
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>Visible GPUs: 1; nvcc: 12.8.93
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>  NVIDIA H100 PCIe; CC 9.0; 81079.1 MiB
 </span></code></pre></div>
 <p>CUDA-visible memory can be lower than the board's nominal capacity or the management tool's physical-memory report because of reserved resources. Use the actual runtime capacity when allocating buffers.</p>
 <p>For a particular distributed exercise, require its actual device count:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>python3<span class="w"> </span>tools/h100_preflight.py<span class="w"> </span>--minimum-gpus<span class="w"> </span><span class="m">2</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>python3<span class="w"> </span>tools/h100_preflight.py<span class="w"> </span>--minimum-gpus<span class="w"> </span><span class="m">8</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>python3<span class="w"> </span>tools/h100_preflight.py<span class="w"> </span>--minimum-gpus<span class="w"> </span><span class="m">2</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>python3<span class="w"> </span>tools/h100_preflight.py<span class="w"> </span>--minimum-gpus<span class="w"> </span><span class="m">8</span>
 </span></code></pre></div>
 <p>The eight-GPU training program passed on eight A100 GPUs, including comparisons of every final weight and per-step loss against an independent CPU reference. See the <a href="../eight-gpu-validation/">captured execution and system record</a>.</p>
 <p>For Chapter 4/11 development-library linkage, this optional check compiles the relevant current programs without launching their GPU workloads:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>python3<span class="w"> </span>tools/validate_examples.py<span class="w"> </span>--compile-only<span class="w"> </span><span class="m">04</span>-cutensormap<span class="w"> </span><span class="m">11</span>-multi-gpu
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>python3<span class="w"> </span>tools/validate_examples.py<span class="w"> </span>--compile-only<span class="w"> </span><span class="m">04</span>-cutensormap<span class="w"> </span><span class="m">11</span>-multi-gpu
 </span></code></pre></div>
 <p>It checks Driver API, NCCL and cuBLAS links through the examples' complete commands. A successful compile/link is not an execution result. The eight-GPU training workload still requires eight suitable GPUs for its full run. MPI, NVSHMEM, PyTorch and cuDNN are not required to build the 27 named CUDA programs; the separate attention-reference script uses PyTorch.</p>
 <p>If you downloaded only the website, the <a href="../assets/tools/h100_preflight.py">standalone preflight utility</a> is also available. Save it, inspect it, then run it on your Linux GPU host.</p>
 <h2 id="5-compile-and-execute-your-first-verified-program">5 — Compile and execute your first verified program<a class="headerlink" href="#5-compile-and-execute-your-first-verified-program" title="Permanent link">&para;</a></h2>
 <p>From the repository root, copy the exact tested source to a scratch build directory:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>build/first-run
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>cp<span class="w"> </span>docs/validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu<span class="w"> </span>build/first-run/
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="nb">cd</span><span class="w"> </span>build/first-run
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_cluster_inspect.cu<span class="w"> </span>-o<span class="w"> </span>ex01_cluster_inspect
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>./ex01_cluster_inspect
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="nb">echo</span><span class="w"> </span><span class="nv">$?</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>build/first-run
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>cp<span class="w"> </span>docs/validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu<span class="w"> </span>build/first-run/
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="nb">cd</span><span class="w"> </span>build/first-run
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex01_cluster_inspect.cu<span class="w"> </span>-o<span class="w"> </span>ex01_cluster_inspect
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>./ex01_cluster_inspect
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="nb">echo</span><span class="w"> </span><span class="nv">$?</span>
 </span></code></pre></div>
 <p>This is the complete cluster-inspection program from <a href="../02-clusters-inline-ptx/">Chapter 2</a>, not a placeholder fragment. In the captured H100 PCIe run it reported:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>DSMEM Exchange Tests: 4/4 passed
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>Cluster Metadata Verification:
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>  ✓ All cluster metadata correct
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>ALL TESTS PASSED — Clusters working correctly!
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>DSMEM Exchange Tests: 4/4 passed
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>Cluster Metadata Verification:
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>  ✓ All cluster metadata correct
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>ALL TESTS PASSED — Clusters working correctly!
 </span></code></pre></div>
 <p>The program's exit status was <strong>0</strong>. GPU <code>printf</code> ordering and the device name may differ on another host. Compare the checks and final pass status, not incidental line ordering. <a href="../validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu">Exact tested source</a> · <a href="../validation/2026-11-17/02-clusters-inline-ptx/ex01_cluster_inspect/run.log">Full captured output</a>.</p>
 <p><strong>Learning checkpoint:</strong> For a one-dimensional cluster of two blocks, predict the local rank of global block 3 and its partner block. Check the cluster/rank fields in the program output. The prediction is rank 1 with partner global block 2: global numbering and rank-within-cluster are different quantities. This is a reasoning exercise, not an additional recorded GPU run.</p>
 <p>Return to the repository root after this example:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">cd</span><span class="w"> </span>../..
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nb">cd</span><span class="w"> </span>../..
 </span></code></pre></div>
 <p>For later examples, use the full command beside that example. Some need <code>-lcuda</code>, <code>-lnccl</code>, <code>-lcublas</code> or additional compilation options; the baseline <code>nvcc</code> command is not a universal link command.</p>
 <h2 id="6-install-optional-profiling-tools">6 — Install optional profiling tools<a class="headerlink" href="#6-install-optional-profiling-tools" title="Permanent link">&para;</a></h2>
 <p>Check what the image already provides:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>ncu<span class="w"> </span>--version
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>compute-sanitizer<span class="w"> </span>--version
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>cuobjdump<span class="w"> </span>--version
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>ncu<span class="w"> </span>--version
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>compute-sanitizer<span class="w"> </span>--version
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>cuobjdump<span class="w"> </span>--version
 </span></code></pre></div>
 <p>For the CUDA 12.8 toolkit installed through the repository above, missing inspection tools can be installed with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>cuda-nsight-compute-12-8<span class="w"> </span>cuda-sanitizer-12-8
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>ncu<span class="w"> </span>--version
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>cuda-nsight-compute-12-8<span class="w"> </span>cuda-sanitizer-12-8
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>ncu<span class="w"> </span>--version
 </span></code></pre></div>
 <p>The earlier captured Lambda session installed the image's <code>nsight-compute</code> package and reported <strong>2025.1.1.0</strong>; the versioned toolkit package above can supply a newer 2025.1.x patch. Record <code>ncu --version</code> on your host. If <code>ncu</code> is outside <code>PATH</code>, inspect <code>dpkg -L cuda-nsight-compute-12-8</code> and its <code>nsight-compute-2025.1.1</code> dependency for the installed executable, then use its full path or add that directory to <code>PATH</code>. The first ordinary-user profile reported <code>ERR_NVGPUCTRPERM</code>; profiling with elevated permissions succeeded on the instance we administered. <a href="../13-nsight-compute/">Chapter 13</a> shows both logs and the exact successful invocation. Do not change system-wide counter permissions merely to imitate a screenshot.</p>
 <h3 id="optional-attention-reference-dependency">Optional attention-reference dependency<a class="headerlink" href="#optional-attention-reference-dependency" title="Permanent link">&para;</a></h3>
 <p>The 27 named CUDA programs do not require PyTorch. To reproduce the separate Chapter 12 recurrence check from the repository root, use an isolated environment and the recorded CUDA-enabled PyTorch version:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv-attention
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>.venv-attention/bin/python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">torch</span><span class="o">==</span><span class="m">2</span>.7.0<span class="w"> </span>--index-url<span class="w"> </span>https://download.pytorch.org/whl/cu128
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>.venv-attention/bin/python<span class="w"> </span>tools/validate_attention.py
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv-attention
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>.venv-attention/bin/python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">torch</span><span class="o">==</span><span class="m">2</span>.7.0<span class="w"> </span>--index-url<span class="w"> </span>https://download.pytorch.org/whl/cu128
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>.venv-attention/bin/python<span class="w"> </span>tools/validate_attention.py
 </span></code></pre></div>
 <p>This script runs 12 GPU reference cases; it is not the FA3 skeleton or a performance benchmark. PyTorch's CUDA wheel does not replace the system compiler or driver. See the <a href="https://pytorch.org/get-started/previous-versions/#v270">official PyTorch 2.7 installation commands</a>.</p>
 <h2 id="7-build-and-read-the-website-locally">7 — Build and read the website locally<a class="headerlink" href="#7-build-and-read-the-website-locally" title="Permanent link">&para;</a></h2>
 <p>These steps need Python, not a GPU. From the repository root:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>python3<span class="w"> </span>tools/verify_validation_records.py
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>python3<span class="w"> </span>tools/verify_site_links.py
-</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>mkdocs<span class="w"> </span>serve
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>python3<span class="w"> </span>tools/verify_validation_records.py
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>python3<span class="w"> </span>tools/verify_site_links.py
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>mkdocs<span class="w"> </span>serve
 </span></code></pre></div>
 <p>Open <a href="http://127.0.0.1:8000">http://127.0.0.1:8000</a> on the same machine. Stop the server with <code>Ctrl+C</code>. On Windows, virtual-environment activation has a different path; you can instead invoke the environment's Python directly to install packages and run MkDocs.</p>
 <p>If the preview server is on a remote host, keep it bound to localhost and forward it from your own computer:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>ssh<span class="w"> </span>-L<span class="w"> </span><span class="m">8000</span>:127.0.0.1:8000<span class="w"> </span>-i<span class="w"> </span>/path/to/your-key.pem<span class="w"> </span>ubuntu@YOUR_INSTANCE_IP
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>ssh<span class="w"> </span>-L<span class="w"> </span><span class="m">8000</span>:127.0.0.1:8000<span class="w"> </span>-i<span class="w"> </span>/path/to/your-key.pem<span class="w"> </span>ubuntu@YOUR_INSTANCE_IP
 </span></code></pre></div>
 <p>Start <code>mkdocs serve</code> in that remote shell, then open the local address above in your own browser. Alternatively, clone and preview on your laptop so the GPU instance is not needed for documentation work.</p>
 <p>The evidence checker compares chapter sources, downloadable sources and recorded hashes. It can detect stale execution records after a code edit, but it does not execute CUDA on a CPU-only CI runner. A strict MkDocs build checks site construction and treats build warnings as errors; <code>tools/verify_site_links.py</code> separately checks built internal links and anchors. These checks do not replace the GPU reference checks.</p>
@@ -2107,7 +2138,7 @@
 </tbody>
 </table>
 <p>For the unchanged first program from Step 5, run this <strong>from the repository root</strong>, after compiling it:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>compute-sanitizer<span class="w"> </span>--tool<span class="w"> </span>memcheck<span class="w"> </span>--error-exitcode<span class="w"> </span><span class="m">1</span><span class="w"> </span>./build/first-run/ex01_cluster_inspect
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>compute-sanitizer<span class="w"> </span>--tool<span class="w"> </span>memcheck<span class="w"> </span>--error-exitcode<span class="w"> </span><span class="m">1</span><span class="w"> </span>./build/first-run/ex01_cluster_inspect
 </span></code></pre></div>
 <p><code>--error-exitcode 1</code> makes detected sanitizer errors produce a nonzero status even if the application itself exits successfully. Instrumented runtime is not ordinary benchmark timing. For the four barrier-ordering corrections in Chapters 3–5, use the current chapter listings and read their <a href="../final-audit/">revision-specific validation status</a>; their earlier logs cover the archived revisions.</p>
 <p>References: <a href="https://docs.nvidia.com/cuda/archive/12.8.0/hopper-compatibility-guide/index.html">NVIDIA's Hopper compatibility guide</a>, <a href="https://docs.nvidia.com/compute-sanitizer/ComputeSanitizer/index.html">Compute Sanitizer guide</a>, and <a href="https://developer.nvidia.com/ERR_NVGPUCTRPERM">performance-counter permission guidance</a>.</p>
