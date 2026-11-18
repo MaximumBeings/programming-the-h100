@@ -64,6 +64,7 @@ theme:
 
 extra_css:
   - stylesheets/extra.css
+  - stylesheets/code.css
 
 markdown_extensions:
   - abbr
@@ -96,6 +97,7 @@ hooks:
   - hooks/fix_anchors.py
   - hooks/diagram_readability.py
   - hooks/reader_comments.py
+  - hooks/code_formatting.py
 
 plugins:
   - search:

@@ -1,0 +1,15 @@
+/* Source listings: readable spacing and soft wraps for long literals.
+   Output transcripts and ASCII diagrams retain their exact preformatted layout. */
+.md-typeset :is(.language-c, .language-cpp, .language-cuda).highlight pre {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .4rem;
+}
+.md-typeset :is(.language-c, .language-cpp, .language-cuda).highlight pre > code {
+  font-size: .78rem;
+  line-height: 1.65;
+  padding: 1rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 4;
+  font-variant-ligatures: none;
+}

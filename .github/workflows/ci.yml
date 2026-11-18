@@ -57,5 +57,8 @@ jobs:
       - name: Verify built internal links
         run: python3 tools/verify_site_links.py
 
+      - name: Verify displayed source formatting
+        run: python3 tools/verify_code_formatting.py --site-dir site
+
       - name: Deploy
         run: mkdocs gh-deploy --force
