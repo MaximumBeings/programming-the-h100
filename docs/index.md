@@ -1,6 +1,6 @@
-# Programming the H100
+# Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
 
-[![FIELD GUIDE: Programming the H100](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
+[![Programming the H100: CUDA, CuTe, and CUTLASS from First Principles](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
 
 
 > **Original program suite — November 17–18, 2026.** The recorded revisions of all **27 original complete CUDA programs compiled and executed successfully** across the recorded hosts: 26 H100 workloads and the revised eight-A100 training program. The [complete validation summary](final-audit.md) links each successful record, the stronger Chapter 7 coordinate test and 12 attention-reference cases. The [training record](eight-gpu-validation.md) targets `sm_80` and checks all final weights and per-step losses against an independent CPU reference.
@@ -13,7 +13,7 @@
 
 <p class="hero-tagline">
 The gap between "my kernel runs" and "my kernel saturates the tensor cores" is
-the subject of this book. Seventeen chapters connect the H100 die and its
+the subject of this book. Twenty-eight chapters connect the H100 die and its
 instructions to kernel design, application profiling and CUTLASS. Follow worked
 layouts, explicit ownership protocols, diagrams and downloadable examples,
 then test the result and the performance hypothesis separately.
@@ -22,9 +22,9 @@ then test the result and the performance hypothesis separately.
 > **Compile CUDA examples with:** `nvcc -std=c++17 -arch=sm_90a -O2 <file>.cu -o <out>`
 > **Run with:** `./<out>` on Hopper hardware matching the compiled target. Use the complete per-example command, including any driver, NCCL or cuBLAS linker flags.
 
-!!! info "New Systems and CUTLASS exercises"
+!!! success "Expanded workshop — executed on H100, November 18, 2026"
 
-    Chapters 14–17 add a profiler overlap exercise, a CuTe coordinate oracle and a CUTLASS GEMM with a full CPU reference. Their [separate test collector](examples/advanced/README.md) is prepared for the next Hopper session. The original 27-program execution records remain unchanged; new captured outputs and profiles will be added from that session.
+    The sequenced Chapters 15–28 contain fourteen CUTLASS/CuTe chapters, from introductory algebra to advanced pipelines, fusion, precision and measurement. The [current H100 workshop record](cutlass-workshop-validation.md) captures eight CUDA compilations, two Python byte-compilations and eleven passing workload invocations, plus two real Nsight Systems reports. CPU-only layout/format checks retain their stated scope. The original 27-program records remain unchanged.
 
 ## How to read this
 
@@ -41,8 +41,9 @@ getting bytes into shared memory efficiently. Chapters 6–7 are the tensor
 cores. Chapters 8–10 put it together into real warp-specialized kernels.
 Chapter 11 leaves the single GPU behind. Chapters 12–13 are the payoff: an
 annotated FA3 design with a tested numerical reference, and kernel profiling.
-Chapter 14 adds the application timeline with Nsight Systems. Chapters 15–17
-bridge the hand-written primitives to CuTe and a pinned CUTLASS Hopper implementation.
+Chapter 14 adds the application timeline with Nsight Systems. Chapters 15–28
+progress from introductory CuTe algebra and indexing through complete kernels
+to advanced CUTLASS pipelines, fusion, precision and a reproducible capstone.
 
 If you already write CUDA and want the Hopper-specific parts, start at
 Chapter 2. If you are here for GEMM, read 4 → 5 → 6 → 7 → 8 → 9 in order. If you
@@ -57,7 +58,7 @@ have a slow kernel in front of you right now, start at Chapter 13.
 | Write and diagnose GEMM kernels | 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 13 | Full-output reference checks and a profile tied to the right roofline |
 | Understand fast attention | 3 → 4 → 6 → 7 → 9 → 12 → 13 | A recurrence check and a clear account of what the skeleton still omits |
 | Trace application stalls and overlap | 11 → 13 → 14 | A bounded timeline and a useful-result timing comparison |
-| Read and validate CUTLASS kernels | 4 → 6 → 7 → 15 → 16 → 17 | A pinned build, coordinate checks and a full-output GEMM oracle |
+| Read and validate CUTLASS kernels | 4 → 6 → 7 → 15 → 16 → 17 → 18 → 19 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 | A pinned build, coordinate checks and a full-output GEMM oracle |
 | Study distributed GPU workloads | 1 → 2 → 11 → 13 | A topology record and a collective result checked on the required hardware |
 
 **Read an example in three passes.** First trace where each value lives and which thread owns it. Then identify what makes it safe to read and safe to overwrite. Finally predict the reference output before looking at the captured result. Performance tuning comes after those three agree.
@@ -222,14 +223,32 @@ have a slow kernel in front of you right now, start at Chapter 13.
 
 </div>
 
-### Continue into application profiling and CUTLASS
+### Continue from introductory CuTe to advanced CUTLASS
 
-| Chapter | What you will build or explain |
+[Chapter 14: Nsight Systems](14-nsight-systems.md) complements Compute’s kernel counters with an application timeline. The CUTLASS sequence below is ordered by prerequisites: first derive the mapping, then build and check complete kernels, then optimize their pipeline, precision and integration.
+
+| Level | Chapters | Finish by explaining or producing |
+| --- | --- | --- |
+| Introductory | 15–18 | Exact coordinates, storage spans, tensor views, predicates and byte addresses |
+| Intermediate | 19–23 | Unique ownership, actual fragment layouts, safe shared storage and full-reference copy/GEMM results |
+| Advanced | 24–28 | Stage generations, supported fusion, numerical contracts and reproducible application measurements |
+
+| Chapter | Topic |
 | --- | --- |
-| [14. Nsight Systems](14-nsight-systems.md) | A correct serial/two-stream workload, bounded captures and a Systems → Compute → Systems investigation |
-| [15. CuTe layout algebra](15-cute-layouts.md) | Coordinate tables, storage spans, composition, tiling and thread/value ownership |
-| [16. CUTLASS Hopper GEMM](16-cutlass-gemm.md) | A pinned v4.3.6 build with aligned operands, a complete launch lifecycle and an independent CPU oracle |
-| [17. Pipelines, fusion and tuning](17-cutlass-pipelines.md) | A real stage-lifetime trace, compatible schedules, epilogue dataflow and a narrow profiler build |
+| [15. CuTe Foundations](15-cute-layouts.md) | Layout conventions, explicit formulas and a reproducible workspace |
+| [16. Hierarchical Layout Algebra](16-cute-layout-algebra.md) | Static/dynamic hierarchy, composition, division and storage bounds |
+| [17. Tensors, Slicing & Predication](17-cute-tensors-tiling.md) | Data engines, slices, tiles and coordinate-derived predicates |
+| [18. CTA and Byte-Address Indexing](18-cta-indexing.md) | Batch → CTA → K tile → thread → element offset → byte address |
+| [19. Thread Ownership & Tiled Copy](19-tiled-copy.md) | A real CuTe TiledCopy with complete value and ownership checks |
+| [20. MMA Atoms & Register Fragments](20-mma-atoms.md) | Pinned MMA traits, register packing and the warp/warpgroup distinction |
+| [21. Shared Layouts, Banks & Swizzles](21-shared-layouts.md) | Bank arithmetic, XOR mappings and TMA/WGMMA layout contracts |
+| [22. Build a Complete Tiled GEMM](22-gemm-construction.md) | A complete padded, batched SIMT baseline including partial tiles and K=0 |
+| [23. CUTLASS Collective-Builder GEMM](23-cutlass-gemm.md) | Pinned builders, compatible schedules and an independent full-output oracle |
+| [24. Hopper Pipelines & Scheduling](24-cutlass-pipelines.md) | Prologue, steady state, drain, phase bits and resource budgets |
+| [25. Epilogue Fusion](25-epilogue-fusion.md) | A complete fused ReLU variant, EVT dataflow and operation order |
+| [26. Precision & Block Scaling](26-precision-block-scaling.md) | E2M1 codebook, scale axes, packing and the Hopper/Blackwell boundary |
+| [27. Benchmarking & Framework Integration](27-benchmarking-integration.md) | Timing scopes, concurrency, genuine framework APIs and integration contracts |
+| [28. Worked Labs & Capstone](28-workbook-capstone.md) | Progressive laboratories, worked solutions and an evidence-driven capstone |
 
 ## Running this book locally
 

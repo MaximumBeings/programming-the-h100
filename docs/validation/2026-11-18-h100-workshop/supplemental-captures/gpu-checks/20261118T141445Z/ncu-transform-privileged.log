@@ -1,0 +1,6 @@
+$ sudo -n /usr/bin/ncu --set basic --kernel-name regex:transform --launch-skip 1 --launch-count 1 --export /home/ubuntu/h100-expanded-review-20261118/gpu-checks/20261118T141445Z/ncu-transform-privileged /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap serial
+==PROF== Connected to process 7125 (/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap)
+==PROF== Profiling "transform": 0%....50%....100% - 10 passes
+OVERLAP PASS: mode=serial slots=1 checked=4194304 errors=0 device_span_ms=1454.950
+==PROF== Disconnected from process 7125
+==PROF== Report: /home/ubuntu/h100-expanded-review-20261118/gpu-checks/20261118T141445Z/ncu-transform-privileged.ncu-rep

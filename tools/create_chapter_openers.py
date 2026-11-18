@@ -169,7 +169,7 @@ def illustration(kind):
         d.text(400,410,'Connect → verify → compile → execute',25,MUTED,'middle')
     else:
         d.chip(310,60,'H100 / HOPPER',GREEN,250,235)
-        for x,y,label,color in [(10,30,'HARDWARE',TEAL),(30,270,'CUDA / PTX',GOLD),(610,150,'EVIDENCE',TEAL)]:
+        for x,y,label,color in [(10,30,'HARDWARE',TEAL),(30,270,'CUDA / CuTe',GOLD),(610,150,'CUTLASS',TEAL)]:
             d.box(x,y,190,75,label,color,size=23)
             d.line(x+95,y+75,435,175,color,2)
         d.text(410,405,'Understand the machine. Verify the result.',24,MUTED,'middle')
@@ -177,7 +177,7 @@ def illustration(kind):
 
 
 SPECS = [
-    ('00-cover','FIELD GUIDE','Programming','the H100','Hardware · instructions · verified examples','cover'),
+    ('00-cover','FIELD GUIDE','Programming','the H100','CUDA, CuTe, and CUTLASS · from First Principles · Architecture, kernels, evidence','cover'),
     ('00-getting-started','GETTING STARTED','From an SSH shell','to a GPU result','The installation and first-run guide','setup'),
     ('01-architecture','CHAPTER 01','Inside the','Hopper machine','Put H100 in its architectural lineage','evolution'),
     ('02-clusters','CHAPTER 02','Blocks that','work together','Clusters · distributed shared memory · PTX','clusters'),

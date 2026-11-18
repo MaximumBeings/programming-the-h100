@@ -1,0 +1,72 @@
+{
+  "reference_folder": "cute_cutlass_very_comprehensive_tutorial",
+  "reviewed_utc": "2026-11-18T14:13:44.695647+00:00",
+  "policy": "Reference material; its commands, performance tables and hardware claims were independently reviewed, not automatically executed or accepted.",
+  "files": [
+    {
+      "name": "CHEAT_SHEET.md",
+      "sha256": "b41026333a0a1a815197065b47f40cae55bacacc3e022aff3774a5c08e2a2044",
+      "bytes": 15856
+    },
+    {
+      "name": "CUTLASS_CUTE_MASTER_TUTORIAL.md",
+      "sha256": "c2eb878d776c2c51e3ba96f62e28fdc08f169aaec144e6f189d5621932a03cb0",
+      "bytes": 33588
+    },
+    {
+      "name": "PACKAGE_SUMMARY.md",
+      "sha256": "782825142a3196bccd0c2e855017e441f4d81a5061485a584e7c396ecaf63c02",
+      "bytes": 12945
+    },
+    {
+      "name": "README.md",
+      "sha256": "ef25c77b4e061b8f5d8df06119885e3251d239ee850a41902bd799b80588f871",
+      "bytes": 15290
+    },
+    {
+      "name": "cute_gemm_implementation.py",
+      "sha256": "4f3e6f83e04b74b341e3c65874dcacf77679d133cd05f86aab3aab8f64621327",
+      "bytes": 22320
+    },
+    {
+      "name": "cute_indexing_comprehensive_commented.cpp",
+      "sha256": "dc660b6f04f3005297c1d5c44e30015c5d0637f816cc4d39a1fd5753382ecd11",
+      "bytes": 41999
+    },
+    {
+      "name": "cutlass_cute_exercises.md",
+      "sha256": "04dfcf0965f7cc1f6101b01a0740b9ae218a817bd3e09753c6be8fa621e0a444",
+      "bytes": 24409
+    },
+    {
+      "name": "cutlass_cute_layout_tutorial.md",
+      "sha256": "b3c2edd8d024dfbdaf0c0f5da33c4a69286a018eb83dfeeafa1932f3b11739aa",
+      "bytes": 28203
+    },
+    {
+      "name": "cutlass_gemm_implementation.cu",
+      "sha256": "a5192029bd2edb3c64795e02d1c73d740c8dd902a1595ef9a1517a9ff11f2a67",
+      "bytes": 21297
+    },
+    {
+      "name": "implementation_comparison_guide.md",
+      "sha256": "77679015952b8c75d82bba5f7e7bff59563fae2ab4a3c38be2c938ea1ea3f878",
+      "bytes": 26173
+    },
+    {
+      "name": "learning_roadmap.md",
+      "sha256": "438ea3988fdc92e9ff3e70b542e76e024f603dce6daff85ed4cbd465dcf3980d",
+      "bytes": 18975
+    },
+    {
+      "name": "nvfp4_gemm_visual_tutorial.md",
+      "sha256": "d971038f3224aa8a3f7dd0c68edec904a14f2e73019e00d5aa02aa0179dc42d9",
+      "bytes": 70714
+    },
+    {
+      "name": "pytorch_gemm_implementation.py",
+      "sha256": "84202d86e4cc6c9bae7cf54b276361e6e6206fc1fb88f6a9d7471a349fc96df4",
+      "bytes": 22901
+    }
+  ]
+}

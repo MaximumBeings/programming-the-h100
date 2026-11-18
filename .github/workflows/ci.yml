@@ -48,6 +48,9 @@ jobs:
       - name: Verify November 18 rerun
         run: python3 tools/verify_revalidation.py
 
+      - name: Verify current CuTe/CUTLASS workshop execution
+        run: python3 tools/verify_workshop.py
+
       - name: Check new advanced collector without executing CUDA
         run: |
           bash -n tools/fetch_cutlass.sh

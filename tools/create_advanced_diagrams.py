@@ -24,6 +24,7 @@ specs={
  ('WGMMA reads the operands','Issue and complete arithmetic before releasing its shared inputs.','violet'),
  ('Fuse, store and measure','Preserve rounding and operation order; test the complete application.','amber')])}
 for chapter,(title,lede,items) in specs.items():
+ if chapter not in (14,15):continue
  (ROOT/f'docs/images/ch{chapter}').mkdir(exist_ok=True)
  d=Drawing(f'ch{chapter}/overview.svg',title,lede,'Original reading schematic · Chapters 14–17 extension')
  d.parts=[part.replace('FIGURE overview.svg','READING MAP') for part in d.parts]

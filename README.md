@@ -1,4 +1,4 @@
-# Programming the H100
+# Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
 
 A [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) book built
 from the H100 companion guides.
@@ -20,9 +20,20 @@ docs/
   12-flashattention-3.md        Part VII  — Putting It to Work
   13-nsight-compute.md
   14-nsight-systems.md
-  15-cute-layouts.md             Part VIII — From Primitives to CUTLASS
-  16-cutlass-gemm.md
-  17-cutlass-pipelines.md
+  15-cute-layouts.md                 Introductory → intermediate → advanced
+  16-cute-layout-algebra.md
+  17-cute-tensors-tiling.md
+  18-cta-indexing.md
+  19-tiled-copy.md
+  20-mma-atoms.md
+  21-shared-layouts.md
+  22-gemm-construction.md
+  23-cutlass-gemm.md
+  24-cutlass-pipelines.md
+  25-epilogue-fusion.md
+  26-precision-block-scaling.md
+  27-benchmarking-integration.md
+  28-workbook-capstone.md
   examples/advanced/            new exercise sources and validation plan
   stylesheets/extra.css          typography + code-block tuning
 hooks/fix_anchors.py             build-time link repair (see below)
@@ -118,4 +129,6 @@ Website builds format C, C++ and CUDA listings with pinned clang-format 19.1.7: 
 
 ## Systems and CUTLASS extension
 
-Chapters 14–17 add application-level profiling, CuTe layouts, a pinned CUTLASS v4.3.6 GEMM and Hopper pipeline/fusion analysis. New [exercise sources](docs/examples/advanced/README.md) have a separate collector, `tools/run_advanced_validation.py`; their hardware compilation/execution and profiler records will be added after the next Hopper session. The original 27-program evidence is preserved. Run the new collector without `--execute` to inspect its plan without invoking tools or a GPU.
+Chapters 15–28 are sequenced as introductory (15–18), intermediate (19–23) and advanced (24–28). They adapt the supplied tutorial’s useful progression while correcting layout formulas, instruction mappings, framework attribution and precision/performance claims. Chapter 14 adds Nsight Systems.
+
+The [November 18 H100 workshop record](docs/cutlass-workshop-validation.md) captures all ten current workshop sources: eight CUDA translation units, two Python references and eleven passing invocations, with actual sources, commands, system metadata, UTC dates, outputs and two imported Systems reports. The original 27-program evidence remains intact. Use `tools/run_advanced_validation.py` for a new capture or omit execution flags for a side-effect-free plan.

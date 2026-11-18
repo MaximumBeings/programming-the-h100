@@ -1,4 +1,4 @@
-site_name: Programming the H100 - Under Development
+site_name: "Programming the H100: CUDA, CuTe, and CUTLASS from First Principles"
 site_description: >-
   A hardware-level companion guide to the NVIDIA Hopper architecture — from the
   H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines
@@ -99,6 +99,7 @@ hooks:
   - hooks/diagram_readability.py
   - hooks/reader_comments.py
   - hooks/code_formatting.py
+  - hooks/chapter_redirects.py
 
 plugins:
   - search:
@@ -114,6 +115,7 @@ nav:
   - Home: index.md
   - Getting Started & Installation: getting-started.md
   - November 18 H100 Rerun: revalidation-2026-11-18.md
+  - H100 CuTe/CUTLASS Workshop Results: cutlass-workshop-validation.md
   - Validation & Final Audit: final-audit.md
   - Eight-A100 Training Validation: eight-gpu-validation.md
   - Part I — The Machine:
@@ -137,7 +139,20 @@ nav:
       - 12. FlashAttention-3 on the H100: 12-flashattention-3.md
       - 13. Profiling with Nsight Compute: 13-nsight-compute.md
       - 14. Application Profiling with Nsight Systems: 14-nsight-systems.md
-  - Part VIII — From Primitives to CUTLASS:
-      - 15. CuTe Layout Algebra: 15-cute-layouts.md
-      - 16. Build a Verified CUTLASS GEMM: 16-cutlass-gemm.md
-      - 17. Hopper Pipelines, Fusion & Tuning: 17-cutlass-pipelines.md
+  - Part VIII — Introductory CuTe:
+      - 15. CuTe Foundations: 15-cute-layouts.md
+      - 16. Hierarchical Layout Algebra: 16-cute-layout-algebra.md
+      - 17. Tensors, Slicing & Predication: 17-cute-tensors-tiling.md
+      - 18. CTA and Byte-Address Indexing: 18-cta-indexing.md
+  - Part IX — Intermediate CuTe and GEMM:
+      - 19. Thread Ownership & Tiled Copy: 19-tiled-copy.md
+      - 20. MMA Atoms & Register Fragments: 20-mma-atoms.md
+      - 21. Shared Layouts, Banks & Swizzles: 21-shared-layouts.md
+      - 22. Build a Complete Tiled GEMM: 22-gemm-construction.md
+      - 23. CUTLASS Collective-Builder GEMM: 23-cutlass-gemm.md
+  - Part X — Advanced CUTLASS Workshop:
+      - 24. Hopper Pipelines & Scheduling: 24-cutlass-pipelines.md
+      - 25. Epilogue Fusion: 25-epilogue-fusion.md
+      - 26. Precision & Block Scaling: 26-precision-block-scaling.md
+      - 27. Benchmarking & Framework Integration: 27-benchmarking-integration.md
+      - 28. Worked Labs & Capstone: 28-workbook-capstone.md

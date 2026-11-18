@@ -15,16 +15,16 @@
 using namespace cute;
 using Half = cutlass::half_t;
 using Row = cutlass::layout::RowMajor;
-using Tile = Shape<_128, _128, _64>;
+using CtaTileShape = Shape<_128, _128, _64>;
 using Cluster = Shape<_1, _1, _1>;
 using Epilogue = cutlass::epilogue::collective::CollectiveBuilder<
     cutlass::arch::Sm90, cutlass::arch::OpClassTensorOp,
-    Tile, Cluster, cutlass::epilogue::collective::EpilogueTileAuto,
+    CtaTileShape, Cluster, cutlass::epilogue::collective::EpilogueTileAuto,
     float, float, float, Row, 4, float, Row, 4,
     cutlass::epilogue::collective::EpilogueScheduleAuto>::CollectiveOp;
 using Mainloop = cutlass::gemm::collective::CollectiveBuilder<
     cutlass::arch::Sm90, cutlass::arch::OpClassTensorOp,
-    Half, Row, 8, Half, Row, 8, float, Tile, Cluster,
+    Half, Row, 8, Half, Row, 8, float, CtaTileShape, Cluster,
     cutlass::gemm::collective::StageCountAutoCarveout<
         static_cast<int>(sizeof(Epilogue::SharedStorage))>,
     cutlass::gemm::collective::KernelScheduleAuto>::CollectiveOp;

@@ -44,6 +44,28 @@ The Ubuntu 22.04/24.04 package metadata selects `nsight-systems-2024.6.2` for th
 
 Alternatively, use NVIDIA’s [Nsight Systems downloads](https://developer.nvidia.com/nsight-systems/get-started) for the supported Linux CLI. Keep the report reader at the capture version or a compatible newer version. CPU sampling, scheduling traces and GPU metric sampling have different platform/permission requirements. Start with CUDA tracing and no CPU sampling; add a collection feature only when it answers a question. Do not change system-wide security settings just to make an optional sampling feature work.
 
+### Capture agent versus report analysis components
+
+Some distribution/provider packages split the target capture CLI from the matching host analysis tools. A working `nsys --version` and a `.qdstrm` file do not prove that `.nsys-rep` conversion is available. The current H100 session exposed this distinction: the target CLI captured data, but its split directory layout did not locate the matching importer automatically.
+
+Install the matching **full Nsight Systems analysis package** through the provider/NVIDIA package source, not just a target-only agent. Locate `QdstrmImporter` from that installed package and verify its version matches the capture tool. When needed, use the documented conversion explicitly:
+
+```bash
+QdstrmImporter --version
+QdstrmImporter --input-file trace.qdstrm --output-file trace.nsys-rep
+nsys stats --report cuda_gpu_kern_sum trace.nsys-rep
+```
+
+On the recorded provider image, the matching importer was installed at `/usr/lib/nsight-systems/host-linux-x64/QdstrmImporter`. The following provider-specific setup made it discoverable to the collector without changing a system symlink:
+
+```bash
+/usr/lib/nsight-systems/host-linux-x64/QdstrmImporter --version
+export PATH="/usr/lib/nsight-systems/host-linux-x64:$PATH"
+command -v QdstrmImporter
+```
+
+Use the paths reported by your installed package when its layout differs. Use the actual captured filenames and installed tool path. The validation collector records this fallback as a separate dated stage, preserves the original capture diagnostic and requires a real `transform` kernel summary before accepting the report. It does not fix the problem by modifying system directories or declaring an empty report successful. A headless GPU instance can perform this import; it needs the analysis components even though no GUI session is required.
+
 ## 3 — A complete overlap exercise
 
 Download [nsys_overlap.cu](examples/advanced/nsys_overlap.cu). It uses pinned host arrays and either one stream or two nonblocking streams. Each stream owns its device buffers. Operations on a slot stay ordered as H2D → transform → D2H; a later chunk cannot overwrite that slot before its earlier D2H has finished. Different slots may overlap if the hardware and resource demands permit it.
@@ -59,7 +81,7 @@ nvcc -std=c++17 -O2 -lineinfo -arch=sm_90a \
 ./build/advanced/nsys_overlap overlap
 ```
 
-**Expected checks, not a captured transcript:** both modes must print `OVERLAP PASS`, `checked=4194304` and `errors=0`. The elapsed values must come from the machine being tested. Two streams do not promise a speedup: copy engines, transfer directions, link bandwidth, memory contention, chunk size and CPU enqueue rate all matter. These new exercises have a [separate validation plan](examples/advanced/README.md); the original 27-program records do not cover them.
+**Checks enforced by the executable:** both modes must print `OVERLAP PASS`, `checked=4194304` and `errors=0`. The elapsed values must come from the machine being tested. Two streams do not promise a speedup: copy engines, transfer directions, link bandwidth, memory contention, chunk size and CPU enqueue rate all matter. The [actual workshop execution record](cutlass-workshop-validation.md) and the captured block below retain the observed values and source revision; the original 27-program records remain separate.
 
 ## 4 — Capture a small, interpretable region
 
@@ -128,7 +150,7 @@ A long NCCL kernel may be doing communication, waiting for peers or both. A rank
 
 Suppose Systems shows that the same GEMM dominates every iteration. Run the application separately under Compute, selecting the kernel name observed in the trace and an appropriate launch filter. Do not stack both profilers around one process by default: collection/replay can change behavior and tools can contend for instrumentation.
 
-After changing the GEMM, repeat the correctness check, unprofiled application measurement and Systems capture. Perhaps the epilogue is faster but the next host-side preprocessing phase now determines the iteration. That is a new bottleneck, not a contradiction. [Chapters 16–17](16-cutlass-gemm.md) apply this loop to CUTLASS.
+After changing the GEMM, repeat the correctness check, unprofiled application measurement and Systems capture. Perhaps the epilogue is faster but the next host-side preprocessing phase now determines the iteration. That is a new bottleneck, not a contradiction. [Chapters 23–24](23-cutlass-gemm.md) apply this loop to CUTLASS.
 
 ??? question "Self-check: CPU range or completed GPU work?"
 
@@ -141,3 +163,121 @@ After changing the GEMM, repeat the correctness check, unprofiled application me
     The two-stream trace overlaps copies and kernels, but its total span is unchanged. Is the implementation necessarily wrong?
 
     **Answer:** No. The overlapped operations may compete for the same bandwidth or one transfer direction may remain the critical path. Verify correctness first, then compare useful-result spans and resource demands.
+
+<!-- workshop:start:nsys_overlap -->
+## Complete source and captured execution
+
+**Executed on November 18, 2026 (UTC).** Scope: **CUDA workload with its stated numerical checks**.
+
+Tested source SHA-256: `c47d8ed9b3db321f7caa7b3224bcbf4d64918986414f597462196bae2f6a0a6e`. [Exact source](validation/2026-11-18-h100-workshop/nsys_overlap.cu) · [System information](validation/2026-11-18-h100-workshop/system.json) · [Workshop results](cutlass-workshop-validation.md).
+
+The listing below matches the tested source. Its presentation is formatted at build time; downloads retain the captured bytes.
+
+```cuda
+// Compare one stream with two nonblocking streams; validate every output.
+#include <cuda_runtime.h>
+#include <cuda_profiler_api.h>
+#include <cstdio>
+#include <cstring>
+#include <stdexcept>
+void check(cudaError_t s) {
+    if (s != cudaSuccess) throw std::runtime_error(cudaGetErrorString(s));
+}
+__global__ void transform(const float* in, float* out, int n) {
+    int i = int(blockIdx.x * blockDim.x + threadIdx.x);
+    if (i < n) out[i] = 2.0f * in[i] + 1.0f;
+}
+int main(int argc, char** argv) {
+    if (argc != 2 || (std::strcmp(argv[1], "serial") && std::strcmp(argv[1], "overlap"))) {
+        std::fprintf(stderr, "Usage: nsys_overlap serial|overlap\n"); return 2;
+    }
+    try {
+        constexpr int chunk = 1 << 18, chunks = 16, repetitions = 8;
+        const int slots = std::strcmp(argv[1], "serial") == 0 ? 1 : 2;
+        const size_t count = size_t(chunk) * chunks, bytes = size_t(chunk) * sizeof(float);
+        float *input = nullptr, *output = nullptr, *di[2]{}, *dout[2]{};
+        cudaStream_t streams[2]{};
+        cudaEvent_t start{}, stop{}, done[2]{};
+        check(cudaMallocHost(reinterpret_cast<void**>(&input), count * sizeof(float)));
+        check(cudaMallocHost(reinterpret_cast<void**>(&output), count * sizeof(float)));
+        for (size_t i = 0; i < count; ++i) input[i] = float(i % 1009);
+        for (int s = 0; s < slots; ++s) {
+            check(cudaStreamCreateWithFlags(&streams[s], cudaStreamNonBlocking));
+            check(cudaEventCreateWithFlags(&done[s], cudaEventDisableTiming));
+            check(cudaMalloc(reinterpret_cast<void**>(&di[s]), bytes));
+            check(cudaMalloc(reinterpret_cast<void**>(&dout[s]), bytes));
+        }
+        // Warm the actual kernel before the captured, timed region.
+        check(cudaMemcpy(di[0], input, bytes, cudaMemcpyHostToDevice));
+        transform<<<(chunk + 255) / 256, 256, 0, streams[0]>>>(di[0], dout[0], chunk);
+        check(cudaGetLastError()); check(cudaStreamSynchronize(streams[0]));
+        check(cudaEventCreate(&start)); check(cudaEventCreate(&stop));
+        check(cudaProfilerStart());
+        check(cudaEventRecord(start));
+        for (int s = 0; s < slots; ++s) check(cudaStreamWaitEvent(streams[s], start));
+        for (int rep = 0; rep < repetitions; ++rep)
+            for (int c = 0; c < chunks; ++c) {
+                int s = c % slots;
+                check(cudaMemcpyAsync(di[s], input + size_t(c) * chunk, bytes, cudaMemcpyHostToDevice, streams[s]));
+                transform<<<(chunk + 255) / 256, 256, 0, streams[s]>>>(di[s], dout[s], chunk);
+                check(cudaGetLastError());
+                check(cudaMemcpyAsync(output + size_t(c) * chunk, dout[s], bytes, cudaMemcpyDeviceToHost, streams[s]));
+            }
+        for (int s = 0; s < slots; ++s) {
+            check(cudaEventRecord(done[s], streams[s]));
+            check(cudaStreamWaitEvent(nullptr, done[s]));
+        }
+        check(cudaEventRecord(stop)); check(cudaEventSynchronize(stop));
+        check(cudaProfilerStop());
+        float milliseconds = 0;
+        check(cudaEventElapsedTime(&milliseconds, start, stop));
+        size_t errors = 0;
+        for (size_t i = 0; i < count; ++i) errors += output[i] != 2.0f * input[i] + 1.0f;
+        std::printf("%s: mode=%s slots=%d checked=%zu errors=%zu device_span_ms=%.3f\n",
+                    errors ? "OVERLAP FAIL" : "OVERLAP PASS", argv[1], slots, count, errors, milliseconds);
+        for (int s = 0; s < slots; ++s) {
+            check(cudaFree(di[s])); check(cudaFree(dout[s]));
+            check(cudaEventDestroy(done[s])); check(cudaStreamDestroy(streams[s]));
+        }
+        check(cudaEventDestroy(start)); check(cudaEventDestroy(stop));
+        check(cudaFreeHost(input)); check(cudaFreeHost(output));
+        return errors ? 1 : 0;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "OVERLAP ERROR: %s\n", e.what()); return 1;
+    }
+}
+```
+
+CUDA compilation UTC: `2026-11-18T14:11:16.579477+00:00`. Exit: `0`. [Compile log](validation/2026-11-18-h100-workshop/nsys_overlap-compile.log).
+
+Commands use scratch-directory filenames; raw logs retain exact paths. The collector’s CUTLASS include flags are configuration for that capture; the minimal standalone overlap/SIMT commands do not require those headers.
+
+```bash
+nvcc -std=c++17 -O2 -lineinfo -arch=sm_90a --expt-relaxed-constexpr -I "$CUTLASS_ROOT/include" -I "$CUTLASS_ROOT/tools/util/include" nsys_overlap.cu -o ./example
+```
+
+Executed UTC: `2026-11-18T14:11:19.004299+00:00`. Exit: `0`. [Run log](validation/2026-11-18-h100-workshop/nsys_overlap-serial-run.log).
+
+```bash
+./example serial
+```
+
+**Actual captured output**
+
+```text
+OVERLAP PASS: mode=serial slots=1 checked=4194304 errors=0 device_span_ms=7.553
+```
+
+Executed UTC: `2026-11-18T14:11:19.521997+00:00`. Exit: `0`. [Run log](validation/2026-11-18-h100-workshop/nsys_overlap-overlap-run.log).
+
+```bash
+./example overlap
+```
+
+**Actual captured output**
+
+```text
+OVERLAP PASS: mode=overlap slots=2 checked=4194304 errors=0 device_span_ms=4.426
+```
+
+<!-- workshop:end:nsys_overlap -->

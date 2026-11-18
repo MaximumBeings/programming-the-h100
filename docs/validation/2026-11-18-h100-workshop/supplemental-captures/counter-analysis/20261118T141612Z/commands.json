@@ -1,0 +1,19 @@
+[
+  {
+    "command": [
+      "ncu",
+      "--import",
+      "/home/ubuntu/h100-expanded-review-20261118/gpu-checks/20261118T141445Z/ncu-transform-privileged.ncu-rep",
+      "--page",
+      "details"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:16:12.449970+00:00",
+    "finished_utc": "2026-11-18T14:16:13.669764+00:00",
+    "seconds": 1.2198189639998418,
+    "log": "ncu-details.log",
+    "log_sha256": "85fdc8935bb90bd90e3d661d9a8e8881c4e69703d1a5edaccd0ab02a057afb64",
+    "kind": "nsight_compute_report_analysis",
+    "report_sha256": "1857d4e237f1e6a7953b139018fac0898af7df3f6937c68f947ddd4a5c73216e"
+  }
+]

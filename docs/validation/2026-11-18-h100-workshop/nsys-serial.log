@@ -1,0 +1,10 @@
+$ nsys profile --trace=cuda,nvtx,osrt --sample=none --cpuctxsw=none --capture-range=cudaProfilerApi --capture-range-end=stop --output=/home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap serial
+Importer error status: The importer binary and its dependencies were not found.
+Unable to retrieve the importer version: skipping importation of the QDSTRM file.
+OVERLAP PASS: mode=serial slots=1 checked=4194304 errors=0 device_span_ms=7.931
+Capture range started in the application.
+Capture range ended in the application.
+Generating '/tmp/nsys-report-1655.qdstrm'
+Processing events...
+Generated:
+    /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/timeline-serial.qdstrm

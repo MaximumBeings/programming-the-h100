@@ -1,0 +1,154 @@
+{
+  "utc": "2026-11-18T14:09:12.994101+00:00",
+  "platform": "Linux-6.8.0-1064-nvidia-x86_64-with-glibc2.39",
+  "cutlass_sha": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+  "source_commit": "db4978acdd34da3720c9bc2b3d95055492d59ac5",
+  "commands": [
+    {
+      "command": [
+        "nvcc",
+        "--version"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.000601+00:00",
+      "finished_utc": "2026-11-18T14:09:13.008912+00:00",
+      "seconds": 0.008310703999995894,
+      "log": "system-0.log",
+      "log_sha256": "7665bd15fcd06506c52a5d04eee5de90155154bae8b6d47be529739c301865fe"
+    },
+    {
+      "command": [
+        "g++",
+        "--version"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.009097+00:00",
+      "finished_utc": "2026-11-18T14:09:13.013450+00:00",
+      "seconds": 0.004356320000169944,
+      "log": "system-1.log",
+      "log_sha256": "36d8c38c41ef84e972840e039e2cf34e10badff5017c8b667971a4517d0b1f37"
+    },
+    {
+      "command": [
+        "nvidia-smi",
+        "--query-gpu=name,uuid,compute_cap,driver_version,memory.total",
+        "--format=csv"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.013594+00:00",
+      "finished_utc": "2026-11-18T14:09:13.078086+00:00",
+      "seconds": 0.06451194800001758,
+      "log": "system-2.log",
+      "log_sha256": "f5b7d61a432d968758119cd587a6feea4e69bf43c5a410a79c4556f258d9bbdd"
+    },
+    {
+      "command": [
+        "nvidia-smi",
+        "topo",
+        "-m"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.078294+00:00",
+      "finished_utc": "2026-11-18T14:09:13.243807+00:00",
+      "seconds": 0.16553232900014336,
+      "log": "system-3.log",
+      "log_sha256": "c839b6c84707ca4424555b4f2628012230c641ce11391cb24ebd3194209d5148"
+    },
+    {
+      "command": [
+        "nsys",
+        "--version"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.244018+00:00",
+      "finished_utc": "2026-11-18T14:09:13.359317+00:00",
+      "seconds": 0.11532041800001025,
+      "log": "system-4.log",
+      "log_sha256": "062d4fdbb257ef569008a4b11ed3b95f40afd5cd02c3f2b4f5185c18a9805aa0"
+    },
+    {
+      "command": [
+        "ncu",
+        "--version"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.359636+00:00",
+      "finished_utc": "2026-11-18T14:09:13.392373+00:00",
+      "seconds": 0.032738270999971064,
+      "log": "system-5.log",
+      "log_sha256": "3ed0ee370098eb113e094ce0486a7674a8ae907ad1ceb519bbedcc6140943c27"
+    },
+    {
+      "command": [
+        "compute-sanitizer",
+        "--version"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.392497+00:00",
+      "finished_utc": "2026-11-18T14:09:13.408957+00:00",
+      "seconds": 0.01642981999998483,
+      "log": "system-6.log",
+      "log_sha256": "d46486acb8bd3b6393bde6e566ea9d20b8e66c11a80f157d1e8f6bcc161b435f"
+    },
+    {
+      "command": [
+        "uname",
+        "-a"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.409061+00:00",
+      "finished_utc": "2026-11-18T14:09:13.413227+00:00",
+      "seconds": 0.004168499999877895,
+      "log": "system-7.log",
+      "log_sha256": "fd28a04ee727673140e0b97b698897c6be294cff67792d78c4a3f9a6998c7a91"
+    },
+    {
+      "command": [
+        "lscpu"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.413318+00:00",
+      "finished_utc": "2026-11-18T14:09:13.445747+00:00",
+      "seconds": 0.03243211400013024,
+      "log": "system-8.log",
+      "log_sha256": "aab7c73a4632337ea061e00c0e952b8c5018a8e099aa330f7f7c9f9366644958"
+    },
+    {
+      "command": [
+        "cat",
+        "/etc/os-release"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.445848+00:00",
+      "finished_utc": "2026-11-18T14:09:13.449988+00:00",
+      "seconds": 0.004141899999922316,
+      "log": "system-9.log",
+      "log_sha256": "5ee0476e8067af88029ddc687779db37a3c7891e26d74d58c5ab7e98eb16fc3e"
+    },
+    {
+      "command": [
+        "python3",
+        "--version"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.450074+00:00",
+      "finished_utc": "2026-11-18T14:09:13.454155+00:00",
+      "seconds": 0.0040838120000898925,
+      "log": "system-10.log",
+      "log_sha256": "75fcb0ef2d416d61de3266b9a374b6d97d84801c4d06830ee5698184667c2d89"
+    },
+    {
+      "command": [
+        "QdstrmImporter",
+        "--version"
+      ],
+      "exit_code": 0,
+      "started_utc": "2026-11-18T14:09:13.454238+00:00",
+      "finished_utc": "2026-11-18T14:09:13.569100+00:00",
+      "seconds": 0.1148837260000164,
+      "log": "system-11.log",
+      "log_sha256": "08efb88bf4c9b6ff80e1d31598e6b7b485fd9a434fbf087ce736e016bae97662"
+    }
+  ],
+  "source_tree_dirty": true
+}

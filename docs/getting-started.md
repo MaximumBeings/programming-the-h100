@@ -327,7 +327,7 @@ The earlier captured Lambda session installed the image's `nsight-compute` packa
 
 ### Optional Systems and CUTLASS extension
 
-[Chapter 14](14-nsight-systems.md) adds Nsight Systems CLI capture and timeline analysis; record `nsys --version` separately from `ncu --version`. [Chapter 16](16-cutlass-gemm.md) pins CUTLASS v4.3.6 and supplies a separate collector for the new layout, GEMM and overlap exercises. Follow those chapters for their additional setup and current validation scope.
+[Chapter 14](14-nsight-systems.md) adds Nsight Systems CLI capture and timeline analysis; record `nsys --version` separately from `ncu --version`. [Chapter 23](23-cutlass-gemm.md) pins CUTLASS v4.3.6 and supplies a separate collector for the new layout, GEMM and overlap exercises. Follow those chapters for their additional setup and current validation scope.
 
 ### Optional attention-reference dependency
 

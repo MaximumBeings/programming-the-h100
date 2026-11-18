@@ -1,0 +1,13 @@
+{
+  "memcheck-cute_copy.log": "c7db6e05ba61499af854ed9ab6acc9e98e1ded192a30d2a6d41d01357dcd2160",
+  "memcheck-cutlass_gemm.log": "541e6734cff3448f756a97d7bdef9bb31a73645cfdaca32c4a37db77516eb266",
+  "ncu-transform.log": "05178c1fb80e05e8febd36763efdf8709daa850a476fb05679ceb54b36f37e26",
+  "ncu-transform-privileged.ncu-rep": "1857d4e237f1e6a7953b139018fac0898af7df3f6937c68f947ddd4a5c73216e",
+  "nsys-version.log": "062d4fdbb257ef569008a4b11ed3b95f40afd5cd02c3f2b4f5185c18a9805aa0",
+  "memcheck-tiled_gemm.log": "91aca5647d5c8a4e2632bac84cfc9bd6f1190561720819bb7bb8dab6eace3f52",
+  "memcheck-cutlass_gemm_relu.log": "d68a696ea01b8f1256d30b03829ba2be8941129cbb5404cbdae03ce098fe1dfd",
+  "ncu-transform-privileged.log": "a3787200be285607b01428602b9d0a1891ab94649271ad0475e56e865a9f21a0",
+  "racecheck-tiled_gemm.log": "c31c3cb70c024cda62e5cdb4fd5e5b5fbe5a8584c01132a6a1a34995dc08bc87",
+  "commands.json": "eff2d946bb9b749a0a5b7905440485b3cb7322cd5b1b5ad196451b00e6428670",
+  "ncu-version.log": "3ed0ee370098eb113e094ce0486a7674a8ae907ad1ceb519bbedcc6140943c27"
+}

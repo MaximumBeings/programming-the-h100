@@ -1,0 +1,1 @@
+$ nvcc -std=c++17 -O2 -lineinfo -arch=sm_90a --expt-relaxed-constexpr -I/home/ubuntu/h100-expanded-review-20261118/cutlass/include -I/home/ubuntu/h100-expanded-review-20261118/cutlass/tools/util/include /home/ubuntu/h100-expanded-review-20261118/book/docs/examples/advanced/nsys_overlap.cu -o /home/ubuntu/h100-expanded-review-20261118/final-20261118T140912Z/nsys_overlap

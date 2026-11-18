@@ -1725,7 +1725,7 @@ spill stores / loads            0              --ptxas-options=-v
 > The hardware and instruction-level chapters give you the vocabulary for a
 > Hopper kernel. [Chapter 14](14-nsight-systems.md) adds the application timeline:
 > find the kernel or dependency that actually determines useful-result time.
-> [Chapters 15–17](15-cute-layouts.md) then turn the closing CUTLASS recommendation
+> [Chapters 15–28](15-cute-layouts.md) then turn the closing CUTLASS recommendation
 > into a practical route through CuTe layouts, a complete GEMM harness, Hopper
 > pipeline ownership, epilogue fusion and controlled tuning.
 >

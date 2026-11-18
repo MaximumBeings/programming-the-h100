@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture new Chapters 14–17 exercises separately from the original 27 programs.
+"""Capture new Chapters 14–28 exercises separately from the original 27 programs.
 
 No network access or package installation. Without --execute, print the plan only.
 """
@@ -12,6 +12,7 @@ from pathlib import Path
 import platform
 import re
 import shlex
+import shutil
 import signal
 import subprocess
 import time
@@ -55,7 +56,7 @@ def main():
     cutlass=args.cutlass.resolve();out=args.output.resolve()
     if args.profiles and not args.execute: ap.error('--profiles requires --execute')
     if not args.execute:
-        print('PLAN ONLY: compile cute_layouts, cutlass_gemm and nsys_overlap with nvcc sm_90a; run 4 workloads.')
+        print('PLAN ONLY: compile 8 CUDA translation units, byte-compile 2 Python references; run 11 workloads.')
         print('No files created; no compiler, GPU or profiler executed. Add --execute on the Hopper host.')
         return 0
     revision=subprocess.check_output(['git','-C',str(cutlass),'rev-parse','HEAD'],text=True).strip()
@@ -63,27 +64,42 @@ def main():
     if revision!=PIN or dirty: raise SystemExit('CUTLASS must be the clean pinned v4.3.6 revision.')
     out.mkdir(parents=True,exist_ok=False)
     system={'utc':utc(),'platform':platform.platform(),'cutlass_sha':revision,'source_commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),'commands':[]}
-    for i,command in enumerate([['nvcc','--version'],['g++','--version'],['nvidia-smi','--query-gpu=name,uuid,compute_cap,driver_version,memory.total','--format=csv'],['nvidia-smi','topo','-m'],['nsys','--version']]):
+    for i,command in enumerate([['nvcc','--version'],['g++','--version'],['nvidia-smi','--query-gpu=name,uuid,compute_cap,driver_version,memory.total','--format=csv'],['nvidia-smi','topo','-m'],['nsys','--version'],['ncu','--version'],['compute-sanitizer','--version'],['uname','-a'],['lscpu'],['cat','/etc/os-release'],['python3','--version'],['QdstrmImporter','--version']]):
         system['commands'].append(capture(command,out/f'system-{i}.log',45))
+    system['source_tree_dirty']=bool(subprocess.check_output(['git','-C',str(ROOT),'status','--porcelain','--untracked-files=normal'],text=True).strip())
     (out/'system.json').write_text(json.dumps(system,indent=2)+'\n')
     gpu_log=(out/'system-2.log').read_text()
     if system['commands'][2]['exit_code']!=0 or not re.search(r',\s*9\.0\s*,',gpu_log):
         raise SystemExit('No recorded Hopper CC 9.0 device; no workloads launched.')
-    programs=[('cute_layouts',[((),r'LAYOUT PASS:.*errors=0')]),
-              ('cutlass_gemm',[((),r'GEMM PASS: 3 full CPU-reference cases')]),
-              ('nsys_overlap',[(('serial',),r'OVERLAP PASS: mode=serial.*errors=0'),(('overlap',),r'OVERLAP PASS: mode=overlap.*errors=0')])]
+    programs=[
+        ('cute_layouts',[((),r'LAYOUT PASS:.*errors=0')]),
+        ('cute_algebra',[((),r'ALGEBRA PASS:.*errors=0')]),
+        ('cute_fragments',[((),r'FRAGMENT PASS.*errors=0')]),
+        ('cute_copy',[((),r'COPY PASS: 3 cases, errors=0')]),
+        ('tiled_gemm',[((),r'TILED GEMM PASS: 3 cases, errors=0')]),
+        ('cutlass_gemm',[((),r'GEMM PASS: 3 full CPU-reference cases')]),
+        ('cutlass_gemm_relu',[((),r'FUSED GEMM PASS: 3 full CPU-reference cases')]),
+        ('nsys_overlap',[(('serial',),r'OVERLAP PASS: mode=serial.*errors=0'),(('overlap',),r'OVERLAP PASS: mode=overlap.*errors=0')]),
+        ('indexing_workbook',[((),r'WORKBOOK PASS: 7 CPU-only reference groups')]),
+        ('fp4_reference',[((),r'FP4 REFERENCE PASS')])]
     records=[]
     for name,runs in programs:
-        source=ROOT/'docs/examples/advanced'/f'{name}.cu';(out/source.name).write_bytes(source.read_bytes())
+        python_source=name in {'indexing_workbook','fp4_reference'}
+        source=ROOT/'docs/examples/advanced'/(name+('.py' if python_source else '.cu'))
+        (out/source.name).write_bytes(source.read_bytes())
         binary=out/name
-        command=['nvcc','-std=c++17','-O2','-lineinfo','-arch=sm_90a','--expt-relaxed-constexpr',
-                 '-I'+str(cutlass/'include'),'-I'+str(cutlass/'tools/util/include'),source,'-o',binary]
-        row={'source':str(source.relative_to(ROOT)),'sha256':sha(source),'compile':capture(command,out/(name+'-compile.log')),'runs':[]}
+        if python_source:
+            command=['python3','-m','py_compile',source]
+        else:
+            command=['nvcc','-std=c++17','-O2','-lineinfo','-arch=sm_90a','--expt-relaxed-constexpr',
+                     '-I'+str(cutlass/'include'),'-I'+str(cutlass/'tools/util/include'),source,'-o',binary]
+            if name in {'cutlass_gemm','cutlass_gemm_relu'}:command+=['-lcuda']
+        row={'source':str(source.relative_to(ROOT)),'sha256':sha(source),'kind':'python_cpu_reference' if python_source else 'cute_host_oracle' if name in {'cute_layouts','cute_algebra','cute_fragments'} else 'cuda_workload','compile':capture(command,out/(name+'-compile.log')),'runs':[]}
         if row['compile']['exit_code']==0:
             for arguments,marker in runs:
-                entry=capture([binary,*arguments],out/(name+('-'+arguments[0] if arguments else '')+'-run.log'),120)
+                entry=capture((['python3',source] if python_source else [binary])+list(arguments),out/(name+('-'+arguments[0] if arguments else '')+'-run.log'),120)
                 text=(out/entry['log']).read_text()
-                extra=(name!='cutlass_gemm' or len(re.findall(r'^GEMM CASE PASS ',text,re.M))==3)
+                extra=(name not in {'cutlass_gemm','cutlass_gemm_relu'} or len(re.findall(r'^(?:FUSED )?GEMM CASE PASS ',text,re.M))==3)
                 entry['status']='PASS' if entry['exit_code']==0 and re.search(marker,text) and extra and not re.search(r'\b(?:FAIL|ERROR)\b',text) else 'FAIL'
                 row['runs'].append(entry)
         records.append(row);(out/'results.json').write_text(json.dumps(records,indent=2)+'\n')
@@ -95,7 +111,15 @@ def main():
             command=['nsys','profile','--trace=cuda,nvtx,osrt','--sample=none','--cpuctxsw=none',
                      '--capture-range=cudaProfilerApi','--capture-range-end=stop','--output='+str(prefix),out/'nsys_overlap',mode]
             result=capture(command,out/('nsys-'+mode+'.log'),180)
-            result['report_exists']=prefix.with_suffix('.nsys-rep').is_file()
+            report=prefix.with_suffix('.nsys-rep')
+            intermediate=prefix.with_suffix('.qdstrm')
+            # Some distro packages split the matching host importer from the
+            # target CLI. Preserve its original diagnostic and capture the
+            # documented manual import as a separate, dated command.
+            importer=shutil.which('QdstrmImporter')
+            if result['exit_code']==0 and not report.is_file() and intermediate.is_file() and importer:
+                result['import']=capture([importer,'--input-file',intermediate,'--output-file',report],out/('nsys-'+mode+'-import.log'),180)
+            result['report_exists']=report.is_file()
             text=(out/result['log']).read_text()
             marker=rf'^OVERLAP PASS: mode={mode} slots={1 if mode=="serial" else 2} checked=4194304 errors=0 device_span_ms='
             result['workload_pass']=bool(re.search(marker,text,re.M)) and not bool(re.search(r'\b(?:FAIL|ERROR)\b',text))
@@ -104,7 +128,7 @@ def main():
                 stats=capture(['nsys','stats','--report','cuda_gpu_kern_sum','--format','csv',prefix.with_suffix('.nsys-rep')],out/('nsys-'+mode+'-stats.log'),120)
                 result['stats']=stats
                 result['captured_kernel']=stats['exit_code']==0 and 'transform' in (out/stats['log']).read_text()
-            result['status']='PASS' if result['exit_code']==0 and result['report_exists'] and result['workload_pass'] and result['captured_kernel'] else 'FAIL'
+            result['status']='PASS' if result['exit_code']==0 and result.get('import',{}).get('exit_code',0)==0 and result['report_exists'] and result['workload_pass'] and result['captured_kernel'] else 'FAIL'
             profiles.append(result)
         (out/'profiles.json').write_text(json.dumps(profiles,indent=2)+'\n')
         passed=len(profiles)==2 and all(p['status']=='PASS' for p in profiles)
