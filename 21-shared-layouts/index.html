@@ -1671,6 +1671,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-21-companion-guide-keep-banks-swizzles-and-descriptors-in-agreement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 21 Companion Guide — Keep Banks, Swizzles and Descriptors in Agreement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-three-layouts-must-describe-the-same-tile" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1723,6 +1734,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="5 — A bijection can leave conflicts unchanged">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#make-the-counterexample-an-actual-cute-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Make the counterexample an actual CuTe call
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1752,6 +1780,17 @@
     <span class="md-ellipsis">
       
         8 — Exercises and a review checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2070,6 +2109,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-21-companion-guide-keep-banks-swizzles-and-descriptors-in-agreement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 21 Companion Guide — Keep Banks, Swizzles and Descriptors in Agreement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-three-layouts-must-describe-the-same-tile" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2122,6 +2172,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="5 — A bijection can leave conflicts unchanged">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#make-the-counterexample-an-actual-cute-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Make the counterexample an actual CuTe call
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2157,6 +2224,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2183,12 +2261,14 @@
 
 
 <h1 id="21-shared-layouts-banks-swizzles-and-descriptor-agreement">21. Shared Layouts — Banks, Swizzles and Descriptor Agreement<a class="headerlink" href="#21-shared-layouts-banks-swizzles-and-descriptor-agreement" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch21/overview.svg?v=e8973dbd40cc"><img alt="Shared-memory layouts connect producer addresses, bank accesses and matrix-consumer descriptors." src="../images/ch21/overview.svg?v=e8973dbd40cc" /></a></p>
+<h2 id="lesson-21-companion-guide-keep-banks-swizzles-and-descriptors-in-agreement">Lesson 21 Companion Guide — Keep Banks, Swizzles and Descriptors in Agreement<a class="headerlink" href="#lesson-21-companion-guide-keep-banks-swizzles-and-descriptors-in-agreement" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/21-workshop.svg?v=21a1b8b08a43"><img alt="CHAPTER 21: 21. Shared Layouts — Banks, Swizzles and Descriptor Agreement — conceptual chapter illustration" src="../images/chapter-openers/21-workshop.svg?v=21a1b8b08a43" /></a></p>
 <div class="admonition tip">
-<p class="admonition-title">Your goal</p>
+<p class="admonition-title">Your goal in this chapter</p>
 <p>Compute bank indices for a specific warp access, prove a swizzle's mapping, and preserve agreement between generic stores, TMA and WGMMA. Read <a href="../20-mma-atoms/">MMA atoms</a>, <a href="../04-cutensormap-tma-swizzling/">TMA descriptors</a> and the <a href="../03-asynchronicity-mbarrier/">proxy-ordering rules</a>.</p>
 </div>
 <h2 id="1-three-layouts-must-describe-the-same-tile">1 — Three layouts must describe the same tile<a class="headerlink" href="#1-three-layouts-must-describe-the-same-tile" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch21/overview.svg?v=e8973dbd40cc"><img alt="Shared-memory layouts connect producer addresses, bank accesses and matrix-consumer descriptors." src="../images/ch21/overview.svg?v=e8973dbd40cc" /></a></p>
 <p>A shared tile has a producer, a physical allocation and a consumer. The producer might use ordinary stores, an asynchronous copy atom or TMA. The consumer might use scalar loads, <code>ldmatrix</code>, or WGMMA descriptors. All must agree on which physical location represents a logical coordinate.</p>
 <p>A successful tensor-copy operation does not establish that an unrelated WGMMA descriptor interprets its output correctly. Conversely, a beautifully bank-distributed layout can still violate an instruction's supported layout or alignment. Establish correctness first, then measure whether changing the physical arrangement improves the actual access pattern.</p>
 <p>The pinned <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/include/cute/atom/mma_traits_sm90_gmma.hpp">GMMA layout definitions</a> and <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/include/cute/swizzle.hpp">CuTe swizzle implementation</a> are the source contracts for this chapter. The simple bank examples below are scalar models, not predictions of every matrix instruction's transaction decomposition.</p>
@@ -2292,13 +2372,27 @@
 <p><code>bad_for_this_access(i,j) = 32 × (i XOR (j &gt;&gt; 2)) + j</code>.</p>
 <p>It is a valid permutation over the same 1,024 coordinates, but <code>offset % 32</code> is still j. Every lane reading a fixed column still targets the same bank. The swizzle changes rows while leaving the low column bits untouched.</p>
 <p>CuTe can represent this mapping too: compose the linear layout above with <code>Swizzle&lt;3,2,-3&gt;</code>. The negative shift moves column bits 2–4 left into row bits 5–7. For <code>(3,20)</code>, the linear offset is 116 and the transformed offset is 212. Neither representability nor uniqueness proves a bank benefit.</p>
+<h3 id="make-the-counterexample-an-actual-cute-call">Make the counterexample an actual CuTe call<a class="headerlink" href="#make-the-counterexample-an-actual-cute-call" title="Permanent link">&para;</a></h3>
+<p>Using the <code>linear</code> layout from §4:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">bank_unchanged</span><span class="w"> </span><span class="o">=</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">composition</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">Swizzle</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">-3</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">linear</span><span class="p">);</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">auto</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bank_unchanged</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">make_coord</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">));</span><span class="w"> </span><span class="c1">// 212</span>
+</span></code></pre></div>
+<ol>
+<li>The unswizzled word offset is <code>3×32+20=116</code>.</li>
+<li>Column 20 has <code>20&gt;&gt;2=5</code> in the selected three-bit field.</li>
+<li>XOR that field into the row bits: <code>3 XOR 5=6</code>.</li>
+<li>The resulting word offset is <code>6×32+20=212</code>.</li>
+<li>Both 116 and 212 select bank 20 modulo 32. The addresses changed, but the relevant bank bits did not.</li>
+</ol>
+<p><strong>Expected result:</strong> the mapping remains a permutation, yet a fixed-column warp still sends distinct addresses to one bank. <strong>Check:</strong> enumerate all 32 lane addresses for the actual fixed column; uniqueness of addresses and uniqueness of banks are separate tests. <strong>Pitfall:</strong> labeling every XOR composition “bank-conflict free” without examining which bits changed.</p>
 <p>This distinction is a useful review habit: ask <strong>which address bits select the resource you are trying to distribute?</strong> Then enumerate those bits for the actual participating lanes.</p>
 <h2 id="6-use-the-supported-hopper-layout-atoms">6 — Use the supported Hopper layout atoms<a class="headerlink" href="#6-use-the-supported-hopper-layout-atoms" title="Permanent link">&para;</a></h2>
 <p>A production WGMMA operand should begin with the pinned type-aware GMMA layout atoms, rather than an invented XOR formula:</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">using</span><span class="w"> </span><span class="n">Element</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cutlass</span><span class="o">::</span><span class="n">half_t</span><span class="p">;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">using</span><span class="w"> </span><span class="n">Atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">SM90</span><span class="o">::</span><span class="n">GMMA</span><span class="o">::</span><span class="n">Layout_K_SW128_Atom</span><span class="o">&lt;</span><span class="n">Element</span><span class="o">&gt;</span><span class="p">;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">auto</span><span class="w"> </span><span class="n">shared_layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">tile_to_shape</span><span class="p">(</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="n">Atom</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">cute</span><span class="o">::</span><span class="n">_128</span><span class="p">,</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">_64</span><span class="o">&gt;</span><span class="p">{});</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">using</span><span class="w"> </span><span class="n">Element</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cutlass</span><span class="o">::</span><span class="n">half_t</span><span class="p">;</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">using</span><span class="w"> </span><span class="n">Atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">SM90</span><span class="o">::</span><span class="n">GMMA</span><span class="o">::</span><span class="n">Layout_K_SW128_Atom</span><span class="o">&lt;</span><span class="n">Element</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">auto</span><span class="w"> </span><span class="n">shared_layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">tile_to_shape</span><span class="p">(</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="n">Atom</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Shape</span><span class="o">&lt;</span><span class="n">cute</span><span class="o">::</span><span class="n">_128</span><span class="p">,</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">_64</span><span class="o">&gt;</span><span class="p">{});</span>
 </span></code></pre></div>
 <p>This is a layout-construction sketch from the pinned definitions, not a complete kernel. It selects a K-major 128-byte-swizzle atom and tiles it to a particular logical operand shape. The other operand and any MN-major choice require their own supported layouts. The header also defines 32-byte, 64-byte and interleaved alternatives. The aliases carry datatype-aware upcasting and shared-pointer semantics; copying internal bit-level parameters into a manually indexed element array is not an equivalent construction.</p>
 <p>A swizzle mode and a full matrix descriptor are different things. The descriptor also contains the matrix start and leading/stride offsets. Follow the selected core-matrix layout when deriving those offsets, not the original global matrix's row stride. Match the TMA tensor-map swizzle and the consuming WGMMA interpretation. <a href="../06-wgmma-part-1/#13-descriptor-fields-lbo-sbo-base-offset-swizzle">Chapter 6</a> gives the field contract.</p>
@@ -2343,6 +2437,20 @@
 <p>Not necessarily. The row-XOR counterexample in §5 is bijective but leaves fixed-column banks unchanged. Even the bank-distributing mapping needs a benchmark because instruction transactions, occupancy, extra address arithmetic and other bottlenecks can dominate.</p>
 </details>
 <p>Before a GPU run, enumerate bounds, uniqueness, bank indices and stage starts. During the run, compare the full nonuniform result and use memory-safety checks. During tuning, record actual shared storage, instruction selection, relevant bank metrics and the application timing distribution. These arithmetic examples are worked models; they are not captured Hopper performance measurements.</p>
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>Derive bank indices from byte addresses and access width. Distinct words in one bank differ from a shared-word broadcast.</p>
+</li>
+<li>
+<p>Padding and XOR permutations can improve particular accesses, but a bijection alone proves neither a bank benefit nor instruction compatibility.</p>
+</li>
+<li>
+<p>Producer layout, allocation, TMA/WGMMA interpretation, alignment and stage lifetime must agree. Use those obligations in the <a href="../22-gemm-construction/">complete tiled GEMM</a>.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

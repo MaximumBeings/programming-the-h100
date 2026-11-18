@@ -1,0 +1,3 @@
+$ nvidia-smi --query-gpu=name,uuid,driver_version --format=csv
+name, uuid, driver_version
+NVIDIA H100 PCIe, GPU-0aa33358-f2aa-6e14-508f-7e1ade3eb4f3, 580.105.08

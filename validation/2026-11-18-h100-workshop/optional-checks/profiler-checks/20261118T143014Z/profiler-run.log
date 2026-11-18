@@ -1,0 +1,3 @@
+$ /home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler/tools/profiler/cutlass_profiler --operation=Gemm --kernels=cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_tma --m=512 --n=512 --k=512 --alpha=1 --beta=0.5 --providers=cutlass --verification-enabled=true --verification-providers=cublas --warmup-iterations=5 --profiling-iterations=20 --output=/home/ubuntu/h100-expanded-review-20261118/profiler-checks/20261118T143014Z/cutlass-hopper
+
+Wrote results to '/home/ubuntu/h100-expanded-review-20261118/profiler-checks/20261118T143014Z/cutlass-hopper.gemm.csv'

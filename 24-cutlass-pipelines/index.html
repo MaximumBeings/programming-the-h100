@@ -1828,6 +1828,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-24-companion-guide-trace-readiness-reuse-and-the-cost-of-more-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 24 Companion Guide — Trace Readiness, Reuse and the Cost of More Stages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-a-source-reading-route-with-a-purpose" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1877,6 +1888,17 @@
     <span class="md-ellipsis">
       
         Trace prologue, steady state and drain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#walk-one-stage-reuse-without-confusing-readiness-and-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk one stage reuse without confusing readiness and release
       
     </span>
   </a>
@@ -1965,6 +1987,17 @@
     <span class="md-ellipsis">
       
         Continue through the advanced track
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2126,6 +2159,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-24-companion-guide-trace-readiness-reuse-and-the-cost-of-more-stages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 24 Companion Guide — Trace Readiness, Reuse and the Cost of More Stages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-a-source-reading-route-with-a-purpose" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2175,6 +2219,17 @@
     <span class="md-ellipsis">
       
         Trace prologue, steady state and drain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#walk-one-stage-reuse-without-confusing-readiness-and-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk one stage reuse without confusing readiness and release
       
     </span>
   </a>
@@ -2269,6 +2324,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2295,12 +2361,14 @@
 
 
 <h1 id="24-read-hopper-cutlass-pipelines-fusion-and-tuning">24. Read Hopper CUTLASS Pipelines, Fusion and Tuning<a class="headerlink" href="#24-read-hopper-cutlass-pipelines-fusion-and-tuning" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch24/overview.svg?v=d4d667f1995f"><img alt="Pipeline ownership links TMA, shared stages, WGMMA and the epilogue." src="../images/ch24/overview.svg?v=d4d667f1995f" /></a></p>
+<h2 id="lesson-24-companion-guide-trace-readiness-reuse-and-the-cost-of-more-stages">Lesson 24 Companion Guide — Trace Readiness, Reuse and the Cost of More Stages<a class="headerlink" href="#lesson-24-companion-guide-trace-readiness-reuse-and-the-cost-of-more-stages" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/24-workshop.svg?v=c10949b77765"><img alt="CHAPTER 24: 24. Read Hopper CUTLASS Pipelines, Fusion and Tuning — conceptual chapter illustration" src="../images/chapter-openers/24-workshop.svg?v=c10949b77765" /></a></p>
 <div class="admonition tip">
-<p class="admonition-title">Your goal</p>
+<p class="admonition-title">Your goal in this chapter</p>
 <p>Trace one tile through a real Hopper mainloop, identify the readiness/reuse protocol, and make one controlled tuning change without breaking the numerical contract. Complete the <a href="../23-cutlass-gemm/">verified-GEMM exercise</a> first.</p>
 </div>
 <h2 id="1-a-source-reading-route-with-a-purpose">1 — A source-reading route with a purpose<a class="headerlink" href="#1-a-source-reading-route-with-a-purpose" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch24/overview.svg?v=d4d667f1995f"><img alt="Pipeline ownership links TMA, shared stages, WGMMA and the epilogue." src="../images/ch24/overview.svg?v=d4d667f1995f" /></a></p>
 <p>Start from the pinned <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/examples/49_hopper_gemm_with_collective_builder/49_collective_builder.cu">collective-builder example 49</a>, then follow the selected dispatch policy to the kernel and collective. Do not begin by reading every template header from top to bottom.</p>
 <table>
 <thead>
@@ -2502,6 +2570,17 @@
 <p>In the prologue, issue only the tiles that exist, up to the permitted in-flight capacity. During steady state, a consumer waits for its next actual tile while producers reuse only released stages. During the drain, consumers finish the remaining tiles and asynchronous readers/stores complete; producers do not fabricate new work merely to fill all stages.</p>
 <p>K shorter than pipeline depth is an important test. If there is one K tile and three storage stages, waiting for a full event on all three stages deadlocks because two transfers never existed. K=0 requires the API/kernel’s explicit supported behavior; the scalar baseline handles it, while a selected library path may reject it. Do not inherit that support across implementations.</p>
 <p>The CPU indexing workbook checks slot/generation arithmetic and valid state transitions for 15 small depth/tile-count combinations. It does not simulate the GPU memory model or validate concurrent TMA/WGMMA behavior. The actual library kernel and sanitizer records supply separate evidence.</p>
+<h3 id="walk-one-stage-reuse-without-confusing-readiness-and-release">Walk one stage reuse without confusing readiness and release<a class="headerlink" href="#walk-one-stage-reuse-without-confusing-readiness-and-release" title="Permanent link">&para;</a></h3>
+<p>Use the three-stage/eight-tile model above. Let the operand tile be <code>128*128*64</code> with FP16 A/B, so each K tile contains <code>16384+16384=32768</code> raw operand bytes. The actual collective supplies its own transaction count, padding and participant contract; this arithmetic is a simple model, not a replacement for that implementation.</p>
+<ol>
+<li><strong>Acquire slot 0 for tile 0.</strong> The producer state is <code>(index=0,phase=1)</code>. <code>producer_acquire</code> waits for the slot's empty condition before a producer starts a new transfer into that storage.</li>
+<li><strong>Publish the real transfer.</strong> Issue the supported TMA operation using the collective's full barrier and expected transaction bytes. In this pinned pipeline, calling <code>producer_commit</code> alone does not complete or substitute for the transfer.</li>
+<li><strong>Wait as the consumer.</strong> Consumer state <code>(0,0)</code> waits for tile 0's full condition. Arrival permits reads of that generation; it says nothing about whether subsequent asynchronous MMA reads have finished.</li>
+<li><strong>Release only after the reads are safe.</strong> The selected mainloop follows its WGMMA completion protocol before releasing slot 0. This is the edge that prevents a producer from overwriting operands still used by an asynchronous instruction.</li>
+<li><strong>Wrap to tile 3.</strong> After slots 1 and 2, tile 3 maps to slot <code>3%3=0</code>, generation <code>floor(3/3)=1</code>. The producer phase is now 0 and the consumer phase 1. An old full signal for tile 0 must not satisfy the wait for tile 3.</li>
+<li><strong>Drain exactly the actual work.</strong> Tile 7 maps to slot 1, generation 2. There is no tile 8. Finish pending reader/store obligations and release the actual occupied slots; do not issue or await an imaginary transfer merely to visit every slot once more.</li>
+</ol>
+<p><strong>Check:</strong> slot sequence <code>0,1,2,0,1,2,0,1</code> and generation sequence <code>0,0,0,1,1,1,2,2</code> must match the earlier table. Halving K until only one tile exists should remove seven transfers, not add waits for unused stages. This is the reasoning behind the workbook's bounded transition checks; actual concurrent ordering remains the GPU implementation's responsibility.</p>
 <h3 id="locate-the-actual-mechanisms-in-the-source">Locate the actual mechanisms in the source<a class="headerlink" href="#locate-the-actual-mechanisms-in-the-source" title="Permanent link">&para;</a></h3>
 <p>Starting from the selected mainloop, find its <code>SharedStorage</code>, pipeline type, producer start state, consumer state and transaction-byte calculation. Then locate the TMA copy operation, consumer wait, WGMMA group completion and consumer release. Follow tail/drain calls in the <strong>actual selected specialization</strong>, including any cluster barrier and epilogue store pipeline.</p>
 <p>Write the dependency edges explicitly: generic producer stores require the appropriate proxy publication; TMA arrival establishes the load’s completion; WGMMA’s register fence is not its completion wait; and a completed shared-to-global source read is different from final destination completion. A synchronization primitive is meaningful only with its participant, memory-space, proxy and generation scope.</p>
@@ -2519,34 +2598,44 @@
 <p>An implementation exercise is to add a supported bias/activation fusion, update the CPU oracle to the exact operation order and rounding policy, and add beta-zero, beta-nonzero, negative-input and edge-tile cases. It becomes verified only after those new sources and outputs are captured; the baseline’s pass does not transfer automatically.</p>
 <h2 id="7-use-a-narrow-profiler-build">7 — Use a narrow profiler build<a class="headerlink" href="#7-use-a-narrow-profiler-build" title="Permanent link">&para;</a></h2>
 <p>The CUTLASS profiler is a separate tool from Nsight Systems and Compute. It instantiates many candidate kernels and measures supported operations. Compiling every kernel, precision, architecture and instantiation level is unnecessary for this chapter.</p>
-<p>Start with one actual kernel name from the pinned generator rather than a whole family. Even a single-kernel build compiles common reference-provider support; broad Hopper family filters can generate hundreds of additional build tasks. This candidate has no C source (<code>void</code>), so the runtime example uses beta zero. Its tile, cluster and layouts differ from the small correctness harness; it is a separate configuration, not a timing of that harness. Enable cuBLAS explicitly if using it as the verification provider; it is off by default in the pinned build configuration.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">kernel</span><span class="o">=</span><span class="s2">"cutlass3x_sm90_tensorop_gemm_f16_f16_f32_void_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_tma"</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>cmake<span class="w"> </span>-S<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">"</span><span class="w"> </span>-B<span class="w"> </span>build/cutlass-profiler<span class="w"> </span>-G<span class="w"> </span>Ninja<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-DCUTLASS_NVCC_ARCHS<span class="o">=</span>90a<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>-DCUTLASS_ENABLE_LIBRARY<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span>-DCUTLASS_ENABLE_PROFILER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span>-DCUTLASS_LIBRARY_OPERATIONS<span class="o">=</span>gemm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span>-DCUTLASS_LIBRARY_KERNELS<span class="o">=</span><span class="s2">"</span><span class="nv">$kernel</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>-DCUTLASS_ENABLE_CUBLAS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span>-DCUTLASS_ENABLE_EXAMPLES<span class="o">=</span>OFF<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span>-DCUTLASS_ENABLE_TESTS<span class="o">=</span>OFF
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build/cutlass-profiler<span class="w"> </span>--target<span class="w"> </span>cutlass_profiler<span class="w"> </span>-j<span class="w"> </span><span class="m">2</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span>--help
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span>--mode<span class="o">=</span>enumerate<span class="w"> </span>--operation<span class="o">=</span>Gemm
+<p>Start with one actual kernel name from the pinned generator rather than a whole family. Even a single-kernel build compiles common reference-provider support. The recorded configuration uses FP16 A/B, <strong>FP32 C and D</strong>, beta 0.5, and the cooperative no-shared-memory epilogue schedule. It differs from the small correctness harness; it is a separate configuration, not a timing of that harness.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">kernel</span><span class="o">=</span><span class="s2">"cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_nosmem"</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>cmake<span class="w"> </span>-S<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">"</span><span class="w"> </span>-B<span class="w"> </span>build/cutlass-profiler<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>-DCUTLASS_NVCC_ARCHS<span class="o">=</span>90a<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span>-DCUTLASS_ENABLE_LIBRARY<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span>-DCUTLASS_ENABLE_PROFILER<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span>-DCUTLASS_LIBRARY_OPERATIONS<span class="o">=</span>gemm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>-DCUTLASS_LIBRARY_KERNELS<span class="o">=</span><span class="s2">"</span><span class="nv">$kernel</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span>-DCUTLASS_ENABLE_CUBLAS<span class="o">=</span>ON<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span>-DCUTLASS_ENABLE_EXAMPLES<span class="o">=</span>OFF<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span>-DCUTLASS_ENABLE_TESTS<span class="o">=</span>OFF
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build/cutlass-profiler<span class="w"> </span>--target<span class="w"> </span>cutlass_profiler<span class="w"> </span>-j<span class="w"> </span><span class="m">2</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span>--help
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">  </span>--mode<span class="o">=</span>enumerate<span class="w"> </span>--operation<span class="o">=</span>Gemm
 </span></code></pre></div>
-<p>Require at least one matching operation before interpreting a benchmark. If none appear, inspect the generator filter, architecture and instantiation policy; an empty result is not a fast kernel. Avoid <code>all</code> or maximum instantiation as a first response. After one configuration works, a deliberate family sweep can use <code>cutlass3x_sm90_tensorop_gemm_f16_f16_f32_void_f32_*</code>, with build size, memory and disk costs recorded separately.</p>
+<p>Require exactly the intended matching operation before interpreting a benchmark. If none appears, inspect the generator filter, architecture and instantiation policy; a compatible API combination is not necessarily instantiated by the generator. An empty result is not a fast kernel. Avoid <code>all</code> or maximum instantiation as a first response. The captured host used eight build jobs after checking available RAM; two jobs above is a conservative starting point.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>reports
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>build/cutlass-profiler/tools/profiler/cutlass_profiler<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--operation<span class="o">=</span>Gemm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>--kernels<span class="o">=</span><span class="s2">"</span><span class="nv">$kernel</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span>--m<span class="o">=</span><span class="m">512</span><span class="w"> </span>--n<span class="o">=</span><span class="m">512</span><span class="w"> </span>--k<span class="o">=</span><span class="m">512</span><span class="w"> </span>--alpha<span class="o">=</span><span class="m">1</span><span class="w"> </span>--beta<span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>--providers<span class="o">=</span>cutlass<span class="w"> </span>--verification-enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>--verification-providers<span class="o">=</span>cublas<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>--warmup-iterations<span class="o">=</span><span class="m">5</span><span class="w"> </span>--profiling-iterations<span class="o">=</span><span class="m">20</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span>--output<span class="o">=</span>reports/cutlass-hopper
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--operation<span class="o">=</span>Gemm<span class="w"> </span>--kernels<span class="o">=</span><span class="s2">"</span><span class="nv">$kernel</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>--m<span class="o">=</span><span class="m">512</span><span class="w"> </span>--n<span class="o">=</span><span class="m">512</span><span class="w"> </span>--k<span class="o">=</span><span class="m">512</span><span class="w"> </span>--alpha<span class="o">=</span><span class="m">1</span><span class="w"> </span>--beta<span class="o">=</span><span class="m">0</span>.5<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span>--providers<span class="o">=</span>cutlass<span class="w"> </span>--verification-enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>--verification-required<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--verification-providers<span class="o">=</span>reference_device<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>--warmup-iterations<span class="o">=</span><span class="m">5</span><span class="w"> </span>--profiling-iterations<span class="o">=</span><span class="m">20</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>--output<span class="o">=</span>reports/cutlass-hopper
 </span></code></pre></div>
-<p>Read the <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/profiler.md">pinned profiler documentation</a> and local help. The tool appends an operation-specific CSV suffix; inspect the files actually produced. Check each row’s disposition and provider result. An available cuBLAS library, an enabled verification flag and a process exit of zero do not by themselves establish that a comparison actually ran and passed.</p>
+<p>Read the <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/profiler.md">pinned profiler documentation</a> and local help. The tool appends an operation-specific CSV suffix; inspect the file actually produced. The following is an abbreviated transcription of the <strong>18 November 2026, 14:38:47 UTC</strong> run on the H100 PCIe system described in <a href="../cutlass-workshop-validation/">the workshop record</a>:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Verification: reference_device: Passed
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>CSV rows: 1
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Disposition: passed
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Status: success
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>m=512, n=512, k=512, alpha=1, beta=0.5
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>Runtime (ms): 0.0566496
+</span></code></pre></div>
+<p>Download the <a href="../validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/commands.json">exact command and timestamps</a>, <a href="../validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/profiler-run.log">raw console log</a> and <a href="../validation/2026-11-18-h100-workshop/optional-checks/profiler-checks/20261118T143847Z/cutlass-hopper.gemm.csv">one-row CSV</a>. This is a bounded tool check, not a representative benchmark distribution or a claim of tuned performance. The tool's FLOP convention includes additional work; use the declared count when comparing rates.</p>
+<p><strong>Walk through the acceptance decision.</strong> First confirm the kernel name and input types. Next require one actual CSV row, then <code>passed/success</code>, then a provider that explicitly says <code>Passed</code>. Only after these checks should you read the runtime. A zero process exit, a verification flag or a CSV header without a row proves none of those steps by itself.</p>
+<p>The pinned profiler has a separate cuBLAS reporting limitation: its verification loop can overwrite a cuBLAS disposition with <code>Not run</code> when a later reference-provider lookup is unavailable. The captured diagnostics showed actual cuBLASLt calls, but this book does <strong>not</strong> label that provider as passed. The reproducible command above requires the device reference and records its explicit pass. See the pinned <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/tools/profiler/src/gemm_operation_profiler.cu">verification loop</a> when diagnosing provider results.</p>
 <h2 id="8-measure-the-optimization-that-users-receive">8 — Measure the optimization that users receive<a class="headerlink" href="#8-measure-the-optimization-that-users-receive" title="Permanent link">&para;</a></h2>
 <p>For dense GEMM’s conventional work count, report <code>2MNKL</code> floating-point operations per invocation and state what the timer includes. Sparse dense-equivalent rates, fused non-GEMM work and integer operation counts need their own conventions. State whether allocations, workspace initialization, transfers, graph setup or CPU reference work are excluded.</p>
 <p>Keep a record containing the exact CUTLASS commit, source hash, compiler/flags, driver, device, tile/cluster/schedule, shape/layout/strides, alpha/beta, warmup, repetitions, verification result and timing distribution. Then use <a href="../14-nsight-systems/">Systems</a> to determine whether the selected kernel matters to the application’s critical path, and <a href="../13-nsight-compute/">Compute</a> for the kernel’s detailed limiting resources.</p>
@@ -2563,6 +2652,20 @@
 </details>
 <h2 id="continue-through-the-advanced-track">Continue through the advanced track<a class="headerlink" href="#continue-through-the-advanced-track" title="Permanent link">&para;</a></h2>
 <p><a href="../25-epilogue-fusion/">Chapter 25</a> develops a complete fused ReLU variant and its independent reference. <a href="../26-precision-block-scaling/">Chapter 26</a> separates format, scale-layout and kernel error. <a href="../27-benchmarking-integration/">Chapter 27</a> defines a reproducible comparison, and <a href="../28-workbook-capstone/">Chapter 28</a> closes the sequence with staged labs and worked answers.</p>
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>Read one selected tile’s complete lifetime: acquire the correct generation, establish transfer completion, consume it, finish asynchronous readers and release storage.</p>
+</li>
+<li>
+<p>Pipeline types and schedule pairs have distinct contracts. Prologue, steady state and drain must reflect the tiles that actually exist.</p>
+</li>
+<li>
+<p>More stages or larger tiles trade latency hiding against shared storage, registers, residency and tails. Validate each change before measuring <a href="../25-epilogue-fusion/">fusion</a> or other optimizations.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

@@ -1912,6 +1912,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-27-companion-guide-measure-the-useful-operation-and-preserve-framework-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 27 Companion Guide — Measure the Useful Operation and Preserve Framework Semantics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-identify-the-implementation-before-comparing-it" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1964,6 +1975,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="5 — Place CUDA events around the actual dependency path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-timing-interval-one-api-call-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A timing interval, one API call at a time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#work-through-amortization-without-hiding-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Work through amortization without hiding setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2015,6 +2054,17 @@
     <span class="md-ellipsis">
       
         10 — A useful experiment ends with a reproducible decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2092,6 +2142,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-27-companion-guide-measure-the-useful-operation-and-preserve-framework-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 27 Companion Guide — Measure the Useful Operation and Preserve Framework Semantics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-identify-the-implementation-before-comparing-it" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2143,6 +2204,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="5 — Place CUDA events around the actual dependency path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-timing-interval-one-api-call-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A timing interval, one API call at a time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#work-through-amortization-without-hiding-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Work through amortization without hiding setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2201,6 +2290,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2227,10 +2327,16 @@
 
 
 <h1 id="27-benchmarking-and-framework-integration-without-changing-the-question">27. Benchmarking and Framework Integration Without Changing the Question<a class="headerlink" href="#27-benchmarking-and-framework-integration-without-changing-the-question" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch27/overview.svg?v=31c1399d63ea"><img alt="Fair benchmarking and integration: contracts, streams and measurement scope" src="../images/ch27/overview.svg?v=31c1399d63ea" /></a></p>
+<h2 id="lesson-27-companion-guide-measure-the-useful-operation-and-preserve-framework-semantics">Lesson 27 Companion Guide — Measure the Useful Operation and Preserve Framework Semantics<a class="headerlink" href="#lesson-27-companion-guide-measure-the-useful-operation-and-preserve-framework-semantics" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/27-workshop.svg?v=643b2a6e0148"><img alt="CHAPTER 27: 27. Benchmarking and Framework Integration Without Changing the Question — conceptual chapter illustration" src="../images/chapter-openers/27-workshop.svg?v=643b2a6e0148" /></a></p>
+<div class="admonition tip">
+<p class="admonition-title">Your goal in this chapter</p>
+<p>Define a fair correctness and timing contract, distinguish serial latency from concurrent throughput, and preserve device, stream and lifetime rules in integration. Read <a href="../24-cutlass-pipelines/">pipeline costs</a>, <a href="../25-epilogue-fusion/">fusion</a> and <a href="../26-precision-block-scaling/">precision</a> first.</p>
+</div>
 <p>A kernel benchmark answers a narrow question about a particular operation on a particular system. A framework integration must additionally preserve layouts, numerical behavior, stream ordering and object lifetimes. Combining these tasks without an explicit contract can produce an impressive number for an operation the application never requested.</p>
 <p>This chapter turns a verified Hopper GEMM into an experiment someone else can interpret. Its timing examples are arithmetic illustrations, not new measurements. The book's captured execution records remain the source of actual dates, systems, commands and outputs.</p>
 <h2 id="1-identify-the-implementation-before-comparing-it">1 — Identify the implementation before comparing it<a class="headerlink" href="#1-identify-the-implementation-before-comparing-it" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch27/overview.svg?v=31c1399d63ea"><img alt="Fair benchmarking and integration: contracts, streams and measurement scope" src="../images/ch27/overview.svg?v=31c1399d63ea" /></a></p>
 <p>CUTLASS C++ is a collection of CUDA C++ templates and components. CuTe C++ supplies tensor and layout abstractions used within that ecosystem. CuTe DSL is a separate Python kernel-authoring interface in the CUTLASS Python stack; it generates device code while retaining explicit layout, copy, MMA and pipeline concepts.</p>
 <p>Triton is another compiler and programming model. A function decorated with <code>@triton.jit</code> and written with <code>triton.language</code> remains Triton even if a surrounding Python class is named <code>CuTeGEMM</code>. Likewise, a handwritten WMMA kernel does not become a CUTLASS GEMM because its source includes a CUTLASS header. PyTorch tensor operations are a framework-level interface, whose backend depends on the operation, configuration, build and hardware.</p>
 <p>These distinctions matter when recording dependencies and interpreting results. Pin a CUTLASS C++ checkout separately from any Python DSL package. The C++ revision used elsewhere in this book is not an automatic promise that a newer DSL wheel supports the same CUDA, Python or driver versions. Check the selected release's installation requirements. <a href="https://docs.nvidia.com/cutlass/4.8.0/media/docs/pythonDSL/overview.html">CUTLASS Python overview</a> and <a href="https://triton-lang.org/main/programming-guide/chapter-1/introduction.html">Triton's programming model</a> describe different interfaces, not successive performance tiers.</p>
@@ -2276,6 +2382,38 @@
 <p>For one stream, record a start event, enqueue the intended operations, record a stop event on the same stream, wait for the stop event, and read elapsed time. Include warmup before this interval and check asynchronous errors at a synchronization boundary. Do not measure only the CPU duration of an asynchronous launch and call it kernel time.</p>
 <p>For several streams, establish a start dependency in each participating stream and join all terminal work before the stop event. An event on the launcher's stream alone does not cover unrelated streams. The measured completion must mean the output is safe for the next consumer. <a href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#using-cuda-gpu-timers">CUDA event timing guidance</a> explains the synchronization assumptions behind device timing.</p>
 <p>A host wall-clock timer can measure application latency if it waits for the required completion. It will include host dispatch and other requested work, so label it accordingly. CUDA event timing and host wall-clock timing can both be correct while answering different questions. Avoid comparing one method's event interval with another method's end-to-end wall time.</p>
+<h3 id="a-timing-interval-one-api-call-at-a-time">A timing interval, one API call at a time<a class="headerlink" href="#a-timing-interval-one-api-call-at-a-time" title="Permanent link">&para;</a></h3>
+<p>The following is an excerpt pattern, not a standalone program. Assume <code>stream</code>, <code>start</code> and <code>stop</code> have been created, inputs are prepared, and <code>launch_checked_gemm(stream)</code> submits the already-validated operation while checking its CUTLASS status. Here <code>check</code> checks a CUDA return value, as in the complete overlap example from Chapter 14.</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">check</span><span class="p">(</span><span class="n">cudaEventRecord</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="n">stream</span><span class="p">));</span><span class="w"> </span><span class="c1">// Mark the beginning on this stream.</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">launch_checked_gemm</span><span class="p">(</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="n">stream</span><span class="p">);</span><span class="w"> </span><span class="c1">// Enqueue the operation on that SAME stream.</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">check</span><span class="p">(</span><span class="n">cudaGetLastError</span><span class="p">());</span><span class="w"> </span><span class="c1">// Check the CUDA launch boundary too.</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">check</span><span class="p">(</span><span class="n">cudaEventRecord</span><span class="p">(</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="n">stop</span><span class="p">,</span><span class="w"> </span><span class="n">stream</span><span class="p">));</span><span class="w"> </span><span class="c1">// This marker follows the operation.</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">check</span><span class="p">(</span><span class="n">cudaEventSynchronize</span><span class="p">(</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="n">stop</span><span class="p">));</span><span class="w"> </span><span class="c1">// Wait until the finish marker is reached.</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="kt">float</span><span class="w"> </span><span class="n">elapsed_ms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">;</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">check</span><span class="p">(</span><span class="n">cudaEventElapsedTime</span><span class="p">(</span><span class="o">&amp;</span><span class="n">elapsed_ms</span><span class="p">,</span><span class="w"> </span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="n">stop</span><span class="p">));</span>
+</span></code></pre></div>
+<ol>
+<li><strong>Put the start in the queue.</strong> Recording an event submits a marker; it does not mean all queued work finished before the CPU returned.</li>
+<li><strong>Submit the actual operation.</strong> The device stream orders the GEMM after <code>start</code>. A helper that launches on another stream would break this simple proof.</li>
+<li><strong>Put the stop after the work.</strong> The same stream cannot reach <code>stop</code> until its earlier GEMM finishes.</li>
+<li><strong>Wait for the result.</strong> Synchronizing <code>stop</code> makes the elapsed interval available and provides a boundary at which asynchronous errors can surface.</li>
+<li><strong>Read the units.</strong> <code>cudaEventElapsedTime</code> returns milliseconds. An illustrative <code>elapsed_ms=0.085</code> means 85 microseconds, not 85 milliseconds.</li>
+</ol>
+<p>For two worker streams, the complete Chapter 14 program adds <code>cudaStreamWaitEvent</code> at the beginning and joins two completion events at the end. Trace those arrows before reusing the pattern; placing <code>stop</code> on an unrelated stream without the join measures a different interval.</p>
+<h3 id="work-through-amortization-without-hiding-setup">Work through amortization without hiding setup<a class="headerlink" href="#work-through-amortization-without-hiding-setup" title="Permanent link">&para;</a></h3>
+<p>Suppose, purely as a paper exercise, packing costs 4 ms once and each prepared request costs 0.2 ms. For ten serial requests:</p>
+<ol>
+<li>Recurring work is <code>10×0.2=2 ms</code>.</li>
+<li>Total including setup is <code>4+2=6 ms</code>.</li>
+<li>Average request cost including setup is <code>6/10=0.6 ms</code>.</li>
+<li>The prepared request cost is still 0.2 ms. Report both quantities with their boundaries.</li>
+<li>At 100 requests the amortized cost becomes <code>(4+100×0.2)/100=0.24 ms</code>. Reuse changed the accounting, not the speed of the prepared kernel.</li>
+</ol>
+<p><strong>Pause and check.</strong> If requests overlap, can you replace makespan with the sum of their individual durations? No: overlapping intervals would be counted twice. Time the actual joined completion boundary instead.</p>
 <h2 id="6-calculate-throughput-in-consistent-units">6 — Calculate throughput in consistent units<a class="headerlink" href="#6-calculate-throughput-in-consistent-units" title="Permanent link">&para;</a></h2>
 <p>A conventional dense GEMM work count is <code>2*M*N*K</code> floating-point operations. This treats each multiply-add as two operations; epilogue operations usually are not included in that conventional count. State when a result is instead batched, sparse, quantized or counts a different workload.</p>
 <p>For M=N=2048 and K=4096:</p>
@@ -2297,6 +2435,20 @@
 <h2 id="10-a-useful-experiment-ends-with-a-reproducible-decision">10 — A useful experiment ends with a reproducible decision<a class="headerlink" href="#10-a-useful-experiment-ends-with-a-reproducible-decision" title="Permanent link">&para;</a></h2>
 <p>Publish what changed, the matching correctness evidence, the measured scope and the observed tradeoff. An efficient specialized kernel may win for repeated fixed shapes while losing when packing or compilation cannot be amortized. A library fallback may serve the remaining cases best.</p>
 <p>The final deliverable is a validated dispatch decision with readable records, not a universal ranking of PyTorch, Triton, CuTe DSL and C++. Each can express different levels of control, and each can generate fast or slow implementations. The next workbook asks you to change one design choice at a time, predict its effect, verify correctness and explain the measurements that actually occur.</p>
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>Freeze the operation, layout, precision and required preparation before comparing implementations; correctness is a prerequisite for timing.</p>
+</li>
+<li>
+<p>Name timing boundaries, join actual dependencies, report variation and match throughput to the executed arithmetic. Concurrent request intervals do not add into a batch makespan.</p>
+</li>
+<li>
+<p>Integration must preserve device selection, current-stream ordering, allocation lifetime and supported-input behavior. Turn these contracts into the <a href="../28-workbook-capstone/">workbook capstone</a>.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

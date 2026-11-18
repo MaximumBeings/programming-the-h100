@@ -1486,6 +1486,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-17-companion-guide-connect-tensor-engines-tile-views-and-safe-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 17 Companion Guide — Connect Tensor Engines, Tile Views and Safe Access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-start-with-the-engine-and-its-lifetime" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1504,6 +1515,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="2 — Slicing selects coordinates; it does not copy values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#walk-through-a-padded-fp32-view-without-moving-its-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk through a padded FP32 view without moving its data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1545,6 +1573,17 @@
     <span class="md-ellipsis">
       
         6 — Check every coordinate, including the tail
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2048,6 +2087,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-17-companion-guide-connect-tensor-engines-tile-views-and-safe-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 17 Companion Guide — Connect Tensor Engines, Tile Views and Safe Access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-start-with-the-engine-and-its-lifetime" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2066,6 +2116,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="2 — Slicing selects coordinates; it does not copy values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#walk-through-a-padded-fp32-view-without-moving-its-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk through a padded FP32 view without moving its data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2113,6 +2180,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2139,10 +2217,16 @@
 
 
 <h1 id="17-cute-tensors-views-slicing-tiling-and-predication">17. CuTe Tensors — Views, Slicing, Tiling and Predication<a class="headerlink" href="#17-cute-tensors-views-slicing-tiling-and-predication" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch17/overview.svg?v=f6ae45a76281"><img alt="A tensor view is tiled, partitioned and paired with coordinate predicates before memory access." src="../images/ch17/overview.svg?v=f6ae45a76281" /></a></p>
+<h2 id="lesson-17-companion-guide-connect-tensor-engines-tile-views-and-safe-access">Lesson 17 Companion Guide — Connect Tensor Engines, Tile Views and Safe Access<a class="headerlink" href="#lesson-17-companion-guide-connect-tensor-engines-tile-views-and-safe-access" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/17-workshop.svg?v=30870011dda8"><img alt="CHAPTER 17: 17. CuTe Tensors — Views, Slicing, Tiling and Predication — conceptual chapter illustration" src="../images/chapter-openers/17-workshop.svg?v=30870011dda8" /></a></p>
+<div class="admonition tip">
+<p class="admonition-title">Your goal in this chapter</p>
+<p>Explain which storage a tensor owns or references, derive slices and tile origins, and predicate the original logical domain after partitioning. Read <a href="../16-cute-layout-algebra/">layout algebra</a> first.</p>
+</div>
 <p>A layout describes an indexing function. A tensor adds a data engine: a pointer-like object or owned storage on which that function operates. This distinction connects <a href="../16-cute-layout-algebra/">layout algebra</a> to a real kernel without turning every shape transformation into an imaginary memory transfer.</p>
 <p>The examples use the pinned <strong>CUTLASS v4.3.6 CuTe C++ API</strong> and assume <code>#include &lt;cute/tensor.hpp&gt;</code> and <code>using namespace cute;</code>. Consult the official <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/03_tensor.md">tensor tutorial</a> and <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/0y_predication.md">predication tutorial</a> for their full contracts. The snippets below are explanatory fragments inside the appropriate host/device context, not standalone kernels or captured execution output.</p>
 <h2 id="1-start-with-the-engine-and-its-lifetime">1 — Start with the engine and its lifetime<a class="headerlink" href="#1-start-with-the-engine-and-its-lifetime" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch17/overview.svg?v=f6ae45a76281"><img alt="A tensor view is tiled, partitioned and paired with coordinate predicates before memory access." src="../images/ch17/overview.svg?v=f6ae45a76281" /></a></p>
 <p>A nonowning tensor combines an existing pointer with a layout:</p>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">matrix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_tensor</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="n">make_gmem_ptr</span><span class="p">(</span><span class="n">ptr</span><span class="p">),</span>
@@ -2155,7 +2239,7 @@
 </span></code></pre></div>
 <p>This declares owned storage with a static shape; it is not an alias of <code>matrix</code>. On device, register placement is the intention, while actual register use or spilling is determined by compilation and resource constraints. Do not use a large owning tensor as an implicit dynamic allocator. Construction also does not promise that every scalar has the numerical initialization your algorithm requires.</p>
 <h2 id="2-slicing-selects-coordinates-it-does-not-copy-values">2 — Slicing selects coordinates; it does not copy values<a class="headerlink" href="#2-slicing-selects-coordinates-it-does-not-copy-values" title="Permanent link">&para;</a></h2>
-<p>Consider a compact row-major tensor of shape <code>(3,4)</code> with base pointer P. A fixed coordinate is selected; an underscore keeps that mode:</p>
+<p>For this separate example, construct <code>matrix</code> with <code>M=3</code>, <code>N=4</code> and <code>ld=4</code> using the preceding <code>make_tensor</code> pattern, and call its allocation base P. A fixed coordinate is selected; an underscore keeps that mode:</p>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">row_one</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">);</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">column_two</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">matrix</span><span class="p">(</span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
 </span></code></pre></div>
@@ -2193,11 +2277,29 @@
 <p>Reading <code>column_two(1)</code> selects original coordinate <code>(1,2)</code> at offset 6. The column view is strided, not newly packed. Writing through a nonconst slice modifies the underlying allocation; two slices may alias.</p>
 <p>Nested coordinates need nested slicing decisions. Retaining an entire hierarchical mode with <code>_</code> differs structurally from retaining its leaves with <code>make_coord(_,_)</code>. Even if both views enumerate the same elements, their ranks and mode profiles can differ. This matters when a later copy or MMA partition expects a specific hierarchy.</p>
 <p>A useful debugging practice is to write each slice's retained modes, pointer offset and strides before checking values. That makes it harder to mistake a storage transformation for a view transformation.</p>
+<h3 id="walk-through-a-padded-fp32-view-without-moving-its-data">Walk through a padded FP32 view without moving its data<a class="headerlink" href="#walk-through-a-padded-fp32-view-without-moving-its-data" title="Permanent link">&para;</a></h3>
+<p>Use a separate concrete case: three rows, four logical columns, eight allocated FP32 words per row. Assume the existing allocation has logical value <code>100*m+n</code> at <code>(m,n)</code> and padding value −1. The pointer <code>ptr</code> refers to that allocation; this is a kernel-context reading sketch, not an allocation or launch:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">padded</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">make_tensor</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_gmem_ptr</span><span class="p">(</span><span class="n">ptr</span><span class="p">),</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_layout</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">make_shape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">                      </span><span class="n">cute</span><span class="o">::</span><span class="n">make_stride</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{})));</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">auto</span><span class="w"> </span><span class="n">selected_row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">padded</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">_</span><span class="p">);</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">auto</span><span class="w"> </span><span class="n">selected_column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">padded</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+</span></code></pre></div>
+<ol>
+<li><code>padded</code> names offsets <code>0..3</code>, <code>8..11</code> and <code>16..19</code>. It does not read or initialize those words merely by construction.</li>
+<li>Fixing the row at one advances the view's base by eight words. <code>selected_row(2)</code> adds two more, reaching offset ten and logical value 102.</li>
+<li>Fixing the column at two advances its base by two words and retains a row stride of eight. <code>selected_column(1)</code> also reaches <code>2+8=10</code>, so the two slices alias at this element.</li>
+<li>With FP32 words, offset ten is a 40-byte displacement. Element offsets do not turn into byte offsets until the element type is included.</li>
+<li>A store through either nonconst slice changes the same original word. A new slice is not an independent copy and must not outlive the allocation.</li>
+</ol>
+<p><strong>Expected result:</strong> the selected row contains <code>100,101,102,103</code>; the selected column contains <code>2,102,202</code>. <strong>Check:</strong> the shared intersection must be 102. <strong>Pitfall:</strong> treating the column as contiguous would read original offsets <code>2,3,4</code>, including padding, instead of <code>2,10,18</code>.</p>
+<p>Now suppose a consumer needs a compact 3×4 destination. Give that destination stride <code>(4,1)</code> and issue a predicated copy from the padded source using shared logical coordinates. Logical <code>(2,3)</code> then reads source offset <code>2×8+3=19</code> and writes destination offset <code>2×4+3=11</code>, preserving value 203. Merely replacing the source view's stride eight with four would instead read offset 11, value 103. This is the concrete difference between <strong>selecting a new view</strong> and <strong>moving the intended values</strong>.</p>
 <h2 id="3-tiling-groups-a-region-and-its-repetitions">3 — Tiling groups a region and its repetitions<a class="headerlink" href="#3-tiling-groups-a-region-and-its-repetitions" title="Permanent link">&para;</a></h2>
 <p>Take a tensor of shape <code>(8,24)</code> and divide it into <code>(4,8)</code> tiles. There are two tile positions along the first mode and three along the second:</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">tiled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zipped_divide</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span><span class="w"> </span><span class="n">make_tile</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">8</span><span class="o">&gt;</span><span class="p">{}));</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">tile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">local_tile</span><span class="p">(</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="n">matrix</span><span class="p">,</span><span class="w"> </span><span class="n">make_tile</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">8</span><span class="o">&gt;</span><span class="p">{}),</span><span class="w"> </span><span class="n">make_coord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">tiled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zipped_divide</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span><span class="w"> </span><span class="n">make_tile</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">8</span><span class="o">&gt;</span><span class="p">{}));</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">tile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">local_tile</span><span class="p">(</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">matrix</span><span class="p">,</span><span class="w"> </span><span class="n">make_tile</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">8</span><span class="o">&gt;</span><span class="p">{}),</span><span class="w"> </span><span class="n">make_coord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span>
 </span></code></pre></div>
 <p>Here <code>matrix</code> refers to this <code>(8,24)</code> example, not the earlier <code>(3,4)</code> object. The zipped view groups its modes as <code>((TileM,TileN),(RestM,RestN))</code>, giving <code>((4,8),(2,3))</code>. <code>local_tile</code> selects a repetition and retains the tile coordinates. For compact row-major storage, tile <code>(1,2)</code> begins at <code>(4,16)</code>, element offset <code>4×24+16=112</code>.</p>
 <table>
@@ -2236,10 +2338,10 @@
 <p>Now use logical shape <code>(37,70)</code> with the same <code>(4,32)</code> ownership tile. Ceiling division requires <code>10×3=30</code> CTAs. Their rectangular coverage is 40 rows by 96 columns, larger than the valid tensor. The final CTA begins at <code>(36,64)</code> and has only one valid row and six valid columns.</p>
 <p>Partitioning the data tensor into these tiles does not universally predicate the resulting loads/stores. A pointer to a tile can be representable even when some tile coordinates lie outside the allocation. Never dereference an element and then test whether it was valid.</p>
 <p>Build a parallel identity tensor whose <em>values are coordinates</em>:</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_identity_tensor</span><span class="p">(</span><span class="n">make_shape</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">));</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">coordinate_tile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">local_tile</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">                                  </span><span class="n">make_tile</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">32</span><span class="o">&gt;</span><span class="p">{}),</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">                                  </span><span class="n">make_coord</span><span class="p">(</span><span class="n">tile_m</span><span class="p">,</span><span class="w"> </span><span class="n">tile_n</span><span class="p">));</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">coordinates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_identity_tensor</span><span class="p">(</span><span class="n">make_shape</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">));</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">coordinate_tile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">local_tile</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">                                  </span><span class="n">make_tile</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">32</span><span class="o">&gt;</span><span class="p">{}),</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">                                  </span><span class="n">make_coord</span><span class="p">(</span><span class="n">tile_m</span><span class="p">,</span><span class="w"> </span><span class="n">tile_n</span><span class="p">));</span>
 </span></code></pre></div>
 <p>Apply the same tiling and thread/value partition to data and coordinates. For each assigned coordinate <code>coord</code>, validity is <code>get&lt;0&gt;(coord)&lt;M &amp;&amp; get&lt;1&gt;(coord)&lt;N</code>, assuming nonnegative generated indices. Identity tensors carry coordinate information; they do not wrap, clamp or authorize an out-of-range memory access. If a transformation rounds or extends a domain, keep the original logical extents for the predicate.</p>
 <p>For a reduction load, the invalid element often needs the additive neutral value zero. For a store, suppress invalid writes. A vector instruction needs a legal predicate/alignment contract for its entire accessed width; a predicate derived for one scalar is not automatically sufficient for a vector that crosses the boundary.</p>
@@ -2249,6 +2351,20 @@
 <p><strong>Worked answer.</strong> Its origin is <code>(36,64)</code>. Only local row zero is valid, and only local columns zero through five are valid. With <code>(tid/32,tid%32)</code>, thread IDs 0 through 5 may store; the other 122 must not. For example, thread 32 targets global row 37, already outside the logical domain.</p>
 <p><strong>Exercise.</strong> Can a full-tile shared-memory initialization replace the global predicate?</p>
 <p><strong>Worked answer.</strong> No. It can initialize safe shared storage, but it cannot make an invalid global load legal. Predicate the global access first and arrange the intended shared/register value for invalid inputs. Retain uniform participation in any required block/warp synchronization even when an individual thread has no valid payload. Continue with <a href="../18-cta-indexing/">CTA offsets and the K loop</a> to connect those coordinates to GEMM addresses.</p>
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>A tensor combines an engine with a layout. Pointer tags and slices describe storage access without allocating, copying or extending the allocation lifetime.</p>
+</li>
+<li>
+<p>Tile dimensions do not replace global strides. Partitioning assigns work, while an actual operation performs the transfer or computation.</p>
+</li>
+<li>
+<p>Partition an identity-coordinate tensor alongside the data and use the original extents for bounds checks; continue with <a href="../18-cta-indexing/">CTA and K-loop indexing</a>.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

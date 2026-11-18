@@ -1,0 +1,13 @@
+$ python3 /home/ubuntu/h100-expanded-review-20261118/input/h100-workshop-device-query.py
+{
+  "utc": "2026-11-18T14:25:59.842805+00:00",
+  "device_ordinal": 0,
+  "header": "/usr/include/cuda.h",
+  "attributes": {
+    "MULTIPROCESSOR_COUNT": 114,
+    "ASYNC_ENGINE_COUNT": 3,
+    "MAX_THREADS_PER_MULTIPROCESSOR": 2048,
+    "MAX_SHARED_MEMORY_PER_MULTIPROCESSOR": 233472,
+    "MAX_SHARED_MEMORY_PER_BLOCK_OPTIN": 232448
+  }
+}

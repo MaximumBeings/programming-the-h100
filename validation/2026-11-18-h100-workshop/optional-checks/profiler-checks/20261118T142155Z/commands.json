@@ -1,0 +1,153 @@
+[
+  {
+    "name": "resources-memory",
+    "kind": "metadata",
+    "command": [
+      "free",
+      "-h"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:21:55.173217+00:00",
+    "finished_utc": "2026-11-18T14:21:55.181527+00:00",
+    "seconds": 0.008312379000017245,
+    "log": "resources-memory.log",
+    "log_sha256": "37c1e662f8d368bed829dcd54f4ee3e60ee410ba79ca04151e8ff2e7fab20248",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "resources-cpus",
+    "kind": "metadata",
+    "command": [
+      "nproc"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:21:55.181933+00:00",
+    "finished_utc": "2026-11-18T14:21:55.186799+00:00",
+    "seconds": 0.004868288999887227,
+    "log": "resources-cpus.log",
+    "log_sha256": "172bd544cfbec4b34723caf0a8bd7b0e1fb64e9951713f0a3a4df330f43f4011",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "nvcc-version",
+    "kind": "metadata",
+    "command": [
+      "nvcc",
+      "--version"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:21:55.187355+00:00",
+    "finished_utc": "2026-11-18T14:21:55.195642+00:00",
+    "seconds": 0.008307872999921528,
+    "log": "nvcc-version.log",
+    "log_sha256": "7665bd15fcd06506c52a5d04eee5de90155154bae8b6d47be529739c301865fe",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "gpu",
+    "kind": "metadata",
+    "command": [
+      "nvidia-smi",
+      "--query-gpu=name,uuid,driver_version",
+      "--format=csv"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:21:55.196604+00:00",
+    "finished_utc": "2026-11-18T14:21:55.261435+00:00",
+    "seconds": 0.06484360600006767,
+    "log": "gpu.log",
+    "log_sha256": "748189bff0a9ad2bcd4b2c761ef002944f235cb0728fa905b878b9986a18633f",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "single-profiler-configure",
+    "kind": "configure",
+    "command": [
+      "cmake",
+      "-S",
+      "/home/ubuntu/h100-expanded-review-20261118/cutlass",
+      "-B",
+      "/home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler",
+      "-G",
+      "Ninja",
+      "-DCUTLASS_NVCC_ARCHS=90a",
+      "-DCUTLASS_ENABLE_LIBRARY=ON",
+      "-DCUTLASS_ENABLE_PROFILER=ON",
+      "-DCUTLASS_LIBRARY_OPERATIONS=gemm",
+      "-DCUTLASS_LIBRARY_KERNELS=cutlass3x_sm90_tensorop_gemm_f16_f16_f32_void_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_tma",
+      "-DCUTLASS_ENABLE_CUBLAS=ON",
+      "-DCUTLASS_ENABLE_EXAMPLES=OFF",
+      "-DCUTLASS_ENABLE_TESTS=OFF"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:21:55.262336+00:00",
+    "finished_utc": "2026-11-18T14:21:59.091681+00:00",
+    "seconds": 3.8293588849999196,
+    "log": "single-profiler-configure.log",
+    "log_sha256": "77db89385e57a3371d0d16ff442951f53aec138541ff03a9375a867016b2c5bd",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "single-profiler-build",
+    "kind": "build",
+    "command": [
+      "cmake",
+      "--build",
+      "/home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler",
+      "--target",
+      "cutlass_profiler",
+      "-j",
+      "8"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:21:59.092689+00:00",
+    "finished_utc": "2026-11-18T14:28:17.505454+00:00",
+    "seconds": 378.4127836299999,
+    "log": "single-profiler-build.log",
+    "log_sha256": "d6a0ef88289cfed9bb3fced8987788d5d3e98ee94b733941a457f65272a09287",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "single-profiler-enumerate",
+    "kind": "metadata",
+    "command": [
+      "/home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler/tools/profiler/cutlass_profiler",
+      "--mode=enumerate",
+      "--operation=Gemm"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:28:17.506594+00:00",
+    "finished_utc": "2026-11-18T14:28:18.123832+00:00",
+    "seconds": 0.6172538870000608,
+    "log": "single-profiler-enumerate.log",
+    "log_sha256": "016950d97211f5de1b44b7b3022bea8e571abf0ec88f2eca75de1278482c406e",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  },
+  {
+    "name": "profiler-run",
+    "kind": "cutlass_profiler_workload",
+    "command": [
+      "/home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler/tools/profiler/cutlass_profiler",
+      "--operation=Gemm",
+      "--kernels=cutlass3x_sm90_tensorop_gemm_f16_f16_f32_void_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_tma",
+      "--m=512",
+      "--n=512",
+      "--k=512",
+      "--alpha=1",
+      "--beta=0",
+      "--providers=cutlass",
+      "--verification-enabled=true",
+      "--verification-providers=cublas",
+      "--warmup-iterations=5",
+      "--profiling-iterations=20",
+      "--output=/home/ubuntu/h100-expanded-review-20261118/profiler-checks/20261118T142155Z/cutlass-hopper"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:28:18.124993+00:00",
+    "finished_utc": "2026-11-18T14:28:18.792226+00:00",
+    "seconds": 0.6672474719998718,
+    "log": "profiler-run.log",
+    "log_sha256": "c9bbaf8db6fee03b238a3d14de3e1afda3a0b1c6663913a414332ee4025ace06",
+    "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd"
+  }
+]

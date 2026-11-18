@@ -1,0 +1,30 @@
+$ cmake -S /home/ubuntu/h100-expanded-review-20261118/cutlass -B /home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler -G Ninja -DCUTLASS_NVCC_ARCHS=90a -DCUTLASS_ENABLE_LIBRARY=ON -DCUTLASS_ENABLE_PROFILER=ON -DCUTLASS_LIBRARY_OPERATIONS=gemm -DCUTLASS_LIBRARY_KERNELS=cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_nosmem -DCUTLASS_ENABLE_CUBLAS=ON -DCUTLASS_ENABLE_EXAMPLES=OFF -DCUTLASS_ENABLE_TESTS=OFF
+-- CMake Version: 3.28.3
+-- CUTLASS 4.3.6
+-- CUDART: /usr/lib/x86_64-linux-gnu/libcudart.so
+-- CUDA Driver: /usr/lib/x86_64-linux-gnu/libcuda.so
+-- NVRTC: Not Found
+-- Default Install Location: install
+-- CUDA Compilation Architectures: 90a
+-- Enable caching of reference results in conv unit tests
+-- Enable rigorous conv problem sizes in conv unit tests
+-- Grid Dependency Control (GDC) is enabled for SM100 kernels (required for programmatic dependent launches).
+-- Using the following NVCC flags: 
+  --expt-relaxed-constexpr
+  -ftemplate-backtrace-limit=0
+  -DCUTLASS_TEST_LEVEL=0
+  -DCUTLASS_TEST_ENABLE_CACHED_RESULTS=1
+  -DCUTLASS_CONV_UNIT_TEST_RIGOROUS_SIZE_ENABLED=1
+  -DCUTLASS_DEBUG_TRACE_LEVEL=0
+  -Xcompiler=-Wconversion
+  -Xcompiler=-fno-strict-aliasing
+-- Configuring cublas ...
+-- cuBLAS: /usr/lib/x86_64-linux-gnu/libcublas.so
+-- cuBLAS: /usr/include
+-- Configuring cuBLAS ... done.
+-- CUTLASS: Applying -mcmodel=medium for large library support (Linux x86_64, GNU)
+-- Completed generation of library instances. See /home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler/tools/library/library_instance_generation.log for more information.
+-- CUTLASS: Applying -mcmodel=medium for large library support (Linux x86_64, GNU)
+-- Configuring done (3.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler

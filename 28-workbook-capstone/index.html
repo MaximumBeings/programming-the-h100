@@ -1938,6 +1938,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-28-companion-guide-progress-from-coordinate-proofs-to-a-reproducible-capstone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 28 Companion Guide — Progress from Coordinate Proofs to a Reproducible Capstone
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-beginner-lab-distinguish-a-view-from-storage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1945,6 +1956,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="1 — Beginner lab: distinguish a view from storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solve-the-first-lab-without-skipping-an-address" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solve the first lab without skipping an address
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2041,6 +2069,17 @@
     <span class="md-ellipsis">
       
         10 — Capstone: deliver a reproducible kernel comparison
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2090,6 +2129,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-28-companion-guide-progress-from-coordinate-proofs-to-a-reproducible-capstone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 28 Companion Guide — Progress from Coordinate Proofs to a Reproducible Capstone
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-beginner-lab-distinguish-a-view-from-storage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2097,6 +2147,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="1 — Beginner lab: distinguish a view from storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solve-the-first-lab-without-skipping-an-address" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solve the first lab without skipping an address
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2199,6 +2266,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2225,14 +2303,36 @@
 
 
 <h1 id="28-cute-and-cutlass-workbook-from-coordinates-to-evidence">28. CuTe and CUTLASS Workbook — From Coordinates to Evidence<a class="headerlink" href="#28-cute-and-cutlass-workbook-from-coordinates-to-evidence" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch28/overview.svg?v=f73e2c02acab"><img alt="A progression from coordinate proofs through GPU kernels to a reproducible capstone report." src="../images/ch28/overview.svg?v=f73e2c02acab" /></a></p>
+<h2 id="lesson-28-companion-guide-progress-from-coordinate-proofs-to-a-reproducible-capstone">Lesson 28 Companion Guide — Progress from Coordinate Proofs to a Reproducible Capstone<a class="headerlink" href="#lesson-28-companion-guide-progress-from-coordinate-proofs-to-a-reproducible-capstone" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/28-workshop.svg?v=240845a1c8ef"><img alt="CHAPTER 28: 28. CuTe and CUTLASS Workbook — From Coordinates to Evidence — conceptual chapter illustration" src="../images/chapter-openers/28-workshop.svg?v=240845a1c8ef" /></a></p>
+<div class="admonition tip">
+<p class="admonition-title">Your goal in this chapter</p>
+<p>Solve the beginner, intermediate and advanced labs, explain each worked answer, and submit a kernel comparison with reproducible correctness and measurement evidence. Use <a href="../15-cute-layouts/">Chapters 15–18</a> for foundations and <a href="../19-tiled-copy/">Chapters 19–27</a> for implementation and measurement.</p>
+</div>
 <p>This workbook turns the preceding chapters into problems you can solve, explain and extend. Start with a pencil and a small coordinate enumerator, then move to the GPU. The worked numbers below are <strong>derived exercise answers</strong>, not captured hardware measurements. For actual compilation dates, system information and program outputs, follow the book's execution records. A correct paper exercise does not establish that a new kernel compiled or ran.</p>
 <p>Use the same pinned CUTLASS/CUDA environment as the preceding chapters. Preserve an unmodified working version before each experiment. Change one ownership rule, layout or schedule at a time; validate before timing. The beginner labs require arithmetic and small host-side checks. Intermediate labs require CUDA instruction and synchronization knowledge. Advanced labs combine the builder, precision and measurement chapters.</p>
 <h2 id="1-beginner-lab-distinguish-a-view-from-storage">1 — Beginner lab: distinguish a view from storage<a class="headerlink" href="#1-beginner-lab-distinguish-a-view-from-storage" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch28/overview.svg?v=f73e2c02acab"><img alt="A progression from coordinate proofs through GPU kernels to a reproducible capstone report." src="../images/ch28/overview.svg?v=f73e2c02acab" /></a></p>
 <p><strong>Problem.</strong> A two-dimensional tensor has shape <code>(3,4)</code> and element strides <code>(8,1)</code>. List its offsets, logical size, storage span and FP16 byte offset for coordinate <code>(2,3)</code>. Does creating a compact view remove the padding from an existing allocation?</p>
 <p><strong>Worked answer.</strong> Its rows reference offsets <code>0..3</code>, <code>8..11</code> and <code>16..19</code>. There are 12 logical elements. A positive-stride allocation extending through the largest referenced element needs 20 elements; reserving three complete padded rows would instead need 24. Coordinate <code>(2,3)</code> maps to element 19, hence byte offset 38 for FP16. The gaps are real locations in the padded allocation, not additional tensor coordinates.</p>
 <p>Constructing another layout changes the address interpretation. It does not copy the original rows into compact storage. A compact view over the same pointer would read different elements in rows one and two. To remove padding, perform a correctly indexed copy into a separate compact destination. Check both layouts against an array containing distinct coordinate-derived values; zeros cannot reveal this error.</p>
 <p><strong>Extension.</strong> Set the first stride to zero. Several rows now alias. Such a broadcast view can describe repeated reads, but independent parallel stores to those logical coordinates need an explicit ownership or reduction policy.</p>
+<h3 id="solve-the-first-lab-without-skipping-an-address">Solve the first lab without skipping an address<a class="headerlink" href="#solve-the-first-lab-without-skipping-an-address" title="Permanent link">&para;</a></h3>
+<p>If the answer above felt too quick, put the pieces on paper. A stride is measured in <strong>elements</strong>, not bytes:</p>
+<ol>
+<li><strong>Read the domain.</strong> Shape <code>(3,4)</code> permits row <code>i=0,1,2</code> and column <code>j=0,1,2,3</code>.</li>
+<li><strong>Write the rule.</strong> Strides <code>(8,1)</code> mean <code>offset(i,j)=8i+j</code>. Advancing one row skips eight elements; advancing one column skips one.</li>
+<li><strong>Expand the first row.</strong> With <code>i=0</code>, substitute <code>j=0,1,2,3</code> to obtain offsets <code>0,1,2,3</code>.</li>
+<li><strong>Advance one row.</strong> With <code>i=1</code>, the row begins at <code>8×1=8</code>, so its offsets are <code>8,9,10,11</code>. Offsets <code>4..7</code> are not in this logical view.</li>
+<li><strong>Finish the table.</strong> With <code>i=2</code>, the offsets are <code>16,17,18,19</code>. Three rows times four columns give 12 logical coordinates; the span through offset 19 requires 20 element positions.</li>
+<li><strong>Convert the selected address.</strong> At <code>(2,3)</code>, <code>8×2+3=19</code> elements. FP16 occupies two bytes, so the address is <code>base+38</code> bytes. Do not multiply only one term by two.</li>
+<li><strong>Test the tempting shortcut.</strong> A compact row-major view would use <code>4i+j</code>. Its <code>(1,0)</code> reads offset 4, while the padded source's <code>(1,0)</code> reads offset 8. A new view did not move any values.</li>
+</ol>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>logical row 0 →  0  1  2  3    gap:  4  5  6  7
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>logical row 1 →  8  9 10 11    gap: 12 13 14 15
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>logical row 2 → 16 17 18 19
+</span></code></pre></div>
+<p><strong>Check yourself.</strong> At <code>(1,2)</code>, the element offset is <code>8+2=10</code>, and the FP16 byte offset is 20. If you obtained 6, you silently replaced the padded stride with a compact one. Return to the stride definition before continuing.</p>
 <h2 id="2-beginner-lab-rectangular-cta-origins-and-boundaries">2 — Beginner lab: rectangular CTA origins and boundaries<a class="headerlink" href="#2-beginner-lab-rectangular-cta-origins-and-boundaries" title="Permanent link">&para;</a></h2>
 <p><strong>Problem.</strong> Compute <code>D[M,N] = A[M,K] B[K,N]</code> with <code>M=130</code>, <code>N=70</code>, <code>K=35</code>. All matrices are compact row-major. Choose CTA tiles <code>BM=64</code>, <code>BN=32</code>, <code>BK=16</code>. For tile coordinates <code>(tile_m,tile_n,tile_k)=(1,2,1)</code>, find the origins and offsets used by local coordinates <code>m=3</code>, <code>n=2</code>, <code>k=5</code>. Then describe the final boundary tiles.</p>
 <p><strong>Worked answer.</strong> The tile origins are <code>(m0,n0,k0)=(64,64,16)</code>. The participating global coordinates are <code>(m,n,k)=(67,66,21)</code>:</p>
@@ -2309,6 +2409,20 @@
 <li>A conclusion tied to measurements: what changed, why the evidence supports it, and which configurations remain outside the test.</li>
 </ul>
 <p>A convincing capstone can explain a slowdown. It need not promise a fixed fraction of peak. If a layout change reduces conflicts but increases register pressure or conversion cost, record that tradeoff. The final skill is connecting coordinates, numerical semantics and synchronization to evidence another reader can reproduce.</p>
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>Trace coordinates through storage, thread/value ownership and instruction fragments before reasoning about bank conflicts or asynchronous stage reuse.</p>
+</li>
+<li>
+<p>Preserve the mathematical epilogue and quantization contract, and check operation counts, metadata and timing units independently.</p>
+</li>
+<li>
+<p>A capstone connects exact source and system records to full correctness checks, explicit timing scope and a measured conclusion. Derived exercise answers remain distinct from captured GPU results.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

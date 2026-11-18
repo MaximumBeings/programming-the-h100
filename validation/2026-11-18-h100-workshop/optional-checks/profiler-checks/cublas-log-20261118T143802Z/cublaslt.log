@@ -1,0 +1,23 @@
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtCreate] lightHandle=0X7FFE13C38F80
+[2026-11-18 14:38:03][cublasLt][9706][Info][cublasLtCreate] Discovered per-ctx shared memory size limit = 0
+[2026-11-18 14:38:03][cublasLt][9706][Info][cublasLtCreate] cuBLASLt v12.8 device #0: multiProcessorCount=114 maxSharedMemPerBlock=49152 maxSharedMemoryPerBlockOptin=232448
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmulDescCreate] matmulDesc=0X7FFE13C39100 computeType=COMPUTE_32F scaleType=0
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmulDescSetAttribute] matmulDesc=0X6045772A00D0 attr=MATMUL_DESC_TRANSA buf=0X7FFE13C390E8 sizeInBytes=4
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmulDescSetAttribute] matmulDesc=0X6045772A00D0 attr=MATMUL_DESC_TRANSB buf=0X7FFE13C390EC sizeInBytes=4
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatrixLayoutCreate] matLayout=0X7FFE13C39108 type=R_16F rows=512 cols=512 ld=512
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatrixLayoutCreate] matLayout=0X7FFE13C39110 type=R_16F rows=512 cols=512 ld=512
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatrixLayoutCreate] matLayout=0X7FFE13C39118 type=R_32F rows=512 cols=512 ld=512
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatrixLayoutCreate] matLayout=0X7FFE13C39120 type=R_32F rows=512 cols=512 ld=512
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmulPreferenceCreate] matmulPref=0X7FFE13C39128
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmulPreferenceSetAttribute] pref=0X60457999CC40 attr=MATMUL_PREF_MAX_WORKSPACE_BYTES buf=0X7FFE13C38BB8 sizeInBytes=8
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmulAlgoGetHeuristic] Adesc=[type=R_16F rows=512 cols=512 ld=512] Bdesc=[type=R_16F rows=512 cols=512 ld=512] Cdesc=[type=R_32F rows=512 cols=512 ld=512] Ddesc=[type=R_32F rows=512 cols=512 ld=512] preference=[maxWavesCount=0.0 maxWorkspaceSizeinBytes=33554432] computeDesc=[computeType=COMPUTE_32F scaleType=R_32F]
+[2026-11-18 14:38:03][cublasLt][9706][Info][cublasLtMatmulAlgoGetHeuristic]  heuristicResults=[66,66,66,66,66,66,66,66]
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmul] A=0X752CD4600000 Adesc=0X60457999BE10 B=0X752CBC000000 Bdesc=0X60457999BE60 C=0X752CB0000000 Cdesc=0X60457999BEB0 D=0X752CB0000000 Ddesc=0X60457999BF00 computeDesc=0X6045772A00D0 algo=0X7FFE13C39130 workSpace=0X0 workSpaceSizeInBytes=0 stream=0X0
+[2026-11-18 14:38:03][cublasLt][9706][Trace][cublasLtMatmul] A=0X752CD4600000 Adesc=[type=R_16F rows=512 cols=512 ld=512] B=0X752CBC000000 Bdesc=[type=R_16F rows=512 cols=512 ld=512] C=0X752CB0000000 Cdesc=[type=R_32F rows=512 cols=512 ld=512] D=0X752CB0000000 Ddesc=[type=R_32F rows=512 cols=512 ld=512] computeDesc=[computeType=COMPUTE_32F scaleType=R_32F] algo=[algoId=66 tile=MATMUL_TILE_64x64 stages=MATMUL_STAGES_64xAUTO customOption=1 clusterShape=CLUSTER_SHAPE_2x4x1] workSpace=0X0 workSpaceSizeInBytes=0 beta=? outOfPlace=0 stream=0X0
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmulPreferenceDestroy] matmulPref=0X60457999CC40
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatrixLayoutDestroy] matLayout=0X60457999BF00
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatrixLayoutDestroy] matLayout=0X60457999BEB0
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatrixLayoutDestroy] matLayout=0X60457999BE60
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatrixLayoutDestroy] matLayout=0X60457999BE10
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtMatmulDescDestroy] matmulDesc=0X6045772A00D0
+[2026-11-18 14:38:03][cublasLt][9706][Api][cublasLtDestroy] lightHandle=0X604576F23E50

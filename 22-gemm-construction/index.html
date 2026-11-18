@@ -1699,6 +1699,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-22-companion-guide-build-a-complete-reference-checked-simt-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 22 Companion Guide — Build a Complete Reference-Checked SIMT Baseline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-choose-a-contract-small-enough-to-prove" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1762,6 +1773,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="6 — Keep the accumulator alive across the whole reduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#work-one-ragged-output-through-all-three-reduction-tiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Work one ragged output through all three reduction tiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1813,6 +1841,17 @@
     <span class="md-ellipsis">
       
         Additional memory-safety record
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2103,6 +2142,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-22-companion-guide-build-a-complete-reference-checked-simt-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 22 Companion Guide — Build a Complete Reference-Checked SIMT Baseline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-choose-a-contract-small-enough-to-prove" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2166,6 +2216,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="6 — Keep the accumulator alive across the whole reduction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#work-one-ragged-output-through-all-three-reduction-tiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Work one ragged output through all three reduction tiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2223,6 +2290,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2249,12 +2327,14 @@
 
 
 <h1 id="22-build-and-validate-a-complete-tiled-gemm">22. Build and Validate a Complete Tiled GEMM<a class="headerlink" href="#22-build-and-validate-a-complete-tiled-gemm" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch22/overview.svg?v=eb999e690944"><img alt="A complete GEMM connects a clear mathematical contract to cooperative loads and checked output stores." src="../images/ch22/overview.svg?v=eb999e690944" /></a></p>
+<h2 id="lesson-22-companion-guide-build-a-complete-reference-checked-simt-baseline">Lesson 22 Companion Guide — Build a Complete Reference-Checked SIMT Baseline<a class="headerlink" href="#lesson-22-companion-guide-build-a-complete-reference-checked-simt-baseline" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/22-workshop.svg?v=8111def18145"><img alt="CHAPTER 22: 22. Build and Validate a Complete Tiled GEMM — conceptual chapter illustration" src="../images/chapter-openers/22-workshop.svg?v=8111def18145" /></a></p>
 <div class="admonition tip">
-<p class="admonition-title">Your goal</p>
+<p class="admonition-title">Your goal in this chapter</p>
 <p>Follow every address and barrier in a complete, bounded GEMM before replacing its scalar arithmetic with a Tensor Core collective. Read <a href="../18-cta-indexing/">CTA indexing</a>, <a href="../19-tiled-copy/">copy ownership</a> and <a href="../21-shared-layouts/">shared layouts</a> first.</p>
 </div>
 <h2 id="1-choose-a-contract-small-enough-to-prove">1 — Choose a contract small enough to prove<a class="headerlink" href="#1-choose-a-contract-small-enough-to-prove" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch22/overview.svg?v=eb999e690944"><img alt="A complete GEMM connects a clear mathematical contract to cooperative loads and checked output stores." src="../images/ch22/overview.svg?v=eb999e690944" /></a></p>
 <p>The lab computes batched <code>D = 0.5 * A * B + 0.25 * C</code> using row-major FP32 operands. Each batch has M×K, K×N and M×N mathematical shapes. Physical rows are padded: <code>lda=K+3</code>, <code>ldb=N+5</code>, <code>ldc=N+7</code>. The padding makes a mistaken assumption of compact storage visible.</p>
 <p>This is a <strong>SIMT shared-memory baseline</strong>, not a Tensor Core kernel and not a complete CuTe GEMM. It deliberately makes the scalar address arithmetic explicit. The preceding CuTe chapters teach how to represent the same mappings; the next chapter shows how CUTLASS packages a Tensor Core implementation. A reference implementation can be valuable without being fast.</p>
 <p>The full <a href="../examples/advanced/tiled_gemm.cu">tiled_gemm.cu</a> includes allocation, initialization, launch checks, an independent CPU oracle, input-preservation checks, padding and guards. Its mathematical reference does not call the GPU implementation’s indexing helpers.</p>
@@ -2293,6 +2373,16 @@
 <p>Suppose K=41. Three 16-wide K iterations are needed. The last has nine useful reduction positions and seven zero-filled positions. The accumulator is initialized once before all three iterations, updated by each tile, and consumed once afterward.</p>
 <p>An accumulator reset inside the K-tile loop retains only the final tile. A kernel may pass an input where the first two tiles contain zeros, so include nonzero contributions across the whole reduction. Nonuniform binary-rational input values in the lab exercise that condition without requiring an arbitrary tolerance.</p>
 <p>For K=0, the loop executes zero times and the epilogue becomes <code>D=0.25*C</code>. This case checks that the launch and epilogue do not assume a first operand tile always exists. It does not imply that every Tensor Core library configuration accepts a zero reduction dimension; support is part of each API’s contract.</p>
+<h3 id="work-one-ragged-output-through-all-three-reduction-tiles">Work one ragged output through all three reduction tiles<a class="headerlink" href="#work-one-ragged-output-through-all-three-reduction-tiles" title="Permanent link">&para;</a></h3>
+<p>Take the actual ragged case <code>M=37,N=29,K=41,L=2</code>. Let batch <code>l=1</code>, block <code>(blockIdx.x,blockIdx.y)=(1,2)</code> and thread <code>(tx,ty)=(12,4)</code>. These are logical coordinates, not byte addresses. All offsets below are relative to the operand pointers passed to the kernel, after the 16-element leading guards.</p>
+<ol>
+<li><strong>Find the output.</strong> <code>m=2*16+4=36</code>, <code>n=1*16+12=28</code>. Both are valid: this thread owns the last logical output of the second batch.</li>
+<li><strong>Find the padded rows.</strong> The source uses <code>lda=44</code>, <code>ldb=34</code>, <code>ldc=36</code>. Thus A's batch stride is <code>37*44=1628</code> elements; B's is <code>41*34=1394</code>; C/D's is <code>37*36=1332</code>. Output <code>(1,36,28)</code> is at element offset <code>1332+36*36+28=2656</code>, or byte offset <code>10624</code> for FP32.</li>
+<li><strong>Distinguish loading from consuming.</strong> At <code>k0=32</code>, this thread's A load names <code>(m,k)=(36,44)</code> and is invalid, so it writes zero to <code>As[4][12]</code>. Its B load names <code>(k,n)=(36,28)</code> and is valid: offset <code>1394+36*34+28=2646</code>. Its own A load being invalid does <strong>not</strong> make its output invalid.</li>
+<li><strong>Consume the shared tile collectively.</strong> To compute its output, it reads <code>As[4][q]</code> and <code>Bs[q][12]</code> for <code>q=0..15</code>. The nine positions <code>q=0..8</code> represent valid <code>k=32..40</code>; <code>q=9..15</code> are zero-filled. Other threads supplied many of those inputs. The previous tiles supplied <code>k=0..31</code>.</li>
+<li><strong>Apply the epilogue once.</strong> After all three tiles, write <code>D[2656]=0.5*acc+0.25*C[2656]</code>. A thread at <code>(tx,ty)=(13,4)</code> owns <code>n=29</code>, so it skips this store but still joins both barriers in every tile.</li>
+</ol>
+<p><strong>Check:</strong> the block contains 256 threads but only <code>5*13=65</code> valid output owners, because rows 32–36 and columns 16–28 remain. Every valid owner must see all 41 reduction terms. Using the actual initialization formulas gives <code>acc=1.125</code>, <code>C=0.5</code> and <code>D=0.6875</code> at this coordinate. This hand calculation complements the independently captured executable, which checks every output.</p>
 <h2 id="7-store-only-valid-output-coordinates">7 — Store only valid output coordinates<a class="headerlink" href="#7-store-only-valid-output-coordinates" title="Permanent link">&para;</a></h2>
 <p>After the reduction, a valid owner reads C and writes D at the padded output offset. Invalid output threads do not access C or D. D’s valid region starts as a NaN sentinel so omitted stores cannot masquerade as correctly computed zeros. Padding and outer guards have separate sentinels and must remain unchanged.</p>
 <p>The GPU and CPU implementations use the same mathematical shapes and scalars but different control structure. The CPU loops over each batch/output coordinate and performs a direct full-K reduction in double. Test values are small binary fractions, with short reductions and scalars chosen so the expected result is exactly representable in FP32. Exact equality is justified for these bounded cases; it is not a universal rule for floating-point GEMM.</p>
@@ -2590,6 +2680,20 @@
 <h2 id="additional-memory-safety-record">Additional memory-safety record<a class="headerlink" href="#additional-memory-safety-record" title="Permanent link">&para;</a></h2>
 <p>The exact tested revision also passed <a href="../validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/memcheck-tiled_gemm.log">Compute Sanitizer memcheck</a> with zero errors and its numerical checks intact. <a href="../validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/commands.json">The dated supplemental manifest</a> retains commands, source hashes and actual UTC stage times. This does not prove every untested schedule.</p>
 <p>The same revision passed <a href="../validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/racecheck-tiled_gemm.log">racecheck</a>: zero hazards, zero errors and zero warnings for the captured cases.</p>
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>The SIMT baseline makes batch strides, cooperative loads, padded rows and partial M/N/K tiles explicit before adding Tensor Core abstractions.</p>
+</li>
+<li>
+<p>Two block barriers protect input readiness and safe shared-tile reuse; output-tail threads still participate in the cooperative protocol.</p>
+</li>
+<li>
+<p>Initialize the accumulator once, apply beta once, and check every result plus padding and guards. Then compare the contract with the <a href="../23-cutlass-gemm/">CUTLASS builder implementation</a>.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

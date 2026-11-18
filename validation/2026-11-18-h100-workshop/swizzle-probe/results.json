@@ -1,0 +1,32 @@
+{
+  "scope": "CPU-only CuTe swizzle checks; no GPU kernel launched",
+  "utc": "2026-11-18T14:37:57.128288+00:00",
+  "source_sha256": "f7e4d5d61ff9a5a44ac12336a3909dc7cb42b9fac601c66253fd1de043882305",
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_90a",
+      "--expt-relaxed-constexpr",
+      "-I",
+      "/home/ubuntu/h100-expanded-review-20261118/cutlass/include",
+      "/home/ubuntu/h100-expanded-review-20261118/swizzle-probeout/probe.cu",
+      "-o",
+      "/home/ubuntu/h100-expanded-review-20261118/swizzle-probeout/probe"
+    ],
+    "started_utc": "2026-11-18T14:37:57.128597+00:00",
+    "finished_utc": "2026-11-18T14:38:08.585755+00:00",
+    "exit_code": 0,
+    "log_sha256": "3a2ffa33a66a917d0ea3fc0fbf9fe9c22f8f8755ecf9e7aca0d4040c09655a13"
+  },
+  "run": {
+    "command": [
+      "/home/ubuntu/h100-expanded-review-20261118/swizzle-probeout/probe"
+    ],
+    "started_utc": "2026-11-18T14:38:08.585834+00:00",
+    "finished_utc": "2026-11-18T14:38:08.590291+00:00",
+    "exit_code": 0,
+    "log_sha256": "3052899cde0b0bcfc0557c39c3c59a261afb90441ec7db1832085509a0c05f50"
+  }
+}

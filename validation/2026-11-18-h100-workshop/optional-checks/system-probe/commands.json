@@ -1,0 +1,16 @@
+[
+  {
+    "command": [
+      "python3",
+      "/home/ubuntu/h100-expanded-review-20261118/input/h100-workshop-device-query.py"
+    ],
+    "exit_code": 0,
+    "started_utc": "2026-11-18T14:25:59.572536+00:00",
+    "finished_utc": "2026-11-18T14:25:59.888094+00:00",
+    "seconds": 0.31556582999974125,
+    "log": "device-properties.log",
+    "log_sha256": "6e100cf3e56c81d19fbec93d602f91a258943425041cae75c76d63499beec3ae",
+    "kind": "system_metadata",
+    "source_sha256": "f90d8ffddf6b698b4bd6a65829735506d830d167d81376a025db9e9ba81af5d1"
+  }
+]

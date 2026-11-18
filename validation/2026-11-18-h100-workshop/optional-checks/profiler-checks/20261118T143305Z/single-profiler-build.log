@@ -1,0 +1,9 @@
+$ cmake --build /home/ubuntu/h100-expanded-review-20261118/build-upstream-profiler --target cutlass_profiler -j 8
+[0/2] Re-checking globbed directories...
+[1/7] Building CXX object tools/library/CMakeFiles/cutlass_library_objs.dir/generated/initialize_all.cpp.o
+[2/7] Building CUDA object tools/library/CMakeFiles/cutlass_library_gemm_sm90_gemm_f16_objs.dir/generated/gemm/90/gemm_f16/all_sm90_gemm_f16_gemm_operations.cu.o
+[3/7] Building CUDA object tools/library/CMakeFiles/cutlass_library_objs.dir/generated/gemm/all_gemm_operations.cu.o
+[4/7] Building CUDA object tools/library/CMakeFiles/cutlass_library_gemm_sm90_gemm_f16_objs.dir/generated/gemm/90/gemm_f16/cutlass3x_sm90_tensorop_gemm_f16_f16_f32_f32_f32_256x128x64_1x2x1_0_nnn_align8_warpspecialized_cooperative_epi_nosmem.cu.o
+[5/7] Linking CUDA shared library tools/library/libcutlass_gemm_sm90_gemm_f16.so
+[6/7] Linking CXX shared library tools/library/libcutlass.so
+[7/7] Linking CXX executable tools/profiler/cutlass_profiler

@@ -1643,6 +1643,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-20-companion-guide-decode-the-instructions-real-fragment-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 20 Companion Guide — Decode the Instruction’s Real Fragment Contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-an-atom-is-more-than-a-tile-shape" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1672,6 +1683,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="3 — Read the actual CLayout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#calculate-lane-10-before-trusting-the-printed-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calculate lane 10 before trusting the printed map
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1735,6 +1763,17 @@
     <span class="md-ellipsis">
       
         Complete source and captured execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2081,6 +2120,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-20-companion-guide-decode-the-instructions-real-fragment-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 20 Companion Guide — Decode the Instruction’s Real Fragment Contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-an-atom-is-more-than-a-tile-shape" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2110,6 +2160,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="3 — Read the actual CLayout">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#calculate-lane-10-before-trusting-the-printed-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calculate lane 10 before trusting the printed map
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2179,6 +2246,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2205,12 +2283,14 @@
 
 
 <h1 id="20-mma-atoms-prove-who-owns-every-result">20. MMA Atoms — Prove Who Owns Every Result<a class="headerlink" href="#20-mma-atoms-prove-who-owns-every-result" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch20/overview.svg?v=63ddeeb28468"><img alt="An MMA atom connects participating threads, operand fragments and output coordinates." src="../images/ch20/overview.svg?v=63ddeeb28468" /></a></p>
+<h2 id="lesson-20-companion-guide-decode-the-instructions-real-fragment-contract">Lesson 20 Companion Guide — Decode the Instruction’s Real Fragment Contract<a class="headerlink" href="#lesson-20-companion-guide-decode-the-instructions-real-fragment-contract" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/20-workshop.svg?v=6bcb5c6466ff"><img alt="CHAPTER 20: 20. MMA Atoms — Prove Who Owns Every Result — conceptual chapter illustration" src="../images/chapter-openers/20-workshop.svg?v=6bcb5c6466ff" /></a></p>
 <div class="admonition tip">
-<p class="admonition-title">Your goal</p>
+<p class="admonition-title">Your goal in this chapter</p>
 <p>Derive a real instruction's thread/value mapping, prove complete output coverage, and distinguish a warp MMA from Hopper WGMMA. Read <a href="../19-tiled-copy/">thread/value copy ownership</a> first; revisit <a href="../06-wgmma-part-1/">WGMMA</a> for the asynchronous instruction contract.</p>
 </div>
 <h2 id="1-an-atom-is-more-than-a-tile-shape">1 — An atom is more than a tile shape<a class="headerlink" href="#1-an-atom-is-more-than-a-tile-shape" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch20/overview.svg?v=63ddeeb28468"><img alt="An MMA atom connects participating threads, operand fragments and output coordinates." src="../images/ch20/overview.svg?v=63ddeeb28468" /></a></p>
 <p>A statement such as “this instruction computes a 16 × 8 result” omits three essential questions: which threads participate, which values each thread supplies, and where each output register belongs. CuTe connects the instruction wrapper to those answers through <code>MMA_Traits</code>. An <code>MMA_Atom</code> combines the operation and its traits; a <code>TiledMMA</code> repeats and arranges atoms into a larger computation.</p>
 <p>The pinned <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/0t_mma_atom.md">MMA atom tutorial</a> separates these layers. The operation's architecture prefix names its first supported architecture, not a declaration that every later instruction has the same layout. Register counts, precision and participation belong to the <strong>exact operation</strong>.</p>
 <p>We will decode <code>SM75_16x8x8_F32F16F16F32_TN</code>. This is a synchronous, warp-level FP16 multiply with FP32 accumulation, useful for learning fragment ownership. It is not Hopper's asynchronous warpgroup MMA. Reading its traits on the CPU does not execute an MMA instruction or validate a GPU kernel.</p>
@@ -2316,6 +2396,15 @@
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="c1">// Compare these coordinates with an independently derived table.</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">}</span>
 </span></code></pre></div>
+<h3 id="calculate-lane-10-before-trusting-the-printed-map">Calculate lane 10 before trusting the printed map<a class="headerlink" href="#calculate-lane-10-before-trusting-the-printed-map" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Split the lane into <code>g=10/4=2</code> and <code>q=10%4=2</code>.</li>
+<li>For value index 0, <code>a=0,b=0</code>. The trait offset is <code>32×2+2=66</code>; decode <code>66%16=2</code> and <code>66/16=4</code>, yielding output <code>(2,4)</code>.</li>
+<li>For value index 1, add <code>16a=16</code>, obtaining 82. It decodes to <code>(2,5)</code>.</li>
+<li>For value index 2, add <code>8b=8</code> instead, obtaining 74. It decodes to <code>(10,4)</code>.</li>
+<li>For value index 3, both additions apply: offset 90 decodes to <code>(10,5)</code>.</li>
+</ol>
+<p><strong>Expected coordinates:</strong> <code>(2,4), (2,5), (10,4), (10,5)</code>. The integer quotients use the atom's first-mode-fast logical encoding; they are not byte addresses in a row-major output allocation. <strong>Check:</strong> compare each result with the independently derived table, then enumerate all lanes for complete coverage. <strong>Pitfall:</strong> treating offsets 66, 82, 74 and 90 as row-major global offsets would use the correct numbers in the wrong coordinate convention.</p>
 <p>The type definitions require the matching atom-traits header; the complete program linked below supplies it.</p>
 <h2 id="4-coverage-is-a-proof-obligation">4 — Coverage is a proof obligation<a class="headerlink" href="#4-coverage-is-a-proof-obligation" title="Permanent link">&para;</a></h2>
 <p>Create a 16 × 8 array of zero counters. Enumerate every <code>(lane,value)</code> pair, reject out-of-range coordinates, and increment its destination counter. Every counter must finish at <strong>one</strong>. Zero means a missing element; two means overlapping ownership. Keeping only the first owner hides precisely the defect the test should detect.</p>
@@ -2347,7 +2436,7 @@
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>docs/examples/advanced/cute_fragments.cu<span class="w"> </span>-o<span class="w"> </span>build/advanced/cute_fragments
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>./build/advanced/cute_fragments
 </span></code></pre></div>
-<p><strong>Expected check, not a captured execution:</strong> <code>FRAGMENT PASS</code> with 128 C, 128 A and 64 B ownership pairs and zero errors. This program launches no GPU kernel. Its compilation/execution record must still be captured separately from the original book programs.</p>
+<p><strong>Expected check:</strong> <code>FRAGMENT PASS</code> with 128 C, 128 A and 64 B ownership pairs and zero errors. The actual compilation and host execution are captured in the dated block below, separately from the original book programs. This program launches no GPU kernel.</p>
 <h2 id="8-exercises-with-worked-answers">8 — Exercises with worked answers<a class="headerlink" href="#8-exercises-with-worked-answers" title="Permanent link">&para;</a></h2>
 <details class="question">
 <summary>Lane 18: locate its four results</summary>
@@ -2444,6 +2533,21 @@
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>FRAGMENT PASS: C_pairs=128 A_pairs=128 B_pairs=64 errors=0
 </span></code></pre></div>
 <!-- workshop:end:cute_fragments -->
+
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>An MMA atom specifies participating threads, operand packing and result coordinates, not merely an M×N tile size.</p>
+</li>
+<li>
+<p>The pinned warp-level atom assigns four FP32 outputs per lane; independent coordinate checks and bijective coverage catch different mapping errors.</p>
+</li>
+<li>
+<p>Count both spatial atoms and K repetitions, and keep warp MMA distinct from asynchronous Hopper WGMMA. Next, align producers and consumers through <a href="../21-shared-layouts/">shared-memory layouts</a>.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

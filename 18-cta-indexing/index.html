@@ -1514,6 +1514,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-18-companion-guide-trace-every-gemm-operand-from-cta-to-byte-address" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 18 Companion Guide — Trace Every GEMM Operand from CTA to Byte Address
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-write-the-physical-contract-first" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1555,6 +1566,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="4 — K advances depend on the physical stride">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#carry-a-local-coordinate-through-the-api-selected-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Carry a local coordinate through the API-selected panel
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1565,6 +1593,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="5 — Ceiling division preserves the tail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#work-the-final-row-tile-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Work the final row tile by hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1612,6 +1657,17 @@
     <span class="md-ellipsis">
       
         Complete source and captured execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2087,6 +2143,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-18-companion-guide-trace-every-gemm-operand-from-cta-to-byte-address" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 18 Companion Guide — Trace Every GEMM Operand from CTA to Byte Address
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-write-the-physical-contract-first" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2128,6 +2195,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="4 — K advances depend on the physical stride">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#carry-a-local-coordinate-through-the-api-selected-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Carry a local coordinate through the API-selected panel
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2138,6 +2222,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="5 — Ceiling division preserves the tail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#work-the-final-row-tile-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Work the final row tile by hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2191,6 +2292,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2217,10 +2329,16 @@
 
 
 <h1 id="18-cta-indexing-rectangular-gemm-offsets-and-the-k-loop">18. CTA Indexing — Rectangular GEMM Offsets and the K Loop<a class="headerlink" href="#18-cta-indexing-rectangular-gemm-offsets-and-the-k-loop" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch18/overview.svg?v=5ec1f60f1933"><img alt="A CTA selects an output origin, two input panels and successive K tiles using explicit strides." src="../images/ch18/overview.svg?v=5ec1f60f1933" /></a></p>
+<h2 id="lesson-18-companion-guide-trace-every-gemm-operand-from-cta-to-byte-address">Lesson 18 Companion Guide — Trace Every GEMM Operand from CTA to Byte Address<a class="headerlink" href="#lesson-18-companion-guide-trace-every-gemm-operand-from-cta-to-byte-address" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/18-workshop.svg?v=644b712eeb1e"><img alt="CHAPTER 18: 18. CTA Indexing — Rectangular GEMM Offsets and the K Loop — conceptual chapter illustration" src="../images/chapter-openers/18-workshop.svg?v=644b712eeb1e" /></a></p>
+<div class="admonition tip">
+<p class="admonition-title">Your goal in this chapter</p>
+<p>Compute rectangular CTA, reduction and batch origins using each operand’s actual strides, then handle boundary tiles and wide address arithmetic. Read <a href="../17-cute-tensors-tiling/">tensor tiling and predication</a> first.</p>
+</div>
 <p>A GEMM kernel can have legal instructions, valid memory accesses and completely wrong results because one tile origin uses the wrong leading dimension. This chapter makes that arithmetic explicit before copy and MMA machinery hide it behind types. Work from the operation contract to coordinates, then to element offsets, then to byte addresses.</p>
 <p><a href="../17-cute-tensors-tiling/">Chapter 17</a> explained tensor views and predication. Here the mathematical operation is <code>D[M,N]=A[M,K]B[K,N]</code>, without an alpha/beta epilogue for now. The examples use <strong>row-major A, column-major B and row-major D</strong>. Those are deliberately explicit choices, not universal CUTLASS defaults. The pinned primary references are CuTe's <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/03_tensor.md">tensor</a> and <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/0x_gemm_tutorial.md">GEMM</a> tutorials.</p>
 <h2 id="1-write-the-physical-contract-first">1 — Write the physical contract first<a class="headerlink" href="#1-write-the-physical-contract-first" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch18/overview.svg?v=5ec1f60f1933"><img alt="A CTA selects an output origin, two input panels and successive K tiles using explicit strides." src="../images/ch18/overview.svg?v=5ec1f60f1933" /></a></p>
 <p>For compact storage, the element-address functions are:</p>
 <table>
 <thead>
@@ -2347,13 +2465,34 @@
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="n">gB</span><span class="p">,</span><span class="w"> </span><span class="n">make_tile</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">128</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">64</span><span class="o">&gt;</span><span class="p">{}),</span><span class="w"> </span><span class="n">make_coord</span><span class="p">(</span><span class="n">bn</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">));</span>
 </span></code></pre></div>
 <p>A is logically <code>(M,K)</code> and B <code>(N,K)</code>, so their first tile coordinates differ. These calls select views. The producer still needs to transfer data, establish readiness and protect stage reuse before any asynchronous consumer relies on it. A selected K panel is not itself a completed TMA transaction.</p>
+<h3 id="carry-a-local-coordinate-through-the-api-selected-panel">Carry a local coordinate through the API-selected panel<a class="headerlink" href="#carry-a-local-coordinate-through-the-api-selected-panel" title="Permanent link">&para;</a></h3>
+<p>The <code>local_tile</code> calls above use A as <code>(M,K)</code> and column-major mathematical B as logical <code>(N,K)</code>. Keep the same CTA <code>(bm,bn)=(5,3)</code>, set K iteration <code>q=1</code>, and select local <code>(mi,nj,kk)=(5,7,9)</code>:</p>
+<ol>
+<li>Recover the CTA origins: <code>m0=5×128=640</code>, <code>n0=3×128=384</code>.</li>
+<li>Recover the K origin: <code>k0=1×64=64</code>. The two selected input panel origins are therefore <code>(640,64)</code> and mathematical B <code>(64,384)</code>.</li>
+<li>Add local coordinates: global <code>m=640+5=645</code>, <code>n=384+7=391</code>, <code>k=64+9=73</code>.</li>
+<li>A is row-major with <code>lda=1024</code>, so <code>A[645,73]</code> uses offset <code>645×1024+73=660553</code> elements.</li>
+<li>B is column-major with <code>ldb=1024</code>, so mathematical <code>B[73,391]</code> uses <code>73+391×1024=400457</code> elements. The CuTe logical B view calls that coordinate <code>(391,73)</code>; its physical address is the same.</li>
+<li>D is row-major with <code>ldd=2048</code>, so the owned output <code>D[645,391]</code> uses <code>645×2048+391=1321351</code> elements. Its coordinate stays fixed while K changes.</li>
+<li>For FP16 allocations, the byte displacements are 1,321,106 for A, 800,914 for B and 2,642,702 for D. If D is FP32 instead, only its byte displacement doubles; its element offset stays 1,321,351.</li>
+</ol>
+<p><strong>Expected result:</strong> the operands at reduction coordinate 73 contribute to the same D element as the other K iterations. <strong>Check:</strong> compute these offsets directly from the global coordinates, independently of the tile's base-plus-local formula; both routes must agree. <strong>Pitfall:</strong> using <code>128</code> as <code>lda</code> because the CTA has 128 rows selects a different allocation position. A tile extent is not a global storage stride.</p>
 <h2 id="5-ceiling-division-preserves-the-tail">5 — Ceiling division preserves the tail<a class="headerlink" href="#5-ceiling-division-preserves-the-tail" title="Permanent link">&para;</a></h2>
 <p>For a separate M extent of 3100 with BM=64, floor division gives 48 and loses the final rows. Ceiling division gives 49. Tile 48 begins at row 3072 and has <code>3100−3072=28</code> valid rows; the other 36 local rows must not access global data.</p>
+<h3 id="work-the-final-row-tile-by-hand">Work the final row tile by hand<a class="headerlink" href="#work-the-final-row-tile-by-hand" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Divide <code>3100=48×64+28</code>: there are 48 complete tiles and a nonempty remainder.</li>
+<li>Launch 49 tile rows, with final tile index 48.</li>
+<li>Its origin is <code>48×64=3072</code>. Local row 27 maps to global <code>3072+27=3099</code>, the last valid row.</li>
+<li>Local row 28 maps to 3100, which fails <code>row&lt;M</code>; rows 28 through 63 must not access a global A row or D row.</li>
+<li>Preserve the cooperative protocol. A thread assigned to an invalid output can still own a shared-input load or participate in a block barrier; predicate its accesses rather than returning before required collective synchronization.</li>
+</ol>
+<p><strong>Expected result:</strong> 28 valid rows in the final tile, 36 invalid local rows, and no lost useful output. <strong>Check:</strong> <code>48×64+28=3100</code> reconstructs the original extent. <strong>Pitfall:</strong> a memory checker may remain quiet if a mistaken valid-row assumption writes into allocated padding. Verify logical output bounds and untouched padding as separate checks.</p>
 <p>For nonnegative extents and positive tile sizes, an overflow-conscious ceiling-division form is <code>M/BM + (M%BM != 0)</code>. The familiar <code>(M+BM−1)/BM</code> is fine only when the addition cannot overflow. Apply the same reasoning independently to N and K.</p>
 <p>Zero extents also need an explicit host-side policy: do not launch a zero-sized grid and assume that every runtime/library treats it as a no-op. Check supported dimensions before launch. A ragged K panel requires both a valid input predicate and the correct neutral contribution for invalid reduction positions.</p>
 <p>An identity-coordinate tensor partitioned in the same way as an operand can carry the original coordinates into the thread fragment. Compare those coordinates against the <em>original</em> logical shape. The rounded tile envelope is not the valid problem domain, and creating a CuTe view does not universally install memory predicates automatically.</p>
 <h2 id="6-promote-before-multiplying-and-check-the-byte-contract">6 — Promote before multiplying and check the byte contract<a class="headerlink" href="#6-promote-before-multiplying-and-check-the-byte-contract" title="Permanent link">&para;</a></h2>
-<p>A large tensor can overflow 32-bit intermediate arithmetic even when a pointer type is 64-bit. Casting only the final product is too late. A conventional implementation first widens tile indices and dimensions:</p>
+<p>A large tensor can overflow 32-bit intermediate arithmetic even when a pointer type is 64-bit. Casting only the final product is too late. A conventional implementation first widens tile indices and dimensions. This kernel-context excerpt additionally requires <code>&lt;cstdint&gt;</code> and the previously defined dimensions/strides:</p>
 <div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="w"> </span><span class="n">m0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="p">(</span><span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">BM</span><span class="p">;</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="w"> </span><span class="n">n0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="p">(</span><span class="n">blockIdx</span><span class="p">.</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">BN</span><span class="p">;</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="w"> </span><span class="n">k0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">BK</span><span class="p">;</span>
@@ -2497,6 +2636,21 @@
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>WORKBOOK PASS: 7 CPU-only reference groups; no GPU execution or performance measurement
 </span></code></pre></div>
 <!-- workshop:end:indexing_workbook -->
+
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>Define mathematical axes, physical storage and grid conventions before deriving A, B and D addresses. The logical CuTe B view does not transpose its allocation.</p>
+</li>
+<li>
+<p>K increments and batch offsets follow operand strides; tile sizes alone cannot determine global pointer increments.</p>
+</li>
+<li>
+<p>Use ceiling division, original-domain predicates and sufficiently wide checked arithmetic, then carry the address contract into <a href="../19-tiled-copy/">tiled-copy ownership</a>.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

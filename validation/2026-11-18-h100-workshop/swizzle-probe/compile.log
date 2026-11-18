@@ -1,0 +1,1 @@
+$ nvcc -std=c++17 -O2 -arch=sm_90a --expt-relaxed-constexpr -I /home/ubuntu/h100-expanded-review-20261118/cutlass/include /home/ubuntu/h100-expanded-review-20261118/swizzle-probeout/probe.cu -o /home/ubuntu/h100-expanded-review-20261118/swizzle-probeout/probe

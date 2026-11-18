@@ -1430,6 +1430,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-15-companion-guide-from-address-arithmetic-to-cute-foundations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 15 Companion Guide — From Address Arithmetic to CuTe Foundations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-the-missing-bridge-to-library-kernels" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1468,6 +1479,39 @@
     <span class="md-ellipsis">
       
         Compare row-major and column-major without changing the coordinates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#walk-one-coordinate-all-the-way-to-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk one coordinate all the way to bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keep-the-same-mapping-with-runtime-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep the same mapping with runtime dimensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extend-the-calculation-to-a-packed-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extend the calculation to a packed batch
       
     </span>
   </a>
@@ -1572,6 +1616,17 @@
     <span class="md-ellipsis">
       
         Complete source and captured execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2131,6 +2186,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-15-companion-guide-from-address-arithmetic-to-cute-foundations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 15 Companion Guide — From Address Arithmetic to CuTe Foundations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-the-missing-bridge-to-library-kernels" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2169,6 +2235,39 @@
     <span class="md-ellipsis">
       
         Compare row-major and column-major without changing the coordinates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#walk-one-coordinate-all-the-way-to-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walk one coordinate all the way to bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keep-the-same-mapping-with-runtime-dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep the same mapping with runtime dimensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extend-the-calculation-to-a-packed-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extend the calculation to a packed batch
       
     </span>
   </a>
@@ -2279,6 +2378,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2305,14 +2415,17 @@
 
 
 <h1 id="15-cute-layout-algebra-you-can-check-by-hand">15. CuTe — Layout Algebra You Can Check by Hand<a class="headerlink" href="#15-cute-layout-algebra-you-can-check-by-hand" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch15/overview.svg?v=6bcd5dfff8a2"><img alt="CuTe maps logical coordinates to physical storage before assigning work to threads." src="../images/ch15/overview.svg?v=6bcd5dfff8a2" /></a></p>
+<h2 id="lesson-15-companion-guide-from-address-arithmetic-to-cute-foundations">Lesson 15 Companion Guide — From Address Arithmetic to CuTe Foundations<a class="headerlink" href="#lesson-15-companion-guide-from-address-arithmetic-to-cute-foundations" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/15-workshop.svg?v=3de757bf3963"><img alt="CHAPTER 15: 15. CuTe — Layout Algebra You Can Check by Hand — conceptual chapter illustration" src="../images/chapter-openers/15-workshop.svg?v=3de757bf3963" /></a></p>
 <div class="admonition tip">
-<p class="admonition-title">Your goal</p>
+<p class="admonition-title">Your goal in this chapter</p>
 <p>Read a CuTe layout as an address function, distinguish a view from a transfer, and explain how a thread/value partition reaches an instruction operand. Review <a href="../04-cutensormap-tma-swizzling/">shared-memory layout</a> and <a href="../06-wgmma-part-1/">WGMMA fragments</a> first.</p>
 </div>
 <h2 id="1-the-missing-bridge-to-library-kernels">1 — The missing bridge to library kernels<a class="headerlink" href="#1-the-missing-bridge-to-library-kernels" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch15/overview.svg?v=6bcd5dfff8a2"><img alt="CuTe maps logical coordinates to physical storage before assigning work to threads." src="../images/ch15/overview.svg?v=6bcd5dfff8a2" /></a></p>
 <p>A hand-written kernel often hides its layout in arithmetic: <code>m * leading_dimension + n</code>, a swizzle XOR, or a lane-dependent register index. CuTe makes such mappings explicit types and objects. That lets CUTLASS describe global tiles, shared-memory stages, copy ownership and MMA fragments using related operations instead of unrelated indexing formulas.</p>
 <p>This chapter covers the <strong>C++ CuTe API</strong> distributed with CUTLASS <strong>v4.3.6</strong>, pinned in <a href="../23-cutlass-gemm/">Chapter 23</a>. CuTe’s Python DSL is a separate programming interface; do not mix its examples, imports or JIT rules with these C++ headers. Newer releases can add schedules and change builders, so this is a reproducible reading baseline rather than a claim that v4.3.6 is the latest release.</p>
+<p>Unless a listing is explicitly identified as a complete program, C++ snippets in this chapter are separate excerpts. They require <code>#include &lt;cute/tensor.hpp&gt;</code> and a surrounding function; use the linked complete oracle for a copyable translation unit and its full compile command. Repeated variable names in different excerpts are not instructions to concatenate them into one scope.</p>
 <p>The primary references are the pinned <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/01_layout.md">layout tutorial</a>, <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/02_layout_algebra.md">layout algebra</a>, and <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/media/docs/cpp/cute/03_tensor.md">tensor tutorial</a>.</p>
 <h2 id="before-the-algebra-a-reproducible-workspace">Before the algebra: a reproducible workspace<a class="headerlink" href="#before-the-algebra-a-reproducible-workspace" title="Permanent link">&para;</a></h2>
 <p>The introductory path is <strong>15 → 16 → 17 → 18</strong>. Continue through the intermediate copy/MMA/shared-memory/GEMM labs in <strong>19–23</strong>, then the advanced pipeline, fusion, precision and measurement chapters in <strong>24–28</strong>. You do not need to understand a CUTLASS builder before learning a coordinate map.</p>
@@ -2406,6 +2519,49 @@
 <p>Both layouts have 12 logical elements and the same largest offset, but most interior coordinates name different storage positions. At <code>(1,2)</code>, row-major gives 6 and column-major gives 7. Testing only <code>(0,0)</code> and the last element would miss that difference. The words “row-major” refer to which mathematical coordinate changes contiguously; they do not follow from the order in which an author happened to list shape names.</p>
 <p>For a row-major batched tensor <code>(L,M,N)</code> with packed batches, <code>offset(l,m,n)=l*M*N+m*N+n</code>. With physical row length <code>ld&gt;=N</code> and batch stride <code>sb</code>, it becomes <code>l*sb+m*ld+n</code>. A tensor’s mathematical shape therefore does not uniquely determine its storage. A framework view can have padding or noncompact strides without changing its logical dimensions.</p>
 <p>A transpose view swaps the coordinate interpretation and the corresponding shape/stride modes. It does not physically rearrange the allocation. On a rectangular 3×4 row-major matrix, a 4×3 transposed view uses stride <code>(1,4)</code>: transposed coordinate <code>(2,1)</code> refers to original <code>(1,2)</code>, offset 6. Keep the original allocation’s lifetime valid while any such view is used.</p>
+<h3 id="walk-one-coordinate-all-the-way-to-bytes">Walk one coordinate all the way to bytes<a class="headerlink" href="#walk-one-coordinate-all-the-way-to-bytes" title="Permanent link">&para;</a></h3>
+<p>Construct both layouts explicitly, keeping coordinate names fixed:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">row_major</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">make_layout</span><span class="p">(</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_shape</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{}),</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_stride</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{}));</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">auto</span><span class="w"> </span><span class="n">column_major</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">make_layout</span><span class="p">(</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_shape</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{}),</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_stride</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">{}));</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">auto</span><span class="w"> </span><span class="n">row_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row_major</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">make_coord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="k">auto</span><span class="w"> </span><span class="n">column_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">column_major</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">make_coord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span>
+</span></code></pre></div>
+<ol>
+<li>The shape says that <code>(1,2)</code> is valid: row one is below three and column two is below four.</li>
+<li>Row-major stride <code>(4,1)</code> contributes <code>1×4</code> from the row and <code>2×1</code> from the column, totaling six <strong>elements</strong>.</li>
+<li>Column-major stride <code>(1,3)</code> contributes <code>1×1+2×3=7</code> elements. The logical coordinate is unchanged; only its address map differs.</li>
+<li>For FP16 storage, multiply by two bytes per element. The offsets become 12 and 14 bytes. From a hypothetical byte base <code>0x1000</code>, those would be <code>0x100C</code> and <code>0x100E</code>; these illustrative addresses are not pointers to dereference.</li>
+<li>The layout object returns an offset. A tensor access uses that offset with its engine to read or write a value. Computing the offset alone has moved no data.</li>
+</ol>
+<p><strong>Expected result:</strong> <code>row_offset=6</code>, <code>column_offset=7</code>. <strong>Check:</strong> enumerate an entire interior row rather than checking only the corners. <strong>Pitfall:</strong> calling <code>(1,3)</code> “row-major” while defining the first coordinate as a row reverses the convention; inspect what happens when the column increases by one.</p>
+<h3 id="keep-the-same-mapping-with-runtime-dimensions">Keep the same mapping with runtime dimensions<a class="headerlink" href="#keep-the-same-mapping-with-runtime-dimensions" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kt">int</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">columns</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">leading_dimension</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">runtime_row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">make_layout</span><span class="p">(</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_shape</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span><span class="w"> </span><span class="n">columns</span><span class="p">),</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_stride</span><span class="p">(</span><span class="n">leading_dimension</span><span class="p">,</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{}));</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">auto</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">runtime_row</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">make_coord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span><span class="w"> </span><span class="c1">// 6</span>
+</span></code></pre></div>
+<ol>
+<li>The first mode's stride is the supplied physical row length <code>leading_dimension</code>, here four.</li>
+<li>The arithmetic remains <code>1×4+2=6</code>.</li>
+<li>The dimensions now have runtime values; the type does not encode three and four as <code>Int&lt;3&gt;</code> and <code>Int&lt;4&gt;</code>.</li>
+<li>The last stride remains statically one, so the compiler still has useful static information. Static and dynamic facts can coexist.</li>
+</ol>
+<p><strong>Check:</strong> reconstructing the layout with <code>leading_dimension=8</code> and the same logical shape <code>(3,4)</code> changes this offset to ten; that describes padded storage. Changing the original C++ variable after construction does not automatically update an existing layout object. <strong>Pitfall:</strong> static dimensions do not promise that every later coordinate or address calculation disappears from generated code. Inspect the actual instruction and resource report before making a performance claim.</p>
+<h3 id="extend-the-calculation-to-a-packed-batch">Extend the calculation to a packed batch<a class="headerlink" href="#extend-the-calculation-to-a-packed-batch" title="Permanent link">&para;</a></h3>
+<p>A row-major tensor with logical shape <code>(L,M,N)=(2,3,4)</code> has element strides <code>(12,4,1)</code>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">batches</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">make_layout</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_shape</span><span class="p">(</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">        </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{}),</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">cute</span><span class="o">::</span><span class="n">make_stride</span><span class="p">(</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">        </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">12</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{}));</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">auto</span><span class="w"> </span><span class="n">last</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batches</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">make_coord</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">));</span><span class="w"> </span><span class="c1">// 23</span>
+</span></code></pre></div>
+<p>First select batch one: <code>1×12=12</code>. Then move two rows: <code>2×4=8</code>. Finally move three columns: <code>3×1=3</code>. The sum is 23 elements, or 46 bytes for FP16. The 24-element packed allocation ends at exactly that coordinate. <strong>Check:</strong> batch zero's last coordinate is offset 11, while batch one's first coordinate is 12. <strong>Pitfall:</strong> using the output tile size as a batch stride would overlap independent matrices.</p>
 <h2 id="3-size-and-storage-span-are-different">3 — Size and storage span are different<a class="headerlink" href="#3-size-and-storage-span-are-different" title="Permanent link">&para;</a></h2>
 <p>Now retain shape <code>(3,4)</code> but use stride <code>(8,1)</code>. The three rows start at offsets 0, 8 and 16. There are 12 logical coordinates, yet the largest referenced offset is 19. For this positive-stride example, the storage span through the last referenced element is 20.</p>
 <ul>
@@ -2445,9 +2601,9 @@
 </tr>
 </tbody>
 </table>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">contiguous</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">make_layout</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">12</span><span class="o">&gt;</span><span class="p">{});</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">tiled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">logical_divide</span><span class="p">(</span><span class="n">contiguous</span><span class="p">,</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{});</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">auto</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiled</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">make_coord</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span><span class="w"> </span><span class="c1">// 6</span>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">contiguous</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">make_layout</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">12</span><span class="o">&gt;</span><span class="p">{});</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">auto</span><span class="w"> </span><span class="n">tiled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">logical_divide</span><span class="p">(</span><span class="n">contiguous</span><span class="p">,</span><span class="w"> </span><span class="n">cute</span><span class="o">::</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{});</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">auto</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiled</span><span class="p">(</span><span class="n">cute</span><span class="o">::</span><span class="n">make_coord</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span><span class="w"> </span><span class="c1">// 6</span>
 </span></code></pre></div>
 <p><code>logical_divide</code>, <code>zipped_divide</code> and their multidimensional relatives organize tile and remainder modes differently. Learn the returned shape, not just the function name. A layout view does not allocate a shared-memory stage, issue TMA, or predicate out-of-bounds coordinates. A kernel still needs those operations and their synchronization protocol.</p>
 <h2 id="7-tensors-slices-and-threadvalue-partitions">7 — Tensors, slices and thread/value partitions<a class="headerlink" href="#7-tensors-slices-and-threadvalue-partitions" title="Permanent link">&para;</a></h2>
@@ -2461,10 +2617,10 @@
 <p>Check the base alignment, pattern start, tile shape and descriptor fields from <a href="../04-cutensormap-tma-swizzling/">Chapters 4 and 6</a>. A swizzled allocation needs the correct storage span and alignment; <code>size</code> alone is not a universal shared-memory allocation recipe. Start with a supported CUTLASS builder layout before inventing a custom composition.</p>
 <h2 id="9-run-the-coordinate-oracle">9 — Run the coordinate oracle<a class="headerlink" href="#9-run-the-coordinate-oracle" title="Permanent link">&para;</a></h2>
 <p>The complete <a href="../examples/advanced/cute_layouts.cu">cute_layouts.cu</a> enumerates both matrix mappings and the divided one-dimensional layout. It launches no GPU kernel. We compile it with the pinned CUDA/CUTLASS toolchain so that its C++ header dependencies match the later GEMM.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-O2<span class="w"> </span>--expt-relaxed-constexpr<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>-I<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">/include"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>docs/examples/advanced/cute_layouts.cu<span class="w"> </span>-o<span class="w"> </span>build/advanced/cute_layouts
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>./build/advanced/cute_layouts
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-O2<span class="w"> </span>--expt-relaxed-constexpr<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-I<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">/include"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>docs/examples/advanced/cute_layouts.cu<span class="w"> </span>-o<span class="w"> </span>build/advanced/cute_layouts
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>./build/advanced/cute_layouts
 </span></code></pre></div>
 <p>Create <code>build/advanced</code> and set <code>CUTLASS_ROOT</code> using the workspace steps above. Expected checks are the row-major coordinate table above, <code>size(padded)=12</code>, <code>cosize(padded)=20</code>, and <code>LAYOUT PASS</code> with zero errors. These are specifications to verify, not a captured run transcript. The separate <a href="../examples/advanced/">advanced collector</a> retains actual output, source identities and system information for its executions.</p>
 <details class="question">
@@ -2484,59 +2640,74 @@
 <p><strong>Executed on November 18, 2026 (UTC).</strong> Scope: <strong>CPU execution of real CuTe coordinate/trait checks</strong>.</p>
 <p>Tested source SHA-256: <code>39e99111ba0dd6a48ecb812bd9ce6afe918e557407c8160a6dd8f8b1c530ab3f</code>. <a href="../validation/2026-11-18-h100-workshop/cute_layouts.cu">Exact source</a> · <a href="../validation/2026-11-18-h100-workshop/system.json">System information</a> · <a href="../cutlass-workshop-validation/">Workshop results</a>.</p>
 <p>The listing below matches the tested source. Its presentation is formatted at build time; downloads retain the captured bytes.</p>
-<div class="language-cuda highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1">// CuTe coordinate checks. No GPU kernel is launched by this program.</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cute/tensor.hpp&gt;</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdio&gt;</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdexcept&gt;</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">cute</span><span class="p">;</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">make_shape</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{}),</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">                           </span><span class="n">make_stride</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{}));</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">padded</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">make_shape</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{}),</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">                              </span><span class="n">make_stride</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">8</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{}));</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">errors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">            </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">));</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">            </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">;</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">            </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">padded</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">;</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span><span class="s">"%2d%s"</span><span class="p">,</span><span class="w"> </span><span class="n">offset</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">" "</span><span class="p">);</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">        </span><span class="p">}</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">row</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">12</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">cosize</span><span class="p">(</span><span class="n">row</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">12</span><span class="p">;</span>
-</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">    </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">padded</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">12</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">cosize</span><span class="p">(</span><span class="n">padded</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
-</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">contiguous</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">12</span><span class="o">&gt;</span><span class="p">{});</span>
-</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">divided</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logical_divide</span><span class="p">(</span><span class="n">contiguous</span><span class="p">,</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{});</span>
-</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">tile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">tile</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">tile</span><span class="p">)</span>
-</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">within</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">within</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">within</span><span class="p">)</span>
-</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">            </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">divided</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">within</span><span class="p">,</span><span class="w"> </span><span class="n">tile</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span>
-</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">                      </span><span class="n">within</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile</span><span class="p">;</span>
-</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span><span class="s">"size(padded)=%d cosize(padded)=%d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span>
-</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">                </span><span class="kt">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">padded</span><span class="p">)),</span>
-</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">                </span><span class="kt">int</span><span class="p">(</span><span class="n">cosize</span><span class="p">(</span><span class="n">padded</span><span class="p">)));</span>
-</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span>
-</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="w">        </span><span class="s">"%s: 24 matrix coordinates, 12 tile coordinates; errors=%d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span>
-</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="w">        </span><span class="n">errors</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"LAYOUT FAIL"</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">"LAYOUT PASS"</span><span class="p">,</span>
-</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="w">        </span><span class="n">errors</span><span class="p">);</span>
-</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">errors</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="p">}</span>
+<div class="language-cuda highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1">// CuTe coordinate checks. No GPU kernel is launched by this program.</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cute/tensor.hpp&gt;</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdio&gt;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdexcept&gt;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">cute</span><span class="p">;</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">make_shape</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{}),</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">                           </span><span class="n">make_stride</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{}));</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">padded</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">make_shape</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{}),</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">                              </span><span class="n">make_stride</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">8</span><span class="o">&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">{}));</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">errors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">            </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">row</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">));</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">            </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">;</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">            </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">padded</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">;</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span><span class="s">"%2d%s"</span><span class="p">,</span><span class="w"> </span><span class="n">offset</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">" "</span><span class="p">);</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">    </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">row</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">12</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">cosize</span><span class="p">(</span><span class="n">row</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">12</span><span class="p">;</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">    </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">padded</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">12</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">cosize</span><span class="p">(</span><span class="n">padded</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">contiguous</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_layout</span><span class="p">(</span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">12</span><span class="o">&gt;</span><span class="p">{});</span>
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">divided</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">logical_divide</span><span class="p">(</span><span class="n">contiguous</span><span class="p">,</span><span class="w"> </span><span class="n">Int</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">{});</span>
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">tile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">tile</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">tile</span><span class="p">)</span>
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">within</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">within</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">within</span><span class="p">)</span>
+</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="w">            </span><span class="n">errors</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">divided</span><span class="p">(</span><span class="n">make_coord</span><span class="p">(</span><span class="n">within</span><span class="p">,</span><span class="w"> </span><span class="n">tile</span><span class="p">))</span><span class="w"> </span><span class="o">!=</span>
+</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="w">                      </span><span class="n">within</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">tile</span><span class="p">;</span>
+</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span><span class="s">"size(padded)=%d cosize(padded)=%d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span>
+</span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="w">                </span><span class="kt">int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">padded</span><span class="p">)),</span>
+</span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="w">                </span><span class="kt">int</span><span class="p">(</span><span class="n">cosize</span><span class="p">(</span><span class="n">padded</span><span class="p">)));</span>
+</span><span id="__span-7-32"><a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span>
+</span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a><span class="w">        </span><span class="s">"%s: 24 matrix coordinates, 12 tile coordinates; errors=%d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span>
+</span><span id="__span-7-34"><a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a><span class="w">        </span><span class="n">errors</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">"LAYOUT FAIL"</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">"LAYOUT PASS"</span><span class="p">,</span>
+</span><span id="__span-7-35"><a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a><span class="w">        </span><span class="n">errors</span><span class="p">);</span>
+</span><span id="__span-7-36"><a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">errors</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>CUDA compilation UTC: <code>2026-11-18T14:09:13.582401+00:00</code>. Exit: <code>0</code>. <a href="../validation/2026-11-18-h100-workshop/cute_layouts-compile.log">Compile log</a>.</p>
 <p>Commands use scratch-directory filenames; raw logs retain exact paths. The collector’s CUTLASS include flags are configuration for that capture; the minimal standalone overlap/SIMT commands do not require those headers.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-O2<span class="w"> </span>-lineinfo<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>--expt-relaxed-constexpr<span class="w"> </span>-I<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">/include"</span><span class="w"> </span>-I<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">/tools/util/include"</span><span class="w"> </span>cute_layouts.cu<span class="w"> </span>-o<span class="w"> </span>./example
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-O2<span class="w"> </span>-lineinfo<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>--expt-relaxed-constexpr<span class="w"> </span>-I<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">/include"</span><span class="w"> </span>-I<span class="w"> </span><span class="s2">"</span><span class="nv">$CUTLASS_ROOT</span><span class="s2">/tools/util/include"</span><span class="w"> </span>cute_layouts.cu<span class="w"> </span>-o<span class="w"> </span>./example
 </span></code></pre></div>
 <p>Executed UTC: <code>2026-11-18T14:09:25.346704+00:00</code>. Exit: <code>0</code>. <a href="../validation/2026-11-18-h100-workshop/cute_layouts-run.log">Run log</a>.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./example
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./example
 </span></code></pre></div>
 <p><strong>Actual captured output</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a> 0  1  2  3
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a> 4  5  6  7
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a> 8  9 10 11
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>size(padded)=12 cosize(padded)=20
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>LAYOUT PASS: 24 matrix coordinates, 12 tile coordinates; errors=0
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a> 0  1  2  3
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a> 4  5  6  7
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a> 8  9 10 11
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>size(padded)=12 cosize(padded)=20
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>LAYOUT PASS: 24 matrix coordinates, 12 tile coordinates; errors=0
 </span></code></pre></div>
 <!-- workshop:end:cute_layouts -->
+
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>A layout maps logical coordinates to offsets; its shape does not determine physical storage without strides and an explicit coordinate convention.</p>
+</li>
+<li>
+<p>Views, coalescing and composition do not move values. Allocation bounds, ownership and actual copy/MMA operations remain separate responsibilities.</p>
+</li>
+<li>
+<p>Use the pinned workspace and small coordinate oracles before progressing to <a href="../16-cute-layout-algebra/">hierarchical algebra</a> and <a href="../17-cute-tensors-tiling/">tensor views</a>.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 

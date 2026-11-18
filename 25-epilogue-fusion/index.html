@@ -1856,6 +1856,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-25-companion-guide-preserve-numerical-semantics-while-removing-a-memory-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 25 Companion Guide — Preserve Numerical Semantics While Removing a Memory Pass
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-state-the-graph-before-writing-a-tag" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1925,6 +1936,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="5 — Read an epilogue visitor tree as dataflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evaluate-the-fusion-tree-one-node-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluate the fusion tree one node at a time
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1987,6 +2015,17 @@
     <span class="md-ellipsis">
       
         Additional memory-safety record
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -2120,6 +2159,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#lesson-25-companion-guide-preserve-numerical-semantics-while-removing-a-memory-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lesson 25 Companion Guide — Preserve Numerical Semantics While Removing a Memory Pass
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#1-state-the-graph-before-writing-a-tag" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2189,6 +2239,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="5 — Read an epilogue visitor tree as dataflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evaluate-the-fusion-tree-one-node-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluate the fusion tree one node at a time
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2257,6 +2324,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2283,12 +2361,14 @@
 
 
 <h1 id="25-epilogue-fusion-preserve-the-operation-remove-a-pass">25. Epilogue Fusion — Preserve the Operation, Remove a Pass<a class="headerlink" href="#25-epilogue-fusion-preserve-the-operation-remove-a-pass" title="Permanent link">&para;</a></h1>
-<p><a href="../images/ch25/overview.svg?v=358d79a8b848"><img alt="An epilogue graph applies alpha and beta before activation and the final store." src="../images/ch25/overview.svg?v=358d79a8b848" /></a></p>
+<h2 id="lesson-25-companion-guide-preserve-numerical-semantics-while-removing-a-memory-pass">Lesson 25 Companion Guide — Preserve Numerical Semantics While Removing a Memory Pass<a class="headerlink" href="#lesson-25-companion-guide-preserve-numerical-semantics-while-removing-a-memory-pass" title="Permanent link">&para;</a></h2>
+<p><a href="../images/chapter-openers/25-workshop.svg?v=567ce6ca7d0f"><img alt="CHAPTER 25: 25. Epilogue Fusion — Preserve the Operation, Remove a Pass — conceptual chapter illustration" src="../images/chapter-openers/25-workshop.svg?v=567ce6ca7d0f" /></a></p>
 <div class="admonition tip">
-<p class="admonition-title">Your goal</p>
+<p class="admonition-title">Your goal in this chapter</p>
 <p>Translate a mathematical epilogue into a compatible CUTLASS fusion operation, validate its exact semantics and compare complete workloads. Read <a href="../23-cutlass-gemm/">the builder</a> and <a href="../24-cutlass-pipelines/">pipeline ownership</a> first.</p>
 </div>
 <h2 id="1-state-the-graph-before-writing-a-tag">1 — State the graph before writing a tag<a class="headerlink" href="#1-state-the-graph-before-writing-a-tag" title="Permanent link">&para;</a></h2>
+<p><a href="../images/ch25/overview.svg?v=358d79a8b848"><img alt="An epilogue graph applies alpha and beta before activation and the final store." src="../images/ch25/overview.svg?v=358d79a8b848" /></a></p>
 <p>The baseline computes <code>Z = alpha*AB + beta*C</code>. The executable fusion lab computes <code>D = ReLU(Z)</code>, with <code>ReLU(x)=max(0,x)</code> for the finite values used by its test. All operands, accumulator and scalar conventions remain explicit: FP16 A/B, FP32 accumulation, FP32 C and output, and scalar alpha/beta applied once.</p>
 <p>That ordering matters. For accumulator value −1, alpha −2 and beta zero, <code>ReLU(alpha*acc)=2</code>, while <code>alpha*ReLU(acc)=0</code>. A compiler fusion is correct only when it implements the operation you requested, not an intuitively similar rearrangement. The reference must also preserve the specified conversion points; rounding before activation can differ from rounding only at the final store.</p>
 <p>The supplied tutorial’s broad advice to fuse epilogues becomes useful once the graph, layouts, numerical contract and verification are concrete. This chapter builds on the pinned <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/include/cutlass/epilogue/fusion/operations.hpp">fusion operation tags</a> and <a href="https://github.com/NVIDIA/cutlass/blob/v4.3.6/include/cutlass/epilogue/fusion/sm90_callbacks_tma_warpspecialized.hpp">Hopper callback implementations</a>.</p>
@@ -2350,6 +2430,17 @@
 </span></code></pre></div>
 <p>Nodes describe fetch, broadcast, computation or storage. Child order and operation type determine the expression. A <code>multiply_add</code> node with the wrong child order can compile while implementing a different formula. A cast in a child node can also move rounding earlier in the graph.</p>
 <p>Pinned example 49 contains a custom tree implementing the linear combination. Start by matching that tree against its scalar formula and argument structure, then identify how a supported activation is attached. Do not write a new callback merely to reproduce a predefined operation that already matches the contract.</p>
+<h3 id="evaluate-the-fusion-tree-one-node-at-a-time">Evaluate the fusion tree one node at a time<a class="headerlink" href="#evaluate-the-fusion-tree-one-node-at-a-time" title="Permanent link">&para;</a></h3>
+<p>Start with the small matrices from Chapter 23, whose independently computed <code>AB=[[-1,17],[7,0]]</code> and <code>C=[[2,-4],[6,8]]</code>. Choose the lab's operation <code>D=ReLU(0.5*AB+0.25*C)</code>. This is a manual semantic example, not a transcript of the larger executable's initialization.</p>
+<ol>
+<li><strong>Fetch the completed accumulator.</strong> At <code>(m,n)=(0,1)</code>, the entire K reduction is <code>acc=17</code>. Do not apply the epilogue to each partial K tile.</li>
+<li><strong>Apply alpha.</strong> The accumulator branch produces <code>0.5*17=8.5</code> in the selected FP32 compute type.</li>
+<li><strong>Fetch and scale C.</strong> The source branch reads <code>C[0,1]=-4</code> and produces <code>0.25*(-4)=-1</code>. This is the C operand, not an accumulator register with the same index.</li>
+<li><strong>Join the branches.</strong> The linear combination is <code>Z=8.5+(-1)=7.5</code>. Apply ReLU <strong>after</strong> this addition, so <code>D[0,1]=7.5</code>.</li>
+<li><strong>Repeat across the output.</strong> The intermediate Z is <code>[[0,7.5],[5,2]]</code>; all entries survive ReLU. To test that activation really occurs, change only the illustrative <code>C[0,0]</code> to <code>-2</code>: <code>Z[0,0]=0.5*(-1)+0.25*(-2)=-1</code>, so the fused output there must be zero. A purely positive test would not distinguish a missing activation.</li>
+<li><strong>Connect the API.</strong> <code>LinCombEltAct&lt;ReLu,float,float,float&gt;</code> names the activation/output/compute/source contract; <code>args.epilogue.thread.alpha</code> and <code>.beta</code> provide the runtime scalars. The explicit supported mainloop/epilogue schedules implement the storage and synchronization path around this expression.</li>
+</ol>
+<p><strong>Check:</strong> compare the fused output to the independently evaluated Z followed by activation, not to the unfused output Z itself. The example's binary fractions are exactly representable; a general low-precision output needs an explicit conversion/rounding policy too. If a future bias is added, write its coordinate and insert its addition at the intended node before changing any callback types.</p>
 <h2 id="6-bias-and-residuals-need-a-coordinate-contract">6 — Bias and residuals need a coordinate contract<a class="headerlink" href="#6-bias-and-residuals-need-a-coordinate-contract" title="Permanent link">&para;</a></h2>
 <p>The executable lab adds activation, not bias. A bias extension must define its broadcast axis explicitly. For <code>D[m,n,l]=activation(Z[m,n,l]+bias[n,l])</code>, a length-N vector is shared across M rows. A length-M vector represents a different operation.</p>
 <table>
@@ -2618,6 +2709,20 @@
 
 <h2 id="additional-memory-safety-record">Additional memory-safety record<a class="headerlink" href="#additional-memory-safety-record" title="Permanent link">&para;</a></h2>
 <p>The exact tested revision also passed <a href="../validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/memcheck-cutlass_gemm_relu.log">Compute Sanitizer memcheck</a> with zero errors and its numerical checks intact. <a href="../validation/2026-11-18-h100-workshop/supplemental-captures/gpu-checks/20261118T141445Z/commands.json">The dated supplemental manifest</a> retains commands, source hashes and actual UTC stage times. This does not prove every untested schedule.</p>
+<!-- companion-summary:start -->
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p>Specify the epilogue graph, precision and output coordinates before selecting a predefined fusion or visitor tree.</p>
+</li>
+<li>
+<p>Activation order, beta/C participation, broadcast axes and conversion boundaries can change results even when a template compiles.</p>
+</li>
+<li>
+<p>Validate the fused variant independently and compare the complete fused and unfused workloads. <a href="../26-precision-block-scaling/">Precision and block scaling</a> add further representation contracts.</p>
+</li>
+</ul>
+<!-- companion-summary:end -->
 
 
 
