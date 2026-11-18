@@ -4455,13 +4455,13 @@ machine this book is about.</p>
 </span><span id="__span-29-10"><a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>  the SM-to-SM interconnect. Watch for:
 </span><span id="__span-29-11"><a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>
 </span><span id="__span-29-12"><a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>  ├── Higher shared memory latency than a local access
-</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>  │   (~50-80 cycles vs ~10 — Chapter 2 §7.1)
+</span><span id="__span-29-13"><a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>  │   (compare actual local/remote access patterns under this workload)
 </span><span id="__span-29-14"><a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>  ├── Stall Short Scoreboard on the loads that use mapa
 </span><span id="__span-29-15"><a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>  └── barrier.cluster showing as Stall Barrier
 </span><span id="__span-29-16"><a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>
-</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>  If cluster sync cost dominates, reduce the cluster size.
-</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>  Chapter 1 §7.2's table: size 2 costs ~87 cycles to sync,
-</span><span id="__span-29-19"><a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>  size 16 costs ~150.
+</span><span id="__span-29-17"><a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>  If cluster synchronization limits useful work, test a supported smaller
+</span><span id="__span-29-18"><a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>  cluster and rerun correctness/timing. Query occupancy for the actual kernel;
+</span><span id="__span-29-19"><a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>  cluster size does not prescribe a fixed 87/150-cycle synchronization cost.
 </span></code></pre></div>
 <hr />
 <h2 id="12-four-worked-diagnoses">12 — Four Worked Diagnoses<a class="headerlink" href="#12-four-worked-diagnoses" title="Permanent link">&para;</a></h2>

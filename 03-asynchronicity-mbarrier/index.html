@@ -4034,41 +4034,34 @@ isn't fine, which on this hardware is most of the interesting ones.</p>
 <p>The advantage is simplicity: after a blocking call returns, you know the operation is done. The disadvantage is wasted time — the thread idles while waiting.</p>
 <p><a href="../images/ch03/03-blocking-vs-nonblocking-timelines.svg?v=faf3a7cdfe57"><img alt="Nonblocking issue separates request and use" src="../images/ch03/03-blocking-vs-nonblocking-timelines.svg?v=faf3a7cdfe57" /></a></p>
 <p><em>The issuing thread can do other work before it needs the result.</em></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Blocking Operations — Reference
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  CUDA examples of blocking operations:
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  cudaDeviceSynchronize()     // host blocks until ALL GPU work done
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>  cudaMemcpy(..., HostToDevice) // host blocks until copy complete
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>  __syncthreads()             // thread blocks until ALL block threads arrive
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>  bar.sync 0;                 // PTX: thread blocks at barrier
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>  When blocking is acceptable:
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>  ├── Setup/teardown operations (one-time cost, not in hot loop)
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>  ├── When you have no other useful work to do anyway
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>  ├── When simplicity matters more than peak performance
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>  └── Between pipeline stages when data dependency is unavoidable
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Blocking and completion — distinguish host from device
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>cudaDeviceSynchronize() waits for preceding work in the current device/context,
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>not all GPUs in the process. A successful wait is a completion boundary.
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>cudaMemcpy(...,HostToDevice): host-return semantics depend on pinned/pageable
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>storage; staging may finish before the final pageable-H2D DMA finishes.
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>Device-to-host synchronous copies return after the copy completes.
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>__syncthreads()/bar.sync wait for participating block threads under their
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>collective contract. They are not cross-block or whole-device waits.
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>Use documented stream/event ordering before consuming asynchronous results.
 </span></code></pre></div>
 <h3 id="32-non-blocking-operations-the-key-to-latency-hiding">3.2 Non-Blocking Operations — The Key to Latency Hiding<a class="headerlink" href="#32-non-blocking-operations-the-key-to-latency-hiding" title="Permanent link">&para;</a></h3>
 <p>A non-blocking operation returns control immediately to the launching thread before the operation has finished. The thread must later check for completion via a separate mechanism.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Non-Blocking Operations — Reference
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  CUDA examples of non-blocking operations:
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  cp.async.bulk.tensor ...         // starts TMA copy, returns immediately
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  wgmma.mma_async ...              // starts tensor core op, returns immediately
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>  mbarrier.test_wait.parity ...    // non-suspending completion test
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>  cudaMemcpyAsync(...)             // host-side: starts copy, returns immediately
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>  The critical invariant:
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>  Non-blocking means the operation IS RUNNING in the background.
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>  It does NOT mean the operation is skippable or optional.
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>  You MUST eventually synchronize before using the result.
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>  Failing to synchronize = reading garbage data (silent bug!).
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Asynchronous initiation — completion is a separate fact
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>TMA and WGMMA instructions initiate their specified asynchronous operations;
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>use their documented barrier or commit/wait completion protocol.
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>mbarrier.test_wait.parity tests a phase without suspending until it completes.
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>cudaMemcpyAsync host behavior depends on direction/storage and may block for
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>staging or internal resources; the Async suffix is not a zero-host-delay promise.
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>An asynchronous request can be queued rather than physically running already.
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>Preserve buffers and establish completion before a dependent consumer reads.
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>Use matching readiness and reuse dependencies, not host launch order alone.
 </span></code></pre></div>
 <hr />
 <h2 id="4-asynchrony-in-gpus">4 — Asynchrony in GPUs<a class="headerlink" href="#4-asynchrony-in-gpus" title="Permanent link">&para;</a></h2>
@@ -4223,13 +4216,14 @@ your thread is still reading the old contents out of it.</p>
 <h2 id="7-fences">7 — Fences<a class="headerlink" href="#7-fences" title="Permanent link">&para;</a></h2>
 <p>A fence is how you tell the hardware "do not reorder across this line."</p>
 <p>There are three you need, and they come in a natural pairing. A <strong>release</strong>
-fence (§7.2) is used by whoever produces data: it guarantees everything written
-before it is visible before the signal that says it's ready. An <strong>acquire</strong>
-fence (§7.3) is used by whoever consumes it: it guarantees nothing is read early.
+fence (§7.2) orders producer accesses as part of a matching publication
+protocol. An <strong>acquire</strong> fence (§7.3) orders consumer accesses after the
+corresponding synchronization observation. Neither is a standalone readiness signal.
 And a <strong>cross-proxy</strong> fence (§7.4) is the one specific to this chapter — it
 bridges the generic and async proxies from §5.</p>
-<p>§7.1 also introduces <strong>scope</strong>, which is the knob that decides how much a fence
-costs: ordering within a block is cheap, ordering across the whole GPU is not.</p>
+<p>§7.1 also introduces <strong>scope</strong>, which identifies the participating threads.
+It can affect implementation cost, but neither scope nor instruction name
+provides a universal latency estimate.</p>
 <h3 id="71-what-is-a-fence-and-why-do-we-need-one">7.1 What Is a Fence and Why Do We Need One?<a class="headerlink" href="#71-what-is-a-fence-and-why-do-we-need-one" title="Permanent link">&para;</a></h3>
 <p>A fence is an explicit instruction that constrains the ordering and visibility of memory operations. Without fences, the hardware (and compiler) may reorder or delay memory operations for performance, creating the hazards described in Section 6.</p>
 <p>Fences are <strong>scoped</strong>: they apply to a specific level of the memory hierarchy (CTA, cluster, GPU, system). The scope identifies which threads can participate in the ordering relation: <code>.cta</code> covers a block and <code>.gpu</code> covers the GPU. A fence is part of an acquire/release synchronisation pattern; it is not a broadcast notification that every thread has observed a write. Choose a sufficient scope, then measure its cost in the actual protocol.</p>
@@ -4275,7 +4269,7 @@ costs: ordering within a block is cheap, ordering across the whole GPU is not.</
 </span><span id="__span-12-40"><a id="__codelineno-12-40" name="__codelineno-12-40" href="#__codelineno-12-40"></a>  a plain C++ flag; use cuda::atomic_ref release/acquire publication.
 </span></code></pre></div>
 <h3 id="72-release-fence-producer-side">7.2 Release Fence — Producer Side<a class="headerlink" href="#72-release-fence-producer-side" title="Permanent link">&para;</a></h3>
-<p>A <strong>release fence</strong> creates a one-way barrier: all memory operations (especially writes) that appear <strong>before</strong> the release are guaranteed to become visible <strong>before</strong> anything that appears after the release. The release says "I am done producing; anyone who synchronizes with me will see all my prior writes."</p>
+<p>A <strong>release fence</strong> participates in publishing preceding memory operations through a matching synchronization operation at a sufficient scope. A consumer that establishes the corresponding acquire relation can then rely on the ordered producer writes. The fence alone does not announce readiness, complete an arbitrary asynchronous engine, or make every earlier write globally visible before every later operation. The flag/barrier accesses and memory proxies must satisfy their own contract.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Release Fence — Visualization
 </span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
@@ -4303,7 +4297,7 @@ costs: ordering within a block is cheap, ordering across the whole GPU is not.</
 </span><span id="__span-13-25"><a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a>  └── Before launching a TMA copy of data written by the thread
 </span></code></pre></div>
 <h3 id="73-acquire-fence-consumer-side">7.3 Acquire Fence — Consumer Side<a class="headerlink" href="#73-acquire-fence-consumer-side" title="Permanent link">&para;</a></h3>
-<p>An <strong>acquire fence</strong> creates the opposite one-way barrier: no memory operation that appears <strong>after</strong> the acquire can be observed as happening <strong>before</strong> it. The acquire says "I am about to consume; let me see all writes that were released before I proceed."</p>
+<p>An <strong>acquire fence</strong> orders subsequent applicable memory accesses after the synchronization observation that precedes it. It does not search for or collect unrelated producer releases. The consumer must observe the correct published flag/barrier generation using a matching scope/protocol; then the acquire relation makes the relevant producer writes available to the following reads. See <a href="https://docs.nvidia.com/cuda/archive/12.8.0/parallel-thread-execution/index.html#memory-consistency-model">PTX memory consistency and fences</a>.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>Acquire Fence — Visualization
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
@@ -4588,19 +4582,20 @@ completes when both are satisfied.</p>
 </span><span id="__span-19-33"><a id="__codelineno-19-33" name="__codelineno-19-33" href="#__codelineno-19-33"></a>    int phase = 0;           // register — cheap, private to each thread
 </span><span id="__span-19-34"><a id="__codelineno-19-34" name="__codelineno-19-34" href="#__codelineno-19-34"></a>
 </span><span id="__span-19-35"><a id="__codelineno-19-35" name="__codelineno-19-35" href="#__codelineno-19-35"></a>  Why registers?
-</span><span id="__span-19-36"><a id="__codelineno-19-36" name="__codelineno-19-36" href="#__codelineno-19-36"></a>  ├── Cheaper: register XOR costs 1 cycle; SMEM access costs ~10 cycles
-</span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>  ├── No bank conflicts or races (each thread has its own copy)
-</span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>  └── phase ^= 1 is a single instruction vs an SMEM load-modify-store
-</span><span id="__span-19-39"><a id="__codelineno-19-39" name="__codelineno-19-39" href="#__codelineno-19-39"></a>
-</span><span id="__span-19-40"><a id="__codelineno-19-40" name="__codelineno-19-40" href="#__codelineno-19-40"></a>  ─── Visual — Phase Flipping Over Multiple Tiles ──────────────────
-</span><span id="__span-19-41"><a id="__codelineno-19-41" name="__codelineno-19-41" href="#__codelineno-19-41"></a>
-</span><span id="__span-19-42"><a id="__codelineno-19-42" name="__codelineno-19-42" href="#__codelineno-19-42"></a>  Tile:     K=0      K=1      K=2      K=3
-</span><span id="__span-19-43"><a id="__codelineno-19-43" name="__codelineno-19-43" href="#__codelineno-19-43"></a>  Phase:    0 →1     1 →0     0 →1     1 →0
-</span><span id="__span-19-44"><a id="__codelineno-19-44" name="__codelineno-19-44" href="#__codelineno-19-44"></a>            ↑        ↑        ↑        ↑
-</span><span id="__span-19-45"><a id="__codelineno-19-45" name="__codelineno-19-45" href="#__codelineno-19-45"></a>         completes completes completes completes
-</span><span id="__span-19-46"><a id="__codelineno-19-46" name="__codelineno-19-46" href="#__codelineno-19-46"></a>
-</span><span id="__span-19-47"><a id="__codelineno-19-47" name="__codelineno-19-47" href="#__codelineno-19-47"></a>  wait(parity=0) succeeds when phase was 0 and just flipped to 1.
-</span><span id="__span-19-48"><a id="__codelineno-19-48" name="__codelineno-19-48" href="#__codelineno-19-48"></a>  wait(parity=1) succeeds when phase was 1 and just flipped to 0.
+</span><span id="__span-19-36"><a id="__codelineno-19-36" name="__codelineno-19-36" href="#__codelineno-19-36"></a>  ├── Phase XOR avoids a shared-memory token load; its performance depends on
+</span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>  │  the generated instructions and actual wait protocol
+</span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>  ├── No bank conflicts or races (each thread has its own copy)
+</span><span id="__span-19-39"><a id="__codelineno-19-39" name="__codelineno-19-39" href="#__codelineno-19-39"></a>  └── phase ^= 1 is a single instruction vs an SMEM load-modify-store
+</span><span id="__span-19-40"><a id="__codelineno-19-40" name="__codelineno-19-40" href="#__codelineno-19-40"></a>
+</span><span id="__span-19-41"><a id="__codelineno-19-41" name="__codelineno-19-41" href="#__codelineno-19-41"></a>  ─── Visual — Phase Flipping Over Multiple Tiles ──────────────────
+</span><span id="__span-19-42"><a id="__codelineno-19-42" name="__codelineno-19-42" href="#__codelineno-19-42"></a>
+</span><span id="__span-19-43"><a id="__codelineno-19-43" name="__codelineno-19-43" href="#__codelineno-19-43"></a>  Tile:     K=0      K=1      K=2      K=3
+</span><span id="__span-19-44"><a id="__codelineno-19-44" name="__codelineno-19-44" href="#__codelineno-19-44"></a>  Phase:    0 →1     1 →0     0 →1     1 →0
+</span><span id="__span-19-45"><a id="__codelineno-19-45" name="__codelineno-19-45" href="#__codelineno-19-45"></a>            ↑        ↑        ↑        ↑
+</span><span id="__span-19-46"><a id="__codelineno-19-46" name="__codelineno-19-46" href="#__codelineno-19-46"></a>         completes completes completes completes
+</span><span id="__span-19-47"><a id="__codelineno-19-47" name="__codelineno-19-47" href="#__codelineno-19-47"></a>
+</span><span id="__span-19-48"><a id="__codelineno-19-48" name="__codelineno-19-48" href="#__codelineno-19-48"></a>  wait(parity=0) succeeds when phase was 0 and just flipped to 1.
+</span><span id="__span-19-49"><a id="__codelineno-19-49" name="__codelineno-19-49" href="#__codelineno-19-49"></a>  wait(parity=1) succeeds when phase was 1 and just flipped to 0.
 </span></code></pre></div>
 <h3 id="102-transaction-count-tracking-async-data-delivery">10.2 Transaction Count — Tracking Async Data Delivery<a class="headerlink" href="#102-transaction-count-tracking-async-data-delivery" title="Permanent link">&para;</a></h3>
 <p>The transaction count tracks how many bytes of data the async operation is expected to deliver. TMA decrements this count automatically as it copies data. When it reaches zero, that half of the completion condition is satisfied.</p>

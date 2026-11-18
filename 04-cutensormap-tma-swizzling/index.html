@@ -3685,44 +3685,27 @@ genuinely asynchronous, which is what makes real pipelining possible.</p>
 </span></code></pre></div>
 <h3 id="12-what-tma-can-do">1.2 What TMA Can Do<a class="headerlink" href="#12-what-tma-can-do" title="Permanent link">&para;</a></h3>
 <p>TMA is not just a faster <code>memcpy</code>. It is a programmable data-movement engine with capabilities that no previous GPU had:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>TMA Capabilities Overview
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  1. MULTI-DIMENSIONAL TENSOR SUPPORT (1D through 5D)
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  TMA understands tensor layouts natively. You give it the shape and
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  strides of your tensor, and it fetches the right elements even if
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  they are non-contiguous in memory. No manual stride arithmetic
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  needed in kernel code.
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>TMA capabilities — supported descriptors and instruction variants
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>1. Tensor shapes: 1D through 5D for the supported tiled operations.
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>   The descriptor supplies dimensions/strides; the issuer still supplies
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>   tile coordinates and obeys datatype, alignment and extent constraints.
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>2. Global-to-shared delivery uses the bulk-async path, bypassing L1.
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>   Data may be supplied by L2; a global address does not imply an HBM miss.
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>   Whether this is the best path depends on the workload and reuse pattern.
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  Example: 3D convolution input [N, H, W] stored as [N][stride_H][stride_W]
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  TMA reads exactly the tile [n0:n1][h0:h1][w0:w1] with the right strides
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>  without threads computing a single address.
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>3. Multicast can distribute one requested tile to selected cluster blocks.
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>   Match the destination mask, initialized barriers and expected bytes.
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>   Do not infer one physical HBM transaction or cluster_size-fold speedup.
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>  2. DIRECT SMEM DELIVERY (bypasses L1 cache)
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>  TMA fetches from HBM → L2 → Shared Memory directly.
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>  Data is NOT polluting the L1 cache (which is valuable for register spills).
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>  This is the optimal path for streaming data used once per kernel launch.
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>  3. MULTICAST (one HBM fetch → multiple SMs simultaneously)
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>  With cluster-enabled kernels, one TMA instruction can deliver the
-</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>  same data to ALL blocks in a cluster simultaneously. This eliminates
-</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>  redundant HBM reads when multiple blocks need the same tile.
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>  Bandwidth savings = cluster_size× for broadcast-pattern access.
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>  4. SWIZZLED WRITES TO SMEM (automatic bank-conflict elimination)
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>  TMA can apply swizzling (XOR address permutation) as it writes data
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>  to shared memory. The data lands in a conflict-free layout without
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>  any software effort. Kernels reading the data see it in the right banks.
-</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>
-</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>  5. INTERLEAVED LAYOUT SUPPORT (NCHW / NCxHWCx formats)
-</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>  For convolution and image data in interleaved formats (like NC8HWC8),
-</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>  TMA can de-interleave the data as it copies, presenting it in a
-</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>  linearized form to the kernel.
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>4. Supported swizzles permute shared-memory placement during the transfer.
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>   The consumer must use the corresponding layout/descriptor. A legal
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>   permutation does not guarantee conflict freedom for every access pattern.
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>5. Supported interleaved formats are encoded through descriptor fields.
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>   Check the selected mode's datatype/stride restrictions; this is not
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>   a general-purpose conversion between arbitrary tensor layouts.
 </span></code></pre></div>
 <h3 id="13-the-perfect-asynchronicity-why-tma-enables-true-pipelining">1.3 The Perfect Asynchronicity — Why TMA Enables True Pipelining<a class="headerlink" href="#13-the-perfect-asynchronicity-why-tma-enables-true-pipelining" title="Permanent link">&para;</a></h3>
 <p>Hopper can overlap data movement and computation when dependencies, buffers and execution resources permit. Separate issue, TMA and Tensor Core resources make that overlap possible; they do not guarantee 100% utilization:</p>
@@ -4419,8 +4402,10 @@ tensor at all — they are about how the tile gets <em>arranged</em> once it lan
 shared memory.</p>
 <p>This section is the setup for that, and it recaps the bank-conflict material
 from Chapter 1 §13.3 in the detail you need for §10. The short version: shared
-memory is 32 independent banks, a warp can hit all 32 in one cycle, and any two
-threads wanting different addresses in the same bank are serialised.</p>
+memory has 32 banks. For the scalar 32-bit word model, distinct addresses
+in one bank conflict, while same-word reads can broadcast. Wider/narrower
+instructions and transaction decomposition require their actual bank mapping;
+this is not a universal one-cycle latency guarantee.</p>
 <p>If Chapter 1's version is still fresh, skim to §10.</p>
 <h3 id="91-shared-memory-banks-the-hardware-reality">9.1 Shared Memory Banks — The Hardware Reality<a class="headerlink" href="#91-shared-memory-banks-the-hardware-reality" title="Permanent link">&para;</a></h3>
 <p>Before explaining swizzling (§10), you need a solid understanding of why bank conflicts happen. This section gives you the mental model that makes swizzling's XOR formula intuitive.</p>
@@ -4436,56 +4421,47 @@ threads wanting different addresses in the same bank are serialised.</p>
 </span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>  thread 2 → smem[2]  → bank 2
 </span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>  ...
 </span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>  thread 31 → smem[31] → bank 31
-</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>All different banks → ALL serviced in 1 cycle. Ideal!
-</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>
-</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>Bank Conflict — The Problem Case
-</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>──────────────────────────────────────────────────────────────────────
-</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>Warp accesses smem[0], smem[32], smem[64], ..., smem[31*32]:
-</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>(stride-32 access — typical in column-major reads of row-major matrix)
-</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>  thread 0  → smem[0]    = byte 0    → bank 0
-</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>  thread 1  → smem[32]   = byte 128  → bank 0  &lt;- SAME BANK
-</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>  thread 2  → smem[64]   = byte 256  → bank 0  &lt;- SAME BANK
-</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>  ...
-</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>  thread 31 → smem[31x32]= byte 3968 → bank 0  &lt;- ALL IN BANK 0
-</span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>32-way conflict: 32 cycles instead of 1. 32x SLOWDOWN.
-</span><span id="__span-16-21"><a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>
-</span><span id="__span-16-22"><a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>Why This Happens in GEMM
-</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>──────────────────────────────────────────────────────────────────────
-</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>A[M][K] matrix stored row-major in SMEM: rows of K elements.
-</span><span id="__span-16-25"><a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>When we compute tile products, we need to read COLUMNS of A.
-</span><span id="__span-16-26"><a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>Reading column j: A[0][j], A[1][j], A[2][j], ... A[M-1][j]
-</span><span id="__span-16-27"><a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a>These are K elements apart in memory -&gt; stride K access -&gt; conflict!
-</span><span id="__span-16-28"><a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a>
-</span><span id="__span-16-29"><a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a>The fix: SWIZZLE the addresses so that what logically appears to be
-</span><span id="__span-16-30"><a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a>the same bank maps to DIFFERENT physical banks.
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>All distinct banks in this scalar model: no bank conflict.
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>This does not specify the instruction's end-to-end latency.
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>Bank Conflict — The Problem Case
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>──────────────────────────────────────────────────────────────────────
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>Warp accesses smem[0], smem[32], smem[64], ..., smem[31*32]:
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>(stride-32 access — typical in column-major reads of row-major matrix)
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>  thread 0  → smem[0]    = byte 0    → bank 0
+</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>  thread 1  → smem[32]   = byte 128  → bank 0  &lt;- SAME BANK
+</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>  thread 2  → smem[64]   = byte 256  → bank 0  &lt;- SAME BANK
+</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>  ...
+</span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>  thread 31 → smem[31x32]= byte 3968 → bank 0  &lt;- ALL IN BANK 0
+</span><span id="__span-16-21"><a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>32-way conflict: 32 cycles instead of 1. 32x SLOWDOWN.
+</span><span id="__span-16-22"><a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>
+</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>Why This Happens in GEMM
+</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>──────────────────────────────────────────────────────────────────────
+</span><span id="__span-16-25"><a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>A[M][K] matrix stored row-major in SMEM: rows of K elements.
+</span><span id="__span-16-26"><a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>When we compute tile products, we need to read COLUMNS of A.
+</span><span id="__span-16-27"><a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a>Reading column j: A[0][j], A[1][j], A[2][j], ... A[M-1][j]
+</span><span id="__span-16-28"><a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a>These are K elements apart in memory -&gt; stride K access -&gt; conflict!
+</span><span id="__span-16-29"><a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a>
+</span><span id="__span-16-30"><a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a>The fix: SWIZZLE the addresses so that what logically appears to be
+</span><span id="__span-16-31"><a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a>the same bank maps to DIFFERENT physical banks.
 </span></code></pre></div>
 <h3 id="92-why-32-banks-exist">9.2 Why 32 Banks Exist<a class="headerlink" href="#92-why-32-banks-exist" title="Permanent link">&para;</a></h3>
-<p>Why the number is 32 and not something else — it lines up with the warp size and
-with a 128-byte cache line, which is not a coincidence.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>32 Banks — The Design Rationale
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>  A warp has 32 threads.
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>  For conflict-free operation: we need at least 32 independent memory
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>  paths (one per thread in a warp).
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>  32 banks provides exactly this: 32 threads × 1 bank each = 1 cycle.
+<p>For the scalar 32-bit model, one warp can request one distinct word per bank.
+This bank-service model does not derive a universal latency from warp size or
+from an unrelated cache-line size.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>32 banks — scalar 32-bit request model
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>For a single scalar 32-bit shared-memory request per lane:
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>  - Word offset w maps to bank w modulo 32.
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>  - Distinct words in distinct banks introduce no bank conflict.
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>  - Several lanes reading the same word may use broadcast.
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>  - Different words in one bank require additional service work.
 </span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>  Each bank is 4 bytes wide:
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>  ├── The minimum register transfer unit is 32 bits (4 bytes)
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>  ├── Matching bank width to register width means no waste
-</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>  └── A single warp accessing 32 unique 4-byte values = 32×4 = 128 bytes
-</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>      transferred in 1 cycle = 128 bytes/cycle throughput per SM
-</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>
-</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>  Access patterns and their cost:
-</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-17-17"><a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>  1 thread   per bank → 1 cycle (conflict-free)  ← ideal
-</span><span id="__span-17-18"><a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>  N threads  per bank → N cycles (N-way conflict) ← need swizzle
-</span><span id="__span-17-19"><a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>  N threads read SAME address → 1 cycle (broadcast) ← hardware handles
-</span><span id="__span-17-20"><a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>
-</span><span id="__span-17-21"><a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>  Note: Broadcast is conflict-free! If all threads in a warp read the
-</span><span id="__span-17-22"><a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>  SAME address (not just same bank, but identical address), hardware
-</span><span id="__span-17-23"><a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>  broadcasts the value in a single cycle. This is different from
-</span><span id="__span-17-24"><a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>  N threads reading DIFFERENT addresses in the SAME bank.
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>A conflict-free address pattern is not a one-cycle load-latency guarantee.
+</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>A vector request may be decomposed into several hardware transactions;
+</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>analyze its relevant transactions rather than all bytes as one request.
+</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>FP16 coordinates require conversion to byte/word addresses first.
+</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>Measure actual instruction throughput, latency and bank-conflict metrics.
 </span></code></pre></div>
 <hr />
 <h2 id="10-swizzling">10 — Swizzling<a class="headerlink" href="#10-swizzling" title="Permanent link">&para;</a></h2>
@@ -4494,10 +4470,11 @@ with a 128-byte cache line, which is not a coincidence.</p>
 turns a column read into a 32-way conflict. Swizzling scrambles the layout as
 the TMA writes — XORing part of the row index into the address — so that a
 column spreads across all 32 banks instead.</p>
-<p>The crucial part is that the TMA does this <em>for free</em>, in hardware, on the way
-in. You enable it in the descriptor and never think about it again — except in
-Chapter 6 §11, where you have to reproduce the same XOR to read the tile back
-out.</p>
+<p>TMA can apply a supported swizzle while delivering the tile, avoiding a
+separate software rearrangement pass. The consumer must still use the matching
+physical layout/descriptor and satisfy alignment and extent constraints. A
+swizzle is not a universal conflict-free guarantee or a zero-cost performance
+promise; Chapter 6 §11 and Chapter 22 trace the consumer mapping.</p>
 <p>§10.2 covers 128B swizzle, which is the right default for FP16 and BF16 GEMM.
 §10.3 covers the narrower modes and when they apply.</p>
 <h3 id="101-what-swizzling-is-the-intuition">10.1 What Swizzling Is — The Intuition<a class="headerlink" href="#101-what-swizzling-is-the-intuition" title="Permanent link">&para;</a></h3>

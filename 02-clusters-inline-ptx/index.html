@@ -4035,27 +4035,24 @@ sections marked ★ are complete runnable programs rather than reference materia
 <h2 id="1-thread-block-clusters">1 — Thread Block Clusters<a class="headerlink" href="#1-thread-block-clusters" title="Permanent link">&para;</a></h2>
 <p>For fifteen years CUDA had exactly three levels: threads, blocks, grids. Hopper
 adds a fourth — the <strong>cluster</strong>, a small group of thread blocks that the hardware
-guarantees to co-schedule on neighbouring SMs, and which can therefore read one
+guarantees to co-schedule within one GPC, and which can therefore read one
 another's shared memory directly.</p>
 <p>That one capability is the whole point. Before clusters, two blocks that needed
 to exchange data had no choice but to write it to global memory and read it back
-— roughly a thousand cycles of round trip. Inside a cluster it costs tens.</p>
+— with costs determined by cache residency, ordering and the access pattern. DSMEM provides another path whose latency and benefit must be measured.</p>
 <p>This section builds the idea up in layers: where clusters sit in the hierarchy
 (§1.1), the problem they were invented to solve (§1.2), what the hardware
 actually does (§1.3), how to choose a size (§1.4), the two ways to declare one in
 code (§1.5–§1.6), and the PTX registers underneath the C++ API (§1.7).</p>
 <h3 id="11-the-extended-cuda-hierarchy">1.1 The Extended CUDA Hierarchy<a class="headerlink" href="#11-the-extended-cuda-hierarchy" title="Permanent link">&para;</a></h3>
 <p>Before Hopper arrived in 2022, every CUDA programmer worked with three levels of parallelism: individual <strong>threads</strong> group into <strong>thread blocks</strong>, and thread blocks form a <strong>grid</strong>. This hierarchy has been stable since CUDA 1.0. The H100 introduces a fourth level — the <strong>Thread Block Cluster</strong> — which sits between blocks and the grid.</p>
-<p>Why does this matter? Because previously, the only way for two thread blocks to share data was through global memory (HBM3 on the H100), which has ~500 cycle latency. The cluster gives blocks a direct communication path through each other's shared memory with only ~50-80 cycle latency — a 3-10× speedup for cross-block communication.</p>
+<p>Why does this matter? Before clusters, shared memory was block-private, so an inter-block exchange normally used global-memory storage plus a synchronization protocol. Global memory is an address space, not a promise that every operation reaches HBM: L1/L2 behavior and cache operators affect the physical traffic. Cluster DSMEM permits direct access to another participating block's shared allocation within one GPC. It removes the need for that global intermediate, but does not promise a fixed latency or speedup. The <a href="https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#thread-block-clusters">CUDA cluster contract</a> specifies co-scheduling and supported size, rather than a physical-neighbor placement guarantee.</p>
 <p>Think of it this way: before clusters, each block was an island. If block A needed data computed by block B, it had to write to global memory and block B had to read from global memory. With clusters, blocks within the same cluster can directly read and write each other's shared memory as if it were their own (with some address translation, covered in Section 16).</p>
 <p><a href="../images/ch02/01-cuda-hierarchy-pre-post-hopper.svg?v=b00f409906ca"><img alt="A cluster adds a cooperation level" src="../images/ch02/01-cuda-hierarchy-pre-post-hopper.svg?v=b00f409906ca" /></a></p>
 <p><em>Grid → cluster → block → thread. A cluster groups blocks, not individual threads.</em></p>
 <h3 id="12-why-clusters-exist-the-problem-they-solve">1.2 Why Clusters Exist — The Problem They Solve<a class="headerlink" href="#12-why-clusters-exist-the-problem-they-solve" title="Permanent link">&para;</a></h3>
 <p>To understand why clusters were invented, you need to understand what happens at the hardware level when two thread blocks want to share data. This section digs into the mechanics.</p>
-<p>On any GPU before Hopper, shared memory is completely private to one thread block. There is no hardware pathway for two blocks to see each other's shared memory. This means any inter-block communication must go through global memory (HBM), which involves:
-1. Block A writes results to a global buffer (HBM write)
-2. Block B reads from that global buffer (HBM read)
-3. Total round-trip: 2 × ~500 cycles + serialization overhead</p>
+<p>Before Hopper's cluster DSMEM support, ordinary block shared memory was not directly addressable by another block. A global-memory handoff therefore stores an intermediate in global address space and uses a correct publication/consumption protocol. Its stores and loads may hit caches; modeling each as an unavoidable HBM miss would overstate the cost. Likewise, a DSMEM handoff still needs initialized target storage, producer readiness and a lifetime that extends through every remote access.</p>
 <p>For algorithms like attention (where blocks need to cooperate on softmax normalization) or top-k (where blocks need to know each other's partial results), this round-trip to global memory is a serious bottleneck.</p>
 <p>Clusters solve this by extending the hardware to allow shared-memory cross-access within a group of co-scheduled blocks. The key hardware enabling this is the SM-to-SM DSMEM interconnect within a GPC (Graphics Processing Cluster). When blocks are placed in the same cluster, the hardware routes their shared-memory accesses through this dedicated interconnect instead of global memory.</p>
 <p><a href="../images/ch02/02-communication-with-without-clusters.svg?v=fe00344de9b9"><img alt="Two ways to exchange a partial sum" src="../images/ch02/02-communication-with-without-clusters.svg?v=fe00344de9b9" /></a></p>
@@ -4063,69 +4060,44 @@ code (§1.5–§1.6), and the PTX registers underneath the C++ API (§1.7).</p>
 <h3 id="13-how-clusters-actually-work-mechanics">1.3 How Clusters Actually Work — Mechanics<a class="headerlink" href="#13-how-clusters-actually-work-mechanics" title="Permanent link">&para;</a></h3>
 <p>Let's be very precise about what clusters do and don't do, because there are several common misconceptions.</p>
 <p><strong>Misconception 1: "Clusters create a shared memory pool."</strong> Wrong. Each block still has its OWN private shared memory. What changes is that threads in Block A can now issue loads/stores that target Block B's shared memory. It's cross-access, not pooling.</p>
-<p><strong>Misconception 2: "The cluster is a hardware concept."</strong> Wrong. The cluster is a SOFTWARE abstraction. The hardware concept is the GPC (Graphics Processing Cluster), which is a group of ~18 SMs that share an L2 slice and the DSMEM interconnect. The cluster tells the scheduler to place the cluster's blocks on SMs within the same GPC so the DSMEM interconnect is available.</p>
+<p><strong>Misconception 2: "Cluster size specifies physical neighboring SMs."</strong> It specifies a cooperating group of blocks with a hardware-backed co-scheduling guarantee within one GPC. It does not expose a portable map from cluster rank to physical SM number, guarantee a private L2 slice for the cluster, or make register/shared-memory occupancy constraints disappear.</p>
 <p><strong>Misconception 3: "You can have unlimited cluster size."</strong> Wrong. The maximum portable cluster size is 8 blocks. Size 16 exists but requires a non-portable flag and may leave SMs idle.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Step 1: Kernel launch with cluster size = 2
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  my_kernel&lt;&lt;&lt;dim3(128,1,1), dim3(256,1,1)&gt;&gt;&gt;(...);
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  // 128 blocks total, cluster size 2 -&gt; 64 clusters of 2 blocks each
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>Step 3: Both blocks launch simultaneously
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  The "concurrent" guarantee means:
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    - Block 0 and Block 1 are both running at the same time
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    - Neither will be pre-empted while the other runs
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    - DSMEM accesses are valid during the entire kernel
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>Step 4: thread in Block 0 reaching into Block 1's SMEM
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  uint32_t remote_addr = mapa(my_smem_addr, /*rank=*/1);
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>  // remote_addr now points into Block 1's shared memory
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>  float val = ld.shared::cluster [remote_addr];
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>  // This load travels via the SM-to-SM DSMEM interconnect
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Cluster launch and DSMEM lifetime — conceptual sequence
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>1. Configure a supported cluster dimension (compile-time or launch attribute).
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>   For a one-dimensional cluster size 2 and grid.x=128, there are 64 clusters.
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>2. Initialize each block's local shared allocation.
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>3. All cluster blocks execute cluster.sync() before remote accesses.
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>   Co-scheduling is within one GPC, not a physical-neighbor/preemption promise.
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>4. Map a valid target rank and issue the supported DSMEM accesses.
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>5. All cluster blocks finish their remote accesses and synchronize before
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>   any target block exits or reuses storage still referenced by a peer.
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>Co-scheduling alone does not initialize data or extend a block's lifetime.
 </span></code></pre></div>
 <p><a href="../images/ch02/03-cluster-mechanics-gpc-scheduling.svg?v=878db019ec1f"><img alt="A cluster is a scheduling and lifetime contract" src="../images/ch02/03-cluster-mechanics-gpc-scheduling.svg?v=878db019ec1f" /></a></p>
 <p><em>Co-scheduling enables cross-block shared-memory access within one GPC.</em></p>
 <h3 id="14-cluster-sizes-practical-considerations">1.4 Cluster Sizes — Practical Considerations<a class="headerlink" href="#14-cluster-sizes-practical-considerations" title="Permanent link">&para;</a></h3>
-<p>Choosing a cluster size is a tradeoff between more shared-memory capacity (bigger is better) vs. worse SM utilization (bigger wastes slots) and higher synchronization cost (bigger is slower to sync).</p>
-<p>A key hardware fact: the full GH100 die has 8 GPCs of up to 18 SMs each (144 SMs total) — but the shipping H100 product disables some for yield, so the real count per GPC is lower and uneven: H100 SXM5 ships 132 SMs across its 8 GPCs (~16-17 per GPC on average), and H100 PCIe ships only 114. The table below uses the full die's 18-SM GPC as the clean illustrative case for the capacity model; on a real card, substitute whatever SM count that specific GPC actually has. A cluster of size 2 fits 9 times per GPC (18/2 = 9), with no waste. A cluster of size 4 fits 4 times (18/4 = 4 clusters, 2 SMs idle per GPC — but the scheduler can fill these with non-cluster blocks). A cluster of size 16 requires all 18 SMs but only uses 16, so 2 SMs sit idle per GPC.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Cluster Size Trade-offs — Practical Decision Table
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  Size    Clusters/GPC  SMs Used  SMs Idle  Sync Cost   Notes
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  ────────────────────────────────────────────────────────────────
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    1         18           1         17      N/A         Just a normal block, no DSMEM
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    2          9           2         16     ~87 cycles   ★ Best default choice
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    4          4           4         14     ~87 cycles   Good for large tile GEMM
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    8          2           8         10     ~87 cycles   Max fully-portable size
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>   16          1          16          2    ~150 cycles   Needs non-portable flag
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>  (*) Non-portable: requires cudaFuncAttributeNonPortableClusterSizeAllowed
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>  Why ~87 cycles for sizes 2-8?
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    The synchronization cost is dominated by the worst-case SM-to-SM
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    latency within a GPC, which is ~87 cycles regardless of whether
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    you're syncing 2 or 8 blocks. All blocks must "arrive" and the
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    last one sets the barrier. Cost = latency of the furthest SM pair.
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>
-</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>  Why 150 cycles for size 16?
-</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    Size 16 spans more of the GPC's internal network, adding latency.
-</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>
-</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>  ─── The Rule of Thumb ───────────────────────────────────────────
-</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a>  │                                                                 │
-</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>  │  • Default to cluster size 2.                                   │
-</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>  │  • Use size 4 or 8 only if your algorithm needs &gt;456 KB SMEM.  │
-</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>  │  • Never use size 16 unless you've profiled and verified it     │
-</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>  │    helps — the idle SMs hurt occupancy everywhere.              │
-</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>  │                                                                 │
-</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>  └─────────────────────────────────────────────────────────────────
-</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>
-</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>  Grid Size Constraint (VERY IMPORTANT):
-</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>    The grid dimension MUST be a multiple of the cluster size.
-</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>
-</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>    cluster size = 2 → grid.x must be 2, 4, 6, 8, ... (any even)
-</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>    cluster size = 4 → grid.x must be 4, 8, 12, 16, ...
-</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>    cluster size = 8 → grid.x must be 8, 16, 24, ...
-</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>
-</span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>    WRONG:  cluster_size=4, grid.x=10  → undefined behavior
-</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>    RIGHT:  cluster_size=4, grid.x=12  → 3 clusters per row in grid
+<p>Choose cluster size from the communication pattern and the actual launch's resource requirements. More blocks can cooperate on distributed shared storage, but can also reduce available scheduling flexibility. Larger size does not imply monotonically worse utilization or a fixed synchronization cost; measure the selected workload.</p>
+<p>The full GH100 design has up to 144 SMs; H100 SXM and PCIe variants expose different enabled counts. Dividing a notional 18-SM GPC by cluster size is not a reliable active-cluster calculation: a block's threads, registers, shared storage and the supported placement all matter, and blocks need not consume one whole SM each. Use <code>cudaOccupancyMaxPotentialClusterSize</code> and <code>cudaOccupancyMaxActiveClusters</code> with the actual kernel and launch configuration. Supported portable cluster size can also be reduced by a small GPU/MIG configuration. See the <a href="https://docs.nvidia.com/cuda/archive/12.8.0/hopper-tuning-guide/index.html#thread-block-clusters">Hopper occupancy guidance</a>.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Cluster-size decisions — contracts, not latency predictions
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Size 1       One block; no cross-block cooperation is needed.
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>Sizes 2/4/8  Candidate cluster sizes when supported by this launch.
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>Size 8       Maximum portable size, subject to device/MIG limits.
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>Size 16      Nonportable candidate only on supporting configurations;
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>            requires cudaFuncAttributeNonPortableClusterSizeAllowed.
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>For each candidate:
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>  - Check kernel/block/shared-memory/register resource requirements.
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>  - Query supported size and active clusters with the occupancy APIs.
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>  - Validate communication, synchronization and remote-storage lifetime.
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>  - Measure useful work and synchronization cost; do not assume 87/150 cycles.
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>Grid dimensions are in blocks and must be divisible componentwise by
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>cluster dimensions. For a 1D cluster (4,1,1), grid.x=12 gives 3 clusters;
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>grid.x=10 does not satisfy that launch contract. Check launch errors.
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>There is no universal rule to start at 2 or to use 4/8 only above 456 KiB.
 </span></code></pre></div>
 <h3 id="15-creating-clusters-in-code-two-methods">1.5 Creating Clusters in Code — Two Methods<a class="headerlink" href="#15-creating-clusters-in-code-two-methods" title="Permanent link">&para;</a></h3>
 <p>There are two ways to specify the cluster size: a compile-time attribute baked into the kernel, or a runtime API that allows flexible configuration.</p>
@@ -4666,7 +4638,7 @@ how much bandwidth do you get out of it, and when is it worth using instead of
 just going to global memory?</p>
 <h3 id="21-dsmem-architecture">2.1 DSMEM Architecture<a class="headerlink" href="#21-dsmem-architecture" title="Permanent link">&para;</a></h3>
 <p>Distributed Shared Memory is the hardware feature that makes clusters useful. It's easy to misunderstand what DSMEM actually is, so let's be precise: DSMEM is <strong>not</strong> a new type of memory or a new pool of SRAM. It is the existing per-SM shared memory, extended with a hardware interconnect that allows one SM to access another SM's shared memory — but only within the same cluster.</p>
-<p>The key insight is that each SM has 228 KB of SRAM, and this SRAM is used for shared memory. When a thread block runs on SM 0, its <code>__shared__</code> allocations live in SM 0's SRAM. When two blocks form a cluster on SMs 0 and 1, the thread block on SM 0 can now issue memory operations that target SM 1's SRAM. The DSMEM interconnect (a dedicated SM-to-SM network within the GPC) routes these operations.</p>
+<p>The key insight is that each H100 SM can configure up to 228 KiB of shared memory from its combined 256-KiB L1/shared-memory resource. When a thread block runs on SM 0, its <code>__shared__</code> allocations live in SM 0's SRAM. When two blocks form a cluster on SMs 0 and 1, the thread block on SM 0 can now issue memory operations that target SM 1's SRAM. The DSMEM interconnect (a dedicated SM-to-SM network within the GPC) routes these operations.</p>
 <p><a href="../images/ch02/04-dsmem-architecture.svg?v=b1bb1f6dd99a"><img alt="Distributed access, separate ownership" src="../images/ch02/04-dsmem-architecture.svg?v=b1bb1f6dd99a" /></a></p>
 <p><em>A cluster does not merge all shared-memory allocations into one flat physical SRAM.</em></p>
 <h3 id="22-dsmem-bandwidth-model">2.2 DSMEM Bandwidth Model<a class="headerlink" href="#22-dsmem-bandwidth-model" title="Permanent link">&para;</a></h3>
@@ -6009,7 +5981,7 @@ often you'll touch them.</p>
 </span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>
 </span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>  State Space   PTX Qualifier    Physical Location     Speed
 </span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>  ──────────────────────────────────────────────────────────────────
-</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>  Register      .reg             On-SM register file   1 cycle (fastest)
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>  Register      .reg             On-SM register file   Instruction-dependent
 </span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>  Shared (CTA)  .shared::cta     On-SM SRAM (228KB)    ~10 cycles (banked)
 </span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>  Shared(clust) .shared::cluster On-SM SRAM via DSMEM  ~50-80 cycles
 </span><span id="__span-29-9"><a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>  Global        .global          HBM3 (off-chip)       ~500 cycles (slowest)
@@ -6020,40 +5992,26 @@ often you'll touch them.</p>
 <p><a href="../images/ch02/08-state-space-memory-hierarchy.svg?v=4a28f97960d0"><img alt="State spaces describe access and scope" src="../images/ch02/08-state-space-memory-hierarchy.svg?v=4a28f97960d0" /></a></p>
 <p><em>Software state spaces do not map one-to-one to fixed cache capacities or universal latencies.</em></p>
 <h3 id="72-register-state-space-reg-the-fastest-storage">7.2 Register State Space (.reg) — The Fastest Storage<a class="headerlink" href="#72-register-state-space-reg-the-fastest-storage" title="Permanent link">&para;</a></h3>
-<p>Registers are the only storage that costs exactly 1 cycle to access. They live entirely within the SM's register file — a massive SRAM array that holds up to 65,536 × 32-bit registers per SM, divided among all the threads running on that SM.</p>
-<p>The key limitation is quantity: each thread can use at most 255 registers. If your kernel tries to use more, the compiler "spills" extra values to local memory (which is slow — it goes to HBM). Always check your register count with <code>nvcc --ptxas-options=-v</code>.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Register Space — What You Need to Know
-</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>══════════════════════════════════════════════════════════════════════
-</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>
-</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>  H100 Register File Capacity:
-</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>    65,536 registers × 32 bits = 256 KB per SM
-</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>    With max 256 threads/block: 65536/256 = 256 registers per thread
-</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>    But realistic limit: 128-160 registers (higher = less occupancy)
-</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>
-</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>  Occupancy vs Register Count:
-</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>  ┌────────────────────────────────────────────────────────────┐
-</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>  │ Registers/thread │ Threads/SM │ Blocks/SM │ Occupancy     │
-</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>  │ ─────────────────────────────────────────────────────────  │
-</span><span id="__span-30-13"><a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>  │       32          │   2048     │     8     │   100%        │
-</span><span id="__span-30-14"><a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>  │       64          │   1024     │     4     │    50%        │
-</span><span id="__span-30-15"><a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>  │      128          │    512     │     2     │    25%        │
-</span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>  │      255          │    256     │     1     │    12.5%      │
-</span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a>  └────────────────────────────────────────────────────────────┘
-</span><span id="__span-30-18"><a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a>  Lower occupancy → fewer threads to hide latency → slower kernel.
-</span><span id="__span-30-19"><a id="__codelineno-30-19" name="__codelineno-30-19" href="#__codelineno-30-19"></a>
-</span><span id="__span-30-20"><a id="__codelineno-30-20" name="__codelineno-30-20" href="#__codelineno-30-20"></a>  Checking register usage (VERY USEFUL for optimization):
-</span><span id="__span-30-21"><a id="__codelineno-30-21" name="__codelineno-30-21" href="#__codelineno-30-21"></a>    nvcc -std=c++17 -arch=sm_90a --ptxas-options=-v mykernel.cu
-</span><span id="__span-30-22"><a id="__codelineno-30-22" name="__codelineno-30-22" href="#__codelineno-30-22"></a>
-</span><span id="__span-30-23"><a id="__codelineno-30-23" name="__codelineno-30-23" href="#__codelineno-30-23"></a>  Output:
-</span><span id="__span-30-24"><a id="__codelineno-30-24" name="__codelineno-30-24" href="#__codelineno-30-24"></a>    ptxas info    : Used 64 registers, 4096 bytes smem, 400 bytes cmem[0]
-</span><span id="__span-30-25"><a id="__codelineno-30-25" name="__codelineno-30-25" href="#__codelineno-30-25"></a>    #              └───────────────────────────────────────────────────────
-</span><span id="__span-30-26"><a id="__codelineno-30-26" name="__codelineno-30-26" href="#__codelineno-30-26"></a>    #              64 registers per thread → 1024 threads/SM occupancy
-</span><span id="__span-30-27"><a id="__codelineno-30-27" name="__codelineno-30-27" href="#__codelineno-30-27"></a>
-</span><span id="__span-30-28"><a id="__codelineno-30-28" name="__codelineno-30-28" href="#__codelineno-30-28"></a>  Explicit .reg declarations (only needed for PTX temporaries):
-</span><span id="__span-30-29"><a id="__codelineno-30-29" name="__codelineno-30-29" href="#__codelineno-30-29"></a>    .reg .u32 r1, r2;    // two 32-bit unsigned int registers
-</span><span id="__span-30-30"><a id="__codelineno-30-30" name="__codelineno-30-30" href="#__codelineno-30-30"></a>    .reg .f32 f&lt;8&gt;;      // eight 32-bit float registers (f0 through f7)
-</span><span id="__span-30-31"><a id="__codelineno-30-31" name="__codelineno-30-31" href="#__codelineno-30-31"></a>    .reg .pred p1, p2;   // two 1-bit predicate registers
-</span><span id="__span-30-32"><a id="__codelineno-30-32" name="__codelineno-30-32" href="#__codelineno-30-32"></a>    .reg .b128 v1;       // one 128-bit register (4 × 32-bit slots)
+<p>Registers hold thread-local operands in the SM register file; H100 provides 65,536 32-bit registers per SM. They avoid a separate load from global/shared address space, but PTX does not promise every register access or register-dependent instruction has one-cycle latency. Instruction latency, issue throughput, dependencies and register allocation are different quantities.</p>
+<p>An H100 thread's architectural limit is 255 registers. Allocation is constrained by the whole block/SM resource budget, and the compiler may spill before that ceiling depending on the code and chosen limits. Spill slots live in local address space backed by device memory and may be cached; a spill is not necessarily an HBM transaction. Inspect <code>nvcc --ptxas-options=-v</code>, generated accesses and the relevant profiler evidence.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>Register budget — illustrative arithmetic, not occupancy prediction
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>65,536 32-bit registers = 256 KiB per SM.
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>For a 256-thread block, 32 registers/thread uses 8192 raw registers/block.
+</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>The register-only quotient is 65536/8192 = 8 blocks, before allocation rounding
+</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>and other thread/block/shared-memory limits are applied.
+</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>
+</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>64 registers/thread instead uses 16384 raw registers/block, suggesting at
+</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>most 4 blocks by this one budget. Query actual occupancy for the kernel.
+</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>The hardware block-thread limit is not 256; 256 is this example's block size.
+</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>
+</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>Lower occupancy does not universally mean lower performance. More registers
+</span><span id="__span-30-13"><a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>can reduce spills or increase reuse; compare the complete measured kernel.
+</span><span id="__span-30-14"><a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>
+</span><span id="__span-30-15"><a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>Compiler resource report:
+</span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>  nvcc -std=c++17 -arch=sm_90a --ptxas-options=-v mykernel.cu
+</span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a>  A reported 64 registers/thread is an input to occupancy analysis,
+</span><span id="__span-30-18"><a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a>  not proof that 1024 threads will be resident in every launch.
 </span></code></pre></div>
 <h3 id="73-global-state-space-global-device-memory">7.3 Global State Space (.global) — Device Memory<a class="headerlink" href="#73-global-state-space-global-device-memory" title="Permanent link">&para;</a></h3>
 <p>Global memory is the main DRAM of the GPU — HBM3 on the H100. All threads in all blocks across the entire grid can access it. It's the largest but slowest memory space.</p>
@@ -6163,7 +6121,7 @@ often you'll touch them.</p>
 </span><span id="__span-34-26"><a id="__codelineno-34-26" name="__codelineno-34-26" href="#__codelineno-34-26"></a>  What it is:
 </span><span id="__span-34-27"><a id="__codelineno-34-27" name="__codelineno-34-27" href="#__codelineno-34-27"></a>    64 KB of read-only memory cached in a special constant cache.
 </span><span id="__span-34-28"><a id="__codelineno-34-28" name="__codelineno-34-28" href="#__codelineno-34-28"></a>    Optimized for BROADCAST: when all threads in a warp read the
-</span><span id="__span-34-29"><a id="__codelineno-34-29" name="__codelineno-34-29" href="#__codelineno-34-29"></a>    same address, it costs ~1 cycle (served from constant cache).
+</span><span id="__span-34-29"><a id="__codelineno-34-29" name="__codelineno-34-29" href="#__codelineno-34-29"></a>    same address, a uniform read can use the constant-cache broadcast path.
 </span><span id="__span-34-30"><a id="__codelineno-34-30" name="__codelineno-34-30" href="#__codelineno-34-30"></a>
 </span><span id="__span-34-31"><a id="__codelineno-34-31" name="__codelineno-34-31" href="#__codelineno-34-31"></a>  When to use:
 </span><span id="__span-34-32"><a id="__codelineno-34-32" name="__codelineno-34-32" href="#__codelineno-34-32"></a>    ├── Look-up tables (sine/cosine tables, quantization scales)
@@ -6203,7 +6161,7 @@ often you'll touch them.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>Data flow for thread 0:
 </span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>  1. ld.param.u64 → reads the global pointer from kernel args
 </span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>  2. ld.global.f32 → reads input[0] = 1.0f from HBM (500 cycles)
-</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>  3. ld.const.f32 → reads scale_factor from constant cache (1 cycle if broadcast)
+</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>  3. ld.const.f32 → uniform reads can broadcast from the constant cache
 </span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>  4. fma.rn.f32 → computes input * scale_factor + bias
 </span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>  5. st.global.f32 → writes result to output[0] in HBM (500 cycles, async)
 </span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>
@@ -7117,33 +7075,34 @@ production kernels almost always choose the second.</p>
 </span><span id="__span-54-24"><a id="__codelineno-54-24" name="__codelineno-54-24" href="#__codelineno-54-24"></a>
 </span><span id="__span-54-25"><a id="__codelineno-54-25" name="__codelineno-54-25" href="#__codelineno-54-25"></a>  RULE 1 — No conflict (fastest):
 </span><span id="__span-54-26"><a id="__codelineno-54-26" name="__codelineno-54-26" href="#__codelineno-54-26"></a>    Each thread accesses a different bank.
-</span><span id="__span-54-27"><a id="__codelineno-54-27" name="__codelineno-54-27" href="#__codelineno-54-27"></a>    32 accesses, 32 banks, all different → 1 cycle.
+</span><span id="__span-54-27"><a id="__codelineno-54-27" name="__codelineno-54-27" href="#__codelineno-54-27"></a>    32 scalar 32-bit accesses to distinct banks: no bank conflict.
 </span><span id="__span-54-28"><a id="__codelineno-54-28" name="__codelineno-54-28" href="#__codelineno-54-28"></a>
 </span><span id="__span-54-29"><a id="__codelineno-54-29" name="__codelineno-54-29" href="#__codelineno-54-29"></a>  RULE 2 — Broadcast (fast):
 </span><span id="__span-54-30"><a id="__codelineno-54-30" name="__codelineno-54-30" href="#__codelineno-54-30"></a>    Multiple threads access the SAME byte address.
-</span><span id="__span-54-31"><a id="__codelineno-54-31" name="__codelineno-54-31" href="#__codelineno-54-31"></a>    Hardware broadcasts: 1 cycle.
+</span><span id="__span-54-31"><a id="__codelineno-54-31" name="__codelineno-54-31" href="#__codelineno-54-31"></a>    Same-word reads can broadcast; this is not a one-cycle latency promise.
 </span><span id="__span-54-32"><a id="__codelineno-54-32" name="__codelineno-54-32" href="#__codelineno-54-32"></a>    (Not the same as multiple threads in the same bank with different addrs!)
 </span><span id="__span-54-33"><a id="__codelineno-54-33" name="__codelineno-54-33" href="#__codelineno-54-33"></a>
 </span><span id="__span-54-34"><a id="__codelineno-54-34" name="__codelineno-54-34" href="#__codelineno-54-34"></a>  RULE 3 — N-way conflict (slow):
 </span><span id="__span-54-35"><a id="__codelineno-54-35" name="__codelineno-54-35" href="#__codelineno-54-35"></a>    N threads access different addresses in the same bank.
-</span><span id="__span-54-36"><a id="__codelineno-54-36" name="__codelineno-54-36" href="#__codelineno-54-36"></a>    Hardware serializes: N cycles.
-</span><span id="__span-54-37"><a id="__codelineno-54-37" name="__codelineno-54-37" href="#__codelineno-54-37"></a>
-</span><span id="__span-54-38"><a id="__codelineno-54-38" name="__codelineno-54-38" href="#__codelineno-54-38"></a>  ─── Common Stride Patterns ──────────────────────────────────────
-</span><span id="__span-54-39"><a id="__codelineno-54-39" name="__codelineno-54-39" href="#__codelineno-54-39"></a>  float smem[1024];
-</span><span id="__span-54-40"><a id="__codelineno-54-40" name="__codelineno-54-40" href="#__codelineno-54-40"></a>
-</span><span id="__span-54-41"><a id="__codelineno-54-41" name="__codelineno-54-41" href="#__codelineno-54-41"></a>  Stride 1 (adjacent):  thread i reads smem[i]
-</span><span id="__span-54-42"><a id="__codelineno-54-42" name="__codelineno-54-42" href="#__codelineno-54-42"></a>    Banks: 0,1,2,...,31 → all different → NO CONFLICT ✓
-</span><span id="__span-54-43"><a id="__codelineno-54-43" name="__codelineno-54-43" href="#__codelineno-54-43"></a>
-</span><span id="__span-54-44"><a id="__codelineno-54-44" name="__codelineno-54-44" href="#__codelineno-54-44"></a>  Stride 32 (row width = 32 floats):  thread i reads smem[i * 32]
-</span><span id="__span-54-45"><a id="__codelineno-54-45" name="__codelineno-54-45" href="#__codelineno-54-45"></a>    smem[0]=bank 0, smem[32]=bank 0, smem[64]=bank 0... → 32-WAY CONFLICT ✗
-</span><span id="__span-54-46"><a id="__codelineno-54-46" name="__codelineno-54-46" href="#__codelineno-54-46"></a>
-</span><span id="__span-54-47"><a id="__codelineno-54-47" name="__codelineno-54-47" href="#__codelineno-54-47"></a>  Stride 16:  thread i reads smem[i * 16]
-</span><span id="__span-54-48"><a id="__codelineno-54-48" name="__codelineno-54-48" href="#__codelineno-54-48"></a>    smem[0]=bank 0, smem[16]=bank 16, smem[32]=bank 0... → 16-WAY CONFLICT
-</span><span id="__span-54-49"><a id="__codelineno-54-49" name="__codelineno-54-49" href="#__codelineno-54-49"></a>    (16 distinct words target each of the two banks)
-</span><span id="__span-54-50"><a id="__codelineno-54-50" name="__codelineno-54-50" href="#__codelineno-54-50"></a>
-</span><span id="__span-54-51"><a id="__codelineno-54-51" name="__codelineno-54-51" href="#__codelineno-54-51"></a>  Stride 33 (with padding):  thread i reads smem[i * 33]
-</span><span id="__span-54-52"><a id="__codelineno-54-52" name="__codelineno-54-52" href="#__codelineno-54-52"></a>    smem[0]=bank 0, smem[33]=bank 1, smem[66]=bank 2... → NO CONFLICT ✓
-</span><span id="__span-54-53"><a id="__codelineno-54-53" name="__codelineno-54-53" href="#__codelineno-54-53"></a>    (Adding 1 element of padding per row breaks the alignment!)
+</span><span id="__span-54-36"><a id="__codelineno-54-36" name="__codelineno-54-36" href="#__codelineno-54-36"></a>    Distinct-word bank conflicts require additional service work.
+</span><span id="__span-54-37"><a id="__codelineno-54-37" name="__codelineno-54-37" href="#__codelineno-54-37"></a>    Exact cycles depend on the instruction and implementation.
+</span><span id="__span-54-38"><a id="__codelineno-54-38" name="__codelineno-54-38" href="#__codelineno-54-38"></a>
+</span><span id="__span-54-39"><a id="__codelineno-54-39" name="__codelineno-54-39" href="#__codelineno-54-39"></a>  ─── Common Stride Patterns ──────────────────────────────────────
+</span><span id="__span-54-40"><a id="__codelineno-54-40" name="__codelineno-54-40" href="#__codelineno-54-40"></a>  float smem[1024];
+</span><span id="__span-54-41"><a id="__codelineno-54-41" name="__codelineno-54-41" href="#__codelineno-54-41"></a>
+</span><span id="__span-54-42"><a id="__codelineno-54-42" name="__codelineno-54-42" href="#__codelineno-54-42"></a>  Stride 1 (adjacent):  thread i reads smem[i]
+</span><span id="__span-54-43"><a id="__codelineno-54-43" name="__codelineno-54-43" href="#__codelineno-54-43"></a>    Banks: 0,1,2,...,31 → all different → NO CONFLICT ✓
+</span><span id="__span-54-44"><a id="__codelineno-54-44" name="__codelineno-54-44" href="#__codelineno-54-44"></a>
+</span><span id="__span-54-45"><a id="__codelineno-54-45" name="__codelineno-54-45" href="#__codelineno-54-45"></a>  Stride 32 (row width = 32 floats):  thread i reads smem[i * 32]
+</span><span id="__span-54-46"><a id="__codelineno-54-46" name="__codelineno-54-46" href="#__codelineno-54-46"></a>    smem[0]=bank 0, smem[32]=bank 0, smem[64]=bank 0... → 32-WAY CONFLICT ✗
+</span><span id="__span-54-47"><a id="__codelineno-54-47" name="__codelineno-54-47" href="#__codelineno-54-47"></a>
+</span><span id="__span-54-48"><a id="__codelineno-54-48" name="__codelineno-54-48" href="#__codelineno-54-48"></a>  Stride 16:  thread i reads smem[i * 16]
+</span><span id="__span-54-49"><a id="__codelineno-54-49" name="__codelineno-54-49" href="#__codelineno-54-49"></a>    smem[0]=bank 0, smem[16]=bank 16, smem[32]=bank 0... → 16-WAY CONFLICT
+</span><span id="__span-54-50"><a id="__codelineno-54-50" name="__codelineno-54-50" href="#__codelineno-54-50"></a>    (16 distinct words target each of the two banks)
+</span><span id="__span-54-51"><a id="__codelineno-54-51" name="__codelineno-54-51" href="#__codelineno-54-51"></a>
+</span><span id="__span-54-52"><a id="__codelineno-54-52" name="__codelineno-54-52" href="#__codelineno-54-52"></a>  Stride 33 (with padding):  thread i reads smem[i * 33]
+</span><span id="__span-54-53"><a id="__codelineno-54-53" name="__codelineno-54-53" href="#__codelineno-54-53"></a>    smem[0]=bank 0, smem[33]=bank 1, smem[66]=bank 2... → NO CONFLICT ✓
+</span><span id="__span-54-54"><a id="__codelineno-54-54" name="__codelineno-54-54" href="#__codelineno-54-54"></a>    (Adding 1 element of padding per row breaks the alignment!)
 </span></code></pre></div>
 <h3 id="122-bank-conflict-fix-swizzling-vs-padding">12.2 Bank Conflict Fix — Swizzling vs Padding<a class="headerlink" href="#122-bank-conflict-fix-swizzling-vs-padding" title="Permanent link">&para;</a></h3>
 <p>There are two standard techniques for eliminating bank conflicts. <strong>Padding</strong> is simpler but wastes memory. <strong>Swizzling</strong> is more complex but wastes no memory.</p>
@@ -8138,7 +8097,7 @@ modifiers.</p>
 remember.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-74-1"><a id="__codelineno-74-1" name="__codelineno-74-1" href="#__codelineno-74-1"></a>Space           PTX Qualifier        CUDA C++           Scope    Speed
 </span><span id="__span-74-2"><a id="__codelineno-74-2" name="__codelineno-74-2" href="#__codelineno-74-2"></a>──────────────────────────────────────────────────────────────────────
-</span><span id="__span-74-3"><a id="__codelineno-74-3" name="__codelineno-74-3" href="#__codelineno-74-3"></a>Register        .reg                 (automatic)         Thread   1 cycle
+</span><span id="__span-74-3"><a id="__codelineno-74-3" name="__codelineno-74-3" href="#__codelineno-74-3"></a>Register        .reg                 (automatic)         Thread   Instruction-dependent
 </span><span id="__span-74-4"><a id="__codelineno-74-4" name="__codelineno-74-4" href="#__codelineno-74-4"></a>Shared (CTA)    .shared / ::cta      __shared__          Block    ~10 cycles
 </span><span id="__span-74-5"><a id="__codelineno-74-5" name="__codelineno-74-5" href="#__codelineno-74-5"></a>Shared (cluster).shared::cluster     cluster DSMEM       Cluster  ~50-80 cycles
 </span><span id="__span-74-6"><a id="__codelineno-74-6" name="__codelineno-74-6" href="#__codelineno-74-6"></a>Global          .global              __device__, malloc  Grid     ~500 cycles

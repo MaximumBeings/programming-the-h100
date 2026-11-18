@@ -3056,7 +3056,7 @@
 
 <h2 id="9-mbarrier-the-two-barrier-handshake">9 — mbarrier — The Two-Barrier Handshake<a class="headerlink" href="#9-mbarrier-the-two-barrier-handshake" title="Permanent link">&para;</a></h2>
 <h3 id="91-why-__syncthreads-is-not-enough">9.1 Why __syncthreads() Is Not Enough<a class="headerlink" href="#91-why-__syncthreads-is-not-enough" title="Permanent link">&para;</a></h3>
-<p><code>__syncthreads()</code> synchronizes ALL threads in a block. In a warp-specialized kernel, this is too coarse: when the producer fills a stage, only the consumer needs to know — not every thread in the block needs to rendezvous. Using <code>__syncthreads()</code> for producer-consumer signaling would force BOTH warpgroups to reach the barrier simultaneously, eliminating all pipeline overlap.</p>
+<p><code>__syncthreads()</code> synchronizes ALL threads in a block. In a warp-specialized kernel, this is too coarse: when the producer fills a stage, only the consumer needs to know — not every thread in the block needs to rendezvous. A block-wide barrier requires all participating block threads to rendezvous. Using it for each producer/consumer handoff can serialize otherwise independent stages; specialized barriers permit narrower handoffs. A block barrier is still useful for shared initialization or other genuinely block-wide phases, and its presence does not imply that every kind of overlap is impossible.</p>
 <p><code>mbarrier</code> (memory barrier) is a fine-grained, asynchronous synchronization primitive that fixes this. It allows specific threads (or TMA hardware) to signal a barrier, and specific threads to wait on it, without involving anyone else.</p>
 <p><a href="../images/ch09/01-two-barrier-handshake.svg?v=1d2c91247cea"><img alt="One stage, two ownership handoffs" src="../images/ch09/01-two-barrier-handshake.svg?v=1d2c91247cea" /></a></p>
 <p><em>FULL publishes data readiness; EMPTY publishes storage reusability.</em></p>
@@ -3914,7 +3914,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 <hr />
 <h2 id="14-the-ping-pong-pipeline-architecture">14 — The Ping-Pong Pipeline Architecture<a class="headerlink" href="#14-the-ping-pong-pipeline-architecture" title="Permanent link">&para;</a></h2>
 <h3 id="141-solving-the-cooperative-gap">14.1 Solving the Cooperative Gap<a class="headerlink" href="#141-solving-the-cooperative-gap" title="Permanent link">&para;</a></h3>
-<p>The Ping-Pong pipeline eliminates idle tensor core time by having Consumer 0 run its epilogue at EXACTLY the same time Consumer 1 runs its WGMMA on the NEXT tile.</p>
+<p>A ping-pong pipeline staggers consumer roles so one consumer can perform epilogue work while another issues matrix work for a different tile. It aims to cover otherwise idle intervals; relative durations, available tiles, dependencies and resource contention determine actual overlap. It does not guarantee simultaneous execution or eliminate every idle cycle.</p>
 <p><a href="../images/ch09/05-ping-pong-overlap.svg?v=7ace883f1a99"><img alt="Stagger consumers to cover epilogue work" src="../images/ch09/05-ping-pong-overlap.svg?v=7ace883f1a99" /></a></p>
 <p><em>Illustrative ping-pong scheduling; the benefit depends on the relative task durations.</em></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>Ping-Pong Pipeline — The Key Insight
@@ -4426,7 +4426,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-21-57"><a id="__codelineno-21-57" name="__codelineno-21-57" href="#__codelineno-21-57"></a>  longer needed once WGMMA is done for the tile).
 </span></code></pre></div>
 <h3 id="152-the-10-operations-of-epilogue-fusion">15.2 The 10 Operations of Epilogue Fusion<a class="headerlink" href="#152-the-10-operations-of-epilogue-fusion" title="Permanent link">&para;</a></h3>
-<p>Any operation that can be expressed as a pointwise (element-by-element) or small-reduction computation on the output tile can be fused into the epilogue. This eliminates the HBM round-trip that would be required for a separate kernel.</p>
+<p>Pointwise operations and some tile-local reductions are candidates for epilogue fusion when the selected implementation supports their dataflow, communication, precision and resource requirements. An operation requiring statistics across unrelated output tiles needs an additional supported coordination strategy. A supported fusion can avoid the intermediate output write/read of a separate pass, but may add shared-memory/register pressure; it is not automatically faster.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>Epilogue Fusion Operation Catalog
 </span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
