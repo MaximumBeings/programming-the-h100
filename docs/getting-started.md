@@ -331,7 +331,7 @@ The earlier captured Lambda session installed the image's `nsight-compute` packa
 
 ### CUTLASS fused-attention extension
 
-[Chapter 30](30-cutlass-attention-foundations.md) adds a standard-library CPU attention walkthrough. [Chapter 31](31-cutlass-hopper-fmha.md) builds the pinned CUTLASS Hopper FMHA example with CMake and supplies a separate, opt-in evidence collector. Its new GPU results are separate from the existing 27-program and CuTe/CUTLASS workshop records; use the new collector on an active Hopper host before recording them as executed.
+[Chapter 30](30-cutlass-attention-foundations.md) adds a standard-library CPU attention walkthrough. [Chapter 31](31-cutlass-hopper-fmha.md) builds the pinned CUTLASS Hopper FMHA example with CMake and supplies a separate, opt-in evidence collector. Its published H100 GPU results are separate from the existing 27-program and CuTe/CUTLASS workshop records. The CUDA reference passed seven cases and memcheck; the pinned FMHA target passed six forward/two backward invocations, with 17 verified variants and additional clean D=64 memory checks. Use a new output directory for your own execution record.
 
 ### Optional attention-reference dependency
 

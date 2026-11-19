@@ -1,0 +1,33 @@
+[
+  {
+    "kind": "compile",
+    "command": [
+      "/usr/bin/clang++",
+      "-x",
+      "c++",
+      "-std=c++17",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DATTENTION_HOST_ONLY",
+      "attention_online.cu",
+      "-o",
+      "/private/tmp/ch30-attention-host-record"
+    ],
+    "started_utc": "2026-11-19T00:03:41.645767+00:00",
+    "finished_utc": "2026-11-19T00:03:42.412754+00:00",
+    "exit_code": 0,
+    "log": "compile.log"
+  },
+  {
+    "kind": "run",
+    "command": [
+      "/private/tmp/ch30-attention-host-record"
+    ],
+    "started_utc": "2026-11-19T00:03:42.412967+00:00",
+    "finished_utc": "2026-11-19T00:03:42.799465+00:00",
+    "exit_code": 0,
+    "log": "run.log"
+  }
+]

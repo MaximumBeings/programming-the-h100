@@ -1,7 +1,7 @@
 {
   "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
   "upstream_directory": "examples/88_hopper_fmha",
-  "scope": "Exact pinned NVIDIA source; GPU compilation/execution remains pending.",
+  "scope": "Exact pinned NVIDIA source; FP16 H100 compilation/execution captured in Chapter 31.",
   "files": {
     "88_hopper_fmha.cu": "b29f795d77867fbac7954c55c39042d7a5b145659f84742c568c305cfc47b4c5",
     "CMakeLists.txt": "5817cc8f28e46a8de7f3020571fc24b6cd632c4ee583ea74d86894a45e0c4ca9",

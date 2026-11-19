@@ -1,0 +1,93 @@
+{
+  "scope": "Instrumented memory checks, not performance measurements; CUDA-visible device identity probes.",
+  "commands": [
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "-c",
+        "import ctypes,json,os\nlib=ctypes.CDLL(\"libcuda.so.1\")\ndef ck(n):\n if n: raise RuntimeError(\"CUDA Driver error \"+str(n))\nck(lib.cuInit(0));dev=ctypes.c_int();ck(lib.cuDeviceGet(ctypes.byref(dev),0));name=ctypes.create_string_buffer(128);ck(lib.cuDeviceGetName(name,128,dev));u=(ctypes.c_ubyte*16)();ck(getattr(lib,\"cuDeviceGetUuid_v2\",lib.cuDeviceGetUuid)(ctypes.byref(u),dev));h=bytes(u).hex();print(json.dumps({\"CUDA_VISIBLE_DEVICES\":os.environ[\"CUDA_VISIBLE_DEVICES\"],\"name\":name.value.decode(),\"uuid\":\"GPU-\"+h[:8]+\"-\"+h[8:12]+\"-\"+h[12:16]+\"-\"+h[16:20]+\"-\"+h[20:]}))\n"
+      ],
+      "started_utc": "2026-11-19T00:33:32.118833+00:00",
+      "finished_utc": "2026-11-19T00:33:32.382258+00:00",
+      "exit_code": 0,
+      "stdout": "device-0.stdout.log",
+      "stderr": "device-0.stderr.log",
+      "stdout_sha256": "0ac9147b15a4d6c7b1df0b1f346d9d09dec1a9268d7f1188a0920d7b0ce9f68b",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "CUDA_VISIBLE_DEVICES": "0"
+    },
+    {
+      "argv": [
+        "/usr/bin/python3",
+        "-c",
+        "import ctypes,json,os\nlib=ctypes.CDLL(\"libcuda.so.1\")\ndef ck(n):\n if n: raise RuntimeError(\"CUDA Driver error \"+str(n))\nck(lib.cuInit(0));dev=ctypes.c_int();ck(lib.cuDeviceGet(ctypes.byref(dev),0));name=ctypes.create_string_buffer(128);ck(lib.cuDeviceGetName(name,128,dev));u=(ctypes.c_ubyte*16)();ck(getattr(lib,\"cuDeviceGetUuid_v2\",lib.cuDeviceGetUuid)(ctypes.byref(u),dev));h=bytes(u).hex();print(json.dumps({\"CUDA_VISIBLE_DEVICES\":os.environ[\"CUDA_VISIBLE_DEVICES\"],\"name\":name.value.decode(),\"uuid\":\"GPU-\"+h[:8]+\"-\"+h[8:12]+\"-\"+h[12:16]+\"-\"+h[16:20]+\"-\"+h[20:]}))\n"
+      ],
+      "started_utc": "2026-11-19T00:33:32.382471+00:00",
+      "finished_utc": "2026-11-19T00:33:32.646554+00:00",
+      "exit_code": 0,
+      "stdout": "device-1.stdout.log",
+      "stderr": "device-1.stderr.log",
+      "stdout_sha256": "1fc75808687f8b34bb94b28ddb7b691bca8346b54fb67a0ed073a1afe7de5498",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "CUDA_VISIBLE_DEVICES": "1"
+    },
+    {
+      "argv": [
+        "compute-sanitizer",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "3",
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=64",
+        "--mask=no",
+        "--iterations=3",
+        "--verify",
+        "--verbose"
+      ],
+      "started_utc": "2026-11-19T00:33:32.646852+00:00",
+      "finished_utc": "2026-11-19T00:33:33.889319+00:00",
+      "exit_code": 0,
+      "stdout": "d64-full-memcheck.stdout.log",
+      "stderr": "d64-full-memcheck.stderr.log",
+      "stdout_sha256": "4ef5af715e6639e248819ced9bf7f46fc54bbd45a9931f47fe2d792c5dddb231",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "PASS",
+      "CUDA_VISIBLE_DEVICES": "0"
+    },
+    {
+      "argv": [
+        "compute-sanitizer",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "3",
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=64",
+        "--mask=no",
+        "--iterations=3",
+        "--verify",
+        "--verbose",
+        "--bwd"
+      ],
+      "started_utc": "2026-11-19T00:33:33.890568+00:00",
+      "finished_utc": "2026-11-19T00:33:34.765742+00:00",
+      "exit_code": 0,
+      "stdout": "d64-backward-no-memcheck.stdout.log",
+      "stderr": "d64-backward-no-memcheck.stderr.log",
+      "stdout_sha256": "3f8d7d1d6a4d0535b76f6515f4ffcb64396b67ce42ae20b023b373ed011a761d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "PASS",
+      "CUDA_VISIBLE_DEVICES": "0"
+    }
+  ],
+  "status": "PASS"
+}

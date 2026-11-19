@@ -123,7 +123,7 @@ Each level builds on the previous one. Introductory chapters establish mappings;
 
     The [CuTe/CUTLASS workshop record](cutlass-workshop-validation.md) captures **eight CUDA compilations, two Python byte-compilations and eleven passing workload invocations**, plus two real Nsight Systems reports. CPU-only layout, ownership and format checks retain their stated scope. These additions have their own source identities and records; the original suite is preserved.
 
-The attention extension adds a [dated CPU walkthrough](30-cutlass-attention-foundations.md#12-run-the-cpu-oracle-and-read-its-evidence) and a separate [Hopper FMHA collection lab](31-cutlass-hopper-fmha.md). The CPU record checks the equations; the new FMHA build/run commands need their own Hopper capture and do not inherit the earlier workshop's GPU results.
+The attention extension adds a [dated CPU walkthrough](30-cutlass-attention-foundations.md#12-run-the-cpu-oracle-and-read-its-evidence) and a separate [Hopper FMHA collection lab](31-cutlass-hopper-fmha.md). The CPU record checks the equations. Separate dated H100 captures now cover the complete CUDA reference and all 17 expected FP16 FMHA variant results, including backward, with clean memory checks. These records retain their own scope and do not inherit the earlier workshop's results.
 
 The [original single-GPU manifest](validation/2026-11-17/results.json) remains available as historical evidence. Current chapters link exact tested sources, commands, compile/run timestamps, system information and captured outputs beside the relevant examples. Derived arithmetic, architecture specifications and cited paper benchmarks are identified separately from this book's measured results.
 

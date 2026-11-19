@@ -1,0 +1,9 @@
+========= COMPUTE-SANITIZER
+###### B 1 H 2 Q 128 K 128 D 64 Forward Full #SM 132
+ [OK]  tma 64x128x64                    : 0.144591 TFLOPS/s
+       t=0.058016ms, smem=74240b
+ [OK]  tma ws cooperative 128x64x64     : 0.129284 TFLOPS/s
+       t=0.0648853ms, smem=57856b
+ [OK]  tma ws ping-pong 128x64x64       : 0.129667 TFLOPS/s
+       t=0.0646933ms, smem=75264b
+========= ERROR SUMMARY: 0 errors

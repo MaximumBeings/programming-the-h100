@@ -1,0 +1,5 @@
+###### B 1 H 2 Q 256 K 256 D 128 Forward Full #SM 132
+ [OK]  tma ws cooperative 128x128x128   : 7.19023 TFLOPS/s
+       t=0.00933333ms, smem=197120b
+ [OK]  tma ws ping-pong 128x128x128     : 7.06112 TFLOPS/s
+       t=0.009504ms, smem=214528b

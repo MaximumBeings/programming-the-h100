@@ -10,7 +10,7 @@
 
 The implementation is [CUTLASS v4.3.6 example 88](https://github.com/NVIDIA/cutlass/tree/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha), pinned to commit `1afc6d355b8cb992398f17beb4425702f1d57ddd`. It supplies forward **and backward** FMHA implementations. The lab below starts with FP16 forward and can additionally collect two FP16 backward cases. This is an official CUTLASS C++ implementation using CuTe; it is neither a Triton kernel nor the separate FlashAttention-3 software package. The upstream README relates its design to the FlashAttention-3 paper, while explicitly qualifying backward performance.
 
-**Status of this new lab:** source inspection, collection-plan checks and host-side parser tests are complete. The new example-88 kernels have no captured Hopper execution in this book yet. The existing workshop GPU records remain valid for their own sources; they are not evidence that this additional kernel has run. Commands below prepare that separate validation without inventing dates, outputs or performance numbers.
+**H100 validation complete:** the pinned FP16 target compiled and passed six forward cases and two backward cases, covering all 17 expected verified variant results. D=64 forward/backward memchecks also reported zero errors. The dated record below is separate from the earlier workshop and identifies the exact sources, system, commands and outputs. It does not establish performance or correctness for untested extensions.
 
 [Jump to the complete CUDA listing](#319-complete-runnable-cuda-source) · [Download `.cu`](examples/attention/88_hopper_fmha/88_hopper_fmha.cu) · [Download source and local headers](examples/attention/hopper-fmha-source.zip).
 
@@ -148,6 +148,54 @@ python3 -m unittest discover -s tools/tests -p test_cutlass_attention.py -v
 
     **Worked answer:** no. This runner instantiates three variants at D=64, and `[--]` indicates an unverified result. The collector returns INCOMPLETE rather than PASS. A numerical failure instead returns FAIL, even if another variant succeeded.
 
+
+<!-- attention-hopper-capture:start -->
+### Captured H100 compilation and execution
+
+**Executed November 18, 2026 at 19:08:51 EST**; the recorded UTC date is November 19. This was one selected H100 GPU (`CUDA_VISIBLE_DEVICES=0`) on a two-H100 80GB HBM3 host, 132 SMs per GPU, Ubuntu 22.04.5 LTS, kernel 6.8.0-1064-nvidia, driver 580.105.08, CUDA compiler 12.8.93, GCC 11.4.0, CMake 3.22.1 and Python 3.10.12. The NV18 connection describes the host; these are single-GPU attention tests.
+
+CUTLASS commit: `1afc6d355b8cb992398f17beb4425702f1d57ddd`. Runner SHA-256: `b29f795d77867fbac7954c55c39042d7a5b145659f84742c568c305cfc47b4c5`. All 6,711 archived compiler-input files matched the complete pinned tree. [Results with exact argv, dates and log hashes](validation/2026-11-18-h100-attention/hopper-fmha/results.json) · [Compiler-input identities](validation/2026-11-18-h100-attention/hopper-fmha/source-sha256.json) · [Captured collector](validation/2026-11-18-h100-attention/hopper-fmha/collector.py) · [GPU/system log](validation/2026-11-18-h100-attention/hopper-fmha/gpu-system.stdout.log).
+
+The recorded CMake configure/build commands selected `90a`, Release, FP16 target `88_hopper_fmha`, and disabled tests/profiler/library generation. Build parallelism was four. Both stages exited zero. [Configure output](validation/2026-11-18-h100-attention/hopper-fmha/configure.stdout.log) · [Build output](validation/2026-11-18-h100-attention/hopper-fmha/build.stdout.log) · [Build diagnostics](validation/2026-11-18-h100-attention/hopper-fmha/build.stderr.log).
+
+| Case | Verified variants | Execution start UTC | Result |
+| --- | ---: | --- | --- |
+| d32-full | 2 | `2026-11-19T00:08:51.548617+00:00` | PASS · [Output](validation/2026-11-18-h100-attention/hopper-fmha/d32-full.stdout.log) |
+| d64-full | 3 | `2026-11-19T00:08:51.977031+00:00` | PASS · [Output](validation/2026-11-18-h100-attention/hopper-fmha/d64-full.stdout.log) |
+| d64-causal | 3 | `2026-11-19T00:08:52.301968+00:00` | PASS · [Output](validation/2026-11-18-h100-attention/hopper-fmha/d64-causal.stdout.log) |
+| d128-full | 2 | `2026-11-19T00:08:52.624603+00:00` | PASS · [Output](validation/2026-11-18-h100-attention/hopper-fmha/d128-full.stdout.log) |
+| d128-causal | 2 | `2026-11-19T00:08:52.950833+00:00` | PASS · [Output](validation/2026-11-18-h100-attention/hopper-fmha/d128-causal.stdout.log) |
+| d256-full | 1 | `2026-11-19T00:08:53.278552+00:00` | PASS · [Output](validation/2026-11-18-h100-attention/hopper-fmha/d256-full.stdout.log) |
+| d64-backward-no | 2 | `2026-11-19T00:08:53.598689+00:00` | PASS · [Output](validation/2026-11-18-h100-attention/hopper-fmha/d64-backward-no.stdout.log) |
+| d64-backward-causal | 2 | `2026-11-19T00:08:53.919108+00:00` | PASS · [Output](validation/2026-11-18-h100-attention/hopper-fmha/d64-backward-causal.stdout.log) |
+
+**Actual captured d64-full output:**
+
+```text
+###### B 1 H 2 Q 128 K 128 D 64 Forward Full #SM 132
+ [OK]  tma 64x128x64                    : 1.34894 TFLOPS/s
+       t=0.00621867ms, smem=74240b
+ [OK]  tma ws cooperative 128x64x64     : 1.17203 TFLOPS/s
+       t=0.00715733ms, smem=57856b
+ [OK]  tma ws ping-pong 128x64x64       : 1.2025 TFLOPS/s
+       t=0.006976ms, smem=75264b
+```
+
+**Actual captured d64-backward-no output:**
+
+```text
+###### B 1 H 2 Q 128 K 128 D 64 Backward Full #SM 132
+ [OK]  tma ws cooperative 64x128x64     : 1.15788 TFLOPS/s
+       t=0.018112ms, smem=116224b
+ [OK]  tma ws cooperative 128x128x64    : 1.03315 TFLOPS/s
+       t=0.0202987ms, smem=199168b
+```
+
+These are captured rates for small correctness configurations; they are not peak H100 or paper-FA3 benchmark results. Six forward invocations checked O/LSE; two backward invocations checked dQ/dK/dV against the pinned vendor references. The collector accepted every expected variant and returned PASS.
+
+Additional D=64 full-forward and full-backward Compute Sanitizer memchecks passed with `ERROR SUMMARY: 0 errors`. [Supplemental commands and dates](validation/2026-11-18-h100-attention/attention-memory-01/results.json) · [Forward memcheck](validation/2026-11-18-h100-attention/attention-memory-01/d64-full-memcheck.stdout.log) · [Backward memcheck](validation/2026-11-18-h100-attention/attention-memory-01/d64-backward-no-memcheck.stdout.log). Instrumented timings are separate from the numerical-run timings above. FP8, BF16, GQA/MQA modifications and additional ragged/backward shapes remain outside this specific execution record.
+<!-- attention-hopper-capture:end -->
+
 ## 31.7 Read the backward path as a new dependency graph
 
 The library also implements FP16 backward for head dimensions 32,64,128. It is not an automatic derivative of a black-box forward launch. Given upstream gradient dO and softmax probabilities P, the mathematical relations per head are:
@@ -161,7 +209,7 @@ Walk one row: P=`[1/4,3/4]`, V rows `[1,0]`, `[0,2]`, and dO=`[2,3]`. Then O=`[1
 
 Follow `BwdRunner`, `device/fmha_device_bwd.hpp`, the backward mainloop, the `sum_OdO` kernel and conversion stage. Reconstructing probability tiles from scores/LSE avoids storing the whole probability matrix, but creates dependencies on the exact forward normalization and mask convention. The optimized gradients are compared against `reference/fmha_bwd_reference.hpp`; the pinned thresholds are again max `<1e-2`, mean `<1e-3`, separately for dQ, dK and dV.
 
-Add `--include-backward` to the collector plan or execution command to request aligned D=64 full and causal backward cases. Each case expects two verified variant rows. This is optional **planned** coverage until actual Hopper logs exist; it neither validates every backward head size nor claims FA3-equivalent performance. The upstream README explicitly says backward kernels are more limited in performance than FA3.
+Add `--include-backward` to the collector plan or execution command to request aligned D=64 full and causal backward cases. Each case expects two verified variant rows. The published Hopper record includes both of these D=64 backward cases and all four expected variant results; it neither validates every backward head size nor claims FA3-equivalent performance. The upstream README explicitly says backward kernels are more limited in performance than FA3.
 
 ??? question "Exercise: detect an incorrect softmax backward correction"
 
@@ -171,7 +219,7 @@ Add `--include-backward` to the collector plan or execution command to request a
 
 ## 31.8 Profile only after preserving the numerical contract
 
-The small B=1,H=2 cases above are **correctness configurations**, not throughput benchmarks. Two heads and short query lengths provide only a few logical query tiles and can leave most of an H100 idle. Their measured TFLOP/s, when eventually collected, must not be presented as a peak-performance result. A throughput study needs a separately stated larger workload and adequate independent work, while preserving the same numerical contract.
+The small B=1,H=2 cases above are **correctness configurations**, not throughput benchmarks. Two heads and short query lengths provide only a few logical query tiles and can leave most of an H100 idle. Their captured TFLOP/s must not be presented as a peak-performance result. A throughput study needs a separately stated larger workload and adequate independent work, while preserving the same numerical contract.
 
 `--verbose` prints per-variant elapsed milliseconds and shared-memory bytes. The upstream timer surrounds repeated device operations; initialization and reference checking lie outside that timed region. Its forward FLOP numerator is approximately `4*B*H*Q*K*D`, halved for causal mode. That convention omits softmax/masking work and approximates the causal triangle; it is not a count of every executed instruction. Compare kernels using the same shape, dtype, mask, precision, warmup and timing boundary.
 
@@ -226,7 +274,7 @@ cmake --build build/attention-page --target 88_hopper_fmha --parallel 1
   --iterations=3 --verify --verbose --bwd
 ```
 
-Use the collector in Section 31.5 when recording formal evidence: it also checks every expected result row and preserves system information, dates, hashes and logs. Direct invocation above is useful for studying this source, but exit zero alone is insufficient. Expected verified-variant counts are three for the D=64 forward call and two for its backward call. New Hopper execution is deferred until hardware is available; no sample GPU output or execution date is fabricated here.
+Use the collector in Section 31.5 when recording formal evidence: it also checks every expected result row and preserves system information, dates, hashes and logs. Direct invocation above is useful for studying this source, but exit zero alone is insufficient. Expected verified-variant counts are three for the D=64 forward call and two for its backward call. The dated Hopper execution record in Section 31.6 reports the actual results for this exact source.
 
 The upstream banner's large all-2048 usage example is not this lab's command: D=2048 has no instantiated kernel in this pin. Use the explicit supported D=64 commands above. The listing preserves every source line, comment and license, with trailing whitespace removed for presentation; the downloads retain exact upstream bytes.
 
@@ -1429,4 +1477,4 @@ int main(int argc, char const **args) {
 
 ## Chapter Summary
 
-Example 88 turns CuTe layouts, TMA stages, WGMMA fragments and online row state into complete attention operators. Correct use requires explicit dimensions, dtype/layout, mask alignment, pipeline lifetimes and a verifier that rejects upstream zero-exit skips. The source includes backward as well as forward; this new lab's GPU execution remains a separately collected result, with its own records rather than an inherited claim from earlier workshops.
+Example 88 turns CuTe layouts, TMA stages, WGMMA fragments and online row state into complete attention operators. Correct use requires explicit dimensions, dtype/layout, mask alignment, pipeline lifetimes and a verifier that rejects upstream zero-exit skips. The source includes backward as well as forward; this lab's successful GPU record identifies its own source, system, dates and numerical checks rather than inheriting results from earlier workshops.

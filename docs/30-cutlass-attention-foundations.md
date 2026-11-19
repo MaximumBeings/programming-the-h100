@@ -7,9 +7,11 @@
 
     Compute a complete attention example before reading a fused kernel. Track its scores, mask, row maximum, denominator and weighted-value numerator; derive its layouts independently of its arithmetic. Read [FlashAttention-3](12-flashattention-3.md), [strides](16-cute-strides.md), [the GEMM adapter](24-cutlass-gemm.md) and [pipeline ownership](25-cutlass-pipelines.md) first. [Chapter 31](31-cutlass-hopper-fmha.md) connects this contract to pinned Hopper FMHA code.
 
-The CUTLASS example studied here is **`examples/88_hopper_fmha` in v4.3.6**, commit **`1afc6d355b8cb992398f17beb4425702f1d57ddd`**. Its README describes a forward GEMM–online-softmax–GEMM fusion and separate backward kernels. This chapter supplies the small mathematical bridge; it does not claim that the tiny example is a supported GPU launch or that a new GPU execution occurred.
+The CUTLASS example studied here is **`examples/88_hopper_fmha` in v4.3.6**, commit **`1afc6d355b8cb992398f17beb4425702f1d57ddd`**. Its README describes a forward GEMM–online-softmax–GEMM fusion and separate backward kernels. This chapter supplies the mathematical bridge. Its tiny d=2 problem is supported by the standalone SIMT CUDA reference below, but does not match the pinned Tensor Core FMHA runner's head-dimension specializations. Chapter 31 supplies the separate optimized CUTLASS implementation.
 
 The accompanying [complete CPU oracle](examples/advanced/attention_walkthrough.py) uses Python binary64 arithmetic and the standard library. It independently compares a materialized reference with streaming updates. That checks the worked equations, masks and state transitions. It does not validate CUDA instruction ordering, FP16/FP8 rounding, the CUTLASS compiler interface or performance.
+
+[Complete runnable CUDA reference](#14-complete-runnable-cuda-reference) · [Complete Python reference](#15-complete-runnable-python-reference) · [Optimized CUTLASS CUDA source](31-cutlass-hopper-fmha.md#319-complete-runnable-cuda-source).
 
 ## 1 — Define the operation and every axis
 
@@ -249,6 +251,8 @@ ATTENTION WALKTHROUGH PASS: CPU binary64 mathematics; no CUTLASS compilation or 
 
 ## 13 — Exercises with worked answers
 
+The complete runnable versions follow these exercises: [CUDA reference](#14-complete-runnable-cuda-reference) and [Python reference](#15-complete-runnable-python-reference).
+
 ??? question "Exercise 1: move one V row"
 
     Keep Q/K unchanged, but replace key two's V row by `[0,0]`. What are the noncausal outputs?
@@ -273,9 +277,534 @@ ATTENTION WALKTHROUGH PASS: CPU binary64 mathematics; no CUTLASS compilation or 
 
     **Answer:** `2*1024*1024*4=8388608` bytes, or 8 MiB. This excludes Q/K/V/O, temporary storage, extra heads/batches and allocator overhead. Avoiding that materialization is not a claim that all other memory traffic disappears.
 
+## 14 — Complete runnable CUDA reference
+
+[Download `attention_online.cu`](examples/attention/attention_online.cu).
+
+This complete program implements the chapter's online recurrence with **one CUDA thread per query row**. It owns m, l and the numerator vector locally, skips excluded keys before updating any statistic, and writes O and natural-log LSE. A separate CPU implementation materializes a score row in binary64 and checks every result using the actual FP32 inputs; the small worked cases also check their closed-form results. No external CUDA helpers or CUTLASS headers are required.
+
+This is a correctness-oriented SIMT reference, not a high-performance FlashAttention-3 or Tensor Core kernel. It deliberately supports the chapter's d=2 case. Q/K/V/O use separate, packed row-major allocations; d and dv may differ. The bounded contract is `1<=Nq,Nk<=1024`, `1<=d<=64`, `1<=dv<=16`, query offset 0–1024, and finite input magnitudes at most eight. With positive key length and nonnegative causal offset, every query has at least key zero available. Dropout, finite bias, arbitrary strides, multiple heads and fully masked rows are outside this small program's interface.
+
+From the repository root on Hopper:
+
+```bash
+nvcc -std=c++17 -O2 -arch=sm_90a \
+  docs/examples/attention/attention_online.cu -o attention_online
+./attention_online
+compute-sanitizer --tool memcheck --error-exitcode 3 ./attention_online
+```
+
+The tests cover the worked noncausal case, top-left causal alignment, offset-one alignment, reordered keys/values that force a maximum update, and three nonuniform rectangular cases with Nq=17, Nk=23, d=8 and dv=5. The last shapes also exercise a partial CUDA block. Every O and LSE value must be finite and satisfy `abs(error)<=1e-4+1e-4*abs(reference)`; initialization uses NaN sentinels so an unwritten output cannot pass. Those thresholds are the acceptance criteria for the seven recorded cases, not a proven error bound for every input in the permitted range or every attention datatype/distribution.
+
+Inside `online_row`, read the operations in the same order as Sections 5–7: compute and scale one score, find next_m, rescale both l and z, add the new weighted value, then update m. The final division happens after all valid keys. This CUDA implementation treats each key as a singleton block; the Python walkthrough groups keys into larger blocks for its printed trace. Their intermediate states therefore need not appear at the same iteration boundaries. The CUDA host reference starts from the actual rounded FP32 Q/K/V values, while the Python mathematical example constructs its constants in binary64; compare each program against its stated reference and tolerance. The GPU reference does not allocate the full Nq-by-Nk score/probability matrix; reusing K/V across different query threads can still generate repeated memory traffic.
+
+<!-- attention-row-capture:start -->
+**Compiled and executed on H100 — November 18, 2026 at 19:06:09 EST.** Recorded execution start UTC: `2026-11-19T00:06:09.990504+00:00`. System: Ubuntu 22.04.5 LTS, kernel 6.8.0-1064-nvidia, CUDA compiler 12.8.93, GCC 11.4.0 and NVIDIA driver 580.105.08. The host had two H100 80GB HBM3 GPUs connected by NV18; this program ran on one GPU with `CUDA_VISIBLE_DEVICES=1`, not as a two-GPU workload. Device identity was captured separately.
+
+Exact tested source SHA-256: `860d4976162dbee47edd0153d0eb8ff8089471d6ff8b7271653e6d8effad7b66`. [Captured CUDA source](validation/2026-11-18-h100-attention/online-row-01/attention_online.cu) · [Commands, dates and system](validation/2026-11-18-h100-attention/online-row-01/results.json) · [GPU identities](validation/2026-11-18-h100-attention/online-row-01/gpu-system.stdout.log) · [Compiler log](validation/2026-11-18-h100-attention/online-row-01/compile.stderr.log) · [Execution log](validation/2026-11-18-h100-attention/online-row-01/execute.stdout.log).
+
+Compilation and execution exited zero. The actual numerical output was:
+
+```text
+PASS worked-full: all 4 O values and 2 LSE values checked; first O=[1.6, 2]
+PASS worked-causal: all 4 O values and 2 LSE values checked; first O=[1, 0]
+PASS worked-offset-1: all 4 O values and 2 LSE values checked; first O=[0.6666667, 0.6666667]
+PASS worked-reordered: all 4 O values and 2 LSE values checked; first O=[1.6, 2]
+PASS rectangular-full: all 85 O values and 17 LSE values checked; first O=[0.001319525, -0.002025958]
+PASS rectangular-causal: all 85 O values and 17 LSE values checked; first O=[-0.6875, -0.375]
+PASS rectangular-offset-1: all 85 O values and 17 LSE values checked; first O=[-0.6289223, -0.3164222]
+CUDA ATTENTION PASS: seven cases; complete O/LSE checks; no performance claim.
+```
+
+Compute Sanitizer memcheck also exited zero and reported `ERROR SUMMARY: 0 errors`. [Raw memcheck stdout](validation/2026-11-18-h100-attention/online-row-01/memcheck.stdout.log) · [Raw memcheck stderr](validation/2026-11-18-h100-attention/online-row-01/memcheck.stderr.log). A clean memory check complements the output/LSE comparisons; it is not a speed measurement.
+
+An earlier [host-only C++ check](validation/2026-11-18-attention-host-demo/commands.json) exercised the shared row arithmetic with CUDA-specific code excluded. Its [source/system record](validation/2026-11-18-attention-host-demo/system.json) is separate from the successful GPU run above.
+
+The complete Python reference was also byte-compiled and executed on this host with Python 3.10.12. [Additional dated Python run](validation/2026-11-18-h100-attention/online-row-01/python-execute.stdout.log). The earlier local Python capture remains intact.
+
+<!-- attention-row-capture:end -->
+
+<!-- attention-row-source:start -->
+```cuda
+// Educational FP32 online attention: one CUDA thread per query row.
+// No CUTLASS, Tensor Cores, dropout, bias or performance claim.
+// CPU-only check: clang++ -x c++ -std=c++17 -O2 \
+//   -DATTENTION_HOST_ONLY attention_online.cu -o attention_host
+// Hopper: nvcc -std=c++17 -O2 -arch=sm_90a attention_online.cu -o attention_online
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#ifndef ATTENTION_HOST_ONLY
+#include <cuda_runtime.h>
+#define ATTENTION_HD __host__ __device__
+#else
+#define ATTENTION_HD
+#endif
+
+constexpr int MAX_DV = 16;
+
+struct Shape {
+    int nq, nk, d, dv;
+    bool causal;
+    int query_offset;
+};
+
+// Q/K/V/O are packed row-major float arrays. Each row owns its z/l/m state.
+ATTENTION_HD void online_row(const float* q,
+                             const float* k,
+                             const float* v,
+                             float* out,
+                             float* lse,
+                             Shape s,
+                             int i) {
+    float m = -INFINITY, l = 0.0f;
+    float z[MAX_DV] = {};
+    const float scale = 1.0f / sqrtf(static_cast<float>(s.d));
+    for (int j = 0; j < s.nk; ++j) {
+        if (s.causal && j > i + s.query_offset)
+            continue;
+        float score = 0.0f;
+        for (int c = 0; c < s.d; ++c)
+            score += q[i * s.d + c] * k[j * s.d + c];
+        score *= scale;
+        const float next_m = fmaxf(m, score);
+        const float alpha = l == 0.0f ? 0.0f : expf(m - next_m);
+        const float weight = expf(score - next_m);
+        l = alpha * l + weight;
+        for (int c = 0; c < s.dv; ++c)
+            z[c] = alpha * z[c] + weight * v[j * s.dv + c];
+        m = next_m;
+    }
+    for (int c = 0; c < s.dv; ++c)
+        out[i * s.dv + c] = l > 0.0f ? z[c] / l : NAN;
+    lse[i] = l > 0.0f ? m + logf(l) : NAN;
+}
+
+#ifndef ATTENTION_HOST_ONLY
+__global__ void attention_kernel(const float* q,
+                                 const float* k,
+                                 const float* v,
+                                 float* out,
+                                 float* lse,
+                                 Shape s) {
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < s.nq)
+        online_row(q, k, v, out, lse, s, i);
+}
+
+void check_cuda(cudaError_t status) {
+    if (status != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(status));
+}
+
+struct DeviceBuffer {
+    float* data = nullptr;
+
+    explicit DeviceBuffer(size_t count) {
+        check_cuda(cudaMalloc(reinterpret_cast<void**>(&data),
+                              count * sizeof(float)));
+    }
+
+    DeviceBuffer(const DeviceBuffer&) = delete;
+    DeviceBuffer& operator=(const DeviceBuffer&) = delete;
+
+    ~DeviceBuffer() {
+        if (data)
+            cudaFree(data);
+    }
+
+    void release() {
+        float* allocation = data;
+        data = nullptr;
+        check_cuda(cudaFree(allocation));
+    }
+};
+#endif
+
+void validate(const Shape& s,
+              const std::vector<float>& q,
+              const std::vector<float>& k,
+              const std::vector<float>& v) {
+    if (s.nq < 1 || s.nq > 1024 || s.nk < 1 || s.nk > 1024 ||
+        s.d < 1 || s.d > 64 || s.dv < 1 || s.dv > MAX_DV ||
+        s.query_offset < 0 || s.query_offset > 1024 ||
+        q.size() != size_t(s.nq * s.d) ||
+        k.size() != size_t(s.nk * s.d) ||
+        v.size() != size_t(s.nk * s.dv))
+        throw std::invalid_argument(
+            "Unsupported shape, offset or storage extent");
+    for (const auto* input : {&q, &k, &v})
+        for (float x : *input)
+            if (!std::isfinite(x) || std::fabs(x) > 8.0f)
+                throw std::invalid_argument(
+                    "Inputs must be finite with |x| <= 8");
+}
+
+// Independent materialized binary64 reference from the ACTUAL float inputs.
+void reference(const Shape& s,
+               const std::vector<float>& q,
+               const std::vector<float>& k,
+               const std::vector<float>& v,
+               std::vector<double>& out,
+               std::vector<double>& lse) {
+    for (int i = 0; i < s.nq; ++i) {
+        std::vector<double> scores(s.nk, -INFINITY);
+        double m = -INFINITY;
+        for (int j = 0; j < s.nk; ++j) {
+            if (s.causal && j > i + s.query_offset)
+                continue;
+            double dot = 0;
+            for (int c = 0; c < s.d; ++c)
+                dot += double(q[i * s.d + c]) * k[j * s.d + c];
+            scores[j] = dot / std::sqrt(double(s.d));
+            m = std::max(m, scores[j]);
+        }
+        double sum = 0;
+        for (double& score : scores) {
+            score = std::exp(score - m);
+            sum += score;
+        }
+        for (int c = 0; c < s.dv; ++c) {
+            double value = 0;
+            for (int j = 0; j < s.nk; ++j)
+                value += (scores[j] / sum) * v[j * s.dv + c];
+            out[i * s.dv + c] = value;
+        }
+        lse[i] = m + std::log(sum);
+    }
+}
+
+void compare(const std::vector<float>& actual,
+             const std::vector<double>& expected,
+             const char* label) {
+    if (actual.size() != expected.size())
+        throw std::runtime_error("Result size mismatch");
+    for (size_t i = 0; i < actual.size(); ++i) {
+        const double tolerance =
+            1e-4 + 1e-4 * std::fabs(expected[i]);
+        if (!std::isfinite(actual[i]) ||
+            !std::isfinite(expected[i]) ||
+            std::fabs(double(actual[i]) - expected[i]) > tolerance)
+            throw std::runtime_error(std::string(label) +
+                                     " mismatch at " +
+                                     std::to_string(i));
+    }
+}
+
+void run_case(const char* name,
+              Shape s,
+              std::vector<float> q,
+              std::vector<float> k,
+              std::vector<float> v) {
+    validate(s, q, k, v);
+    std::vector<float> out(s.nq * s.dv, NAN), lse(s.nq, NAN);
+    std::vector<double> expected(out.size()),
+        expected_lse(lse.size());
+    reference(s, q, k, v, expected, expected_lse);
+#ifdef ATTENTION_HOST_ONLY
+    // Executes the shared FP32 row function on the CPU; not a CUDA run.
+    for (int i = 0; i < s.nq; ++i)
+        online_row(q.data(),
+                   k.data(),
+                   v.data(),
+                   out.data(),
+                   lse.data(),
+                   s,
+                   i);
+#else
+    DeviceBuffer dq(q.size()), dk(k.size()), dv(v.size());
+    DeviceBuffer dout(out.size()), dlse(lse.size());
+    check_cuda(cudaMemcpy(dq.data,
+                          q.data(),
+                          q.size() * sizeof(float),
+                          cudaMemcpyHostToDevice));
+    check_cuda(cudaMemcpy(dk.data,
+                          k.data(),
+                          k.size() * sizeof(float),
+                          cudaMemcpyHostToDevice));
+    check_cuda(cudaMemcpy(dv.data,
+                          v.data(),
+                          v.size() * sizeof(float),
+                          cudaMemcpyHostToDevice));
+    check_cuda(
+        cudaMemset(dout.data, 0xff, out.size() * sizeof(float)));
+    check_cuda(
+        cudaMemset(dlse.data, 0xff, lse.size() * sizeof(float)));
+    attention_kernel<<<(s.nq + 127) / 128, 128>>>(
+        dq.data, dk.data, dv.data, dout.data, dlse.data, s);
+    check_cuda(cudaGetLastError());
+    check_cuda(cudaDeviceSynchronize());
+    check_cuda(cudaMemcpy(out.data(),
+                          dout.data,
+                          out.size() * sizeof(float),
+                          cudaMemcpyDeviceToHost));
+    check_cuda(cudaMemcpy(lse.data(),
+                          dlse.data,
+                          lse.size() * sizeof(float),
+                          cudaMemcpyDeviceToHost));
+    dq.release();
+    dk.release();
+    dv.release();
+    dout.release();
+    dlse.release();
+#endif
+    compare(out, expected, "O");
+    compare(lse, expected_lse, "LSE");
+    if (std::string(name) == "worked-full" ||
+        std::string(name) == "worked-reordered") {
+        compare(out, {1.6, 2.0, 1.4, 2.4}, "Closed-form O");
+        compare(
+            lse, {std::log(5.0), std::log(5.0)}, "Closed-form LSE");
+    } else if (std::string(name) == "worked-causal") {
+        compare(
+            out, {1.0, 0.0, 1.0 / 3.0, 4.0 / 3.0}, "Closed-form O");
+        compare(
+            lse, {std::log(2.0), std::log(3.0)}, "Closed-form LSE");
+    } else if (std::string(name) == "worked-offset-1") {
+        compare(
+            out, {2.0 / 3.0, 2.0 / 3.0, 1.4, 2.4}, "Closed-form O");
+        compare(
+            lse, {std::log(3.0), std::log(5.0)}, "Closed-form LSE");
+    }
+    std::printf(
+        "PASS %s: all %zu O values and %zu LSE values checked; first O=[",
+        name,
+        out.size(),
+        lse.size());
+    for (int c = 0; c < std::min(s.dv, 2); ++c)
+        std::printf("%s%.7g", c ? ", " : "", out[c]);
+    std::puts("]");
+}
+
+int main() {
+    try {
+#ifndef ATTENTION_HOST_ONLY
+        int count = 0;
+        const cudaError_t status = cudaGetDeviceCount(&count);
+        if (status != cudaSuccess || count == 0) {
+            std::fprintf(stderr,
+                         "BLOCKED: CUDA device unavailable (%s)\n",
+                         cudaGetErrorString(status));
+            return 2;
+        }
+        check_cuda(cudaSetDevice(0));
+#endif
+        const float a = std::sqrt(2.0f) * std::log(2.0f);
+        const std::vector<float> q = {a, 0, 0, a};
+        const std::vector<float> k = {1, 0, 0, 1, 1, 1};
+        const std::vector<float> v = {1, 0, 0, 2, 3, 4};
+        run_case("worked-full", {2, 3, 2, 2, false, 0}, q, k, v);
+        run_case("worked-causal", {2, 3, 2, 2, true, 0}, q, k, v);
+        run_case("worked-offset-1", {2, 3, 2, 2, true, 1}, q, k, v);
+        run_case("worked-reordered",
+                 {2, 3, 2, 2, false, 0},
+                 q,
+                 {0, 1, 1, 0, 1, 1},
+                 {0, 2, 1, 0, 3, 4});
+        Shape s{17, 23, 8, 5, false, 0};
+        std::vector<float> q2(s.nq * s.d), k2(s.nk * s.d),
+            v2(s.nk * s.dv);
+        for (size_t i = 0; i < q2.size(); ++i)
+            q2[i] = (int(i * 7 % 19) - 9) * 0.03125f;
+        for (size_t i = 0; i < k2.size(); ++i)
+            k2[i] = (int(i * 3 % 17) - 8) * 0.0625f;
+        for (size_t i = 0; i < v2.size(); ++i)
+            v2[i] = (int(i * 5 % 23) - 11) * 0.0625f;
+        run_case("rectangular-full", s, q2, k2, v2);
+        s.causal = true;
+        run_case("rectangular-causal", s, q2, k2, v2);
+        s.query_offset = 1;
+        run_case("rectangular-offset-1", s, q2, k2, v2);
+#ifdef ATTENTION_HOST_ONLY
+        std::puts(
+            "HOST ROW CHECK PASS: shared FP32 arithmetic versus binary64 reference; CUDA compilation/execution not performed.");
+#else
+        std::puts(
+            "CUDA ATTENTION PASS: seven cases; complete O/LSE checks; no performance claim.");
+#endif
+        return 0;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "FAIL: %s\n", e.what());
+        return 1;
+    }
+}
+```
+<!-- attention-row-source:end -->
+
+## 15 — Complete runnable Python reference
+
+[Download `attention_walkthrough.py`](examples/advanced/attention_walkthrough.py). This is the full program used by the dated mathematical checks in Section 12. It runs with Python's standard library and prints each online state; no GPU or Python CUDA package is needed.
+
+```bash
+python3 docs/examples/advanced/attention_walkthrough.py
+```
+
+The input mask is the Boolean `allowed` list described in Section 8. Keep logits finite; represent excluded positions through the mask instead of passing literal negative infinity into this helper. Its all-masked-row rejection is intentional. Compare its binary64 arithmetic with the GPU reference's FP32 arithmetic rather than expecting identical last bits.
+
+<!-- attention-python-source:start -->
+```python
+#!/usr/bin/env python3
+"""CPU binary64 attention/online-softmax oracle, not a CUTLASS/GPU execution.
+
+The tiny d=2 example is mathematical; pinned Hopper FMHA kernels require their
+supported larger head dimensions, datatype/stride and launch contracts.
+"""
+import math
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def check_close(actual, expected):
+    if isinstance(expected, (list, tuple)):
+        require(len(actual) == len(expected), 'Result shape mismatch')
+        for a, e in zip(actual, expected):
+            check_close(a, e)
+    elif not math.isfinite(actual) or not math.isclose(actual, expected,
+                                                     rel_tol=1e-12, abs_tol=1e-12):
+        raise AssertionError(f'{actual!r} != {expected!r}')
+
+
+def score_rows(q, k):
+    require(q and k and q[0], 'Nonempty Q/K required')
+    d = len(q[0])
+    require(all(len(row) == d for row in q + k), 'Q/K head dimension mismatch')
+    require(all(math.isfinite(x) for row in q + k for x in row), 'Finite inputs required')
+    scale = 1.0 / math.sqrt(d)
+    return [[math.fsum(x * y for x, y in zip(qi, kj)) * scale for kj in k]
+            for qi in q]
+
+
+def reference_row(logits, values, allowed):
+    """Materialized stable row reference; all-masked rows are explicitly rejected."""
+    keys = [j for j, valid in enumerate(allowed) if valid]
+    require(keys, 'All-masked row is outside this oracle contract')
+    maximum = max(logits[j] for j in keys)
+    weights = [math.exp(logits[j] - maximum) if allowed[j] else 0.0
+               for j in range(len(logits))]
+    denominator = math.fsum(weights)
+    probabilities = [p / denominator for p in weights]
+    output = [math.fsum(p * v[c] for p, v in zip(probabilities, values))
+              for c in range(len(values[0]))]
+    return output, maximum + math.log(denominator), probabilities
+
+
+def online_row(logits, values, blocks, allowed=None):
+    """Return output, natural-log LSE and every block's (m,l,z,alpha) state."""
+    count = len(logits)
+    require(count > 0 and len(values) == count and values[0], 'Nonempty matching K/V required')
+    width = len(values[0])
+    require(all(len(v) == width for v in values), 'Ragged V rows')
+    require(all(math.isfinite(x) for x in logits), 'Finite unmasked score inputs required')
+    require(all(math.isfinite(x) for v in values for x in v), 'Finite V required')
+    allowed = list(allowed) if allowed is not None else [True] * count
+    require(len(allowed) == count, 'Mask width mismatch')
+    flat = [j for block in blocks for j in block]
+    require(sorted(flat) == list(range(count)), 'Blocks must cover each key exactly once')
+    maximum, denominator, numerator = -math.inf, 0.0, [0.0] * width
+    trace = []
+    for block in blocks:
+        valid = [j for j in block if allowed[j]]
+        if not valid:
+            trace.append(dict(keys=list(block), skipped=True, m=maximum,
+                              l=denominator, z=numerator[:], alpha=None))
+            continue
+        new_maximum = max(maximum, max(logits[j] for j in valid))
+        alpha = 0.0 if maximum == -math.inf else math.exp(maximum - new_maximum)
+        weights = [(j, math.exp(logits[j] - new_maximum)) for j in valid]
+        denominator = alpha * denominator + math.fsum(p for _, p in weights)
+        numerator = [alpha * numerator[c] + math.fsum(p * values[j][c] for j, p in weights)
+                     for c in range(width)]
+        maximum = new_maximum
+        trace.append(dict(keys=list(block), skipped=False, m=maximum,
+                          l=denominator, z=numerator[:], alpha=alpha))
+    require(denominator > 0.0, 'All-masked row is outside this oracle contract')
+    return [z / denominator for z in numerator], maximum + math.log(denominator), trace
+
+
+def evaluate(q, k, v, causal=False, query_offset=0, blocks=None):
+    logits = score_rows(q, k)
+    require(len(k) == len(v), 'K/V sequence mismatch')
+    require(isinstance(query_offset, int) and query_offset >= 0, 'Nonnegative position offset required')
+    blocks = blocks if blocks is not None else [list(range(0, min(2, len(k)))), list(range(2, len(k)))]
+    outputs, traces = [], []
+    for i, row in enumerate(logits):
+        allowed = [not causal or j <= i + query_offset for j in range(len(k))]
+        reference, ref_lse, probabilities = reference_row(row, v, allowed)
+        output, lse, trace = online_row(row, v, blocks, allowed)
+        check_close(output, reference)
+        check_close(lse, ref_lse)
+        check_close(math.fsum(probabilities), 1.0)
+        outputs.append(output)
+        traces.append(trace)
+    return outputs, traces
+
+
+def pretty(values):
+    return '[' + ', '.join(f'{x:.12g}' for x in values) + ']'
+
+
+def main():
+    ln2 = math.log(2.0)
+    q = [[math.sqrt(2.0) * ln2, 0.0], [0.0, math.sqrt(2.0) * ln2]]
+    k = [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]
+    v = [[1.0, 0.0], [0.0, 2.0], [3.0, 4.0]]
+    scores = score_rows(q, k)
+    check_close(scores, [[ln2, 0.0, ln2], [0.0, ln2, ln2]])
+    full, traces = evaluate(q, k, v)
+    check_close(full, [[1.6, 2.0], [1.4, 2.4]])
+    print('NONCAUSAL O:', '; '.join(pretty(row) for row in full))
+    for i, trace in enumerate(traces):
+        for step, state in enumerate(trace):
+            print(f'ROW {i} BLOCK {step} keys={state["keys"]}: '
+                  f'm={state["m"]:.12g} alpha={state["alpha"]:.12g} '
+                  f'l={state["l"]:.12g} z={pretty(state["z"])}')
+    causal, _ = evaluate(q, k, v, causal=True)
+    check_close(causal, [[1.0, 0.0], [1.0 / 3, 4.0 / 3]])
+    print('TOP-LEFT CAUSAL O:', '; '.join(pretty(row) for row in causal))
+    shifted, _ = evaluate(q, k, v, causal=True, query_offset=1)
+    check_close(shifted, [[2.0 / 3, 2.0 / 3], [1.4, 2.4]])
+    print('OFFSET-1 CAUSAL O:', '; '.join(pretty(row) for row in shifted))
+    # A new maximum must rescale the old numerator AND denominator.
+    reordered, reordered_trace = evaluate(q, k, v, blocks=[[1], [0, 2]])
+    check_close(reordered, full)
+    check_close(reordered_trace[0][1]['alpha'], 0.5)
+    print('RESCALE row0:', f'alpha={reordered_trace[0][1]["alpha"]:.12g}',
+          f'l={reordered_trace[0][1]["l"]:.12g}',
+          f'z={pretty(reordered_trace[0][1]["z"])}')
+    for blocks in [[[0], [1], [2]], [[2, 0], [1]], [[0, 1, 2]], [[2], [1], [0]]]:
+        check_close(evaluate(q, k, v, blocks=blocks)[0], full)
+    for row in scores:
+        shifted_logits = [x + 1000.0 for x in row]
+        check_close(online_row(shifted_logits, v, [[0, 1], [2]])[0],
+                    reference_row(row, v, [True] * 3)[0])
+    # An initially empty masked tile is skipped, not exp(-inf - -inf).
+    check_close(online_row(scores[0], v, [[2], [0, 1]], [True, False, False])[0], [1, 0])
+    for operation in [lambda: online_row(scores[0], v, [[0, 1], [1, 2]]),
+                      lambda: online_row(scores[0], v, [[0, 1], [2]], [False] * 3)]:
+        try:
+            operation()
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('Invalid contract accepted')
+    print('PASS: materialized/online references; causal positions; rescaling; partitions; shift stability; masked/invalid diagnostics')
+    print('ATTENTION WALKTHROUGH PASS: CPU binary64 mathematics; no CUTLASS compilation or GPU execution')
+
+
+if __name__ == '__main__':
+    main()
+```
+<!-- attention-python-source:end -->
+
 ## Summary
 
 - Define the Q/K and P/V reduction axes, positions, mask and conversion policy before choosing an FMHA kernel.
 - Online attention carries a row maximum, scalar denominator and vector numerator. A new maximum rescales both accumulated quantities; mask before contributing to any statistic.
 - Layouts map feature coordinates to storage independently of score coordinates. A logical transpose, valid address map or tiny correct equation does not establish a supported Hopper launch.
-- The CPU oracle checks the mathematics. Continue to the pinned implementation and its separately stated build/validation scope in [Chapter 31](31-cutlass-hopper-fmha.md).
+- The CPU oracle checks the mathematics, and the standalone CUDA reference passed seven H100 cases against its binary64 reference plus memcheck. Continue to the optimized pinned implementation and its separate forward/backward record in [Chapter 31](31-cutlass-hopper-fmha.md).
