@@ -1,0 +1,27 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100 --expt-relaxed-constexpr -I/home/ubuntu/h100-book-b200-20261119/cutlass/include -I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include /home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_basic.cu -o /home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_basic/example
+/home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_basic.cu(170): warning #550-D: variable "warp" was set but never used
+      int warp = tid >> 5;
+          ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_basic.cu(171): warning #550-D: variable "lane" was set but never used
+      int lane = tid & 31;
+          ^
+
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 301; error   : Instruction 'wgmma.fence' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 301; error   : Instruction 'wgmma.fence' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 301; error   : Instruction 'wgmma.fence' cannot be compiled for architecture 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 338; error   : Instruction 'wgmma.mma_async with floating point types' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 338; error   : Instruction 'wgmma.mma_async with floating point types' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 338; error   : Instruction 'wgmma.mma_async with floating point types' cannot be compiled for architecture 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 343; error   : Instruction 'wgmma.commit_group' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 343; error   : Instruction 'wgmma.commit_group' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 343; error   : Instruction 'wgmma.commit_group' cannot be compiled for architecture 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 347; error   : Instruction 'wgmma.wait_group' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 347; error   : Instruction 'wgmma.wait_group' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 347; error   : Instruction 'wgmma.wait_group' cannot be compiled for architecture 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 351; error   : Instruction 'wgmma.fence' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 351; error   : Instruction 'wgmma.fence' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000038fe_00000000-6_ex01_wgmma_basic.ptx, line 351; error   : Instruction 'wgmma.fence' cannot be compiled for architecture 'sm_100'
+ptxas fatal   : Ptx assembly aborted due to errors

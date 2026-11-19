@@ -1,0 +1,44 @@
+{
+  "source": "original/ex02_ptx_basics.cu",
+  "kind": "original",
+  "page": "docs/02-clusters-inline-ptx.md",
+  "sha256": "50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_ptx_basics/example"
+      ],
+      "started_utc": "2026-11-19T22:04:12.692525+00:00",
+      "finished_utc": "2026-11-19T22:04:23.180267+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 10.487747161000016,
+      "log": "results/ex02_ptx_basics/run-0.log",
+      "log_sha256": "8f3ba9725918eb753d19c79af603ab0216daab042fcc1212a7096b631dfcf84d",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex02_ptx_basics.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex02_ptx_basics/example"
+    ],
+    "started_utc": "2026-11-19T22:04:11.925619+00:00",
+    "finished_utc": "2026-11-19T22:04:12.692353+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.766735107000045,
+    "log": "results/ex02_ptx_basics/compile.log",
+    "log_sha256": "d157c1f8076610dd858d8d8fbd9a46c8179d5b772f85d74906d662a12877fa4f"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

@@ -1,0 +1,44 @@
+{
+  "source": "original/ex10_dependent_launch.cu",
+  "kind": "original",
+  "page": "docs/10-stream-k-scheduling.md",
+  "sha256": "36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex10_dependent_launch/example"
+      ],
+      "started_utc": "2026-11-19T22:04:48.288671+00:00",
+      "finished_utc": "2026-11-19T22:04:56.622780+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.334114486999852,
+      "log": "results/ex10_dependent_launch/run-0.log",
+      "log_sha256": "0481d587d9e72a3b482dccd87ab802bb28bdfb37951a2162dc3a543cb4e972a6",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex10_dependent_launch.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex10_dependent_launch/example"
+    ],
+    "started_utc": "2026-11-19T22:04:47.672778+00:00",
+    "finished_utc": "2026-11-19T22:04:48.288507+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.6157350619998851,
+    "log": "results/ex10_dependent_launch/compile.log",
+    "log_sha256": "8007907fb6f70b0576b276e4f93aa3b8f6b4ddccba2a8118cad348105f66ae3f"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

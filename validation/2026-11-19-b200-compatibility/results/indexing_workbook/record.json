@@ -1,0 +1,38 @@
+{
+  "source": "docs/examples/advanced/indexing_workbook.py",
+  "kind": "cpu_reference",
+  "sha256": "600d93b6e87f75e8758fd1ac62785130d643fce63dc1a054a056b949a216c1f0",
+  "runs": [
+    {
+      "command": [
+        "python3",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/indexing_workbook.py"
+      ],
+      "started_utc": "2026-11-19T22:05:08.593650+00:00",
+      "finished_utc": "2026-11-19T22:05:08.609507+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.015858623999974952,
+      "log": "results/indexing_workbook/run-0.log",
+      "log_sha256": "e30eb4b9a535502a8649eca93c31ede8813b1bf9dc1a1bfa01196bc1f9b9e709",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "python3",
+      "-m",
+      "py_compile",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/indexing_workbook.py"
+    ],
+    "started_utc": "2026-11-19T22:05:08.561554+00:00",
+    "finished_utc": "2026-11-19T22:05:08.593574+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.032021557000007306,
+    "log": "results/indexing_workbook/compile.log",
+    "log_sha256": "fbcf1971fe891371ff7fd88f1c25e6c339f324f958365ab7d55c16f2185e82b3"
+  },
+  "binary_target": "cpu",
+  "status": "COMPLETED"
+}

@@ -1,0 +1,44 @@
+{
+  "source": "original/ex03_state_spaces.cu",
+  "kind": "original",
+  "page": "docs/02-clusters-inline-ptx.md",
+  "sha256": "1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex03_state_spaces/example"
+      ],
+      "started_utc": "2026-11-19T22:04:12.592617+00:00",
+      "finished_utc": "2026-11-19T22:04:20.826356+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.233745619000047,
+      "log": "results/ex03_state_spaces/run-0.log",
+      "log_sha256": "130a163e720c227b78a0298d7562498f2c2786d292f4128295c96cfe050fb72e",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex03_state_spaces.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex03_state_spaces/example"
+    ],
+    "started_utc": "2026-11-19T22:04:11.926122+00:00",
+    "finished_utc": "2026-11-19T22:04:12.592418+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.6663021200000685,
+    "log": "results/ex03_state_spaces/compile.log",
+    "log_sha256": "907f3f37cb43e954e8dbc948b03b7a2d1ece979fc3e5ba09a47a5ba64a5a7345"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

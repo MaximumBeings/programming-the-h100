@@ -1,0 +1,2 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/88_hopper_fmha/example --b=1 --h=2 --q=128 --k=128 --d=64 --iterations=1
+This example requires a GPU of NVIDIA's Hopper Architecture (compute capability 90) and CUDA 12.0 or greater.

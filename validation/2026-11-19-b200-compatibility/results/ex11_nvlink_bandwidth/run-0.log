@@ -1,0 +1,21 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/ex11_nvlink_bandwidth/example
+GPUs detected: 8
+GPU 0: NVIDIA B200, SM 10.0, 148 SMs
+GPU 1: NVIDIA B200, SM 10.0, 148 SMs
+GPU 2: NVIDIA B200, SM 10.0, 148 SMs
+GPU 3: NVIDIA B200, SM 10.0, 148 SMs
+GPU 4: NVIDIA B200, SM 10.0, 148 SMs
+GPU 5: NVIDIA B200, SM 10.0, 148 SMs
+GPU 6: NVIDIA B200, SM 10.0, 148 SMs
+GPU 7: NVIDIA B200, SM 10.0, 148 SMs
+GPU 0 can access GPU 1 memory: YES (does not identify NVLink)
+Record topology with nvidia-smi topo -m. Payload: 134217728 bytes
+  Staged 0->1 full-buffer verification: PASS (0 byte errors)
+  Staged complete-transfer time: 4.779514 ms, payload 28.082 GB/s
+  Peer API 0->1 full-buffer verification: PASS (0 byte errors)
+  Peer API transfer time: 0.185056 ms, payload 725.282 GB/s (link unclassified)
+  Kernel 1->0 full-buffer verification: PASS (0 byte errors)
+  Kernel grid 1 blocks: 244.309390 ms, payload 0.549 GB/s
+  Kernel 1->0 full-buffer verification: PASS (0 byte errors)
+  Kernel grid 148 blocks: 1.656006 ms, payload 81.049 GB/s
+Full-buffer checks: PASS

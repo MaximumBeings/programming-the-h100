@@ -1,0 +1,1 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100a --expt-relaxed-constexpr -Icutlass/include -Icutlass/tools/util/include docs/examples/blackwell/blackwell_gemm_relu.cu -o blackwell_gemm_relu_fixed -lcuda

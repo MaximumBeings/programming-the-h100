@@ -1,0 +1,9 @@
+$ python3 /home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/stride_walkthrough.py
+ROW-MAJOR (2,3):(3,1): 0 1 2 / 3 4 5
+COLUMN-MAJOR (2,3):(1,2): 0 2 4 / 1 3 5
+PADDED (2,3):(5,1): offsets=0,1,2,5,6,7 span=8
+BATCHED (2,2,3):(10,5,1): logical=12 distinct=12 span=18
+BROADCAST (2,3):(0,1): logical=6 distinct=3; independent writes alias
+OVERLAP (2,3):(1,1): logical=6 distinct=4; positive strides can alias
+STRIDE WALKTHROUGH PASS: affine maps, transpose, batches, aliases, alignment, tails
+Scope: CPU Python integer-address model; no CuTe compilation or GPU execution

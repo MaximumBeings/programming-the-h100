@@ -1,0 +1,77 @@
+[
+  {
+    "name": "blackwell_gemm-compile",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100a",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/native-blackwell-20261119/cutlass/include",
+      "-I/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm.cu",
+      "-o",
+      "/home/ubuntu/native-blackwell-20261119/blackwell_gemm",
+      "-lcuda"
+    ],
+    "started_utc": "2026-11-19T22:08:08.838188+00:00",
+    "finished_utc": "2026-11-19T22:08:46.888583+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "blackwell_gemm-compile.log",
+    "log_sha256": "5f6367f3f5b863dec6e955e018d0b8e296dd48376fb53ef7f196e7c9eb86c09f",
+    "source": "docs/examples/blackwell/blackwell_gemm.cu",
+    "source_sha256": "07e3ec19f926717f24e414a58793100f6897d295affdb57b3875a9111b61b956"
+  },
+  {
+    "name": "blackwell_gemm_relu-compile",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100a",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/native-blackwell-20261119/cutlass/include",
+      "-I/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu",
+      "-o",
+      "/home/ubuntu/native-blackwell-20261119/blackwell_gemm_relu",
+      "-lcuda"
+    ],
+    "started_utc": "2026-11-19T22:08:08.838586+00:00",
+    "finished_utc": "2026-11-19T22:08:11.960232+00:00",
+    "exit_code": 2,
+    "timed_out": false,
+    "log": "blackwell_gemm_relu-compile.log",
+    "log_sha256": "a51617bd50c841824c802e4c683f47cbd672ab13e817d6e4ed1f9ead09adde9a",
+    "source": "docs/examples/blackwell/blackwell_gemm_relu.cu",
+    "source_sha256": "2a7237fcea7ca4502ecfa7faf2c82892225e0a8f416e9775479487197dcf1624"
+  },
+  {
+    "name": "blackwell_fmha-compile",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100a",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/native-blackwell-20261119/cutlass/include",
+      "-I/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include",
+      "-DFP16",
+      "--use_fast_math",
+      "-I/home/ubuntu/native-blackwell-20261119/cutlass/examples/77_blackwell_fmha",
+      "/home/ubuntu/native-blackwell-20261119/cutlass/examples/77_blackwell_fmha/77_blackwell_fmha.cu",
+      "-o",
+      "/home/ubuntu/native-blackwell-20261119/blackwell_fmha",
+      "-lcuda"
+    ],
+    "started_utc": "2026-11-19T22:08:08.838961+00:00",
+    "finished_utc": "2026-11-19T22:09:48.840395+00:00",
+    "exit_code": -9,
+    "timed_out": true,
+    "log": "blackwell_fmha-compile.log",
+    "log_sha256": "ec3894680b1910ca8823deb047dc9d88d04175af47dd69baf75e064c3f6e6ec5",
+    "source": "cutlass/examples/77_blackwell_fmha/77_blackwell_fmha.cu",
+    "source_sha256": "7d37070344aa8cdde3c2ee9b5bc53cad48dd354409b20bb07d0d10f004f653fe"
+  }
+]

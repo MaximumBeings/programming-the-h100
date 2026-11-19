@@ -1,0 +1,1 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100a original/ex03_setmaxnreg.cu -o setmaxnreg-blackwell/example

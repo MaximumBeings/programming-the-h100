@@ -1,0 +1,45 @@
+{
+  "source": "original/ex12_nccl_allreduce.cu",
+  "kind": "original",
+  "page": "docs/11-multi-gpu-nccl.md",
+  "sha256": "f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex12_nccl_allreduce/example"
+      ],
+      "started_utc": "2026-11-19T22:04:57.390110+00:00",
+      "finished_utc": "2026-11-19T22:05:06.178089+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.787988197000004,
+      "log": "results/ex12_nccl_allreduce/run-0.log",
+      "log_sha256": "d62a7612f6be043abed97aa0ee4a682937b633758478c2ae50aafa80c477ed52",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex12_nccl_allreduce.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex12_nccl_allreduce/example",
+      "-lnccl"
+    ],
+    "started_utc": "2026-11-19T22:04:56.322720+00:00",
+    "finished_utc": "2026-11-19T22:04:57.389949+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 1.0672349659998872,
+    "log": "results/ex12_nccl_allreduce/compile.log",
+    "log_sha256": "36ce47b74499ccde23c34a3af836bfc7ba71b41969ad05f9e9a15c4744fb6ab2"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

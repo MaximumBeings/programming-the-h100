@@ -1,0 +1,11 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100 --expt-relaxed-constexpr -I/home/ubuntu/h100-book-b200-20261119/cutlass/include -I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include /home/ubuntu/h100-book-b200-20261119/original/ex13_hybrid_parallel_training.cu -o /home/ubuntu/h100-book-b200-20261119/results/ex13_hybrid_parallel_training/example -lnccl -lcublas -Xcompiler=-pthread
+/home/ubuntu/h100-book-b200-20261119/original/ex13_hybrid_parallel_training.cu(474): warning #177-D: variable "output_cols" was declared but never referenced
+      int output_cols = (pp == 0) ? H_SHARD : HIDDEN;
+          ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/h100-book-b200-20261119/original/ex13_hybrid_parallel_training.cu(499): warning #550-D: variable "loss_this_gpu" was set but never used
+      float loss_this_gpu = 0.0f;
+            ^
+

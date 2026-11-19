@@ -1,0 +1,65 @@
+{
+  "source": "original/ex03_setmaxnreg.cu",
+  "kind": "original",
+  "page": "docs/08-kernel-design-part-1.md",
+  "sha256": "c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex03_setmaxnreg/example"
+      ],
+      "started_utc": "2026-11-19T22:04:38.966968+00:00",
+      "finished_utc": "2026-11-19T22:04:49.655371+00:00",
+      "exit_code": 1,
+      "timed_out": false,
+      "seconds": 10.688408611000114,
+      "log": "results/ex03_setmaxnreg/run-0.log",
+      "log_sha256": "c8f64b6b048dc3d1c92457b4ff49866e39703e3c8ee510e2cdcbcabaa1416068",
+      "status": "RUNTIME_UNSUPPORTED_OR_FAILED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex03_setmaxnreg.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex03_setmaxnreg/example"
+    ],
+    "started_utc": "2026-11-19T22:04:37.785451+00:00",
+    "finished_utc": "2026-11-19T22:04:38.200627+00:00",
+    "exit_code": 255,
+    "timed_out": false,
+    "seconds": 0.415180792000001,
+    "log": "results/ex03_setmaxnreg/compile.log",
+    "log_sha256": "7bc6ef16eae2339289ad9d1c809bf3c20179156188c0817b276729b7d24e26e9"
+  },
+  "hopper_compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_90a",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex03_setmaxnreg.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex03_setmaxnreg/example"
+    ],
+    "started_utc": "2026-11-19T22:04:38.200764+00:00",
+    "finished_utc": "2026-11-19T22:04:38.966798+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.7660417510001025,
+    "log": "results/ex03_setmaxnreg/compile-hopper.log",
+    "log_sha256": "50cba3349666b6f7c6e54fa6ac1800741a42081a37adb3522a2a5f1f4867e4f3"
+  },
+  "binary_target": "sm_90a",
+  "status": "RUNTIME_UNSUPPORTED_OR_FAILED"
+}

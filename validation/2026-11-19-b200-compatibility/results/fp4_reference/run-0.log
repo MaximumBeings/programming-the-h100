@@ -1,0 +1,6 @@
+$ python3 /home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/fp4_reference.py
+PASS: all 16 E2M1 codes, 256 nibble pairs and nearest-even ties
+PASS: finite saturation, signed zero, zero blocks and exact-scale round trips
+PASS: K-axis B scaling, independent block scales and invalid-input diagnoses
+Scope: CPU format/layout reference; no E4M3 scale quantization, tensor scale or native NVFP4 GEMM
+FP4 REFERENCE PASS: 3 CPU-only reference groups

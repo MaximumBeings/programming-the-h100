@@ -1,0 +1,7 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100 --expt-relaxed-constexpr -I/home/ubuntu/h100-book-b200-20261119/cutlass/include -I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include /home/ubuntu/h100-book-b200-20261119/original/ex04_ptx_pointers.cu -o /home/ubuntu/h100-book-b200-20261119/results/ex04_ptx_pointers/example
+/home/ubuntu/h100-book-b200-20261119/original/ex04_ptx_pointers.cu(86): warning #550-D: variable "old" was set but never used
+      uint32_t old;
+               ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+

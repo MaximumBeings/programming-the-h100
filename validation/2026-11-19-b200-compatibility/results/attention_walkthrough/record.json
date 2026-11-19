@@ -1,0 +1,38 @@
+{
+  "source": "docs/examples/advanced/attention_walkthrough.py",
+  "kind": "cpu_reference",
+  "sha256": "2e59d020aaf1c7d763bff8f7a924ff20da3b34f578f07ea5735024475367ea52",
+  "runs": [
+    {
+      "command": [
+        "python3",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/attention_walkthrough.py"
+      ],
+      "started_utc": "2026-11-19T22:05:08.496531+00:00",
+      "finished_utc": "2026-11-19T22:05:08.512331+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.015800721999994494,
+      "log": "results/attention_walkthrough/run-0.log",
+      "log_sha256": "6f7e24ff870b26be2477053fdc749244dbc150c3469dee07b03fe5be8d828e38",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "python3",
+      "-m",
+      "py_compile",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/attention_walkthrough.py"
+    ],
+    "started_utc": "2026-11-19T22:05:08.464267+00:00",
+    "finished_utc": "2026-11-19T22:05:08.496390+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.0321263739999722,
+    "log": "results/attention_walkthrough/compile.log",
+    "log_sha256": "737f1470de552e30da52c07546383bc9a5cc83e09e70ad194b616db7cb2fc4b9"
+  },
+  "binary_target": "cpu",
+  "status": "COMPLETED"
+}

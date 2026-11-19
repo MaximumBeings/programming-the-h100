@@ -1,0 +1,44 @@
+{
+  "source": "original/ex02_reduce_async.cu",
+  "kind": "original",
+  "page": "docs/05-cp-async-bulk-l2-hinting.md",
+  "sha256": "52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_reduce_async/example"
+      ],
+      "started_utc": "2026-11-19T22:04:30.338774+00:00",
+      "finished_utc": "2026-11-19T22:04:38.472781+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.134012945999984,
+      "log": "results/ex02_reduce_async/run-0.log",
+      "log_sha256": "4da3672fa6c95ca7822d1c660b73d5c342f5efd48df534f20d9df7bd60bf7cc8",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex02_reduce_async.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex02_reduce_async/example"
+    ],
+    "started_utc": "2026-11-19T22:04:29.723129+00:00",
+    "finished_utc": "2026-11-19T22:04:30.338648+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.615523408999934,
+    "log": "results/ex02_reduce_async/compile.log",
+    "log_sha256": "eb5b0c92235388c39b7ec6a65a22688aab3c57e6495417960f66045c1ed66ba7"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

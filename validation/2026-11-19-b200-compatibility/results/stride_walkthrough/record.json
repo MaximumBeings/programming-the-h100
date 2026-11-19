@@ -1,0 +1,38 @@
+{
+  "source": "docs/examples/advanced/stride_walkthrough.py",
+  "kind": "cpu_reference",
+  "sha256": "57d0ddb0d04fef6c1c3c34f3d5ce9c5de46671dc1279db078af61af6928e2cae",
+  "runs": [
+    {
+      "command": [
+        "python3",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/stride_walkthrough.py"
+      ],
+      "started_utc": "2026-11-19T22:05:08.641584+00:00",
+      "finished_utc": "2026-11-19T22:05:08.673506+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.03192359099989517,
+      "log": "results/stride_walkthrough/run-0.log",
+      "log_sha256": "82f9237759ef7ecc836d1643078ad5f084a937e63c29623ea4fa033f4125e6cf",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "python3",
+      "-m",
+      "py_compile",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/stride_walkthrough.py"
+    ],
+    "started_utc": "2026-11-19T22:05:08.609809+00:00",
+    "finished_utc": "2026-11-19T22:05:08.641510+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.03170215499994811,
+    "log": "results/stride_walkthrough/compile.log",
+    "log_sha256": "0b006b1fc5af337e9bbfda556261601353627a01cb4397843d8e0f01a3bf48d3"
+  },
+  "binary_target": "cpu",
+  "status": "COMPLETED"
+}

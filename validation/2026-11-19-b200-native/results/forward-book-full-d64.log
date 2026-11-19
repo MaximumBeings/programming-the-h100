@@ -1,0 +1,4 @@
+$ ./blackwell_fmha_forward --b=1 --h=2 --q=256 --k=256 --verify --iterations=1 --warmup_iterations=0 --verbose --d=64 --mask=no
+###### B 1 H 2 H_K 2 Q 256 K 256 D 64 Forward None #SM 148
+ [OK]  book sm100 FP16 forward          : 0.0115417 TFLOPS/s
+       t=2.90723ms, smem=82160b

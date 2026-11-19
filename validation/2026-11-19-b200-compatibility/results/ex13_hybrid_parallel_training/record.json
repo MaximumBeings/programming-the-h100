@@ -1,0 +1,47 @@
+{
+  "source": "original/ex13_hybrid_parallel_training.cu",
+  "kind": "original",
+  "page": "docs/11-multi-gpu-nccl.md",
+  "sha256": "9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex13_hybrid_parallel_training/example"
+      ],
+      "started_utc": "2026-11-19T22:04:57.990164+00:00",
+      "finished_utc": "2026-11-19T22:05:11.039393+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 13.04924359000006,
+      "log": "results/ex13_hybrid_parallel_training/run-0.log",
+      "log_sha256": "a89e800ad1578b2e9a03f5962a3409c21006f9cc5c9eb54ca6dbe962d3049fe0",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex13_hybrid_parallel_training.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex13_hybrid_parallel_training/example",
+      "-lnccl",
+      "-lcublas",
+      "-Xcompiler=-pthread"
+    ],
+    "started_utc": "2026-11-19T22:04:56.472298+00:00",
+    "finished_utc": "2026-11-19T22:04:57.989991+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 1.5177000369999405,
+    "log": "results/ex13_hybrid_parallel_training/compile.log",
+    "log_sha256": "337d7135353c5482dd571cbc79cc21339c1fc763ed5b515b01b6c1be802b9fbf"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

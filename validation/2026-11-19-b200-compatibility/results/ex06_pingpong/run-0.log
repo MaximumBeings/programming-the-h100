@@ -1,0 +1,33 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/ex06_pingpong/example
+╔══════════════════════════════════════════════════════╗
+║  Ping-Pong Pipeline Simulation                        ║
+║  6 tiles, C0=even, C1=odd, K_TILES=4 per tile      ║
+╚══════════════════════════════════════════════════════╝
+
+Tile Assignment and Output Verification:
+  MMA formula: accumulate k*100+tile_id for k=0..4-1
+  sum per tile = sum(k=0..3 of k*100) + tile_id × 4
+  = 600 + tile_id × 4
+  After epilogue (×2):
+
+  Tile   Consumer   Expected     Got          OK?         
+  ──────────────────────────────────────────────
+  0      C0         1200         1200         ✓ PASS
+  1      C1         1208         1208         ✓ PASS
+  2      C0         1216         1216         ✓ PASS
+  3      C1         1224         1224         ✓ PASS
+  4      C0         1232         1232         ✓ PASS
+  5      C1         1240         1240         ✓ PASS
+
+Ping-Pong Behavior Check:
+  Even tiles processed by Consumer 0: ✓ ALL CORRECT
+  Odd tiles processed by Consumer 1:  ✓ ALL CORRECT
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED                                  ║
+║                                                      ║
+║  In production, C0's epilogue overlaps C1's MMA:     ║
+║  C0: [MMA T0][EPI T0][MMA T2][EPI T2]               ║
+║  C1:    [MMA T1][EPI T1][MMA T3][EPI T3]            ║
+║  Tensor cores: NEVER idle (perfect overlap)          ║
+╚══════════════════════════════════════════════════════╝

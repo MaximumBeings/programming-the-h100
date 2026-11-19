@@ -1,0 +1,65 @@
+{
+  "source": "original/ex01_wgmma_pipeline.cu",
+  "kind": "original",
+  "page": "docs/07-wgmma-part-2.md",
+  "sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_pipeline/example"
+      ],
+      "started_utc": "2026-11-19T22:04:32.111730+00:00",
+      "finished_utc": "2026-11-19T22:04:37.687996+00:00",
+      "exit_code": 1,
+      "timed_out": false,
+      "seconds": 5.576272017999827,
+      "log": "results/ex01_wgmma_pipeline/run-0.log",
+      "log_sha256": "197db5314ab2f316ebb605d513bb1cd59693b2ee5c77ac08cb5e15ed31b09f2e",
+      "status": "ARCHITECTURE_GUARD"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_pipeline.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_pipeline/example"
+    ],
+    "started_utc": "2026-11-19T22:04:30.027693+00:00",
+    "finished_utc": "2026-11-19T22:04:30.794285+00:00",
+    "exit_code": 255,
+    "timed_out": false,
+    "seconds": 0.766597013999899,
+    "log": "results/ex01_wgmma_pipeline/compile.log",
+    "log_sha256": "6f8194b3593fb24238e2d8b008d930fd113e4682ff6672c66f56ab4ba4175216"
+  },
+  "hopper_compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_90a",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_pipeline.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_pipeline/example"
+    ],
+    "started_utc": "2026-11-19T22:04:30.794421+00:00",
+    "finished_utc": "2026-11-19T22:04:32.111600+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 1.317184119999979,
+    "log": "results/ex01_wgmma_pipeline/compile-hopper.log",
+    "log_sha256": "9a05d8616488ca0aa8869a1156fcb14b103ad8f930300d548610aec1be3c4888"
+  },
+  "binary_target": "sm_90a",
+  "status": "ARCHITECTURE_GUARD"
+}

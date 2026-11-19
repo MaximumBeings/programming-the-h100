@@ -1,0 +1,43 @@
+{
+  "source": "docs/examples/advanced/tiled_gemm.cu",
+  "kind": "workshop",
+  "sha256": "2e538ea2ead02582618632d764eb54d3420d87ebda007616ff54f5b499eb3c61",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/tiled_gemm/example"
+      ],
+      "started_utc": "2026-11-19T22:05:07.196382+00:00",
+      "finished_utc": "2026-11-19T22:05:08.463801+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.2674264590000348,
+      "log": "results/tiled_gemm/run-0.log",
+      "log_sha256": "2793238c068d44b65dcfae9823fcc8704ea65151e79bccff178d6e12d184ac98",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/tiled_gemm.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/tiled_gemm/example"
+    ],
+    "started_utc": "2026-11-19T22:05:06.178688+00:00",
+    "finished_utc": "2026-11-19T22:05:07.196206+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 1.017526713000052,
+    "log": "results/tiled_gemm/compile.log",
+    "log_sha256": "d017a9428d4095374a42975860159557da2c29b53c3f04d337e00c39581f53e6"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

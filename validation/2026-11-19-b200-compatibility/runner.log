@@ -1,0 +1,47 @@
+COMPLETED ex05_ptx_datatypes.cu
+COMPLETED ex04_ptx_pointers.cu
+COMPLETED ex01_cluster_inspect.cu
+COMPLETED ex03_state_spaces.cu
+COMPLETED ex02_ptx_basics.cu
+COMPLETED ex02_war_prevention.cu
+COMPLETED ex06_comprehensive.cu
+COMPLETED ex01_mbarrier_basic.cu
+COMPLETED ex01_tma_basic.cu
+COMPLETED ex02_tma_3d.cu
+ARCHITECTURE_GUARD ex01_wgmma_pipeline.cu
+ARCHITECTURE_GUARD ex01_wgmma_basic.cu
+COMPLETED ex01_bulk_raw.cu
+COMPLETED ex02_reduce_async.cu
+COMPLETED ex01_roofline.cu
+COMPLETED ex04_circular_buffer.cu
+COMPLETED ex05_mbarrier.cu
+COMPLETED ex02_warp_spec.cu
+COMPLETED ex06_pingpong.cu
+RUNTIME_UNSUPPORTED_OR_FAILED ex03_setmaxnreg.cu
+COMPLETED ex07_epilogue.cu
+COMPLETED ex08_comprehensive.cu
+COMPLETED ex10_dependent_launch.cu
+COMPLETED ex09_streamk_roles.cu
+COMPLETED ex11_nvlink_bandwidth.cu
+COMPLETED cute_algebra.cu
+COMPLETED cute_fragments.cu
+COMPLETED cute_copy.cu
+COMPLETED cute_layouts.cu
+COMPLETED ex12_nccl_allreduce.cu
+COMPLETED tiled_gemm.cu
+COMPLETED attention_walkthrough.py
+COMPLETED fp4_reference.py
+COMPLETED indexing_workbook.py
+COMPLETED stride_walkthrough.py
+COMPLETED nsys_overlap.cu
+COMPLETED ex13_hybrid_parallel_training.cu
+COMPLETED attention_online.cu
+ARCHITECTURE_GUARD cutlass_gemm.cu
+ARCHITECTURE_GUARD cutlass_gemm_relu.cu
+COMPLETED 88_hopper_fmha.cu
+{
+  "COMPLETED": 36,
+  "ARCHITECTURE_GUARD": 4,
+  "RUNTIME_UNSUPPORTED_OR_FAILED": 1
+}
+

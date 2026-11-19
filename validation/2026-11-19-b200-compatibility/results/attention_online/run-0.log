@@ -1,0 +1,9 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/attention_online/example
+PASS worked-full: all 4 O values and 2 LSE values checked; first O=[1.6, 2]
+PASS worked-causal: all 4 O values and 2 LSE values checked; first O=[1, 0]
+PASS worked-offset-1: all 4 O values and 2 LSE values checked; first O=[0.6666667, 0.6666667]
+PASS worked-reordered: all 4 O values and 2 LSE values checked; first O=[1.6, 2]
+PASS rectangular-full: all 85 O values and 17 LSE values checked; first O=[0.001319525, -0.002025958]
+PASS rectangular-causal: all 85 O values and 17 LSE values checked; first O=[-0.6875, -0.375]
+PASS rectangular-offset-1: all 85 O values and 17 LSE values checked; first O=[-0.6289223, -0.3164222]
+CUDA ATTENTION PASS: seven cases; complete O/LSE checks; no performance claim.

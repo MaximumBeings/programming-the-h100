@@ -1,0 +1,1865 @@
+[
+  {
+    "source": "original/ex01_cluster_inspect.cu",
+    "kind": "original",
+    "page": "docs/02-clusters-inline-ptx.md",
+    "sha256": "ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex01_cluster_inspect/example"
+        ],
+        "started_utc": "2026-11-19T22:04:13.895117+00:00",
+        "finished_utc": "2026-11-19T22:04:20.724803+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 6.829691001000015,
+        "log": "results/ex01_cluster_inspect/run-0.log",
+        "log_sha256": "36c73f35626f2c515c5ac7239399d965621ecf671875f8f9fd59aa61edc2e8f8",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_cluster_inspect.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_cluster_inspect/example"
+      ],
+      "started_utc": "2026-11-19T22:04:11.925021+00:00",
+      "finished_utc": "2026-11-19T22:04:13.894950+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.9699313430000984,
+      "log": "results/ex01_cluster_inspect/compile.log",
+      "log_sha256": "6ed726cc56ee02726ab9775a56f7603ab3351991a2d8635622e4a362d459efe8"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex02_ptx_basics.cu",
+    "kind": "original",
+    "page": "docs/02-clusters-inline-ptx.md",
+    "sha256": "50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex02_ptx_basics/example"
+        ],
+        "started_utc": "2026-11-19T22:04:12.692525+00:00",
+        "finished_utc": "2026-11-19T22:04:23.180267+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 10.487747161000016,
+        "log": "results/ex02_ptx_basics/run-0.log",
+        "log_sha256": "8f3ba9725918eb753d19c79af603ab0216daab042fcc1212a7096b631dfcf84d",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex02_ptx_basics.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_ptx_basics/example"
+      ],
+      "started_utc": "2026-11-19T22:04:11.925619+00:00",
+      "finished_utc": "2026-11-19T22:04:12.692353+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.766735107000045,
+      "log": "results/ex02_ptx_basics/compile.log",
+      "log_sha256": "d157c1f8076610dd858d8d8fbd9a46c8179d5b772f85d74906d662a12877fa4f"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex03_state_spaces.cu",
+    "kind": "original",
+    "page": "docs/02-clusters-inline-ptx.md",
+    "sha256": "1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex03_state_spaces/example"
+        ],
+        "started_utc": "2026-11-19T22:04:12.592617+00:00",
+        "finished_utc": "2026-11-19T22:04:20.826356+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.233745619000047,
+        "log": "results/ex03_state_spaces/run-0.log",
+        "log_sha256": "130a163e720c227b78a0298d7562498f2c2786d292f4128295c96cfe050fb72e",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex03_state_spaces.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex03_state_spaces/example"
+      ],
+      "started_utc": "2026-11-19T22:04:11.926122+00:00",
+      "finished_utc": "2026-11-19T22:04:12.592418+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6663021200000685,
+      "log": "results/ex03_state_spaces/compile.log",
+      "log_sha256": "907f3f37cb43e954e8dbc948b03b7a2d1ece979fc3e5ba09a47a5ba64a5a7345"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex04_ptx_pointers.cu",
+    "kind": "original",
+    "page": "docs/02-clusters-inline-ptx.md",
+    "sha256": "77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex04_ptx_pointers/example"
+        ],
+        "started_utc": "2026-11-19T22:04:12.743555+00:00",
+        "finished_utc": "2026-11-19T22:04:20.526320+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 7.782771443999991,
+        "log": "results/ex04_ptx_pointers/run-0.log",
+        "log_sha256": "8068160cdd4dd4988d126855e7ec06b9c0d63e572dce54107e4d2744284b20c4",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex04_ptx_pointers.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex04_ptx_pointers/example"
+      ],
+      "started_utc": "2026-11-19T22:04:11.927138+00:00",
+      "finished_utc": "2026-11-19T22:04:12.743408+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.8162720889999946,
+      "log": "results/ex04_ptx_pointers/compile.log",
+      "log_sha256": "5b415491bdf2ba9a8b7ac56d4de7d3977eb79b7d365c7a4f621dcd7003af5088"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex05_ptx_datatypes.cu",
+    "kind": "original",
+    "page": "docs/02-clusters-inline-ptx.md",
+    "sha256": "711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex05_ptx_datatypes/example"
+        ],
+        "started_utc": "2026-11-19T22:04:12.894404+00:00",
+        "finished_utc": "2026-11-19T22:04:20.326382+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 7.431987081999978,
+        "log": "results/ex05_ptx_datatypes/run-0.log",
+        "log_sha256": "9e2d9b5033e5e5d81a08ab376da0d4741ce6a450d9dd5c214533d2aab8cf337c",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex05_ptx_datatypes.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex05_ptx_datatypes/example"
+      ],
+      "started_utc": "2026-11-19T22:04:11.927378+00:00",
+      "finished_utc": "2026-11-19T22:04:12.894270+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.9668936250000115,
+      "log": "results/ex05_ptx_datatypes/compile.log",
+      "log_sha256": "3adf2d8e9565b82ee2e8f72886afafca54a6196b91cb224032a81fec09e8c479"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex06_comprehensive.cu",
+    "kind": "original",
+    "page": "docs/02-clusters-inline-ptx.md",
+    "sha256": "4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex06_comprehensive/example"
+        ],
+        "started_utc": "2026-11-19T22:04:22.295924+00:00",
+        "finished_utc": "2026-11-19T22:04:29.722595+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 7.426675605000014,
+        "log": "results/ex06_comprehensive/run-0.log",
+        "log_sha256": "d49493a8b8d17e1e55627ab3f4a2ab345811c93146ec12f2d35ddf3223533367",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex06_comprehensive.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex06_comprehensive/example"
+      ],
+      "started_utc": "2026-11-19T22:04:20.327243+00:00",
+      "finished_utc": "2026-11-19T22:04:22.295751+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.9685127269999612,
+      "log": "results/ex06_comprehensive/compile.log",
+      "log_sha256": "8bc2c56236a5ccc4cfa2b0e34722c4fc51cd7c627b0cdee86c387fc112421f3f"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex01_mbarrier_basic.cu",
+    "kind": "original",
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "sha256": "406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex01_mbarrier_basic/example"
+        ],
+        "started_utc": "2026-11-19T22:04:21.192258+00:00",
+        "finished_utc": "2026-11-19T22:04:29.874310+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.682056446999923,
+        "log": "results/ex01_mbarrier_basic/run-0.log",
+        "log_sha256": "1b7ee2bf6a9047c85c7067cc0c5d5f06075907e7c105fde53ede5700fe3b6207",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_mbarrier_basic.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_mbarrier_basic/example"
+      ],
+      "started_utc": "2026-11-19T22:04:20.526868+00:00",
+      "finished_utc": "2026-11-19T22:04:21.191973+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6651120090000404,
+      "log": "results/ex01_mbarrier_basic/compile.log",
+      "log_sha256": "49e0bdf7bc35237793aefbfe475c42a766e2f3253c99db22b15cceebebb3e4c4"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex02_war_prevention.cu",
+    "kind": "original",
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "sha256": "d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex02_war_prevention/example"
+        ],
+        "started_utc": "2026-11-19T22:04:21.391099+00:00",
+        "finished_utc": "2026-11-19T22:04:29.422629+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.031537157999992,
+        "log": "results/ex02_war_prevention/run-0.log",
+        "log_sha256": "5afbb358c9bdbac3f6e90996628d2a828798f9eaec7c91e04188fc842e1114bb",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex02_war_prevention.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_war_prevention/example"
+      ],
+      "started_utc": "2026-11-19T22:04:20.725291+00:00",
+      "finished_utc": "2026-11-19T22:04:21.390947+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6656617750001033,
+      "log": "results/ex02_war_prevention/compile.log",
+      "log_sha256": "63d9c5287ac748ddb36ca36c0015c09fc5e8282e3efc203e06987043673b61c6"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex01_tma_basic.cu",
+    "kind": "original",
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "sha256": "c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex01_tma_basic/example"
+        ],
+        "started_utc": "2026-11-19T22:04:21.543110+00:00",
+        "finished_utc": "2026-11-19T22:04:30.027192+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.484087002000024,
+        "log": "results/ex01_tma_basic/run-0.log",
+        "log_sha256": "12f3aaed177a031dcf82b79989659121d0b779991b42e63bd30cb6c9063ef849",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_tma_basic.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_tma_basic/example",
+        "-lcuda"
+      ],
+      "started_utc": "2026-11-19T22:04:20.826891+00:00",
+      "finished_utc": "2026-11-19T22:04:21.542978+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.7160904749999872,
+      "log": "results/ex01_tma_basic/compile.log",
+      "log_sha256": "69085273f59851f86e50fb7347425281e8bead65521d58ad38d74ae9bc184517"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex02_tma_3d.cu",
+    "kind": "original",
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "sha256": "ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex02_tma_3d/example"
+        ],
+        "started_utc": "2026-11-19T22:04:23.996770+00:00",
+        "finished_utc": "2026-11-19T22:04:31.727247+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 7.730488565000087,
+        "log": "results/ex02_tma_3d/run-0.log",
+        "log_sha256": "6fb41357d06dba98ccb5667869fae78fd66284d36913bcb893508e41184fbdd4",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex02_tma_3d.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_tma_3d/example",
+        "-lcuda"
+      ],
+      "started_utc": "2026-11-19T22:04:23.180841+00:00",
+      "finished_utc": "2026-11-19T22:04:23.996618+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.8157818009999573,
+      "log": "results/ex02_tma_3d/compile.log",
+      "log_sha256": "3a2a0b00cf2efdf87e8d45d25aa27493fd979fff05a14e1e6c1457c6010a6cad"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex01_bulk_raw.cu",
+    "kind": "original",
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "sha256": "f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex01_bulk_raw/example"
+        ],
+        "started_utc": "2026-11-19T22:04:30.088908+00:00",
+        "finished_utc": "2026-11-19T22:04:38.322435+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.233535350999887,
+        "log": "results/ex01_bulk_raw/run-0.log",
+        "log_sha256": "883401062469d51f98abb1f4b7a53f63b23411ad33ddc24e76576acd04b3bd50",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_bulk_raw.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_bulk_raw/example"
+      ],
+      "started_utc": "2026-11-19T22:04:29.423196+00:00",
+      "finished_utc": "2026-11-19T22:04:30.088789+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6655956780000452,
+      "log": "results/ex01_bulk_raw/compile.log",
+      "log_sha256": "e9465740d309b9419c0da7af04e8fac87fd6d80e697e73d151fb3d9e0941b859"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex02_reduce_async.cu",
+    "kind": "original",
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "sha256": "52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex02_reduce_async/example"
+        ],
+        "started_utc": "2026-11-19T22:04:30.338774+00:00",
+        "finished_utc": "2026-11-19T22:04:38.472781+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.134012945999984,
+        "log": "results/ex02_reduce_async/run-0.log",
+        "log_sha256": "4da3672fa6c95ca7822d1c660b73d5c342f5efd48df534f20d9df7bd60bf7cc8",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex02_reduce_async.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_reduce_async/example"
+      ],
+      "started_utc": "2026-11-19T22:04:29.723129+00:00",
+      "finished_utc": "2026-11-19T22:04:30.338648+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.615523408999934,
+      "log": "results/ex02_reduce_async/compile.log",
+      "log_sha256": "eb5b0c92235388c39b7ec6a65a22688aab3c57e6495417960f66045c1ed66ba7"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex01_wgmma_basic.cu",
+    "kind": "original",
+    "page": "docs/06-wgmma-part-1.md",
+    "sha256": "282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_basic/example"
+        ],
+        "started_utc": "2026-11-19T22:04:31.957439+00:00",
+        "finished_utc": "2026-11-19T22:04:37.785012+00:00",
+        "exit_code": 1,
+        "timed_out": false,
+        "seconds": 5.8275789350000196,
+        "log": "results/ex01_wgmma_basic/run-0.log",
+        "log_sha256": "d5093a7cb1b266482134181ab83b649dec153ac3b7e426a1895d8c3d895450ef",
+        "status": "ARCHITECTURE_GUARD"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_basic.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_basic/example"
+      ],
+      "started_utc": "2026-11-19T22:04:29.874805+00:00",
+      "finished_utc": "2026-11-19T22:04:30.590286+00:00",
+      "exit_code": 255,
+      "timed_out": false,
+      "seconds": 0.7154847589999918,
+      "log": "results/ex01_wgmma_basic/compile.log",
+      "log_sha256": "2ed049d403dd4859009a46f3398b73cef2fc6f17d1cab689d4e4479cd02e84f7"
+    },
+    "hopper_compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_basic.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_basic/example"
+      ],
+      "started_utc": "2026-11-19T22:04:30.590421+00:00",
+      "finished_utc": "2026-11-19T22:04:31.957289+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.366876151999918,
+      "log": "results/ex01_wgmma_basic/compile-hopper.log",
+      "log_sha256": "acddf92ea9024b7c4969ee5f0ba3a0d981f73a23d1e20dd554036c2f8bb7e291"
+    },
+    "binary_target": "sm_90a",
+    "status": "ARCHITECTURE_GUARD"
+  },
+  {
+    "source": "original/ex01_wgmma_pipeline.cu",
+    "kind": "original",
+    "page": "docs/07-wgmma-part-2.md",
+    "sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_pipeline/example"
+        ],
+        "started_utc": "2026-11-19T22:04:32.111730+00:00",
+        "finished_utc": "2026-11-19T22:04:37.687996+00:00",
+        "exit_code": 1,
+        "timed_out": false,
+        "seconds": 5.576272017999827,
+        "log": "results/ex01_wgmma_pipeline/run-0.log",
+        "log_sha256": "197db5314ab2f316ebb605d513bb1cd59693b2ee5c77ac08cb5e15ed31b09f2e",
+        "status": "ARCHITECTURE_GUARD"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_pipeline.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_pipeline/example"
+      ],
+      "started_utc": "2026-11-19T22:04:30.027693+00:00",
+      "finished_utc": "2026-11-19T22:04:30.794285+00:00",
+      "exit_code": 255,
+      "timed_out": false,
+      "seconds": 0.766597013999899,
+      "log": "results/ex01_wgmma_pipeline/compile.log",
+      "log_sha256": "6f8194b3593fb24238e2d8b008d930fd113e4682ff6672c66f56ab4ba4175216"
+    },
+    "hopper_compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_pipeline.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_pipeline/example"
+      ],
+      "started_utc": "2026-11-19T22:04:30.794421+00:00",
+      "finished_utc": "2026-11-19T22:04:32.111600+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.317184119999979,
+      "log": "results/ex01_wgmma_pipeline/compile-hopper.log",
+      "log_sha256": "9a05d8616488ca0aa8869a1156fcb14b103ad8f930300d548610aec1be3c4888"
+    },
+    "binary_target": "sm_90a",
+    "status": "ARCHITECTURE_GUARD"
+  },
+  {
+    "source": "original/ex01_roofline.cu",
+    "kind": "original",
+    "page": "docs/08-kernel-design-part-1.md",
+    "sha256": "d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex01_roofline/example"
+        ],
+        "started_utc": "2026-11-19T22:04:32.394212+00:00",
+        "finished_utc": "2026-11-19T22:04:40.828199+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.433992897000053,
+        "log": "results/ex01_roofline/run-0.log",
+        "log_sha256": "aff9020d494d4d16f28f93e8bb4d83ea85acbd48d9d7fb04c72ff1e620a657ef",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex01_roofline.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_roofline/example"
+      ],
+      "started_utc": "2026-11-19T22:04:31.727881+00:00",
+      "finished_utc": "2026-11-19T22:04:32.394088+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6662094000000707,
+      "log": "results/ex01_roofline/compile.log",
+      "log_sha256": "f4adc72914a16153882afc29d96785d681134e1485e925b47d3441449d09386c"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex02_warp_spec.cu",
+    "kind": "original",
+    "page": "docs/08-kernel-design-part-1.md",
+    "sha256": "fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex02_warp_spec/example"
+        ],
+        "started_utc": "2026-11-19T22:04:38.304203+00:00",
+        "finished_utc": "2026-11-19T22:04:47.489147+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 9.184949482000093,
+        "log": "results/ex02_warp_spec/run-0.log",
+        "log_sha256": "1af052328617067f0fd41ab01c314ec4f3f9f94cc7b4d9013aa81c03e981d926",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex02_warp_spec.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_warp_spec/example"
+      ],
+      "started_utc": "2026-11-19T22:04:37.688473+00:00",
+      "finished_utc": "2026-11-19T22:04:38.304076+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6156073419999757,
+      "log": "results/ex02_warp_spec/compile.log",
+      "log_sha256": "bdcc738c356f78857233fa75768818c851b0dc7a375ba4205803a76911013f15"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex03_setmaxnreg.cu",
+    "kind": "original",
+    "page": "docs/08-kernel-design-part-1.md",
+    "sha256": "c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex03_setmaxnreg/example"
+        ],
+        "started_utc": "2026-11-19T22:04:38.966968+00:00",
+        "finished_utc": "2026-11-19T22:04:49.655371+00:00",
+        "exit_code": 1,
+        "timed_out": false,
+        "seconds": 10.688408611000114,
+        "log": "results/ex03_setmaxnreg/run-0.log",
+        "log_sha256": "c8f64b6b048dc3d1c92457b4ff49866e39703e3c8ee510e2cdcbcabaa1416068",
+        "status": "RUNTIME_UNSUPPORTED_OR_FAILED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex03_setmaxnreg.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex03_setmaxnreg/example"
+      ],
+      "started_utc": "2026-11-19T22:04:37.785451+00:00",
+      "finished_utc": "2026-11-19T22:04:38.200627+00:00",
+      "exit_code": 255,
+      "timed_out": false,
+      "seconds": 0.415180792000001,
+      "log": "results/ex03_setmaxnreg/compile.log",
+      "log_sha256": "7bc6ef16eae2339289ad9d1c809bf3c20179156188c0817b276729b7d24e26e9"
+    },
+    "hopper_compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_90a",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex03_setmaxnreg.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex03_setmaxnreg/example"
+      ],
+      "started_utc": "2026-11-19T22:04:38.200764+00:00",
+      "finished_utc": "2026-11-19T22:04:38.966798+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.7660417510001025,
+      "log": "results/ex03_setmaxnreg/compile-hopper.log",
+      "log_sha256": "50cba3349666b6f7c6e54fa6ac1800741a42081a37adb3522a2a5f1f4867e4f3"
+    },
+    "binary_target": "sm_90a",
+    "status": "RUNTIME_UNSUPPORTED_OR_FAILED"
+  },
+  {
+    "source": "original/ex04_circular_buffer.cu",
+    "kind": "original",
+    "page": "docs/08-kernel-design-part-1.md",
+    "sha256": "3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex04_circular_buffer/example"
+        ],
+        "started_utc": "2026-11-19T22:04:39.039124+00:00",
+        "finished_utc": "2026-11-19T22:04:47.070788+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.031670762999966,
+        "log": "results/ex04_circular_buffer/run-0.log",
+        "log_sha256": "1d1cd00fa4c7c0381949cce5083f05d17991f8c045746c006c2dd4e2829fd3b4",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex04_circular_buffer.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex04_circular_buffer/example"
+      ],
+      "started_utc": "2026-11-19T22:04:38.322976+00:00",
+      "finished_utc": "2026-11-19T22:04:39.038968+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.7159953409998252,
+      "log": "results/ex04_circular_buffer/compile.log",
+      "log_sha256": "e5a2fa74235707f6e24e7a102c0fd9945072dde693f2d662da7ff88935545054"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex05_mbarrier.cu",
+    "kind": "original",
+    "page": "docs/09-kernel-design-part-2.md",
+    "sha256": "c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex05_mbarrier/example"
+        ],
+        "started_utc": "2026-11-19T22:04:39.089314+00:00",
+        "finished_utc": "2026-11-19T22:04:47.322191+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.232886170000029,
+        "log": "results/ex05_mbarrier/run-0.log",
+        "log_sha256": "0223d8658fd1c9de6e1106ecbaad8bacb9d5d07038acb20e6a6e177e34bee623",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex05_mbarrier.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex05_mbarrier/example"
+      ],
+      "started_utc": "2026-11-19T22:04:38.473255+00:00",
+      "finished_utc": "2026-11-19T22:04:39.089193+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6159409259998938,
+      "log": "results/ex05_mbarrier/compile.log",
+      "log_sha256": "fbc19d0e14efefa0369105f5665812299fb25e42ac70ee234258e48802868388"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex06_pingpong.cu",
+    "kind": "original",
+    "page": "docs/09-kernel-design-part-2.md",
+    "sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex06_pingpong/example"
+        ],
+        "started_utc": "2026-11-19T22:04:41.495016+00:00",
+        "finished_utc": "2026-11-19T22:04:47.672263+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 6.1772508690000905,
+        "log": "results/ex06_pingpong/run-0.log",
+        "log_sha256": "b9066dc6aa33d6b01617e3a0d7a4c3008f82a798bca3710ea7e2fcdb124541ec",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex06_pingpong.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex06_pingpong/example"
+      ],
+      "started_utc": "2026-11-19T22:04:40.828764+00:00",
+      "finished_utc": "2026-11-19T22:04:41.494852+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6660936949999723,
+      "log": "results/ex06_pingpong/compile.log",
+      "log_sha256": "2a4473fe1648e15855fb2b487b294d0031d94374ceee23d400373854455a170b"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex07_epilogue.cu",
+    "kind": "original",
+    "page": "docs/09-kernel-design-part-2.md",
+    "sha256": "bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex07_epilogue/example"
+        ],
+        "started_utc": "2026-11-19T22:04:47.737556+00:00",
+        "finished_utc": "2026-11-19T22:04:56.322079+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.584529498999927,
+        "log": "results/ex07_epilogue/run-0.log",
+        "log_sha256": "a37a01e6f840c67aa886dd2aa0b0af6e02616f71ae7c9250c0e034205b9ae24a",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex07_epilogue.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex07_epilogue/example"
+      ],
+      "started_utc": "2026-11-19T22:04:47.071390+00:00",
+      "finished_utc": "2026-11-19T22:04:47.737411+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6660235639999428,
+      "log": "results/ex07_epilogue/compile.log",
+      "log_sha256": "92c6d2225f15cf6f36368e4314807a851439b870b6e7d7f40ae3556dd54e29d9"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex08_comprehensive.cu",
+    "kind": "original",
+    "page": "docs/09-kernel-design-part-2.md",
+    "sha256": "7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex08_comprehensive/example"
+        ],
+        "started_utc": "2026-11-19T22:04:49.040477+00:00",
+        "finished_utc": "2026-11-19T22:04:56.471084+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 7.43061433999992,
+        "log": "results/ex08_comprehensive/run-0.log",
+        "log_sha256": "86bfb2a2e210d9098d533838af43f24c4258fb395ffdbaca25b3bd5cea2959aa",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex08_comprehensive.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex08_comprehensive/example"
+      ],
+      "started_utc": "2026-11-19T22:04:47.322867+00:00",
+      "finished_utc": "2026-11-19T22:04:49.040334+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.7174710140000116,
+      "log": "results/ex08_comprehensive/compile.log",
+      "log_sha256": "18d8ac6650395e3451504b636be1a68548f15a9c29711d8ebf304a6c14055f95"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex09_streamk_roles.cu",
+    "kind": "original",
+    "page": "docs/10-stream-k-scheduling.md",
+    "sha256": "fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex09_streamk_roles/example"
+        ],
+        "started_utc": "2026-11-19T22:04:49.458051+00:00",
+        "finished_utc": "2026-11-19T22:04:56.838351+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 7.3803055900000345,
+        "log": "results/ex09_streamk_roles/run-0.log",
+        "log_sha256": "2cc828aab6b202ac2b12d9d30ec36f6cb9ec175a79bed23904e078822d9e636d",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex09_streamk_roles.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex09_streamk_roles/example"
+      ],
+      "started_utc": "2026-11-19T22:04:47.489701+00:00",
+      "finished_utc": "2026-11-19T22:04:49.457925+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.968227982000144,
+      "log": "results/ex09_streamk_roles/compile.log",
+      "log_sha256": "ec25986a3af309d142bf73576ea2cc60ec333055708c8d43a83fe97aa7cf5c52"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex10_dependent_launch.cu",
+    "kind": "original",
+    "page": "docs/10-stream-k-scheduling.md",
+    "sha256": "36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex10_dependent_launch/example"
+        ],
+        "started_utc": "2026-11-19T22:04:48.288671+00:00",
+        "finished_utc": "2026-11-19T22:04:56.622780+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.334114486999852,
+        "log": "results/ex10_dependent_launch/run-0.log",
+        "log_sha256": "0481d587d9e72a3b482dccd87ab802bb28bdfb37951a2162dc3a543cb4e972a6",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex10_dependent_launch.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex10_dependent_launch/example"
+      ],
+      "started_utc": "2026-11-19T22:04:47.672778+00:00",
+      "finished_utc": "2026-11-19T22:04:48.288507+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6157350619998851,
+      "log": "results/ex10_dependent_launch/compile.log",
+      "log_sha256": "8007907fb6f70b0576b276e4f93aa3b8f6b4ddccba2a8118cad348105f66ae3f"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex11_nvlink_bandwidth.cu",
+    "kind": "original",
+    "page": "docs/11-multi-gpu-nccl.md",
+    "sha256": "67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex11_nvlink_bandwidth/example"
+        ],
+        "started_utc": "2026-11-19T22:04:50.422374+00:00",
+        "finished_utc": "2026-11-19T22:05:00.963027+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 10.540665756999942,
+        "log": "results/ex11_nvlink_bandwidth/run-0.log",
+        "log_sha256": "c14b09acabc15d3ab025cbe771179c0bd923f54a76a128ea14d34767fa1e1e94",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex11_nvlink_bandwidth.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex11_nvlink_bandwidth/example"
+      ],
+      "started_utc": "2026-11-19T22:04:49.655937+00:00",
+      "finished_utc": "2026-11-19T22:04:50.422253+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.7663191219999135,
+      "log": "results/ex11_nvlink_bandwidth/compile.log",
+      "log_sha256": "0a2145bd6bd34e5e246bcfb3fcde3ffc21880406f4384808b35c5b1a2d3b1097"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex12_nccl_allreduce.cu",
+    "kind": "original",
+    "page": "docs/11-multi-gpu-nccl.md",
+    "sha256": "f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex12_nccl_allreduce/example"
+        ],
+        "started_utc": "2026-11-19T22:04:57.390110+00:00",
+        "finished_utc": "2026-11-19T22:05:06.178089+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 8.787988197000004,
+        "log": "results/ex12_nccl_allreduce/run-0.log",
+        "log_sha256": "d62a7612f6be043abed97aa0ee4a682937b633758478c2ae50aafa80c477ed52",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex12_nccl_allreduce.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex12_nccl_allreduce/example",
+        "-lnccl"
+      ],
+      "started_utc": "2026-11-19T22:04:56.322720+00:00",
+      "finished_utc": "2026-11-19T22:04:57.389949+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.0672349659998872,
+      "log": "results/ex12_nccl_allreduce/compile.log",
+      "log_sha256": "36ce47b74499ccde23c34a3af836bfc7ba71b41969ad05f9e9a15c4744fb6ab2"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "original/ex13_hybrid_parallel_training.cu",
+    "kind": "original",
+    "page": "docs/11-multi-gpu-nccl.md",
+    "sha256": "9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/ex13_hybrid_parallel_training/example"
+        ],
+        "started_utc": "2026-11-19T22:04:57.990164+00:00",
+        "finished_utc": "2026-11-19T22:05:11.039393+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 13.04924359000006,
+        "log": "results/ex13_hybrid_parallel_training/run-0.log",
+        "log_sha256": "a89e800ad1578b2e9a03f5962a3409c21006f9cc5c9eb54ca6dbe962d3049fe0",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/original/ex13_hybrid_parallel_training.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/ex13_hybrid_parallel_training/example",
+        "-lnccl",
+        "-lcublas",
+        "-Xcompiler=-pthread"
+      ],
+      "started_utc": "2026-11-19T22:04:56.472298+00:00",
+      "finished_utc": "2026-11-19T22:04:57.989991+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.5177000369999405,
+      "log": "results/ex13_hybrid_parallel_training/compile.log",
+      "log_sha256": "337d7135353c5482dd571cbc79cc21339c1fc763ed5b515b01b6c1be802b9fbf"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/cute_algebra.cu",
+    "kind": "workshop",
+    "sha256": "057517089668e8cddcb6623e5db38c4b37974dfb6548412b212417c433fab3ec",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/cute_algebra/example"
+        ],
+        "started_utc": "2026-11-19T22:05:01.199228+00:00",
+        "finished_utc": "2026-11-19T22:05:01.201044+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.0018172790000789973,
+        "log": "results/cute_algebra/run-0.log",
+        "log_sha256": "e3e9de7112c764662a3a04ae7b4bc3b05b3500d3cd822fcb27ce858008f489f9",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cute_algebra.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/cute_algebra/example"
+      ],
+      "started_utc": "2026-11-19T22:04:56.623230+00:00",
+      "finished_utc": "2026-11-19T22:05:01.199052+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 4.575830513000028,
+      "log": "results/cute_algebra/compile.log",
+      "log_sha256": "8bfbe4fc635cd41f93adb0313fb921b8aadc2daa96daa60f2600971c42bca570"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/cute_copy.cu",
+    "kind": "workshop",
+    "sha256": "80653d5417224c96a362cb0784830d9c5262aaa70c10a4a161465b153b0adf4d",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/cute_copy/example"
+        ],
+        "started_utc": "2026-11-19T22:05:02.719197+00:00",
+        "finished_utc": "2026-11-19T22:05:03.735682+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 1.0164955709999504,
+        "log": "results/cute_copy/run-0.log",
+        "log_sha256": "0eae1aec15aec26808b3e23614ca6d2e1c4b5fe010c9e7b72b776684f87350e1",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cute_copy.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/cute_copy/example"
+      ],
+      "started_utc": "2026-11-19T22:04:56.838866+00:00",
+      "finished_utc": "2026-11-19T22:05:02.719006+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 5.880151236000074,
+      "log": "results/cute_copy/compile.log",
+      "log_sha256": "8eac3103c9b63304e771c9064fd7db6393fad82f42a549e26f784de5aeccd9c2"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/cute_fragments.cu",
+    "kind": "workshop",
+    "sha256": "fae8d94ea8f09f4eaf81c4d72bd231b27a51779d64bec93ece4d57278876ecb0",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/cute_fragments/example"
+        ],
+        "started_utc": "2026-11-19T22:05:03.434975+00:00",
+        "finished_utc": "2026-11-19T22:05:03.436612+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.0016372389998196013,
+        "log": "results/cute_fragments/run-0.log",
+        "log_sha256": "780e63378566121997199fc4b3d81bff5d64bc5a7fd0ce1abc21078ec182a5ae",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cute_fragments.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/cute_fragments/example"
+      ],
+      "started_utc": "2026-11-19T22:05:00.964360+00:00",
+      "finished_utc": "2026-11-19T22:05:03.434754+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 2.470400894000022,
+      "log": "results/cute_fragments/compile.log",
+      "log_sha256": "e575d7099361ff6415367201424645daef73a3577b5a5bc2298fea99bd326540"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/cute_layouts.cu",
+    "kind": "workshop",
+    "sha256": "39e99111ba0dd6a48ecb812bd9ce6afe918e557407c8160a6dd8f8b1c530ab3f",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/cute_layouts/example"
+        ],
+        "started_utc": "2026-11-19T22:05:05.827441+00:00",
+        "finished_utc": "2026-11-19T22:05:05.829294+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.0018543979999776639,
+        "log": "results/cute_layouts/run-0.log",
+        "log_sha256": "2e9d8ff11123c31a11dac94837d58a92e9e14f1b69cd5df9870603fabb0867b4",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cute_layouts.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/cute_layouts/example"
+      ],
+      "started_utc": "2026-11-19T22:05:01.201411+00:00",
+      "finished_utc": "2026-11-19T22:05:05.827262+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 4.625862622000113,
+      "log": "results/cute_layouts/compile.log",
+      "log_sha256": "6c9e7531fe846f4b2e4859cd3a9927aabbd090c240da3b5734b0ebde236d94ff"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/cutlass_gemm.cu",
+    "kind": "workshop",
+    "sha256": "c906aff6157e1759ebe1b7287bc75b78eeb5b35d4e7ef0751f5001c29d568de3",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/cutlass_gemm/example"
+        ],
+        "started_utc": "2026-11-19T22:05:16.235233+00:00",
+        "finished_utc": "2026-11-19T22:05:22.012361+00:00",
+        "exit_code": 2,
+        "timed_out": false,
+        "seconds": 5.777135709000049,
+        "log": "results/cutlass_gemm/run-0.log",
+        "log_sha256": "fac9211df04d3e40649a4262486ba6215b6bf10a89f9545ef79d77304001c89b",
+        "status": "ARCHITECTURE_GUARD"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cutlass_gemm.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/cutlass_gemm/example",
+        "-lcuda"
+      ],
+      "started_utc": "2026-11-19T22:05:03.437031+00:00",
+      "finished_utc": "2026-11-19T22:05:16.235038+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 12.798020900999973,
+      "log": "results/cutlass_gemm/compile.log",
+      "log_sha256": "6231c367e4e3214680fd3d83d6c14c18ef2c0fa551f76ec0414d5144fde4e2c3"
+    },
+    "binary_target": "sm_100",
+    "status": "ARCHITECTURE_GUARD"
+  },
+  {
+    "source": "docs/examples/advanced/cutlass_gemm_relu.cu",
+    "kind": "workshop",
+    "sha256": "1c30bab9f526932f2749329a71ad50f9002deeddcba4108113ffa497e0482418",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/cutlass_gemm_relu/example"
+        ],
+        "started_utc": "2026-11-19T22:05:18.086368+00:00",
+        "finished_utc": "2026-11-19T22:05:23.162023+00:00",
+        "exit_code": 2,
+        "timed_out": false,
+        "seconds": 5.075661841000056,
+        "log": "results/cutlass_gemm_relu/run-0.log",
+        "log_sha256": "e24ee34d48c78e2e41ca305a95eaff3387ca2f582d26499acbe287e941df9b75",
+        "status": "ARCHITECTURE_GUARD"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cutlass_gemm_relu.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/cutlass_gemm_relu/example",
+        "-lcuda"
+      ],
+      "started_utc": "2026-11-19T22:05:03.736377+00:00",
+      "finished_utc": "2026-11-19T22:05:18.086194+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 14.349825305999957,
+      "log": "results/cutlass_gemm_relu/compile.log",
+      "log_sha256": "8688cd4568afcb78a7218deeb8b733a283515917e1034269eedb500aeb57b8d9"
+    },
+    "binary_target": "sm_100",
+    "status": "ARCHITECTURE_GUARD"
+  },
+  {
+    "source": "docs/examples/advanced/nsys_overlap.cu",
+    "kind": "workshop",
+    "sha256": "c47d8ed9b3db321f7caa7b3224bcbf4d64918986414f597462196bae2f6a0a6e",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/nsys_overlap/example",
+          "serial"
+        ],
+        "started_utc": "2026-11-19T22:05:06.745606+00:00",
+        "finished_utc": "2026-11-19T22:05:07.762216+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 1.0166182329999174,
+        "log": "results/nsys_overlap/run-0.log",
+        "log_sha256": "ca1aca3435a28a75eb2829532158a7e39718f13727e9e5f3bf0210ad4cdaa4c3",
+        "status": "COMPLETED"
+      },
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/nsys_overlap/example",
+          "overlap"
+        ],
+        "started_utc": "2026-11-19T22:05:07.762423+00:00",
+        "finished_utc": "2026-11-19T22:05:08.829131+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 1.0667152660000738,
+        "log": "results/nsys_overlap/run-1.log",
+        "log_sha256": "7905c5d08640c89641d37f3a2c35ac651da35a391c3bf42a7f1f26f38d63ff45",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/nsys_overlap.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/nsys_overlap/example"
+      ],
+      "started_utc": "2026-11-19T22:05:05.829668+00:00",
+      "finished_utc": "2026-11-19T22:05:06.745398+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.915740476999872,
+      "log": "results/nsys_overlap/compile.log",
+      "log_sha256": "2baf438e34d11d02c594c4d1de04770dc1458f8ff49b14d849d4132a09ecea2c"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/tiled_gemm.cu",
+    "kind": "workshop",
+    "sha256": "2e538ea2ead02582618632d764eb54d3420d87ebda007616ff54f5b499eb3c61",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/tiled_gemm/example"
+        ],
+        "started_utc": "2026-11-19T22:05:07.196382+00:00",
+        "finished_utc": "2026-11-19T22:05:08.463801+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 1.2674264590000348,
+        "log": "results/tiled_gemm/run-0.log",
+        "log_sha256": "2793238c068d44b65dcfae9823fcc8704ea65151e79bccff178d6e12d184ac98",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/tiled_gemm.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/tiled_gemm/example"
+      ],
+      "started_utc": "2026-11-19T22:05:06.178688+00:00",
+      "finished_utc": "2026-11-19T22:05:07.196206+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.017526713000052,
+      "log": "results/tiled_gemm/compile.log",
+      "log_sha256": "d017a9428d4095374a42975860159557da2c29b53c3f04d337e00c39581f53e6"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/attention_walkthrough.py",
+    "kind": "cpu_reference",
+    "sha256": "2e59d020aaf1c7d763bff8f7a924ff20da3b34f578f07ea5735024475367ea52",
+    "runs": [
+      {
+        "command": [
+          "python3",
+          "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/attention_walkthrough.py"
+        ],
+        "started_utc": "2026-11-19T22:05:08.496531+00:00",
+        "finished_utc": "2026-11-19T22:05:08.512331+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.015800721999994494,
+        "log": "results/attention_walkthrough/run-0.log",
+        "log_sha256": "6f7e24ff870b26be2477053fdc749244dbc150c3469dee07b03fe5be8d828e38",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/attention_walkthrough.py"
+      ],
+      "started_utc": "2026-11-19T22:05:08.464267+00:00",
+      "finished_utc": "2026-11-19T22:05:08.496390+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.0321263739999722,
+      "log": "results/attention_walkthrough/compile.log",
+      "log_sha256": "737f1470de552e30da52c07546383bc9a5cc83e09e70ad194b616db7cb2fc4b9"
+    },
+    "binary_target": "cpu",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/fp4_reference.py",
+    "kind": "cpu_reference",
+    "sha256": "ffbaaa8cac5e92f51c4035b7e92ef6fab9a55537bd262c47d2fe9998fc766977",
+    "runs": [
+      {
+        "command": [
+          "python3",
+          "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/fp4_reference.py"
+        ],
+        "started_utc": "2026-11-19T22:05:08.545264+00:00",
+        "finished_utc": "2026-11-19T22:05:08.561219+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.015955775999827893,
+        "log": "results/fp4_reference/run-0.log",
+        "log_sha256": "ba4ca5e1184f4753db0179219a62de760bbf5bcf33f35d42726f76acbfa76455",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/fp4_reference.py"
+      ],
+      "started_utc": "2026-11-19T22:05:08.512676+00:00",
+      "finished_utc": "2026-11-19T22:05:08.545143+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.032471769000039785,
+      "log": "results/fp4_reference/compile.log",
+      "log_sha256": "6c7b643b662ba8181f454c6d6a622a81701ac5bb8647d8357e5d674441d27638"
+    },
+    "binary_target": "cpu",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/indexing_workbook.py",
+    "kind": "cpu_reference",
+    "sha256": "600d93b6e87f75e8758fd1ac62785130d643fce63dc1a054a056b949a216c1f0",
+    "runs": [
+      {
+        "command": [
+          "python3",
+          "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/indexing_workbook.py"
+        ],
+        "started_utc": "2026-11-19T22:05:08.593650+00:00",
+        "finished_utc": "2026-11-19T22:05:08.609507+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.015858623999974952,
+        "log": "results/indexing_workbook/run-0.log",
+        "log_sha256": "e30eb4b9a535502a8649eca93c31ede8813b1bf9dc1a1bfa01196bc1f9b9e709",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/indexing_workbook.py"
+      ],
+      "started_utc": "2026-11-19T22:05:08.561554+00:00",
+      "finished_utc": "2026-11-19T22:05:08.593574+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.032021557000007306,
+      "log": "results/indexing_workbook/compile.log",
+      "log_sha256": "fbcf1971fe891371ff7fd88f1c25e6c339f324f958365ab7d55c16f2185e82b3"
+    },
+    "binary_target": "cpu",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/advanced/stride_walkthrough.py",
+    "kind": "cpu_reference",
+    "sha256": "57d0ddb0d04fef6c1c3c34f3d5ce9c5de46671dc1279db078af61af6928e2cae",
+    "runs": [
+      {
+        "command": [
+          "python3",
+          "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/stride_walkthrough.py"
+        ],
+        "started_utc": "2026-11-19T22:05:08.641584+00:00",
+        "finished_utc": "2026-11-19T22:05:08.673506+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.03192359099989517,
+        "log": "results/stride_walkthrough/run-0.log",
+        "log_sha256": "82f9237759ef7ecc836d1643078ad5f084a937e63c29623ea4fa033f4125e6cf",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/stride_walkthrough.py"
+      ],
+      "started_utc": "2026-11-19T22:05:08.609809+00:00",
+      "finished_utc": "2026-11-19T22:05:08.641510+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.03170215499994811,
+      "log": "results/stride_walkthrough/compile.log",
+      "log_sha256": "0b006b1fc5af337e9bbfda556261601353627a01cb4397843d8e0f01a3bf48d3"
+    },
+    "binary_target": "cpu",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/attention/attention_online.cu",
+    "kind": "attention_reference",
+    "sha256": "860d4976162dbee47edd0153d0eb8ff8089471d6ff8b7271653e6d8effad7b66",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/attention_online/example"
+        ],
+        "started_utc": "2026-11-19T22:05:10.091589+00:00",
+        "finished_utc": "2026-11-19T22:05:16.320111+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 6.228524715000049,
+        "log": "results/attention_online/run-0.log",
+        "log_sha256": "12614690d7d12e8c71b7543fd6d8d6688402fa1e191ce5af3c76adb616f85e8e",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/attention/attention_online.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/attention_online/example"
+      ],
+      "started_utc": "2026-11-19T22:05:08.673840+00:00",
+      "finished_utc": "2026-11-19T22:05:10.091376+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.4175485360001403,
+      "log": "results/attention_online/compile.log",
+      "log_sha256": "a87151a2eb17b5669e1a5460256725b097b3a0743908ffe30da9f5914d7016af"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  },
+  {
+    "source": "docs/examples/attention/88_hopper_fmha/88_hopper_fmha.cu",
+    "kind": "hopper_fmha",
+    "sha256": "b29f795d77867fbac7954c55c39042d7a5b145659f84742c568c305cfc47b4c5",
+    "runs": [
+      {
+        "command": [
+          "/home/ubuntu/h100-book-b200-20261119/results/88_hopper_fmha/example",
+          "--b=1",
+          "--h=2",
+          "--q=128",
+          "--k=128",
+          "--d=64",
+          "--iterations=1"
+        ],
+        "started_utc": "2026-11-19T22:05:45.125587+00:00",
+        "finished_utc": "2026-11-19T22:05:51.102926+00:00",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 5.977346226000009,
+        "log": "results/88_hopper_fmha/run-0.log",
+        "log_sha256": "df2186ac5f510b1fe46dc13ee46781e6aa2e425656c8ecbbdb238d3845a4c2aa",
+        "status": "COMPLETED"
+      }
+    ],
+    "compile": {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100",
+        "--expt-relaxed-constexpr",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+        "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/attention/88_hopper_fmha/88_hopper_fmha.cu",
+        "-o",
+        "/home/ubuntu/h100-book-b200-20261119/results/88_hopper_fmha/example",
+        "-lcuda"
+      ],
+      "started_utc": "2026-11-19T22:05:08.829703+00:00",
+      "finished_utc": "2026-11-19T22:05:45.125392+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 36.29569539799991,
+      "log": "results/88_hopper_fmha/compile.log",
+      "log_sha256": "6afed5dc64319f6cc87813ef57f712e85004b29787193fce26b6fe70e444d491"
+    },
+    "binary_target": "sm_100",
+    "status": "COMPLETED"
+  }
+]

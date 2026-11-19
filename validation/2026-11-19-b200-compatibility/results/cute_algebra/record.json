@@ -1,0 +1,43 @@
+{
+  "source": "docs/examples/advanced/cute_algebra.cu",
+  "kind": "workshop",
+  "sha256": "057517089668e8cddcb6623e5db38c4b37974dfb6548412b212417c433fab3ec",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/cute_algebra/example"
+      ],
+      "started_utc": "2026-11-19T22:05:01.199228+00:00",
+      "finished_utc": "2026-11-19T22:05:01.201044+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.0018172790000789973,
+      "log": "results/cute_algebra/run-0.log",
+      "log_sha256": "e3e9de7112c764662a3a04ae7b4bc3b05b3500d3cd822fcb27ce858008f489f9",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cute_algebra.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/cute_algebra/example"
+    ],
+    "started_utc": "2026-11-19T22:04:56.623230+00:00",
+    "finished_utc": "2026-11-19T22:05:01.199052+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 4.575830513000028,
+    "log": "results/cute_algebra/compile.log",
+    "log_sha256": "8bfbe4fc635cd41f93adb0313fb921b8aadc2daa96daa60f2600971c42bca570"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

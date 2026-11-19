@@ -1,0 +1,75 @@
+blackwell_gemm_relu compile 2
+blackwell_gemm compile 0
+blackwell_fmha compile -9
+blackwell_gemm PASS $ /home/ubuntu/native-blackwell-20261119/blackwell_gemm
+GEMM CASE PASS M=128 N=128 K=64 L=1 alpha=1.00 beta=0.00 checked=16384 errors=0
+GEMM CASE PASS M=256 N=128 K=128 L=2 alpha=0.50 beta=0.25 checked=65536 errors=0
+GEMM CASE PASS M=136 N=264 K=72 L=1 alpha=0.50 beta=0.25 checked=35904 errors=0
+GEMM PASS: 3 full CPU-reference cases
+
+h the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(149): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, cute::C<0>>, cute::array<int32_t, RankT_>, cute::array<IntT, RankT_>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(129): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, StrideIntT, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, StrideIntT, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(118): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<StrideIntT, cute::C<1>, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<StrideIntT, cute::Int<1>, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(96): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(78): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(63): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(52): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: "make_shape" has already been declared in the current scope
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: "auto" type is "int" for this entity, but was previously implied to be "<error-type>"
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: too many initializer values
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                                  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: expected a ";"
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                                       ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(66): error: incomplete type "cutlass::gemm::device::GemmUniversalAdapter<Kernel, void>" (aka "cutlass::gemm::device::GemmUniversalAdapter<cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>, void>") is not allowed
+      Gemm::Arguments args{cutlass::gemm::GemmUniversalMode::kGemm,
+      ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(66): error: expected a ";"
+      Gemm::Arguments args{cutlass::gemm::GemmUniversalMode::kGemm,
+                      ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(69): error: identifier "args" is undefined
+      args.epilogue.thread.alpha = alpha;
+      ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(71): error: incomplete type "Gemm" (aka "cutlass::gemm::device::GemmUniversalAdapter<cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>, void>") is not allowed
+      Gemm gemm;
+           ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(73): error: incomplete type "cutlass::gemm::device::GemmUniversalAdapter<Kernel, void>" (aka "cutlass::gemm::device::GemmUniversalAdapter<cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>, void>") is not allowed
+      cutlass::device_memory::allocation<unsigned char> workspace(Gemm::get_workspace_size(args));
+                                                                  ^
+
+37 errors detected in the compilation of "/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu".
+
+$ nvcc -std=c++17 -O2 -arch=sm_100a --expt-relaxed-constexpr -I/home/ubuntu/native-blackwell-20261119/cutlass/include -I/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include -DFP16 --use_fast_math -I/home/ubuntu/native-blackwell-20261119/cutlass/examples/77_blackwell_fmha /home/ubuntu/native-blackwell-20261119/cutlass/examples/77_blackwell_fmha/77_blackwell_fmha.cu -o /home/ubuntu/native-blackwell-20261119/blackwell_fmha -lcuda
+
+NATIVE_EVIDENCE_READY

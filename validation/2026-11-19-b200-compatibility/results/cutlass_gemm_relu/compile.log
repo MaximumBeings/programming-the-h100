@@ -1,0 +1,1 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100 --expt-relaxed-constexpr -I/home/ubuntu/h100-book-b200-20261119/cutlass/include -I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include /home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cutlass_gemm_relu.cu -o /home/ubuntu/h100-book-b200-20261119/results/cutlass_gemm_relu/example -lcuda

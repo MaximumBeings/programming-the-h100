@@ -1,0 +1,11 @@
+$ python3 /home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/attention_walkthrough.py
+NONCAUSAL O: [1.6, 2]; [1.4, 2.4]
+ROW 0 BLOCK 0 keys=[0, 1]: m=0.69314718056 alpha=0 l=1.5 z=[1, 1]
+ROW 0 BLOCK 1 keys=[2]: m=0.69314718056 alpha=1 l=2.5 z=[4, 5]
+ROW 1 BLOCK 0 keys=[0, 1]: m=0.69314718056 alpha=0 l=1.5 z=[0.5, 2]
+ROW 1 BLOCK 1 keys=[2]: m=0.69314718056 alpha=1 l=2.5 z=[3.5, 6]
+TOP-LEFT CAUSAL O: [1, 0]; [0.333333333333, 1.33333333333]
+OFFSET-1 CAUSAL O: [0.666666666667, 0.666666666667]; [1.4, 2.4]
+RESCALE row0: alpha=0.5 l=2.5 z=[4, 5]
+PASS: materialized/online references; causal positions; rescaling; partitions; shift stability; masked/invalid diagnostics
+ATTENTION WALKTHROUGH PASS: CPU binary64 mathematics; no CUTLASS compilation or GPU execution

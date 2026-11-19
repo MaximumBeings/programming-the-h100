@@ -1,0 +1,44 @@
+{
+  "source": "original/ex02_war_prevention.cu",
+  "kind": "original",
+  "page": "docs/03-asynchronicity-mbarrier.md",
+  "sha256": "d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_war_prevention/example"
+      ],
+      "started_utc": "2026-11-19T22:04:21.391099+00:00",
+      "finished_utc": "2026-11-19T22:04:29.422629+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.031537157999992,
+      "log": "results/ex02_war_prevention/run-0.log",
+      "log_sha256": "5afbb358c9bdbac3f6e90996628d2a828798f9eaec7c91e04188fc842e1114bb",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex02_war_prevention.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex02_war_prevention/example"
+    ],
+    "started_utc": "2026-11-19T22:04:20.725291+00:00",
+    "finished_utc": "2026-11-19T22:04:21.390947+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.6656617750001033,
+    "log": "results/ex02_war_prevention/compile.log",
+    "log_sha256": "63d9c5287ac748ddb36ca36c0015c09fc5e8282e3efc203e06987043673b61c6"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

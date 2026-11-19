@@ -1,0 +1,12 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/ex03_setmaxnreg/example
+CUDA ERROR at /home/ubuntu/h100-book-b200-20261119/original/ex03_setmaxnreg.cu:131 — a PTX JIT compilation failed
+╔══════════════════════════════════════════════════════╗
+║  setmaxnreg Demo — Dynamic Register Resizing         ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA B200 (SM 10.0)
+
+Register Plan:
+  WG0 (threads   0-127): setmaxnreg.dec → 32 regs (producer)
+  WG1 (threads 128-255): setmaxnreg.inc → 128 regs (consumer)
+

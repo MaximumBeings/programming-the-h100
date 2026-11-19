@@ -1,0 +1,49 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/ex04_circular_buffer/example
+╔══════════════════════════════════════════════════════╗
+║  Circular Pipeline Buffer Simulation                  ║
+║  N_STAGES=4, DEPTH=2, K_TILES=8                    ║
+╚══════════════════════════════════════════════════════╝
+
+[Prologue]: filling first 2 stages
+  k=0: Producer writes stage 0  |  Consumer: waiting
+  k=1: Producer writes stage 1  |  Consumer: waiting
+
+[Steady State]: producer and consumer overlap
+  k=2: Producer writes stage 2  |  Consumer reads stage 0
+  k=3: Producer writes stage 3  |  Consumer reads stage 1
+  k=4: Producer writes stage 0  |  Consumer reads stage 2
+  k=5: Producer writes stage 1  |  Consumer reads stage 3
+  k=6: Producer writes stage 2  |  Consumer reads stage 0
+  k=7: Producer writes stage 3  |  Consumer reads stage 1
+
+[Drain]: flushing 2 remaining stages
+  drain 0: Consumer reads stage 2  |  Producer: done
+  drain 1: Consumer reads stage 3  |  Producer: done
+
+════════════════════════════════════════════════════════
+Stage Assignment Verification:
+  Expected producer: 0,1,2,3,0,1,2,3,-1,-1 (then drain)
+  Expected consumer: -1,-1,0,1,2,3,0,1,2,3
+
+  Iter    Prod    Cons
+  ────────────────────
+     0       0      -1 ✓
+     1       1      -1 ✓
+     2       2       0 ✓
+     3       3       1 ✓
+     4       0       2 ✓
+     5       1       3 ✓
+     6       2       0 ✓
+     7       3       1 ✓
+     8      -1       2 ✓
+     9      -1       3 ✓
+
+Output Verification (element 0 and element 10):
+  output[0]  = 280.000 (expected 280.000) ✓
+  output[10] = 280.800 (expected 280.800) ✓
+
+╔══════════════════════════════════════════════════════╗
+║  Stage assignment errors: 0                           ║
+║  Runtime barrier errors:  0                           ║
+║  ✓ ALL TESTS PASSED — circular buffer correct        ║
+╚══════════════════════════════════════════════════════╝

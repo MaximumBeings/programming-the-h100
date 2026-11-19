@@ -1,0 +1,13 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100 --expt-relaxed-constexpr -I/home/ubuntu/h100-book-b200-20261119/cutlass/include -I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include /home/ubuntu/h100-book-b200-20261119/original/ex11_nvlink_bandwidth.cu -o /home/ubuntu/h100-book-b200-20261119/results/ex11_nvlink_bandwidth/example
+/home/ubuntu/h100-book-b200-20261119/original/ex11_nvlink_bandwidth.cu(91): warning #549-D: variable "e" is used before its value is set
+              do { cudaError_t e = (e); if (e != cudaSuccess) { fprintf(
+                                    ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/ubuntu/h100-book-b200-20261119/original/ex11_nvlink_bandwidth.cu(91): warning #549-D: variable "e" is used before its value is set
+              do { cudaError_t e = (e); if (e != cudaSuccess) { fprintf(
+                                    ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+

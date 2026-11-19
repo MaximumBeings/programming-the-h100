@@ -1,0 +1,13 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/ex01_mbarrier_basic/example
+╔══════════════════════════════════════════════════════════╗
+║  ex01: mbarrier Pipeline — Init/Arrive/Wait/Reuse        ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA B200 (SM 10.0)
+Config: K=4 tiles, 256 elements/tile, 64 threads/block
+
+Element checks: 1024 / 1024 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS — mbarrier pipeline working correctly!     ║
+╚══════════════════════════════════════════════════════════╝

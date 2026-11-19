@@ -1,0 +1,44 @@
+{
+  "source": "original/ex01_roofline.cu",
+  "kind": "original",
+  "page": "docs/08-kernel-design-part-1.md",
+  "sha256": "d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex01_roofline/example"
+      ],
+      "started_utc": "2026-11-19T22:04:32.394212+00:00",
+      "finished_utc": "2026-11-19T22:04:40.828199+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.433992897000053,
+      "log": "results/ex01_roofline/run-0.log",
+      "log_sha256": "aff9020d494d4d16f28f93e8bb4d83ea85acbd48d9d7fb04c72ff1e620a657ef",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex01_roofline.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex01_roofline/example"
+    ],
+    "started_utc": "2026-11-19T22:04:31.727881+00:00",
+    "finished_utc": "2026-11-19T22:04:32.394088+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.6662094000000707,
+    "log": "results/ex01_roofline/compile.log",
+    "log_sha256": "f4adc72914a16153882afc29d96785d681134e1485e925b47d3441449d09386c"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}
