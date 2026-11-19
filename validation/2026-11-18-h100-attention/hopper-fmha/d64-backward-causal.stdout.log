@@ -1,0 +1,5 @@
+###### B 1 H 2 Q 128 K 128 D 64 Backward Causal #SM 132
+ [OK]  tma ws cooperative 64x128x64     : 0.557911 TFLOPS/s
+       t=0.0187947ms, smem=116224b
+ [OK]  tma ws cooperative 128x128x64    : 0.531948 TFLOPS/s
+       t=0.019712ms, smem=199168b

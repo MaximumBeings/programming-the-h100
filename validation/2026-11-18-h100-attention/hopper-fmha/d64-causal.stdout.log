@@ -1,0 +1,7 @@
+###### B 1 H 2 Q 128 K 128 D 64 Forward Causal #SM 132
+ [OK]  tma 64x128x64                    : 0.660867 TFLOPS/s
+       t=0.00634667ms, smem=74240b
+ [OK]  tma ws cooperative 128x64x64     : 0.560936 TFLOPS/s
+       t=0.00747733ms, smem=57856b
+ [OK]  tma ws ping-pong 128x64x64       : 0.571535 TFLOPS/s
+       t=0.00733867ms, smem=75264b

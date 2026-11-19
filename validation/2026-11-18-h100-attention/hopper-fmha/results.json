@@ -1,0 +1,311 @@
+{
+  "schema": 1,
+  "started_utc": "2026-11-19T00:05:32.706514+00:00",
+  "cutlass_commit": "1afc6d355b8cb992398f17beb4425702f1d57ddd",
+  "scope": "official example88 FP16 forward plus requested backward; vendor GPU reference, not a CPU/FP64 oracle",
+  "status": "PASS",
+  "system": {
+    "platform": "Linux-6.8.0-1064-nvidia-x86_64-with-glibc2.35",
+    "machine": "x86_64",
+    "python": "3.10.12 (main, Aug 31 2026, 10:18:17) [GCC 11.4.0]",
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "CUDA_HOME": null,
+      "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+      "LD_LIBRARY_PATH": null
+    }
+  },
+  "records": [
+    {
+      "argv": [
+        "nvidia-smi"
+      ],
+      "started_utc": "2026-11-19T00:05:34.106403+00:00",
+      "finished_utc": "2026-11-19T00:05:34.319441+00:00",
+      "exit_code": 0,
+      "stdout": "gpu-system.stdout.log",
+      "stderr": "gpu-system.stderr.log",
+      "stdout_sha256": "886bce7c4ebaf33f9bf4a656cfea37e3d6f27d59b788ed9fb317933995693e9f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "nvcc",
+        "--version"
+      ],
+      "started_utc": "2026-11-19T00:05:34.319512+00:00",
+      "finished_utc": "2026-11-19T00:05:34.321304+00:00",
+      "exit_code": 0,
+      "stdout": "compiler-system.stdout.log",
+      "stderr": "compiler-system.stderr.log",
+      "stdout_sha256": "68f8b0a1301428031e307cf5260142a517bff25cc232a09eae2734be475d721f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "cmake",
+        "--version"
+      ],
+      "started_utc": "2026-11-19T00:05:34.321336+00:00",
+      "finished_utc": "2026-11-19T00:05:34.328015+00:00",
+      "exit_code": 0,
+      "stdout": "cmake-system.stdout.log",
+      "stderr": "cmake-system.stderr.log",
+      "stdout_sha256": "6c08f840b67782da73a6fe113b64712615441722b15cd2723062dd4cc00a10d8",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "g++",
+        "--version"
+      ],
+      "started_utc": "2026-11-19T00:05:34.328046+00:00",
+      "finished_utc": "2026-11-19T00:05:34.328977+00:00",
+      "exit_code": 0,
+      "stdout": "host-compiler-system.stdout.log",
+      "stderr": "host-compiler-system.stderr.log",
+      "stdout_sha256": "9eaf9b7f4b11c2e84e2478c2ceb0e4f48f4ba88565bcfc832b3bce49847dda6d",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "cmake",
+        "-S",
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/source",
+        "-B",
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build",
+        "-DCUTLASS_NVCC_ARCHS=90a",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCUTLASS_ENABLE_TESTS=OFF",
+        "-DCUTLASS_ENABLE_PROFILER=OFF",
+        "-DCUTLASS_ENABLE_EXAMPLES=ON",
+        "-DCUTLASS_ENABLE_CUBLAS=OFF",
+        "-DCUTLASS_ENABLE_LIBRARY=OFF"
+      ],
+      "started_utc": "2026-11-19T00:05:34.329059+00:00",
+      "finished_utc": "2026-11-19T00:05:36.652979+00:00",
+      "exit_code": 0,
+      "stdout": "configure.stdout.log",
+      "stderr": "configure.stderr.log",
+      "stdout_sha256": "2cba1d1b44e7cca268a7c454469512cffe9b1d0c7e590b697818d40e74828f03",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "argv": [
+        "cmake",
+        "--build",
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build",
+        "--target",
+        "88_hopper_fmha",
+        "--parallel",
+        "4"
+      ],
+      "started_utc": "2026-11-19T00:05:36.653232+00:00",
+      "finished_utc": "2026-11-19T00:08:51.548296+00:00",
+      "exit_code": 0,
+      "stdout": "build.stdout.log",
+      "stderr": "build.stderr.log",
+      "stdout_sha256": "b6f94baf14666d42a4edb3a326bb1190c92fed098caa1d10836d58f4f591af83",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "cases": [
+    {
+      "argv": [
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=32",
+        "--mask=no",
+        "--iterations=3",
+        "--verify",
+        "--verbose"
+      ],
+      "started_utc": "2026-11-19T00:08:51.548617+00:00",
+      "finished_utc": "2026-11-19T00:08:51.975840+00:00",
+      "exit_code": 0,
+      "stdout": "d32-full.stdout.log",
+      "stderr": "d32-full.stderr.log",
+      "stdout_sha256": "5fa6a9b1ac57960cf1d207fec1ed961143edd2c4b334ee5867499dd71c2bfeb1",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "d32-full",
+      "expected_verified_variants": 2,
+      "status": "PASS"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=64",
+        "--mask=no",
+        "--iterations=3",
+        "--verify",
+        "--verbose"
+      ],
+      "started_utc": "2026-11-19T00:08:51.977031+00:00",
+      "finished_utc": "2026-11-19T00:08:52.301508+00:00",
+      "exit_code": 0,
+      "stdout": "d64-full.stdout.log",
+      "stderr": "d64-full.stderr.log",
+      "stdout_sha256": "abaf4befa396b43751a84c81ffbd5b12c5965ac68acd8e38750dc37669c18ff7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "d64-full",
+      "expected_verified_variants": 3,
+      "status": "PASS"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=64",
+        "--mask=causal",
+        "--iterations=3",
+        "--verify",
+        "--verbose"
+      ],
+      "started_utc": "2026-11-19T00:08:52.301968+00:00",
+      "finished_utc": "2026-11-19T00:08:52.624123+00:00",
+      "exit_code": 0,
+      "stdout": "d64-causal.stdout.log",
+      "stderr": "d64-causal.stderr.log",
+      "stdout_sha256": "8273b6cb20e20415f23f60852d708c3bed0b3afdbb16c646e61bc7cd656bb1aa",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "d64-causal",
+      "expected_verified_variants": 3,
+      "status": "PASS"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=256",
+        "--k=256",
+        "--d=128",
+        "--mask=no",
+        "--iterations=3",
+        "--verify",
+        "--verbose"
+      ],
+      "started_utc": "2026-11-19T00:08:52.624603+00:00",
+      "finished_utc": "2026-11-19T00:08:52.950317+00:00",
+      "exit_code": 0,
+      "stdout": "d128-full.stdout.log",
+      "stderr": "d128-full.stderr.log",
+      "stdout_sha256": "cb92d27f862b24222f36eb97cc8e6ac770c0376c3f2ea988b16ee011454252d2",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "d128-full",
+      "expected_verified_variants": 2,
+      "status": "PASS"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=256",
+        "--k=256",
+        "--d=128",
+        "--mask=causal",
+        "--iterations=3",
+        "--verify",
+        "--verbose"
+      ],
+      "started_utc": "2026-11-19T00:08:52.950833+00:00",
+      "finished_utc": "2026-11-19T00:08:53.278045+00:00",
+      "exit_code": 0,
+      "stdout": "d128-causal.stdout.log",
+      "stderr": "d128-causal.stderr.log",
+      "stdout_sha256": "b16750ca3c112bf21f1b996eb160ad7a67d48d6f7ef9d5b9b7692da15690e7df",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "d128-causal",
+      "expected_verified_variants": 2,
+      "status": "PASS"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=256",
+        "--mask=no",
+        "--iterations=3",
+        "--verify",
+        "--verbose"
+      ],
+      "started_utc": "2026-11-19T00:08:53.278552+00:00",
+      "finished_utc": "2026-11-19T00:08:53.598225+00:00",
+      "exit_code": 0,
+      "stdout": "d256-full.stdout.log",
+      "stderr": "d256-full.stderr.log",
+      "stdout_sha256": "3ac7f6e3523b0da94a917e3ef5b4931b15b833d6e4801e12cef32ab9f3ba414e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "d256-full",
+      "expected_verified_variants": 1,
+      "status": "PASS"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=64",
+        "--mask=no",
+        "--iterations=3",
+        "--verify",
+        "--verbose",
+        "--bwd"
+      ],
+      "started_utc": "2026-11-19T00:08:53.598689+00:00",
+      "finished_utc": "2026-11-19T00:08:53.918606+00:00",
+      "exit_code": 0,
+      "stdout": "d64-backward-no.stdout.log",
+      "stderr": "d64-backward-no.stderr.log",
+      "stdout_sha256": "e02b0382ff574ca8938692d48cab69397f783588ea4707c34a2dbc13538ee666",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "d64-backward-no",
+      "expected_verified_variants": 2,
+      "status": "PASS"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/book-attention-20261118/artifacts/hopper-fmha/build/examples/88_hopper_fmha/88_hopper_fmha",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=64",
+        "--mask=causal",
+        "--iterations=3",
+        "--verify",
+        "--verbose",
+        "--bwd"
+      ],
+      "started_utc": "2026-11-19T00:08:53.919108+00:00",
+      "finished_utc": "2026-11-19T00:08:54.239785+00:00",
+      "exit_code": 0,
+      "stdout": "d64-backward-causal.stdout.log",
+      "stderr": "d64-backward-causal.stderr.log",
+      "stdout_sha256": "c6885a784d35ef465d76d14f451c48c146d3f4f7061ef64bdcdb8989ba40c1c0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "name": "d64-backward-causal",
+      "expected_verified_variants": 2,
+      "status": "PASS"
+    }
+  ],
+  "source_archive_sha256": "3224b2af9176825e9b3955c44e0ec02a4d8c86afd21a14012a4054b6348bf2aa",
+  "collector_sha256": "4d057a013f0ecc1bed744d30be1b7671776a11c5bf090edb08fdc446ae9dc746",
+  "finished_utc": "2026-11-19T00:08:54.240379+00:00"
+}

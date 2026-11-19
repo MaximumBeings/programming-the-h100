@@ -1,0 +1,5 @@
+###### B 1 H 2 Q 128 K 128 D 32 Forward Full #SM 132
+ [OK]  tma 64x128x32                    : 0.534988 TFLOPS/s
+       t=0.00784ms, smem=37376b
+ [OK]  tma ws cooperative 128x64x32     : 0.60588 TFLOPS/s
+       t=0.00692267ms, smem=29184b

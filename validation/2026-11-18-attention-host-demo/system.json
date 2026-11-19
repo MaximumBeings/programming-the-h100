@@ -1,0 +1,7 @@
+{
+  "scope": "Host-only C++ build: shared FP32 row arithmetic versus binary64 reference. CUDA-only code excluded; no CUDA compilation/execution.",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.4.1.1)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "source_sha256": "860d4976162dbee47edd0153d0eb8ff8089471d6ff8b7271653e6d8effad7b66"
+}

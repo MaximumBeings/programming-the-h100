@@ -1,0 +1,146 @@
+{
+  "started_utc": "2026-11-19T00:06:07.762069+00:00",
+  "scope": "Chapter30 FP32 CUDA online attention and independent binary64 output/LSE checks; Python mathematical oracle rerun.",
+  "system": {
+    "platform": "Linux-6.8.0-1064-nvidia-x86_64-with-glibc2.35",
+    "python": "3.10.12 (main, Aug 31 2026, 10:18:17) [GCC 11.4.0]",
+    "machine": "x86_64",
+    "CUDA_VISIBLE_DEVICES": "1"
+  },
+  "commands": [
+    {
+      "label": "gpu-system",
+      "argv": [
+        "nvidia-smi",
+        "--query-gpu=index,name,uuid,driver_version,memory.total,compute_cap",
+        "--format=csv"
+      ],
+      "started_utc": "2026-11-19T00:06:07.763220+00:00",
+      "finished_utc": "2026-11-19T00:06:07.792444+00:00",
+      "exit_code": 0,
+      "stdout": "gpu-system.stdout.log",
+      "stderr": "gpu-system.stderr.log"
+    },
+    {
+      "label": "topology",
+      "argv": [
+        "nvidia-smi",
+        "topo",
+        "-m"
+      ],
+      "started_utc": "2026-11-19T00:06:07.792540+00:00",
+      "finished_utc": "2026-11-19T00:06:07.864030+00:00",
+      "exit_code": 0,
+      "stdout": "topology.stdout.log",
+      "stderr": "topology.stderr.log"
+    },
+    {
+      "label": "nvcc",
+      "argv": [
+        "nvcc",
+        "--version"
+      ],
+      "started_utc": "2026-11-19T00:06:07.864201+00:00",
+      "finished_utc": "2026-11-19T00:06:07.866192+00:00",
+      "exit_code": 0,
+      "stdout": "nvcc.stdout.log",
+      "stderr": "nvcc.stderr.log"
+    },
+    {
+      "label": "host-compiler",
+      "argv": [
+        "g++",
+        "--version"
+      ],
+      "started_utc": "2026-11-19T00:06:07.866308+00:00",
+      "finished_utc": "2026-11-19T00:06:07.867494+00:00",
+      "exit_code": 0,
+      "stdout": "host-compiler.stdout.log",
+      "stderr": "host-compiler.stderr.log"
+    },
+    {
+      "label": "os",
+      "argv": [
+        "cat",
+        "/etc/os-release"
+      ],
+      "started_utc": "2026-11-19T00:06:07.867616+00:00",
+      "finished_utc": "2026-11-19T00:06:07.869631+00:00",
+      "exit_code": 0,
+      "stdout": "os.stdout.log",
+      "stderr": "os.stderr.log"
+    },
+    {
+      "label": "compile",
+      "argv": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_90a",
+        "attention_online.cu",
+        "-o",
+        "attention_online"
+      ],
+      "started_utc": "2026-11-19T00:06:07.869759+00:00",
+      "finished_utc": "2026-11-19T00:06:09.990277+00:00",
+      "exit_code": 0,
+      "stdout": "compile.stdout.log",
+      "stderr": "compile.stderr.log"
+    },
+    {
+      "label": "execute",
+      "argv": [
+        "./attention_online"
+      ],
+      "started_utc": "2026-11-19T00:06:09.990504+00:00",
+      "finished_utc": "2026-11-19T00:06:10.812505+00:00",
+      "exit_code": 0,
+      "stdout": "execute.stdout.log",
+      "stderr": "execute.stderr.log"
+    },
+    {
+      "label": "memcheck",
+      "argv": [
+        "compute-sanitizer",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "3",
+        "./attention_online"
+      ],
+      "started_utc": "2026-11-19T00:06:10.812749+00:00",
+      "finished_utc": "2026-11-19T00:06:11.494349+00:00",
+      "exit_code": 0,
+      "stdout": "memcheck.stdout.log",
+      "stderr": "memcheck.stderr.log"
+    },
+    {
+      "label": "python-compile",
+      "argv": [
+        "python3",
+        "-m",
+        "py_compile",
+        "attention_walkthrough.py"
+      ],
+      "started_utc": "2026-11-19T00:06:11.494602+00:00",
+      "finished_utc": "2026-11-19T00:06:11.520022+00:00",
+      "exit_code": 0,
+      "stdout": "python-compile.stdout.log",
+      "stderr": "python-compile.stderr.log"
+    },
+    {
+      "label": "python-execute",
+      "argv": [
+        "python3",
+        "attention_walkthrough.py"
+      ],
+      "started_utc": "2026-11-19T00:06:11.520225+00:00",
+      "finished_utc": "2026-11-19T00:06:11.535383+00:00",
+      "exit_code": 0,
+      "stdout": "python-execute.stdout.log",
+      "stderr": "python-execute.stderr.log"
+    }
+  ],
+  "status": "PASS",
+  "finished_utc": "2026-11-19T00:06:11.535574+00:00"
+}
