@@ -1,0 +1,50 @@
+{
+  "source": "docs/examples/attention/88_hopper_fmha/88_hopper_fmha.cu",
+  "kind": "hopper_fmha",
+  "sha256": "b29f795d77867fbac7954c55c39042d7a5b145659f84742c568c305cfc47b4c5",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/88_hopper_fmha/example",
+        "--b=1",
+        "--h=2",
+        "--q=128",
+        "--k=128",
+        "--d=64",
+        "--iterations=1"
+      ],
+      "started_utc": "2026-11-19T22:05:45.125587+00:00",
+      "finished_utc": "2026-11-19T22:05:51.102926+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 5.977346226000009,
+      "log": "results/88_hopper_fmha/run-0.log",
+      "log_sha256": "df2186ac5f510b1fe46dc13ee46781e6aa2e425656c8ecbbdb238d3845a4c2aa",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/attention/88_hopper_fmha/88_hopper_fmha.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/88_hopper_fmha/example",
+      "-lcuda"
+    ],
+    "started_utc": "2026-11-19T22:05:08.829703+00:00",
+    "finished_utc": "2026-11-19T22:05:45.125392+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 36.29569539799991,
+    "log": "results/88_hopper_fmha/compile.log",
+    "log_sha256": "6afed5dc64319f6cc87813ef57f712e85004b29787193fce26b6fe70e444d491"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

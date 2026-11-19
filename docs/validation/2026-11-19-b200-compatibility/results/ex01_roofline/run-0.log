@@ -1,0 +1,38 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/ex01_roofline/example
+╔══════════════════════════════════════════════════════╗
+║  Roofline Model Demo — Memory vs Compute Bound        ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA B200 (SM 10.0)
+     Peak memory bandwidth (theoretical): 7672.3 GB/s
+     SM count: 148
+
+════════════════════════════════════════════════════════
+KERNEL A: elementwise_scale (expected: MEMORY-BOUND)
+════════════════════════════════════════════════════════
+  Elements: 64M    Bytes moved: 537 MB    AI: 0.125 FLOP/Byte
+  (Ridge point for FP32 CUDA cores ≈ 20 FLOP/Byte)
+  → AI=0.125 << 20 → MEMORY-BOUND ✓
+
+  Time: 0.187 ms
+  Bandwidth achieved: 2875.4 GB/s
+  GFLOPS achieved:    359.4
+  → Kernel is BANDWIDTH limited (not compute limited)
+
+════════════════════════════════════════════════════════
+KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
+════════════════════════════════════════════════════════
+  M=N=K=512    FLOPs: 268.4 M    Bytes: 3.1 MB    AI: 85.3 FLOP/Byte
+  → AI=85.3 >> 20 → COMPUTE-BOUND ✓
+
+  Time: 0.035 ms
+  GFLOPS achieved: 7661.5
+  Effective BW:    89.8 GB/s (not the bottleneck)
+  → Kernel is COMPUTE limited (bandwidth not saturated)
+
+╔══════════════════════════════════════════════════════╗
+║  KEY TAKEAWAY:                                        ║
+║  • elementwise_scale: optimize bandwidth, not FLOPs   ║
+║  • tile_matmul: optimize FLOPs, pipeline depth        ║
+║  • Wrong optimization → wrong results → wasted time   ║
+╚══════════════════════════════════════════════════════╝

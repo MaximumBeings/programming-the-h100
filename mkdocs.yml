@@ -118,6 +118,7 @@ nav:
   - H100 CuTe/CUTLASS Workshop Results: cutlass-workshop-validation.md
   - Validation & Final Audit: final-audit.md
   - Eight-A100 Training Validation: eight-gpu-validation.md
+  - B200 Compatibility Results: validation-b200.md
   - Part I — The Machine:
       - 1. NVIDIA H100 GPU Architecture: 01-h100-architecture.md
   - Part II — The Instruction Layer:
@@ -161,3 +162,6 @@ nav:
   - Part XI — CUTLASS FlashAttention:
       - 30. Attention from Layouts to Online Softmax: 30-cutlass-attention-foundations.md
       - 31. Hopper CUTLASS FMHA — Build, Trace and Validate: 31-cutlass-hopper-fmha.md
+
+  - Blackwell Appendix:
+      - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md

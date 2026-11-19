@@ -1,0 +1,1 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100a --expt-relaxed-constexpr --use_fast_math -DFP16 -Icutlass/include -Icutlass/tools/util/include -Icutlass/examples/77_blackwell_fmha docs/examples/blackwell/blackwell_fmha_forward.cu -o blackwell_fmha_forward -lcuda

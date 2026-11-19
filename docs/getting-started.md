@@ -404,3 +404,7 @@ References: [NVIDIA's Hopper compatibility guide](https://docs.nvidia.com/cuda/a
 ## Where to go next
 
 Choose a [learning path](index.md#how-to-read-this). For the first pass, work through [Chapter 1](01-h100-architecture.md), then the complete examples in [Chapter 2](02-clusters-inline-ptx.md). Each chapter now has learning goals and self-checks with worked answers. Keep your own environment report with every result you want to reproduce.
+
+## Native B200 extensions
+
+The Hopper `sm_90a` WGMMA/GEMM kernels are architecture-specific. For B200, use the [separately tested native SM100 appendix](appendix-blackwell-b200.md), including its `sm_100a` build commands and pinned CUTLASS version. The [B200 compatibility report](validation-b200.md) distinguishes completed original examples from architecture-guard exits. This does not turn the Hopper instructions elsewhere in the book into Blackwell instructions.

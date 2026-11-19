@@ -1,0 +1,116 @@
+[
+  {
+    "name": "forward-book-compile",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100a",
+      "--expt-relaxed-constexpr",
+      "--use_fast_math",
+      "-DFP16",
+      "-Icutlass/include",
+      "-Icutlass/tools/util/include",
+      "-Icutlass/examples/77_blackwell_fmha",
+      "docs/examples/blackwell/blackwell_fmha_forward.cu",
+      "-o",
+      "blackwell_fmha_forward",
+      "-lcuda"
+    ],
+    "started_utc": "2026-11-19T22:11:17.070936+00:00",
+    "finished_utc": "2026-11-19T22:12:07.044134+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "forward-book-compile.log",
+    "log_sha256": "7efe27e8c280f3c2f6f627cc9aada6faa8313a01eac9358f79808e046fb065b5"
+  },
+  {
+    "name": "forward-book-full-d64",
+    "command": [
+      "./blackwell_fmha_forward",
+      "--b=1",
+      "--h=2",
+      "--q=256",
+      "--k=256",
+      "--verify",
+      "--iterations=1",
+      "--warmup_iterations=0",
+      "--verbose",
+      "--d=64",
+      "--mask=no"
+    ],
+    "started_utc": "2026-11-19T22:12:07.044444+00:00",
+    "finished_utc": "2026-11-19T22:12:13.322250+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "forward-book-full-d64.log",
+    "log_sha256": "a1398e6cfb52ecc49ae27cf740a50db262c8990957ad84ac1de9c520b5779d44"
+  },
+  {
+    "name": "forward-book-causal-d64",
+    "command": [
+      "./blackwell_fmha_forward",
+      "--b=1",
+      "--h=2",
+      "--q=256",
+      "--k=256",
+      "--verify",
+      "--iterations=1",
+      "--warmup_iterations=0",
+      "--verbose",
+      "--d=64",
+      "--mask=causal"
+    ],
+    "started_utc": "2026-11-19T22:12:13.322739+00:00",
+    "finished_utc": "2026-11-19T22:12:19.400137+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "forward-book-causal-d64.log",
+    "log_sha256": "43910c8af85a166fbb5c9a1f08052f2ba40ef04b9b8f30563d00ca1f5812533a"
+  },
+  {
+    "name": "forward-book-gqa-d64",
+    "command": [
+      "./blackwell_fmha_forward",
+      "--b=1",
+      "--h=2",
+      "--q=256",
+      "--k=256",
+      "--verify",
+      "--iterations=1",
+      "--warmup_iterations=0",
+      "--verbose",
+      "--d=64",
+      "--mask=no",
+      "--h_k=1"
+    ],
+    "started_utc": "2026-11-19T22:12:19.400476+00:00",
+    "finished_utc": "2026-11-19T22:12:25.528521+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "forward-book-gqa-d64.log",
+    "log_sha256": "21c5db140a2126924461fc09bf6d373f848c8a006d3602f8184d696fcfe7b328"
+  },
+  {
+    "name": "forward-book-full-d128",
+    "command": [
+      "./blackwell_fmha_forward",
+      "--b=1",
+      "--h=2",
+      "--q=256",
+      "--k=256",
+      "--verify",
+      "--iterations=1",
+      "--warmup_iterations=0",
+      "--verbose",
+      "--d=128",
+      "--mask=no"
+    ],
+    "started_utc": "2026-11-19T22:12:25.528849+00:00",
+    "finished_utc": "2026-11-19T22:12:31.606482+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "forward-book-full-d128.log",
+    "log_sha256": "779bfac1a250c5b3b345ebc1954a4c30acf83c1b7554cc601d65115f0cca41cb"
+  }
+]

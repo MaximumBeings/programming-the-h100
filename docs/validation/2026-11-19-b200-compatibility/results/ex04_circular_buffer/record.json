@@ -1,0 +1,44 @@
+{
+  "source": "original/ex04_circular_buffer.cu",
+  "kind": "original",
+  "page": "docs/08-kernel-design-part-1.md",
+  "sha256": "3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex04_circular_buffer/example"
+      ],
+      "started_utc": "2026-11-19T22:04:39.039124+00:00",
+      "finished_utc": "2026-11-19T22:04:47.070788+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.031670762999966,
+      "log": "results/ex04_circular_buffer/run-0.log",
+      "log_sha256": "1d1cd00fa4c7c0381949cce5083f05d17991f8c045746c006c2dd4e2829fd3b4",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex04_circular_buffer.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex04_circular_buffer/example"
+    ],
+    "started_utc": "2026-11-19T22:04:38.322976+00:00",
+    "finished_utc": "2026-11-19T22:04:39.038968+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.7159953409998252,
+    "log": "results/ex04_circular_buffer/compile.log",
+    "log_sha256": "e5a2fa74235707f6e24e7a102c0fd9945072dde693f2d662da7ff88935545054"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

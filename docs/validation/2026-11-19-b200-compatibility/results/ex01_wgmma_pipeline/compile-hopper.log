@@ -1,0 +1,1 @@
+$ nvcc -std=c++17 -O2 -arch=sm_90a --expt-relaxed-constexpr -I/home/ubuntu/h100-book-b200-20261119/cutlass/include -I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include /home/ubuntu/h100-book-b200-20261119/original/ex01_wgmma_pipeline.cu -o /home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_pipeline/example

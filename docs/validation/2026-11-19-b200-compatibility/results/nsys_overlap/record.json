@@ -1,0 +1,58 @@
+{
+  "source": "docs/examples/advanced/nsys_overlap.cu",
+  "kind": "workshop",
+  "sha256": "c47d8ed9b3db321f7caa7b3224bcbf4d64918986414f597462196bae2f6a0a6e",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/nsys_overlap/example",
+        "serial"
+      ],
+      "started_utc": "2026-11-19T22:05:06.745606+00:00",
+      "finished_utc": "2026-11-19T22:05:07.762216+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.0166182329999174,
+      "log": "results/nsys_overlap/run-0.log",
+      "log_sha256": "ca1aca3435a28a75eb2829532158a7e39718f13727e9e5f3bf0210ad4cdaa4c3",
+      "status": "COMPLETED"
+    },
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/nsys_overlap/example",
+        "overlap"
+      ],
+      "started_utc": "2026-11-19T22:05:07.762423+00:00",
+      "finished_utc": "2026-11-19T22:05:08.829131+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 1.0667152660000738,
+      "log": "results/nsys_overlap/run-1.log",
+      "log_sha256": "7905c5d08640c89641d37f3a2c35ac651da35a391c3bf42a7f1f26f38d63ff45",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/nsys_overlap.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/nsys_overlap/example"
+    ],
+    "started_utc": "2026-11-19T22:05:05.829668+00:00",
+    "finished_utc": "2026-11-19T22:05:06.745398+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.915740476999872,
+    "log": "results/nsys_overlap/compile.log",
+    "log_sha256": "2baf438e34d11d02c594c4d1de04770dc1458f8ff49b14d849d4132a09ecea2c"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

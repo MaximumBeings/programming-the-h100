@@ -1,0 +1,44 @@
+{
+  "source": "original/ex07_epilogue.cu",
+  "kind": "original",
+  "page": "docs/09-kernel-design-part-2.md",
+  "sha256": "bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex07_epilogue/example"
+      ],
+      "started_utc": "2026-11-19T22:04:47.737556+00:00",
+      "finished_utc": "2026-11-19T22:04:56.322079+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.584529498999927,
+      "log": "results/ex07_epilogue/run-0.log",
+      "log_sha256": "a37a01e6f840c67aa886dd2aa0b0af6e02616f71ae7c9250c0e034205b9ae24a",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex07_epilogue.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex07_epilogue/example"
+    ],
+    "started_utc": "2026-11-19T22:04:47.071390+00:00",
+    "finished_utc": "2026-11-19T22:04:47.737411+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.6660235639999428,
+    "log": "results/ex07_epilogue/compile.log",
+    "log_sha256": "92c6d2225f15cf6f36368e4314807a851439b870b6e7d7f40ae3556dd54e29d9"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

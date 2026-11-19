@@ -1,0 +1,17 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100 --expt-relaxed-constexpr -I/home/ubuntu/h100-book-b200-20261119/cutlass/include -I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include /home/ubuntu/h100-book-b200-20261119/original/ex01_tma_basic.cu -o /home/ubuntu/h100-book-b200-20261119/results/ex01_tma_basic/example -lcuda
+/home/ubuntu/h100-book-b200-20261119/original/ex01_tma_basic.cu: In function ‘int main()’:
+/home/ubuntu/h100-book-b200-20261119/original/ex01_tma_basic.cu:207:8: warning: format ‘%llu’ expects argument of type ‘long long unsigned int’, but argument 2 has type ‘cuuint64_t’ {aka ‘long unsigned int’} [-Wformat=]
+  207 |     printf("  globalDim:    {%llu, %llu}\n", global_dim[0], global_dim[1]);
+      |        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~
+      |                                                      |
+      |                                                      cuuint64_t {aka long unsigned int}
+/home/ubuntu/h100-book-b200-20261119/original/ex01_tma_basic.cu:207:8: warning: format ‘%llu’ expects argument of type ‘long long unsigned int’, but argument 3 has type ‘cuuint64_t’ {aka ‘long unsigned int’} [-Wformat=]
+  207 |     printf("  globalDim:    {%llu, %llu}\n", global_dim[0], global_dim[1]);
+      |        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                 ~~~~~~~~~~~~~
+      |                                                                     |
+      |                                                                     cuuint64_t {aka long unsigned int}
+/home/ubuntu/h100-book-b200-20261119/original/ex01_tma_basic.cu:208:8: warning: format ‘%llu’ expects argument of type ‘long long unsigned int’, but argument 2 has type ‘cuuint64_t’ {aka ‘long unsigned int’} [-Wformat=]
+  208 |     printf("  globalStride: {%llu} bytes\n", global_stride[0]);
+      |        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~
+      |                                                         |
+      |                                                         cuuint64_t {aka long unsigned int}

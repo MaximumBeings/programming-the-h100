@@ -1,0 +1,7 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/ex01_wgmma_pipeline/example
+Requires Hopper SM 9.0; Blackwell needs tcgen05
+╔══════════════════════════════════════════════════════════╗
+║  ex01: wgmma commit/wait pipeline + stmatrix epilogue    ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA B200 (SM 10.0)

@@ -1,0 +1,19 @@
+{
+  "files": {
+    "runner.log": "f417bd6ec8916125695d9acfd581ebcfeff255feca60fe01eefb7523d73e68e1",
+    "run-native-blackwell.py": "ef52536f2c26dd2ea48c857ddc84c09076e9fc724cd067a9c526a784ecb4d6ca",
+    "results/runs.json": "0a261c32c2657c852dbe2da1f4132e3161802901a48ce322180977dd22f1560b",
+    "results/blackwell_fmha-compile.log": "ec3894680b1910ca8823deb047dc9d88d04175af47dd69baf75e064c3f6e6ec5",
+    "results/nvcc.log": "7665bd15fcd06506c52a5d04eee5de90155154bae8b6d47be529739c301865fe",
+    "results/blackwell_gemm-compile.log": "5f6367f3f5b863dec6e955e018d0b8e296dd48376fb53ef7f196e7c9eb86c09f",
+    "results/builds.json": "0d40bd5523c56907c266dfabf83a30c8468d2c4e5c80cbad74f5b7bcec2e2a4f",
+    "results/blackwell_gemm.log": "0aec409850d915efb8719657a2e7737b4b0ca6376761f8dd7e0e6ae37c79d616",
+    "results/gpu.log": "6b6f3890f70b8b7a2a9da0bf6d669e3d2a3c664eecd273340fa0d424a23fc5c8",
+    "results/blackwell_gemm_relu-compile.log": "a51617bd50c841824c802e4c683f47cbd672ab13e817d6e4ed1f9ead09adde9a",
+    "results/os.log": "5ee0476e8067af88029ddc687779db37a3c7891e26d74d58c5ab7e98eb16fc3e",
+    "results/blackwell_gemm_relu-initial.cu": "2a7237fcea7ca4502ecfa7faf2c82892225e0a8f416e9775479487197dcf1624",
+    "docs/examples/blackwell/blackwell_gemm.cu": "07e3ec19f926717f24e414a58793100f6897d295affdb57b3875a9111b61b956",
+    "docs/examples/blackwell/blackwell_gemm_relu.cu": "ddada97ee6cc838db9260380e012599b8ef9e3405a18f4c0e68a571b70201076",
+    "results/cutlass-input-hashes.json": "c0f6d5a69af4103fd04c3680ec38f8d751817f157ef0f0f48c6e83141b9dd63a"
+  }
+}

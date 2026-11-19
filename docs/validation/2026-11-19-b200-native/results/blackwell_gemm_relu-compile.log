@@ -1,0 +1,456 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100a --expt-relaxed-constexpr -I/home/ubuntu/native-blackwell-20261119/cutlass/include -I/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include /home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu -o /home/ubuntu/native-blackwell-20261119/blackwell_gemm_relu -lcuda
+/home/ubuntu/native-blackwell-20261119/cutlass/include/cutlass/epilogue/collective/collective_builder.hpp(71): error: static assertion failed with "Could not build a collective epilogue for given parameters."
+    static_assert(cutlass::detail::dependent_false<ArchTag>,
+    ^
+          detected during instantiation of class "cutlass::epilogue::collective::CollectiveBuilder<ArchTag, OpClass, TileShape_MNK, ClusterShape_MNK, EpilogueTileType, ElementAccumulator, ElementCompute, ElementC, GmemLayoutTagC, AlignmentC, ElementD, GmemLayoutTagD, AlignmentD, EpilogueScheduleType, FusionOpOrCallbacks, Enable> [with ArchTag=cutlass::arch::Sm100, OpClass=cutlass::arch::OpClassTensorOp, TileShape_MNK=CtaTileShape, ClusterShape_MNK=Cluster, EpilogueTileType=cutlass::epilogue::collective::EpilogueTileAuto, ElementAccumulator=float, ElementCompute=float, ElementC=float, GmemLayoutTagC=Row, AlignmentC=4, ElementD=float, GmemLayoutTagD=Row, AlignmentD=4, EpilogueScheduleType=cutlass::epilogue::TmaWarpSpecialized, FusionOpOrCallbacks=Fusion, Enable=void]" at line 28 of /home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(28): error: class "cutlass::epilogue::collective::CollectiveBuilder<cutlass::arch::Sm100, cutlass::arch::OpClassTensorOp, CtaTileShape, Cluster, cutlass::epilogue::collective::EpilogueTileAuto, float, float, float, Row, 4, float, Row, 4, cutlass::epilogue::TmaWarpSpecialized, Fusion, void>" has no member "CollectiveOp"
+      cutlass::epilogue::TmaWarpSpecialized, Fusion>::CollectiveOp;
+                                                      ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(33): error: name followed by "::" must be a class or namespace name
+          static_cast<int>(sizeof(Epilogue::SharedStorage))>,
+                                  ^
+
+/home/ubuntu/native-blackwell-20261119/cutlass/include/cutlass/gemm/collective/collective_builder_decl.hpp(94): error: static assertion failed with "Could not build a collective for given parameters."
+    static_assert(sizeof(ElementA) == 0, "Could not build a collective for given parameters.");
+    ^
+          detected during instantiation of class "cutlass::gemm::collective::CollectiveBuilder<ArchTag, OpClass, ElementA, GmemLayoutA, AlignmentA, ElementB, GmemLayoutB, AlignmentB, ElementAccumulator, TileShape_MNK, ClusterShape_MNK, StageCountType, KernelScheduleType, Enable> [with ArchTag=cutlass::arch::Sm100, OpClass=cutlass::arch::OpClassTensorOp, ElementA=Half, GmemLayoutA=Row, AlignmentA=8, ElementB=Half, GmemLayoutB=Row, AlignmentB=8, ElementAccumulator=float, TileShape_MNK=CtaTileShape, ClusterShape_MNK=Cluster, StageCountType=cutlass::gemm::collective::StageCountAutoCarveout<<error-constant>>, KernelScheduleType=cutlass::gemm::KernelTmaWarpSpecializedPingpong, Enable=void]" at line 34 of /home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(34): error: class "cutlass::gemm::collective::CollectiveBuilder<cutlass::arch::Sm100, cutlass::arch::OpClassTensorOp, Half, Row, 8, Half, Row, 8, float, CtaTileShape, Cluster, cutlass::gemm::collective::StageCountAutoCarveout<<error-constant>>, cutlass::gemm::KernelTmaWarpSpecializedPingpong, void>" has no member "CollectiveOp"
+      cutlass::gemm::KernelTmaWarpSpecializedPingpong>::CollectiveOp;
+                                                        ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(62): error: incomplete type "cutlass::gemm::kernel::GemmUniversal<cute::Shape<int32_t, int32_t, int32_t, int>, Mainloop, Epilogue, void, void>" (aka "cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>") is not allowed
+      auto sa = cutlass::make_cute_packed_stride(Kernel::StrideA{}, make_shape(M, K, L));
+                                                 ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(62): error: expected a ")"
+      auto sa = cutlass::make_cute_packed_stride(Kernel::StrideA{}, make_shape(M, K, L));
+                                                                ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(62): error: no instance of overloaded function "cutlass::make_cute_packed_stride" matches the argument list
+            argument types are: (<error-type>)
+      auto sa = cutlass::make_cute_packed_stride(Kernel::StrideA{}, make_shape(M, K, L));
+                ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(552): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT, IntT, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 5UL>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(531): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 4UL>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(512): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 3UL>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(486): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT, IntT>, cute::C<0>>, cute::array<int32_t, 5UL>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(465): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT>, cute::C<0>>, cute::array<int32_t, 4UL>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(446): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT>, cute::C<0>>, cute::array<int32_t, 3UL>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(423): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(406): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(389): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(357): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT, IntT, IntT>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(328): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT, IntT>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(302): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(275): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT, IntT>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(255): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(237): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(214): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT, IntT, IntT>, cute::C<1>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(196): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT, IntT>, cute::C<1>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(179): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT>, cute::C<1>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(149): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, cute::C<0>>, cute::array<int32_t, RankT_>, cute::array<IntT, RankT_>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(129): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, StrideIntT, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, StrideIntT, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(118): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<StrideIntT, cute::C<1>, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<StrideIntT, cute::Int<1>, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(96): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(78): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(63): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(52): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(62): error: "auto" type is "int" for this entity, but was previously implied to be "<error-type>"
+      auto sa = cutlass::make_cute_packed_stride(Kernel::StrideA{}, make_shape(M, K, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(62): error: too many initializer values
+      auto sa = cutlass::make_cute_packed_stride(Kernel::StrideA{}, make_shape(M, K, L));
+                                                                                  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(62): error: expected a ";"
+      auto sa = cutlass::make_cute_packed_stride(Kernel::StrideA{}, make_shape(M, K, L));
+                                                                                       ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(63): error: incomplete type "cutlass::gemm::kernel::GemmUniversal<cute::Shape<int32_t, int32_t, int32_t, int>, Mainloop, Epilogue, void, void>" (aka "cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>") is not allowed
+      auto sb = cutlass::make_cute_packed_stride(Kernel::StrideB{}, make_shape(N, K, L));
+                                                 ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(63): error: expected a ")"
+      auto sb = cutlass::make_cute_packed_stride(Kernel::StrideB{}, make_shape(N, K, L));
+                                                                ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(63): error: no instance of overloaded function "cutlass::make_cute_packed_stride" matches the argument list
+            argument types are: (<error-type>)
+      auto sb = cutlass::make_cute_packed_stride(Kernel::StrideB{}, make_shape(N, K, L));
+                ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(552): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT, IntT, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 5UL>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(531): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 4UL>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(512): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 3UL>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(486): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT, IntT>, cute::C<0>>, cute::array<int32_t, 5UL>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(465): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT>, cute::C<0>>, cute::array<int32_t, 4UL>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(446): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT>, cute::C<0>>, cute::array<int32_t, 3UL>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(423): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(406): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(389): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(357): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT, IntT, IntT>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(328): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT, IntT>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(302): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(275): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT, IntT>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(255): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(237): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(214): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT, IntT, IntT>, cute::C<1>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(196): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT, IntT>, cute::C<1>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(179): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT>, cute::C<1>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(149): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, cute::C<0>>, cute::array<int32_t, RankT_>, cute::array<IntT, RankT_>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(129): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, StrideIntT, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, StrideIntT, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(118): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<StrideIntT, cute::C<1>, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<StrideIntT, cute::Int<1>, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(96): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(78): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(63): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(52): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(63): error: "make_shape" has already been declared in the current scope
+      auto sb = cutlass::make_cute_packed_stride(Kernel::StrideB{}, make_shape(N, K, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(63): error: "auto" type is "int" for this entity, but was previously implied to be "<error-type>"
+      auto sb = cutlass::make_cute_packed_stride(Kernel::StrideB{}, make_shape(N, K, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(63): error: too many initializer values
+      auto sb = cutlass::make_cute_packed_stride(Kernel::StrideB{}, make_shape(N, K, L));
+                                                                                  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(63): error: expected a ";"
+      auto sb = cutlass::make_cute_packed_stride(Kernel::StrideB{}, make_shape(N, K, L));
+                                                                                       ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(64): error: incomplete type "cutlass::gemm::kernel::GemmUniversal<cute::Shape<int32_t, int32_t, int32_t, int>, Mainloop, Epilogue, void, void>" (aka "cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>") is not allowed
+      auto sc = cutlass::make_cute_packed_stride(Kernel::StrideC{}, make_shape(M, N, L));
+                                                 ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(64): error: expected a ")"
+      auto sc = cutlass::make_cute_packed_stride(Kernel::StrideC{}, make_shape(M, N, L));
+                                                                ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(64): error: no instance of overloaded function "cutlass::make_cute_packed_stride" matches the argument list
+            argument types are: (<error-type>)
+      auto sc = cutlass::make_cute_packed_stride(Kernel::StrideC{}, make_shape(M, N, L));
+                ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(552): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT, IntT, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 5UL>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(531): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 4UL>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(512): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 3UL>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(486): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT, IntT>, cute::C<0>>, cute::array<int32_t, 5UL>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(465): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT>, cute::C<0>>, cute::array<int32_t, 4UL>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(446): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT>, cute::C<0>>, cute::array<int32_t, 3UL>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(423): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(406): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(389): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(357): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT, IntT, IntT>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(328): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT, IntT>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(302): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(275): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT, IntT>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(255): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(237): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(214): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT, IntT, IntT>, cute::C<1>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(196): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT, IntT>, cute::C<1>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(179): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT>, cute::C<1>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(149): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, cute::C<0>>, cute::array<int32_t, RankT_>, cute::array<IntT, RankT_>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(129): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, StrideIntT, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, StrideIntT, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(118): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<StrideIntT, cute::C<1>, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<StrideIntT, cute::Int<1>, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(96): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(78): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(63): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(52): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(64): error: "make_shape" has already been declared in the current scope
+      auto sc = cutlass::make_cute_packed_stride(Kernel::StrideC{}, make_shape(M, N, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(64): error: "auto" type is "int" for this entity, but was previously implied to be "<error-type>"
+      auto sc = cutlass::make_cute_packed_stride(Kernel::StrideC{}, make_shape(M, N, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(64): error: too many initializer values
+      auto sc = cutlass::make_cute_packed_stride(Kernel::StrideC{}, make_shape(M, N, L));
+                                                                                  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(64): error: expected a ";"
+      auto sc = cutlass::make_cute_packed_stride(Kernel::StrideC{}, make_shape(M, N, L));
+                                                                                       ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: incomplete type "cutlass::gemm::kernel::GemmUniversal<cute::Shape<int32_t, int32_t, int32_t, int>, Mainloop, Epilogue, void, void>" (aka "cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>") is not allowed
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                 ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: expected a ")"
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: no instance of overloaded function "cutlass::make_cute_packed_stride" matches the argument list
+            argument types are: (<error-type>)
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(552): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT, IntT, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 5UL>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(531): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 4UL>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(512): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<cute::C<1>, IntT>, IntT, cute::C<0>>, cute::array<int32_t, 3UL>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(486): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT, IntT>, cute::C<0>>, cute::array<int32_t, 5UL>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(465): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT>, cute::C<0>>, cute::array<int32_t, 4UL>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(446): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT>, cute::C<0>>, cute::array<int32_t, 3UL>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(423): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(406): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(389): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(357): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT, IntT, IntT>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(328): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT, IntT>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(302): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, cute::Stride<IntT, IntT>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(275): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT, IntT>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(255): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT, IntT>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(237): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::Stride<cute::C<1>, IntT>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(214): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT, IntT, IntT>, cute::C<1>>, cute::array<IntT, 5UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(196): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT, IntT>, cute::C<1>>, cute::array<IntT, 4UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(179): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::Stride<IntT, IntT>, cute::C<1>>, cute::array<IntT, 3UL>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(149): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, cute::C<0>>, cute::array<int32_t, RankT_>, cute::array<IntT, RankT_>, cutlass::conv::Operator)" does not match the call
+  make_cute_packed_stride(
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(129): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, StrideIntT, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, StrideIntT, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(118): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<StrideIntT, cute::C<1>, cute::C<0>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<StrideIntT, cute::Int<1>, cute::Int<0>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(96): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(78): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>, int64_t>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>, int64_t> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(63): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<cute::C<1>, IntT>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<cute::Int<1>, IntT> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+/home/ubuntu/native-blackwell-20261119/cutlass/tools/util/include/cutlass/util/packed_stride.hpp(52): note #3322-D: number of parameters of function template "cutlass::make_cute_packed_stride(cute::Stride<IntT, cute::C<1>>, cute::tuple<int32_t, int32_t, int32_t>)" does not match the call
+  make_cute_packed_stride(cute::Stride<IntT, cute::Int<1>> s, cute::Shape<int,int,int> shape_MKL) {
+  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: "make_shape" has already been declared in the current scope
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: "auto" type is "int" for this entity, but was previously implied to be "<error-type>"
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                    ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: too many initializer values
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                                  ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(65): error: expected a ";"
+      auto sd = cutlass::make_cute_packed_stride(Kernel::StrideD{}, make_shape(M, N, L));
+                                                                                       ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(66): error: incomplete type "cutlass::gemm::device::GemmUniversalAdapter<Kernel, void>" (aka "cutlass::gemm::device::GemmUniversalAdapter<cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>, void>") is not allowed
+      Gemm::Arguments args{cutlass::gemm::GemmUniversalMode::kGemm,
+      ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(66): error: expected a ";"
+      Gemm::Arguments args{cutlass::gemm::GemmUniversalMode::kGemm,
+                      ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(69): error: identifier "args" is undefined
+      args.epilogue.thread.alpha = alpha;
+      ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(71): error: incomplete type "Gemm" (aka "cutlass::gemm::device::GemmUniversalAdapter<cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>, void>") is not allowed
+      Gemm gemm;
+           ^
+
+/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu(73): error: incomplete type "cutlass::gemm::device::GemmUniversalAdapter<Kernel, void>" (aka "cutlass::gemm::device::GemmUniversalAdapter<cutlass::gemm::kernel::GemmUniversal<cute::tuple<signed int, signed int, signed int, int>, Mainloop, Epilogue, void, void>, void>") is not allowed
+      cutlass::device_memory::allocation<unsigned char> workspace(Gemm::get_workspace_size(args));
+                                                                  ^
+
+37 errors detected in the compilation of "/home/ubuntu/native-blackwell-20261119/docs/examples/blackwell/blackwell_gemm_relu.cu".

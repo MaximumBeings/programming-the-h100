@@ -1,0 +1,36 @@
+$ /home/ubuntu/h100-book-b200-20261119/results/ex12_nccl_allreduce/example
+═══════════════════════════════════════════════════════
+  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo
+═══════════════════════════════════════════════════════
+
+GPUs found: 8
+  GPU 0: NVIDIA B200
+  GPU 1: NVIDIA B200
+  GPU 2: NVIDIA B200
+  GPU 3: NVIDIA B200
+  GPU 4: NVIDIA B200
+  GPU 5: NVIDIA B200
+  GPU 6: NVIDIA B200
+  GPU 7: NVIDIA B200
+
+  AllReduce results:
+    N_GPUs:     8
+    Data size:  33.55 MB (8M elements × float)
+    Avg time:   1.047 ms
+    Alg BW:     32.04 GB/s  (bytes / time)
+    Bus BW:     56.07 GB/s  (2×(N-1)/N × alg BW)
+    Expected result per element: 36
+    First 8 values: 36 36 36 36 36 36 36 36 
+  GPU 4: PASS ✓ (result[0]=36, expected=36)
+  GPU 3: PASS ✓ (result[0]=36, expected=36)
+  GPU 5: PASS ✓ (result[0]=36, expected=36)
+  GPU 1: PASS ✓ (result[0]=36, expected=36)
+  GPU 7: PASS ✓ (result[0]=36, expected=36)
+  GPU 6: PASS ✓ (result[0]=36, expected=36)
+  GPU 0: PASS ✓ (result[0]=36, expected=36)
+  GPU 2: PASS ✓ (result[0]=36, expected=36)
+
+═══════════════════════════════════════════════════════
+  Expected sum = 8 × (8 + 1) / 2 = 36
+═══════════════════════════════════════════════════════
+All-rank numerical verification: PASS

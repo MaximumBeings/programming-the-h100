@@ -1,0 +1,28 @@
+[
+  {
+    "stage": "compile",
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100a",
+      "original/ex03_setmaxnreg.cu",
+      "-o",
+      "setmaxnreg-blackwell/example"
+    ],
+    "started_utc": "2026-11-19T22:05:23.547207+00:00",
+    "finished_utc": "2026-11-19T22:05:24.336021+00:00",
+    "exit_code": 0,
+    "log_sha256": "075a70734fdd3a123a053ed4851b0bdee321019ebc2e85675b598ad0a309c548"
+  },
+  {
+    "stage": "run",
+    "command": [
+      "setmaxnreg-blackwell/example"
+    ],
+    "started_utc": "2026-11-19T22:05:24.336086+00:00",
+    "finished_utc": "2026-11-19T22:05:30.554957+00:00",
+    "exit_code": 0,
+    "log_sha256": "db9b10c763217b3657740a5e221cdbbfbb87b09f5dc3f819711d0a99054eee24"
+  }
+]

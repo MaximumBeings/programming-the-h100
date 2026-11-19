@@ -1,0 +1,44 @@
+{
+  "source": "original/ex08_comprehensive.cu",
+  "kind": "original",
+  "page": "docs/09-kernel-design-part-2.md",
+  "sha256": "7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex08_comprehensive/example"
+      ],
+      "started_utc": "2026-11-19T22:04:49.040477+00:00",
+      "finished_utc": "2026-11-19T22:04:56.471084+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 7.43061433999992,
+      "log": "results/ex08_comprehensive/run-0.log",
+      "log_sha256": "86bfb2a2e210d9098d533838af43f24c4258fb395ffdbaca25b3bd5cea2959aa",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex08_comprehensive.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex08_comprehensive/example"
+    ],
+    "started_utc": "2026-11-19T22:04:47.322867+00:00",
+    "finished_utc": "2026-11-19T22:04:49.040334+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 1.7174710140000116,
+    "log": "results/ex08_comprehensive/compile.log",
+    "log_sha256": "18d8ac6650395e3451504b636be1a68548f15a9c29711d8ebf304a6c14055f95"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

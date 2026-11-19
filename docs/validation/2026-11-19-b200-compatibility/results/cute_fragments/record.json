@@ -1,0 +1,43 @@
+{
+  "source": "docs/examples/advanced/cute_fragments.cu",
+  "kind": "workshop",
+  "sha256": "fae8d94ea8f09f4eaf81c4d72bd231b27a51779d64bec93ece4d57278876ecb0",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/cute_fragments/example"
+      ],
+      "started_utc": "2026-11-19T22:05:03.434975+00:00",
+      "finished_utc": "2026-11-19T22:05:03.436612+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.0016372389998196013,
+      "log": "results/cute_fragments/run-0.log",
+      "log_sha256": "780e63378566121997199fc4b3d81bff5d64bc5a7fd0ce1abc21078ec182a5ae",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cute_fragments.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/cute_fragments/example"
+    ],
+    "started_utc": "2026-11-19T22:05:00.964360+00:00",
+    "finished_utc": "2026-11-19T22:05:03.434754+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 2.470400894000022,
+    "log": "results/cute_fragments/compile.log",
+    "log_sha256": "e575d7099361ff6415367201424645daef73a3577b5a5bc2298fea99bd326540"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

@@ -1,0 +1,164 @@
+[
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 414,
+    "example": "ex01_cluster_inspect.cu",
+    "sha256": "ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 1021,
+    "example": "ex02_ptx_basics.cu",
+    "sha256": "50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 2388,
+    "example": "ex03_state_spaces.cu",
+    "sha256": "1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 3593,
+    "example": "ex04_ptx_pointers.cu",
+    "sha256": "77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 3983,
+    "example": "ex05_ptx_datatypes.cu",
+    "sha256": "711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 4488,
+    "example": "ex06_comprehensive.cu",
+    "sha256": "4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 1759,
+    "example": "ex01_mbarrier_basic.cu",
+    "sha256": "406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 2100,
+    "example": "ex02_war_prevention.cu",
+    "sha256": "d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1473,
+    "example": "ex01_tma_basic.cu",
+    "sha256": "c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1858,
+    "example": "ex02_tma_3d.cu",
+    "sha256": "ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1531,
+    "example": "ex01_bulk_raw.cu",
+    "sha256": "f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1792,
+    "example": "ex02_reduce_async.cu",
+    "sha256": "52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a"
+  },
+  {
+    "page": "docs/06-wgmma-part-1.md",
+    "line": 1324,
+    "example": "ex01_wgmma_basic.cu",
+    "sha256": "282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04"
+  },
+  {
+    "page": "docs/07-wgmma-part-2.md",
+    "line": 1439,
+    "example": "ex01_wgmma_pipeline.cu",
+    "sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 266,
+    "example": "ex01_roofline.cu",
+    "sha256": "d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1037,
+    "example": "ex02_warp_spec.cu",
+    "sha256": "fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1501,
+    "example": "ex03_setmaxnreg.cu",
+    "sha256": "c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 2080,
+    "example": "ex04_circular_buffer.cu",
+    "sha256": "3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 201,
+    "example": "ex05_mbarrier.cu",
+    "sha256": "c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 1029,
+    "example": "ex06_pingpong.cu",
+    "sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 1584,
+    "example": "ex07_epilogue.cu",
+    "sha256": "bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 2295,
+    "example": "ex08_comprehensive.cu",
+    "sha256": "7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964"
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 498,
+    "example": "ex09_streamk_roles.cu",
+    "sha256": "fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf"
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 1507,
+    "example": "ex10_dependent_launch.cu",
+    "sha256": "36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 715,
+    "example": "ex11_nvlink_bandwidth.cu",
+    "sha256": "67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 1456,
+    "example": "ex12_nccl_allreduce.cu",
+    "sha256": "f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 2543,
+    "example": "ex13_hybrid_parallel_training.cu",
+    "sha256": "9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2"
+  }
+]

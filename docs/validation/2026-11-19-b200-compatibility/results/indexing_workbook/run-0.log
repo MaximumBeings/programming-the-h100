@@ -1,0 +1,9 @@
+$ python3 /home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/indexing_workbook.py
+LAYOUTS PASS: row(1,2)=6 column(1,2)=7; nested size=24 span=52 holes=28
+CTA PASS: origin=(640,384) A=655360 B=393216 C=1311104; boundary grid=49 valid_rows=28
+COPY OWNERSHIP PASS: 2590 valid coordinates owned once; 1250 invalid lanes predicated
+FRAGMENTS PASS: 32 lanes x 4 FP32 values cover 16x8 exactly once; lane10=[(2, 4), (2, 5), (10, 4), (10, 5)]
+SWIZZLE PASS: 32-bit fixed-column distinct banks: plain=1 row-XOR=1 column-XOR=32
+PIPELINE MODEL PASS: 15 depth/tile combinations; acquire, ready, read, release and generation checks
+NUMERICS PASS: AB=[[-1, 17], [7, 0]] D=[[0.0, 7.5], [5.0, 2.0]]; 34.359738368 GFLOP / 85 us = 404.232 TFLOP/s (arithmetic example)
+WORKBOOK PASS: 7 CPU-only reference groups; no GPU execution or performance measurement

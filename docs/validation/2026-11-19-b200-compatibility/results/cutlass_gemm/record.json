@@ -1,0 +1,44 @@
+{
+  "source": "docs/examples/advanced/cutlass_gemm.cu",
+  "kind": "workshop",
+  "sha256": "c906aff6157e1759ebe1b7287bc75b78eeb5b35d4e7ef0751f5001c29d568de3",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/cutlass_gemm/example"
+      ],
+      "started_utc": "2026-11-19T22:05:16.235233+00:00",
+      "finished_utc": "2026-11-19T22:05:22.012361+00:00",
+      "exit_code": 2,
+      "timed_out": false,
+      "seconds": 5.777135709000049,
+      "log": "results/cutlass_gemm/run-0.log",
+      "log_sha256": "fac9211df04d3e40649a4262486ba6215b6bf10a89f9545ef79d77304001c89b",
+      "status": "ARCHITECTURE_GUARD"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cutlass_gemm.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/cutlass_gemm/example",
+      "-lcuda"
+    ],
+    "started_utc": "2026-11-19T22:05:03.437031+00:00",
+    "finished_utc": "2026-11-19T22:05:16.235038+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 12.798020900999973,
+    "log": "results/cutlass_gemm/compile.log",
+    "log_sha256": "6231c367e4e3214680fd3d83d6c14c18ef2c0fa551f76ec0414d5144fde4e2c3"
+  },
+  "binary_target": "sm_100",
+  "status": "ARCHITECTURE_GUARD"
+}

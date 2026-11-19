@@ -1,0 +1,16 @@
+[
+  {
+    "name": "blackwell_gemm",
+    "command": [
+      "/home/ubuntu/native-blackwell-20261119/blackwell_gemm"
+    ],
+    "started_utc": "2026-11-19T22:09:48.841170+00:00",
+    "finished_utc": "2026-11-19T22:09:55.169705+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "log": "blackwell_gemm.log",
+    "log_sha256": "0aec409850d915efb8719657a2e7737b4b0ca6376761f8dd7e0e6ae37c79d616",
+    "verified_variants": 0,
+    "status": "PASS"
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "source_sha256": "ddada97ee6cc838db9260380e012599b8ef9e3405a18f4c0e68a571b70201076",
+  "records": [
+    {
+      "command": [
+        "nvcc",
+        "-std=c++17",
+        "-O2",
+        "-arch=sm_100a",
+        "--expt-relaxed-constexpr",
+        "-Icutlass/include",
+        "-Icutlass/tools/util/include",
+        "docs/examples/blackwell/blackwell_gemm_relu.cu",
+        "-o",
+        "blackwell_gemm_relu_fixed",
+        "-lcuda"
+      ],
+      "started_utc": "2026-11-19T22:09:32.157216+00:00",
+      "finished_utc": "2026-11-19T22:10:09.827110+00:00",
+      "exit_code": 0,
+      "log": "relu-fixed-compile.log",
+      "log_sha256": "042b11eeb4507e6283fcdaaf999507e2df1e97c08f1eb878f5179ac5813c3546"
+    },
+    {
+      "command": [
+        "./blackwell_gemm_relu_fixed"
+      ],
+      "started_utc": "2026-11-19T22:10:09.827178+00:00",
+      "finished_utc": "2026-11-19T22:10:16.145374+00:00",
+      "exit_code": 0,
+      "log": "relu-fixed-run.log",
+      "log_sha256": "37fd9849452b95da127997f6e03d117dee9b9fd03f809bb752742a671cf7b2a1"
+    }
+  ]
+}

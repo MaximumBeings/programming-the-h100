@@ -1,0 +1,44 @@
+{
+  "source": "original/ex06_pingpong.cu",
+  "kind": "original",
+  "page": "docs/09-kernel-design-part-2.md",
+  "sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex06_pingpong/example"
+      ],
+      "started_utc": "2026-11-19T22:04:41.495016+00:00",
+      "finished_utc": "2026-11-19T22:04:47.672263+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 6.1772508690000905,
+      "log": "results/ex06_pingpong/run-0.log",
+      "log_sha256": "b9066dc6aa33d6b01617e3a0d7a4c3008f82a798bca3710ea7e2fcdb124541ec",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex06_pingpong.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex06_pingpong/example"
+    ],
+    "started_utc": "2026-11-19T22:04:40.828764+00:00",
+    "finished_utc": "2026-11-19T22:04:41.494852+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.6660936949999723,
+    "log": "results/ex06_pingpong/compile.log",
+    "log_sha256": "2a4473fe1648e15855fb2b487b294d0031d94374ceee23d400373854455a170b"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

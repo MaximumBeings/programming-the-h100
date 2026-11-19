@@ -73,6 +73,11 @@ jobs:
           python3 -m py_compile tools/run_cutlass_attention.py
           python3 tools/run_cutlass_attention.py --help
 
+      - name: Verify native B200 appendix evidence
+        run: |
+          python3 tools/verify_blackwell_appendix.py
+          python3 tools/tests/test_blackwell_evidence.py
+
       - name: Verify SVG readability
         run: python3 tools/verify_svg_readability.py
 

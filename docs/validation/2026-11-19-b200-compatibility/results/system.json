@@ -1,0 +1,56 @@
+[
+  {
+    "command": [
+      "nvidia-smi",
+      "--query-gpu=name,uuid,compute_cap,driver_version,memory.total",
+      "--format=csv"
+    ],
+    "started_utc": "2026-11-19T22:04:10.085855+00:00",
+    "finished_utc": "2026-11-19T22:04:10.250260+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.16440553699999327,
+    "log": "results/gpus.log",
+    "log_sha256": "6b6f3890f70b8b7a2a9da0bf6d669e3d2a3c664eecd273340fa0d424a23fc5c8"
+  },
+  {
+    "command": [
+      "nvcc",
+      "--version"
+    ],
+    "started_utc": "2026-11-19T22:04:10.250399+00:00",
+    "finished_utc": "2026-11-19T22:04:10.254189+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.003790854999920157,
+    "log": "results/nvcc.log",
+    "log_sha256": "7665bd15fcd06506c52a5d04eee5de90155154bae8b6d47be529739c301865fe"
+  },
+  {
+    "command": [
+      "nvidia-smi",
+      "topo",
+      "-m"
+    ],
+    "started_utc": "2026-11-19T22:04:10.254265+00:00",
+    "finished_utc": "2026-11-19T22:04:11.921742+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 1.667483582999921,
+    "log": "results/topology.log",
+    "log_sha256": "8c1447d422253acb1544ba61aaa30fcc6f82fa01a034346b66621192ee895e46"
+  },
+  {
+    "command": [
+      "cat",
+      "/etc/os-release"
+    ],
+    "started_utc": "2026-11-19T22:04:11.921853+00:00",
+    "finished_utc": "2026-11-19T22:04:11.923650+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.00179805999994187,
+    "log": "results/os.log",
+    "log_sha256": "5ee0476e8067af88029ddc687779db37a3c7891e26d74d58c5ab7e98eb16fc3e"
+  }
+]

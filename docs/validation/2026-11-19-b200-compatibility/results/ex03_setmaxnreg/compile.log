@@ -1,0 +1,4 @@
+$ nvcc -std=c++17 -O2 -arch=sm_100 --expt-relaxed-constexpr -I/home/ubuntu/h100-book-b200-20261119/cutlass/include -I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include /home/ubuntu/h100-book-b200-20261119/original/ex03_setmaxnreg.cu -o /home/ubuntu/h100-book-b200-20261119/results/ex03_setmaxnreg/example
+ptxas /tmp/tmpxft_000039dd_00000000-6_ex03_setmaxnreg.ptx, line 33; error   : Instruction 'setmaxnreg.dec' not supported on .target 'sm_100'
+ptxas /tmp/tmpxft_000039dd_00000000-6_ex03_setmaxnreg.ptx, line 38; error   : Instruction 'setmaxnreg.inc' not supported on .target 'sm_100'
+ptxas fatal   : Ptx assembly aborted due to errors

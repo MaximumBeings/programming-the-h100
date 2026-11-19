@@ -1,0 +1,38 @@
+{
+  "source": "docs/examples/advanced/fp4_reference.py",
+  "kind": "cpu_reference",
+  "sha256": "ffbaaa8cac5e92f51c4035b7e92ef6fab9a55537bd262c47d2fe9998fc766977",
+  "runs": [
+    {
+      "command": [
+        "python3",
+        "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/fp4_reference.py"
+      ],
+      "started_utc": "2026-11-19T22:05:08.545264+00:00",
+      "finished_utc": "2026-11-19T22:05:08.561219+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.015955775999827893,
+      "log": "results/fp4_reference/run-0.log",
+      "log_sha256": "ba4ca5e1184f4753db0179219a62de760bbf5bcf33f35d42726f76acbfa76455",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "python3",
+      "-m",
+      "py_compile",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/fp4_reference.py"
+    ],
+    "started_utc": "2026-11-19T22:05:08.512676+00:00",
+    "finished_utc": "2026-11-19T22:05:08.545143+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.032471769000039785,
+    "log": "results/fp4_reference/compile.log",
+    "log_sha256": "6c7b643b662ba8181f454c6d6a622a81701ac5bb8647d8357e5d674441d27638"
+  },
+  "binary_target": "cpu",
+  "status": "COMPLETED"
+}

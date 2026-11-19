@@ -1,0 +1,44 @@
+{
+  "source": "original/ex05_mbarrier.cu",
+  "kind": "original",
+  "page": "docs/09-kernel-design-part-2.md",
+  "sha256": "c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex05_mbarrier/example"
+      ],
+      "started_utc": "2026-11-19T22:04:39.089314+00:00",
+      "finished_utc": "2026-11-19T22:04:47.322191+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 8.232886170000029,
+      "log": "results/ex05_mbarrier/run-0.log",
+      "log_sha256": "0223d8658fd1c9de6e1106ecbaad8bacb9d5d07038acb20e6a6e177e34bee623",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex05_mbarrier.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex05_mbarrier/example"
+    ],
+    "started_utc": "2026-11-19T22:04:38.473255+00:00",
+    "finished_utc": "2026-11-19T22:04:39.089193+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.6159409259998938,
+    "log": "results/ex05_mbarrier/compile.log",
+    "log_sha256": "fbc19d0e14efefa0369105f5665812299fb25e42ac70ee234258e48802868388"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

@@ -1,0 +1,43 @@
+{
+  "source": "docs/examples/advanced/cute_layouts.cu",
+  "kind": "workshop",
+  "sha256": "39e99111ba0dd6a48ecb812bd9ce6afe918e557407c8160a6dd8f8b1c530ab3f",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/cute_layouts/example"
+      ],
+      "started_utc": "2026-11-19T22:05:05.827441+00:00",
+      "finished_utc": "2026-11-19T22:05:05.829294+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.0018543979999776639,
+      "log": "results/cute_layouts/run-0.log",
+      "log_sha256": "2e9d8ff11123c31a11dac94837d58a92e9e14f1b69cd5df9870603fabb0867b4",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/docs/examples/advanced/cute_layouts.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/cute_layouts/example"
+    ],
+    "started_utc": "2026-11-19T22:05:01.201411+00:00",
+    "finished_utc": "2026-11-19T22:05:05.827262+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 4.625862622000113,
+    "log": "results/cute_layouts/compile.log",
+    "log_sha256": "6c9e7531fe846f4b2e4859cd3a9927aabbd090c240da3b5734b0ebde236d94ff"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}

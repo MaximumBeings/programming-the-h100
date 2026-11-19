@@ -1,0 +1,44 @@
+{
+  "source": "original/ex02_warp_spec.cu",
+  "kind": "original",
+  "page": "docs/08-kernel-design-part-1.md",
+  "sha256": "fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675",
+  "runs": [
+    {
+      "command": [
+        "/home/ubuntu/h100-book-b200-20261119/results/ex02_warp_spec/example"
+      ],
+      "started_utc": "2026-11-19T22:04:38.304203+00:00",
+      "finished_utc": "2026-11-19T22:04:47.489147+00:00",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 9.184949482000093,
+      "log": "results/ex02_warp_spec/run-0.log",
+      "log_sha256": "1af052328617067f0fd41ab01c314ec4f3f9f94cc7b4d9013aa81c03e981d926",
+      "status": "COMPLETED"
+    }
+  ],
+  "compile": {
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-O2",
+      "-arch=sm_100",
+      "--expt-relaxed-constexpr",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/include",
+      "-I/home/ubuntu/h100-book-b200-20261119/cutlass/tools/util/include",
+      "/home/ubuntu/h100-book-b200-20261119/original/ex02_warp_spec.cu",
+      "-o",
+      "/home/ubuntu/h100-book-b200-20261119/results/ex02_warp_spec/example"
+    ],
+    "started_utc": "2026-11-19T22:04:37.688473+00:00",
+    "finished_utc": "2026-11-19T22:04:38.304076+00:00",
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 0.6156073419999757,
+    "log": "results/ex02_warp_spec/compile.log",
+    "log_sha256": "bdcc738c356f78857233fa75768818c851b0dc7a375ba4205803a76911013f15"
+  },
+  "binary_target": "sm_100",
+  "status": "COMPLETED"
+}
