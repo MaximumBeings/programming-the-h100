@@ -59,7 +59,7 @@ The corrected attention reference compiled with `-Wall -Wextra -Werror` and `ATT
 
 | Review ID | Correction |
 | --- | --- |
-| B2-Ch02-1 | Both DSMEM programs rendezvous before remote storage owners exit. GPU rerun pending. |
+| B2-Ch02-1 | Both DSMEM programs rendezvous before remote storage owners exit. Current sources passed the November 21 H100 rerun and applicable sanitizer checks. |
 | B2-Ch02-2 | Multicast sketch distinguishes cluster initialization, per-destination transaction barriers, mask and completion waits. |
 | B2-Ch03-1 | Named barriers count all 192 participating producer/consumer threads and separate ready/release generations. |
 | B2-Ch04-1 | 128-byte-swizzled BF16 example uses a 64-element contiguous extent; descriptor, byte budget and walkthrough agree. |

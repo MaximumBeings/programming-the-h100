@@ -458,7 +458,7 @@ int main() {
 ```
 
 <!-- revalidation:start:ex05_mbarrier.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:42.375062+00:00`. Executed UTC: `2026-11-18T11:19:43.203635+00:00`.
 
@@ -504,7 +504,7 @@ Handshake Results:
 
 
 <!-- validation:start:ex05_mbarrier.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 **Captured output — ex05_mbarrier.cu**
 
@@ -1206,7 +1206,7 @@ int main() {
 ```
 
 <!-- revalidation:start:ex06_pingpong.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:43.758040+00:00`. Executed UTC: `2026-11-18T11:19:44.640676+00:00`.
 
@@ -1257,7 +1257,7 @@ Ping-Pong Behavior Check:
 
 
 <!-- validation:start:ex06_pingpong.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 **Captured output — ex06_pingpong.cu**
 
@@ -2586,7 +2586,7 @@ int main(int argc, char** argv) {
 ```
 
 <!-- revalidation:start:ex08_comprehensive.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:46.577755+00:00`. Executed UTC: `2026-11-18T11:19:47.903815+00:00`.
 
@@ -2652,7 +2652,7 @@ Design Summary:
 
 
 <!-- validation:start:ex08_comprehensive.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 **Captured output — ex08_comprehensive.cu**
 

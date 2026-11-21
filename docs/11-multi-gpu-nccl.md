@@ -881,7 +881,7 @@ int main() {
 ```
 
 <!-- revalidation:start:ex11_nvlink_bandwidth.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:53.204677+00:00`. Executed UTC: `2026-11-18T11:19:54.198165+00:00`.
 
@@ -1732,7 +1732,7 @@ int main() {
 ```
 
 <!-- revalidation:start:ex12_nccl_allreduce.cu -->
-> **Historical source:** this capture predates the comment correction. GPU revalidation pending for the current source hash; numerical code and captured logs are unchanged.
+> **Historical source:** this capture predates the comment correction. The current source hash passed the [November 21 H100 rerun](validation-2026-11-21.md); this earlier numerical capture remains unchanged.
 
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:56.952819+00:00`. Executed UTC: `2026-11-18T11:19:58.343801+00:00`.
 

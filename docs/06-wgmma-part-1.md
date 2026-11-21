@@ -1577,7 +1577,7 @@ int main() {
 ```
 
 <!-- revalidation:start:ex01_wgmma_basic.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:32.743235+00:00`. Executed UTC: `2026-11-18T11:19:34.146676+00:00`.
 
@@ -1612,7 +1612,7 @@ Sample d[0] = -0.246094 (expected -0.246094)
 
 
 <!-- validation:start:ex01_wgmma_basic.cu -->
-> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+> **Historical source:** this capture predates the November 21 correction. The corrected current source passed the [November 21 H100 rerun](validation-2026-11-21.md); this older archive remains unchanged.
 
 **Captured output — ex01_wgmma_basic.cu**
 

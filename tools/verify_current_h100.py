@@ -35,6 +35,10 @@ def verified_sources(root=ROOT):
  source=base/'h100-attention-20261121/attention_online.cu'
  if sha(source)!=sha(root/'docs/examples/attention/attention_online.cu'):raise ValueError('Current attention identity differs')
  if 'CUDA ATTENTION PASS: seven cases' not in (sup/'attention-memcheck.log').read_text():raise ValueError('Missing attention numerical checks')
+ for page in {key[0] for key in merged} | {'docs/30-cutlass-attention-foundations.md','docs/review-fixes-2026-11-21.md','docs/validation-b200.md'}:
+  text=(root/page).read_text()
+  for stale in ['GPU revalidation pending for the current source','GPU rerun pending.','current corrections and pending reruns']:
+   if stale in text:raise ValueError('Stale pending claim after successful rerun: '+page)
  merged[('docs/30-cutlass-attention-foundations.md','attention_online.cu')]=sha(source)
  return merged
 if __name__=='__main__':
