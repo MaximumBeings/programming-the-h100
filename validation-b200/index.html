@@ -2725,7 +2725,7 @@
 <h2 id="limits-of-these-records">Limits of these records<a class="headerlink" href="#limits-of-these-records" title="Permanent link">&para;</a></h2>
 <p>All printed <code>-arch=sm_90a</code> book commands produce Hopper-specific GPU code that cannot run on B200. This pass rebuilt applicable sources for <code>sm_100</code>, using <code>sm_100a</code> for architecture-specific register resizing. Changing a flag alone does not port WGMMA. The setmaxnreg example checks value preservation, not measured register redistribution.</p>
 <p>The source/hash/log inventories check internal consistency, not independent hardware attestation or proof that a log is genuine. Evidence tarballs and some ad hoc follow-up drivers were not committed. The committed command arrays preserve those actual invocations; the compatibility runner log lacks its final summary line, so use the per-command records and exits. The original WGMMA build diagnostics and fallback outcomes are distinct; the linked run outputs alone do not prove the compiler diagnostics.</p>
-<p>The ex11 capture includes warning #549-D from the historical self-initializing macro. Its zero exit does not validate that error path. The four archived source copies are immutable evidence of that defect, not current recommended sources. See the <a href="../review-fixes-2026-11-21/">current corrections and pending reruns</a>.</p>
+<p>The ex11 capture includes warning #549-D from the historical self-initializing macro. Its zero exit does not validate that error path. The four archived source copies are immutable evidence of that defect, not current recommended sources. See the <a href="../review-fixes-2026-11-21/">current corrections and completed H100 reruns</a>.</p>
 
 
 
