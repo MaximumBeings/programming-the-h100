@@ -1,0 +1,55 @@
+[
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 714,
+    "example": "ex11_nvlink_bandwidth.cu",
+    "sha256": "e42e582e8510253e85a7eaf56e9af540493068b93fde85502c7a2026e63162d8",
+    "timestamp": "2026-11-21T13:20:56.863308+00:00",
+    "required_gpus": 2,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-two-gpu-20261121/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu",
+      "-o",
+      "/tmp/h100-two-gpu-20261121/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "run_command": [
+      "/tmp/h100-two-gpu-20261121/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:56.863524+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:57.871747+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:21:00.684866+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 1461,
+    "example": "ex12_nccl_allreduce.cu",
+    "sha256": "918661e2094757e013ddbce152ef992c3b52a4cb218bd84a09fe5e902c693e7b",
+    "timestamp": "2026-11-21T13:21:00.685022+00:00",
+    "required_gpus": 2,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-two-gpu-20261121/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu",
+      "-o",
+      "/tmp/h100-two-gpu-20261121/11-multi-gpu-nccl/ex12_nccl_allreduce/example",
+      "-lnccl"
+    ],
+    "run_command": [
+      "/tmp/h100-two-gpu-20261121/11-multi-gpu-nccl/ex12_nccl_allreduce/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:21:00.685161+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:21:02.098190+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:21:03.772278+00:00"
+  }
+]

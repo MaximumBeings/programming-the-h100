@@ -1,0 +1,708 @@
+[
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 421,
+    "example": "ex01_cluster_inspect.cu",
+    "sha256": "f4324866efbb03aa6ac27632000d031c87b1423a6f5755133aa96bbb8510389a",
+    "timestamp": "2026-11-21T13:19:52.899510+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:19:52.899696+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:19:55.869270+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:19:56.266142+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 1044,
+    "example": "ex02_ptx_basics.cu",
+    "sha256": "968130f4fabb8a50aa126c297105214ddfa15f03d554bf829266335c300cc426",
+    "timestamp": "2026-11-21T13:19:56.266280+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:19:56.266489+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:19:57.203281+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:19:57.511016+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 2344,
+    "example": "ex03_state_spaces.cu",
+    "sha256": "1ae7bdef0dbe25d98cc52b89f78a3b0562def59c985a9a8db1286c79bee47fc8",
+    "timestamp": "2026-11-21T13:19:57.511209+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex03_state_spaces/ex03_state_spaces.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex03_state_spaces/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex03_state_spaces/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:19:57.511387+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:19:58.358001+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:19:58.666786+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 3549,
+    "example": "ex04_ptx_pointers.cu",
+    "sha256": "77953a91b667b873d64296e0437bb2ca69234210f9dbdb9998125ed3a7512c8c",
+    "timestamp": "2026-11-21T13:19:58.666997+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex04_ptx_pointers/ex04_ptx_pointers.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex04_ptx_pointers/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex04_ptx_pointers/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:19:58.667129+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:19:59.738786+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:00.050973+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 3939,
+    "example": "ex05_ptx_datatypes.cu",
+    "sha256": "711a86340850bdbae0dfd8b9d809ad27e7c6da2b057253d8f667a698e9630220",
+    "timestamp": "2026-11-21T13:20:00.051187+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex05_ptx_datatypes/ex05_ptx_datatypes.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex05_ptx_datatypes/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex05_ptx_datatypes/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:00.051328+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:01.371458+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:01.770020+00:00"
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "line": 4444,
+    "example": "ex06_comprehensive.cu",
+    "sha256": "d0363f7713bdce71b4087b1d9dbc57141d586a8d109a3931a4a207ab8ab773ad",
+    "timestamp": "2026-11-21T13:20:01.770255+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:01.770403+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:04.519739+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:04.923335+00:00"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 1763,
+    "example": "ex01_mbarrier_basic.cu",
+    "sha256": "406ff5009b3c3ef7db54ee6660fc4c1159bd75790b7ae24f1196ae8d651664c7",
+    "timestamp": "2026-11-21T13:20:04.923563+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/03-asynchronicity-mbarrier/ex01_mbarrier_basic/ex01_mbarrier_basic.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/03-asynchronicity-mbarrier/ex01_mbarrier_basic/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:04.923732+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:05.778147+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:06.083484+00:00"
+  },
+  {
+    "page": "docs/03-asynchronicity-mbarrier.md",
+    "line": 2104,
+    "example": "ex02_war_prevention.cu",
+    "sha256": "d0d3b587edde9a7c77812263f13b5c29de73d5d8e26e9d9dc068e828b0761395",
+    "timestamp": "2026-11-21T13:20:06.083727+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/03-asynchronicity-mbarrier/ex02_war_prevention/ex02_war_prevention.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/03-asynchronicity-mbarrier/ex02_war_prevention/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:06.083854+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:06.921104+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:07.226315+00:00"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1460,
+    "example": "ex01_tma_basic.cu",
+    "sha256": "c94e84ae2a4cf9dbd8d2c0c8a65c40399613eca6a5a40b262109c9a2f5f57caa",
+    "timestamp": "2026-11-21T13:20:07.226558+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/04-cutensormap-tma-swizzling/ex01_tma_basic/ex01_tma_basic.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/04-cutensormap-tma-swizzling/ex01_tma_basic/example",
+      "-lcuda"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/04-cutensormap-tma-swizzling/ex01_tma_basic/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:07.226737+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:08.113319+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:08.423002+00:00"
+  },
+  {
+    "page": "docs/04-cutensormap-tma-swizzling.md",
+    "line": 1845,
+    "example": "ex02_tma_3d.cu",
+    "sha256": "ad620dba57d0780b5d18871d8593e783a2b269b6442958110c398daaf8ab0173",
+    "timestamp": "2026-11-21T13:20:08.423320+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/04-cutensormap-tma-swizzling/ex02_tma_3d/ex02_tma_3d.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/04-cutensormap-tma-swizzling/ex02_tma_3d/example",
+      "-lcuda"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/04-cutensormap-tma-swizzling/ex02_tma_3d/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:08.423456+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:09.528640+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:09.849467+00:00"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1538,
+    "example": "ex01_bulk_raw.cu",
+    "sha256": "f355b8990f51c2e2f2784e0d693d90653acf4e07e36eae714b1ee434aa92a805",
+    "timestamp": "2026-11-21T13:20:09.849750+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/ex01_bulk_raw.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex01_bulk_raw/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:09.849901+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:10.688047+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:10.994358+00:00"
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "line": 1799,
+    "example": "ex02_reduce_async.cu",
+    "sha256": "dd125d7cb35b0c188bc09e9d471a366fc4321add59efa4210f2d5b82f5832132",
+    "timestamp": "2026-11-21T13:20:10.994647+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:10.994764+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:11.830683+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:12.150422+00:00"
+  },
+  {
+    "page": "docs/06-wgmma-part-1.md",
+    "line": 1320,
+    "example": "ex01_wgmma_basic.cu",
+    "sha256": "a557eb99705eca84366ee23ebd3bea87eadb25edbc69310e5ac9da9a7d3835e1",
+    "timestamp": "2026-11-21T13:20:12.150715+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/06-wgmma-part-1/ex01_wgmma_basic/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/06-wgmma-part-1/ex01_wgmma_basic/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:12.150898+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:13.529726+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:13.849193+00:00"
+  },
+  {
+    "page": "docs/07-wgmma-part-2.md",
+    "line": 1442,
+    "example": "ex01_wgmma_pipeline.cu",
+    "sha256": "76960b5ead233cd05431fe9c4c7847f859e3270a7407461f4dbe91006c1c2790",
+    "timestamp": "2026-11-21T13:20:13.849491+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/07-wgmma-part-2/ex01_wgmma_pipeline/ex01_wgmma_pipeline.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/07-wgmma-part-2/ex01_wgmma_pipeline/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/07-wgmma-part-2/ex01_wgmma_pipeline/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:13.849663+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:15.224205+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:15.623393+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 274,
+    "example": "ex01_roofline.cu",
+    "sha256": "4f3798b5519e14242c962b0f883327501d63e27f41d34afe2de840c67655761c",
+    "timestamp": "2026-11-21T13:20:15.623706+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex01_roofline/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex01_roofline/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:15.623876+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:16.479873+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:16.793056+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1046,
+    "example": "ex02_warp_spec.cu",
+    "sha256": "fb1010dd4b8597fc35c1f99944db4a44e052228546c7f1e794f78560043be675",
+    "timestamp": "2026-11-21T13:20:16.793391+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex02_warp_spec/ex02_warp_spec.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex02_warp_spec/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex02_warp_spec/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:16.793527+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:17.609973+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:17.919327+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 1510,
+    "example": "ex03_setmaxnreg.cu",
+    "sha256": "c640beecccfe53b9968d7e5f14e939dfaa0966c45829c480694bfa45556e2292",
+    "timestamp": "2026-11-21T13:20:17.919723+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex03_setmaxnreg/ex03_setmaxnreg.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex03_setmaxnreg/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex03_setmaxnreg/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:17.919851+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:18.730727+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:19.050653+00:00"
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "line": 2089,
+    "example": "ex04_circular_buffer.cu",
+    "sha256": "3ea5fd796a9fa77c9d2c002bdf8a440c9071f248946514164134ea66c41c4665",
+    "timestamp": "2026-11-21T13:20:19.051029+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex04_circular_buffer/ex04_circular_buffer.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex04_circular_buffer/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/08-kernel-design-part-1/ex04_circular_buffer/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:19.051168+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:20.027838+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:20.427397+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 211,
+    "example": "ex05_mbarrier.cu",
+    "sha256": "ee8a728dbb60691c48a16525ccdb2fbdac87b40658ebb110d153efcb9d343edc",
+    "timestamp": "2026-11-21T13:20:20.427753+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex05_mbarrier/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex05_mbarrier/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:20.427963+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:21.264416+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:21.570067+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 1017,
+    "example": "ex06_pingpong.cu",
+    "sha256": "24cae60ab9d067e7337716ff196bf9ff722167c07ff6d05e946b66b20702dccf",
+    "timestamp": "2026-11-21T13:20:21.570448+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex06_pingpong/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex06_pingpong/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:21.570574+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:22.457712+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:22.762671+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 1575,
+    "example": "ex07_epilogue.cu",
+    "sha256": "bfdc7b7c4d6b42fb42aa5ee46b9ca7611ca2b0ba6be64c12bbdb05a7baff5bff",
+    "timestamp": "2026-11-21T13:20:22.763108+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex07_epilogue/ex07_epilogue.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex07_epilogue/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex07_epilogue/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:22.763235+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:23.638079+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:23.950104+00:00"
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "line": 2286,
+    "example": "ex08_comprehensive.cu",
+    "sha256": "dc235caa169f07990a5ab75fbd6779feab3142180ed4f0d1e5675a4c4601508b",
+    "timestamp": "2026-11-21T13:20:23.950477+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex08_comprehensive/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/09-kernel-design-part-2/ex08_comprehensive/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:23.950618+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:25.297356+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:25.709910+00:00"
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 506,
+    "example": "ex09_streamk_roles.cu",
+    "sha256": "fd8d2d61ed5f5245d114196d678918a58f33401445342963fdaaafef32499fcf",
+    "timestamp": "2026-11-21T13:20:25.710337+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/10-stream-k-scheduling/ex09_streamk_roles/ex09_streamk_roles.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/10-stream-k-scheduling/ex09_streamk_roles/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/10-stream-k-scheduling/ex09_streamk_roles/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:25.710509+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:28.468802+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:28.869202+00:00"
+  },
+  {
+    "page": "docs/10-stream-k-scheduling.md",
+    "line": 1473,
+    "example": "ex10_dependent_launch.cu",
+    "sha256": "36b6313722fe43c219e825b2fe4c4e0b5cbb1630ceb02d3fe1624c2c242a7640",
+    "timestamp": "2026-11-21T13:20:28.869550+00:00",
+    "required_gpus": 1,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/10-stream-k-scheduling/ex10_dependent_launch/ex10_dependent_launch.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/10-stream-k-scheduling/ex10_dependent_launch/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/10-stream-k-scheduling/ex10_dependent_launch/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:28.869663+00:00",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "run_timestamp": "2026-11-21T13:20:29.712389+00:00",
+    "status": "PASS",
+    "finished_timestamp": "2026-11-21T13:20:30.020906+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 714,
+    "example": "ex11_nvlink_bandwidth.cu",
+    "sha256": "e42e582e8510253e85a7eaf56e9af540493068b93fde85502c7a2026e63162d8",
+    "timestamp": "2026-11-21T13:20:30.021291+00:00",
+    "required_gpus": 2,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex11_nvlink_bandwidth/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:30.021456+00:00",
+    "compile_exit": 0,
+    "run_exit": "unexecuted",
+    "status": "BLOCKED_HARDWARE",
+    "finished_timestamp": "2026-11-21T13:20:31.041699+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 1461,
+    "example": "ex12_nccl_allreduce.cu",
+    "sha256": "918661e2094757e013ddbce152ef992c3b52a4cb218bd84a09fe5e902c693e7b",
+    "timestamp": "2026-11-21T13:20:31.042153+00:00",
+    "required_gpus": 2,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex12_nccl_allreduce/example",
+      "-lnccl"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex12_nccl_allreduce/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:31.042293+00:00",
+    "compile_exit": 0,
+    "run_exit": "unexecuted",
+    "status": "BLOCKED_HARDWARE",
+    "finished_timestamp": "2026-11-21T13:20:32.461450+00:00"
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "line": 2531,
+    "example": "ex13_hybrid_parallel_training.cu",
+    "sha256": "9a8dfd7c3904304b8cc1f344d6c91f4bb8748491a96cd6699455f9f012818cb2",
+    "timestamp": "2026-11-21T13:20:32.461889+00:00",
+    "required_gpus": 8,
+    "command": [
+      "nvcc",
+      "-std=c++17",
+      "-arch=sm_90a",
+      "-O2",
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu",
+      "-o",
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex13_hybrid_parallel_training/example",
+      "-lnccl",
+      "-lcublas",
+      "-Xcompiler",
+      "-pthread"
+    ],
+    "run_command": [
+      "/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex13_hybrid_parallel_training/example"
+    ],
+    "compile_timestamp": "2026-11-21T13:20:32.462110+00:00",
+    "compile_exit": 0,
+    "run_exit": "unexecuted",
+    "status": "BLOCKED_HARDWARE",
+    "finished_timestamp": "2026-11-21T13:20:34.492472+00:00"
+  }
+]

@@ -1,0 +1,3 @@
+docs/11-multi-gpu-nccl.md ex11_nvlink_bandwidth.cu PASS 0 0
+docs/11-multi-gpu-nccl.md ex12_nccl_allreduce.cu PASS 0 0
+Evidence: /tmp/h100-two-gpu-20261121

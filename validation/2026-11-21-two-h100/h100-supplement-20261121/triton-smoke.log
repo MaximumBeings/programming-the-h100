@@ -1,0 +1,28 @@
+{
+  "started_utc": "2026-11-21T13:20:55.723495+00:00",
+  "platform": "Linux-6.8.0-1064-nvidia-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "torch": "2.7.0",
+  "triton": "3.3.0",
+  "torch_cuda": "12.8",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "capability": [
+    9,
+    0
+  ],
+  "scope": "compiled GPU correctness; no performance measurement"
+}
+PASS strided-add N=1; complete output and both guards
+PASS strided-add N=137; complete output and both guards
+PASS strided-add N=4099; complete output and both guards
+PASS ragged-gemm M=17 N=23 K=19; complete CPU FP64 oracle
+PASS ragged-gemm M=16 N=16 K=16; complete CPU FP64 oracle
+PASS ragged-gemm M=1 N=7 K=33; complete CPU FP64 oracle
+PASS attention M=17 N=23 D=8 causal=False; CPU FP64 oracle
+PASS attention M=17 N=23 D=8 causal=True; CPU FP64 oracle
+PASS attention M=20 N=20 D=8 causal=False; CPU FP64 oracle
+PASS attention M=20 N=20 D=8 causal=True; CPU FP64 oracle
+PASS attention M=3 N=19 D=16 causal=False; CPU FP64 oracle
+PASS attention M=3 N=19 D=16 causal=True; CPU FP64 oracle
+GPU SMOKE PASS: 12 compiled GPU cases; not the complete chapter suite
