@@ -47,7 +47,7 @@ mkdocs.yml                       site config and nav
 
 Historical evidence covers 26 H100 program revisions and a later revised training program on eight A100 GPUs across the recorded H100 and A100 hosts on November 17–18, 2026. The [complete validation summary](docs/final-audit.md) combines 26 successful H100 workloads with the [eight-A100 training execution](docs/eight-gpu-validation.md), which checks every final weight and per-step loss against an independent CPU reference.
 
-The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **Seventeen original-program revisions retain matching execution records; ten corrected revisions need GPU revalidation** across the H100 and eight-A100 hosts. The [additional H100 record](docs/revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
+The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **Sixteen original-program revisions retain matching execution records; eleven corrected revisions need GPU revalidation** across the H100 and eight-A100 hosts. The [additional H100 record](docs/revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 
 The records retain exact sources, commands, UTC timestamps, topology and raw logs. Original raw archives remain downloadable for provenance. The portable training program targets `sm_80` on A100; Hopper-specific WGMMA and TMA have H100 records. Chapter 12’s executable recurrence reference remains separate from its FA3 skeleton; Chapter 13 distinguishes captured profiles from illustrative diagnoses.
 

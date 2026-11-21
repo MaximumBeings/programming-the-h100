@@ -47,12 +47,12 @@ mbarrier — The Core Concept
 
   ARRIVE (signal that work is done):
     mbarrier.arrive [&bar];          // thread signals the barrier
-    mbarrier.arrive.expect_tx [&bar], BYTES; // TMA hardware signals it
-                                    // after moving BYTES to SMEM
+    mbarrier.arrive.expect_tx [&bar], BYTES; // producer thread arrives
+                                    // and adds the expected byte count
 
   WAIT (block until barrier is complete):
-    mbarrier.try_wait.parity [&bar], phase; // thread waits for expected
-                                             // number of arrivals
+    mbarrier.try_wait.parity [&bar], phase; // wait for both zero pending arrivals
+                                             // and zero transaction bytes
 
   ─── The Two-Barrier Protocol ─────────────────────────────────────
 
@@ -60,7 +60,8 @@ mbarrier — The Core Concept
 
   FULL barrier:
     Meaning: "Data is ready for the consumer to read"
-    Who arrives: Producer (via TMA hardware automatically after load)
+    Who arrives: Producer thread via arrive.expect_tx
+    Who completes transactions: TMA via complete_tx
     Who waits: Consumer (before starting WGMMA on this stage's data)
 
   EMPTY barrier:
@@ -2050,7 +2051,7 @@ Stream-K — Core Idea and Implementation
   Some SMs "own" a full output tile:
     They compute all K_TILES for that tile → write output directly.
   Some SMs "split" a tile with a neighbor:
-    They compute K/2 of the K-tiles → write partial to scratchpad.
+    They compute their assigned K interval, often unequal → write partial.
     The neighbor reads the scratchpad, adds its partial → writes output.
 
   ─── The Fixup Step ──────────────────────────────────────────────
@@ -2069,7 +2070,8 @@ Stream-K — Core Idea and Implementation
     Writes result to output[T]. (Epilogue applied here.)
 
   The workspace is a global memory buffer of size = num_split_tiles × tile_bytes.
-  Only the "tail" tiles near wave boundaries are split.
+  The set of split tiles depends on the partition; nearly every tile
+  can be split in this 133-tile example.
 
   ─── Hybrid Strategy (most production kernels) ────────────────────
   Apply standard data-parallel scheduling to tiles that DON'T cross wave
@@ -2080,8 +2082,8 @@ Stream-K — Core Idea and Implementation
   atomic synchronization). For tiles that don't need splitting, standard
   scheduling is faster and simpler. Only the tail needs Stream-K.
 
-  Threshold: If tail wave is > 50% full, use data-parallel.
-             If tail wave is < 50% full, use Stream-K for the tail.
+  Compare data-parallel and hybrid partitions including fixup costs;
+  there is no universal 50%-full selection rule.
 ```
 
 ---
@@ -2270,15 +2272,14 @@ one that demonstrates clamping.
 ═══════════════════════════════════════════════════════════════════
   FILE:    ex08_comprehensive.cu
   COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex08_comprehensive.cu -o ex08
-           NOTE: Uses cooperative_groups for cluster API.
-                 Persistent scheduling + warp spec require sm_90a.
+           NOTE: Uses ordinary CUDA and __syncthreads; no cluster API,
+                 WGMMA, setmaxnreg or mbarrier instructions are used.
   RUN:     ./ex08
   EXPECT:  All 256×256 output elements verified against reference GEMM+ReLU.
            Persistent loop correctly processes all 16 tiles.
            Warp specialization confirmed: WG0 only loads, WG1 only computes.
 
-  HARDWARE: Requires Hopper (H100) or Blackwell. A100 users can remove
-            warp spec and use a single warpgroup version.
+  HARDWARE: Ordinary CUDA, sm_80+; no Hopper-only instruction is required.
 ═══════════════════════════════════════════════════════════════════
 ```
 

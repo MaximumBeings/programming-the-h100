@@ -43,7 +43,7 @@ Prerequisites Checklist
     ★ Partial sums, workspaces, and fixup reduction
     ★ Lock arrays — atomic progress tracking
     ★ Group locality — L2 cache affinity under Stream-K
-    ★ HyTiS — heterogeneous tile size alternative
+    ★ spatial tail subdivision — heterogeneous tile size alternative
     ★ GDC instructions (griddepcontrol) — hardware grid handoff
     ★ Programmatic stream serialization — host launch API
     ★ Dependent grid overlap — the producer/consumer kernel pair
@@ -88,7 +88,7 @@ Compile Patterns
 4.  [The Lock Array — Atomic Progress Tracking](#4-the-lock-array)
 5.  [Deterministic vs Non-Deterministic Reduction](#5-deterministic-vs-non-deterministic-reduction)
 6.  [Groups — L2 Locality Under Stream-K](#6-groups)
-7.  [HyTiS — The Spatial Alternative](#7-spatial-tail-subdivision)
+7.  [spatial tail subdivision — The Spatial Alternative](#7-spatial-tail-subdivision)
 8.  [Stream Serialization — The Utilization Gap](#8-stream-serialization-the-utilization-gap)
 9.  [GDC Instructions — Hardware Grid Handoff](#9-gdc-instructions-hardware-grid-handoff)
 10. [Host Launch Authority — Programmatic Serialization](#10-host-launch-authority-programmatic-serialization)
@@ -1746,7 +1746,7 @@ launch_dependents Placement — Decision Guide
         // done — block exits
     }
 
-  This fires as early as possible per-CTA. The scheduler waits for
+  This is a conservative after-store trigger per CTA. The scheduler waits for
   ALL CTAs to either fire or retire before dispatching Kernel B.
 
   ─── Persistent Kernel A (one block processes many tiles in a loop) ─
@@ -1756,13 +1756,13 @@ launch_dependents Placement — Decision Guide
   completion because the dependent waits before reading producer output.
   The producer must still drain its own async operations before exit.
 
-  WRONG — fires too late (after all work including epilogue):
+  CONSERVATIVE — trigger after all tile work including epilogue:
     while (has_more_tiles()) {
         process_tile();         // TMA load → WGMMA → epilogue → store
     }
     griddepcontrol.launch_dependents;  // ← kernel is basically done
 
-  BETTER — fire after the final tile's epilogue store is committed:
+  EQUIVALENT AFTER-STORE POINT — final tile's epilogue:
     while (has_more_tiles()) {
         process_tile_mainloop();     // TMA + WGMMA
         process_tile_epilogue();     // stores to output
@@ -1979,9 +1979,9 @@ Stream-K Production Checklist
         divides evenly into whole tiles beyond the stream-K portion.
         These tiles skip fixup and workspace entirely.
 
-  □ 6. CONSIDER HyTiS INSTEAD
+  □ 6. CONSIDER spatial tail subdivision INSTEAD
         If K is small (AI is dominated by M×N, not K):
-          HyTiS avoids fixup overhead entirely.
+          spatial tail subdivision avoids fixup overhead entirely.
         If K is large relative to M×N: use Stream-K.
 
   □ 7. TEST WITH SMALL TILE COUNTS
@@ -2073,8 +2073,8 @@ Key Predicates
     num_groups = min(problem_blocks_m / cluster_m, 8)
     output_tile_id = tile_id_in_group × num_groups + group_idx
 
-  HyTiS vs Stream-K:
-    Small K, partial wave in M×N  →  HyTiS (no workspace, no fixup)
+  spatial tail subdivision vs Stream-K:
+    Small K, partial wave in M×N  →  spatial tail subdivision (no workspace, no fixup)
     Large K, small M×N            →  Stream-K (K-split + fixup)
 ```
 

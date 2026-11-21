@@ -83,12 +83,17 @@ Do not copy the argument aggregate of an unrelated EVT. Some predefined fusion o
 
 ## 5 — Read an epilogue visitor tree as dataflow
 
-A conceptual tree for the lab is:
+The scalar arithmetic below is conceptual; the pinned predefined visitor has
+a ReLU compute node above one `Sm90LinearCombination` node:
 
 ```text
-A,B → MMA accumulator → multiply by alpha ─┐
-                                         ├→ add → ReLU → convert/store D
-C → multiply by beta ─────────────────────┘
+MMA accumulator, C, alpha, beta
+             │
+Sm90LinearCombination: homogeneous_multiply_add(beta, C, alpha*acc)
+             │
+     Sm90Compute<ReLU>
+             │
+       convert/store D
 ```
 
 Nodes describe fetch, broadcast, computation or storage. Child order and operation type determine the expression. A `multiply_add` node with the wrong child order can compile while implementing a different formula. A cast in a child node can also move rounding earlier in the graph.

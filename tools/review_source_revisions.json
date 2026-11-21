@@ -98,5 +98,14 @@
     "archived_source": "audit/review-fixes-2026-11-21/before/attention_online.cu",
     "status": "pending_gpu_revalidation",
     "reason": "Remove a line-comment trailing backslash; strict host compilation is checked separately. Archived GPU source is retained."
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "example": "ex12_nccl_allreduce.cu",
+    "archived_sha256": "f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889",
+    "current_sha256": "918661e2094757e013ddbce152ef992c3b52a4cb218bd84a09fe5e902c693e7b",
+    "archived_source": "audit/review-fixes-2026-11-21/before/11-multi-gpu-nccl/ex12_nccl_allreduce.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Correct false inverse-GPU-count timing and peak-bandwidth expectations in source comments; arithmetic and launches unchanged."
   }
 ]

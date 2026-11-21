@@ -324,7 +324,7 @@ cp.async.bulk — Two Major Forms
   FORM 1: Tensor Layout (with cuTensorMap descriptor)
   ─────────────────────────────────────────────────────────────────
   cp.async.bulk.tensor.{ndim}.{dst_space}.{src_space}.{completion}{.cache}
-      [dst_addr], [tensor_map], coord_array, [mbar_addr];
+      [dst_addr], [tensor_map, {coords}], [mbar_addr];
 
   Use when: Data has known multi-dimensional structure (matrices, tensors).
   Requires: A cuTensorMap descriptor (see Lesson 4).
@@ -332,7 +332,7 @@ cp.async.bulk — Two Major Forms
 
   Example:
     cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes
-        [smem_dest], [tma_desc], {col, row}, [mbar_addr];
+        [smem_dest], [tma_desc, {col, row}], [mbar_addr];
 
   ─────────────────────────────────────────────────────────────────
   FORM 2: Raw Layout (linear byte copy, no descriptor)
@@ -364,7 +364,7 @@ Full Instruction Template (Tensor Form)
 ══════════════════════════════════════════════════════════════════════
 
   cp.async.bulk.tensor.{ndim}.{dst}.{src}.{completion}{.cache}{.multicast}
-      [dst_addr], [tensor_map], {coord0, coord1, ...}, [mbar_addr]{, ctaMask};
+      [dst_addr], [tensor_map, {coord0, coord1, ...}], [mbar_addr]{, ctaMask};
 
   Field-by-field breakdown:
   ─────────────────────────────────────────────────────────────────
@@ -388,15 +388,15 @@ Full Instruction Template (Tensor Form)
 
   2D load (global → shared, mbarrier completion):
     cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes
-        [smem], [desc], {col, row}, [mbar];
+        [smem], [desc, {col, row}], [mbar];
 
   3D load with L2 hint:
     cp.async.bulk.tensor.3d.shared::cta.global.mbarrier::complete_tx::bytes.L2::cache_hint
-        [smem], [desc], {hd, seq, batch}, [mbar], [policy];
+        [smem], [desc, {hd, seq, batch}], [mbar], policy;
 
   2D multicast to 4 CTAs (ctaMask = 0x000F = bits 0-3 set):
     cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster
-        [smem], [desc], {col, row}, [mbar], ctaMask;
+        [smem], [desc, {col, row}], [mbar], ctaMask;
 
   Raw linear copy (no descriptor):
     cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes
@@ -404,7 +404,7 @@ Full Instruction Template (Tensor Form)
 
   Store (shared → global):
     cp.async.bulk.tensor.2d.global.shared::cta.bulk_group
-        [desc], {col, row}, [smem];
+        [desc, {col, row}], [smem];
 ```
 
 ---
@@ -516,10 +516,10 @@ State Space Combinations — All Valid Options
 
   INTER-SMEM (cluster internal copies, no HBM involved):
   ─────────────────────────────────────────────────────────────────
-  dst = shared::cta      src = shared::cluster
-    → DSMEM copy: another block's SMEM → this block's SMEM
-    → Uses cluster interconnect (SM-to-SM, not HBM)
-    → Very low latency (~50-80 cycles vs ~500 for HBM)
+  dst = shared::cluster  src = shared::cta
+    → Push local SMEM into the mapped destination CTA
+    → Uses the cluster interconnect; there is no qualifier-reversed pull form
+    → Completion and owner lifetime must both be protected
 
   ─── Why This Matters ────────────────────────────────────────────
 
@@ -886,7 +886,7 @@ Unstructured Copy Variants — All State Space Combinations
   Note: Stores typically use bulk_group (not mbarrier) for completion.
   With optional cache policy:
   cp.async.bulk.global.shared::cta.bulk_group.L2::cache_hint
-      [dst_global], [src_smem], size, [cache_policy];
+      [dst_global], [src_smem], size, cache_policy;
 
   ─────────────────────────────────────────────────────────────────
   VARIANT 3: Shared → DSMEM (cluster-internal copy)
@@ -1364,8 +1364,8 @@ registers, combining, and writing it back, which costs a round trip and needs
 atomics to be safe.
 
 This is what split-K GEMM wants, where many blocks accumulate partial results
-into the same output tile. Chapter 10's Stream-K scheduling leans on it
-directly.
+into the same output tile. It is one possible reduction mechanism, not the implementation demonstrated
+by Chapter 10's lock-and-workspace Stream-K example.
 
 ### 14.1 What cp.reduce.async Does
 

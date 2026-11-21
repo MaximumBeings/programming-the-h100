@@ -400,3 +400,5 @@ WORKBOOK PASS: 7 CPU-only reference groups; no GPU execution or performance meas
 
 - Use ceiling division, original-domain predicates and sufficiently wide checked arithmetic, then carry the address contract into [tiled-copy ownership](20-tiled-copy.md).
 <!-- companion-summary:end -->
+
+Here D denotes the output tensor. The companion workbook’s C label denotes that same output role; it is not an extra input tensor in this indexing exercise.

@@ -468,8 +468,9 @@ FlashAttention 1 → 2 → 3
   ────────────────────────────────────────────────────────────────────
   Problem:  attention materialises an N×N matrix in HBM
   Fix:      tile it; keep S in SMEM; online softmax (§2)
-  Result:   memory traffic 545 MB → 8 MB; attention becomes
-            compute-bound
+  Result:   avoids the materialized score matrix. The 8.39 MB useful
+            payload is an ideal lower bound; K/V rereads remain, and
+            the actual tiled kernel is not thereby proven compute-bound.
   Left on the table: poor work partitioning, lots of non-matmul work
 
   FlashAttention-2 (2023)          Target: A100
@@ -1402,19 +1403,16 @@ SMEM Transpose via ldmatrix / stmatrix
   as it loads. Composing that with the right addressing pattern
   transposes the whole tile.
 
-  FP8 has one further wrinkle: ldmatrix.trans operates on 16-bit
-  elements. For 8-bit data the byte order within each pair comes
-  out wrong, so the register contents need a fix-up with the byte
-  permute instruction (prmt.b32) before stmatrix writes them back.
+  FP8 requires a layout-correct byte transpose: the Hopper LDSM/STSM
+  operations move 16-bit units, so follow the pinned Transpose_V path
+  rather than treating it as a native 8-bit transpose.
 
-  ══════════════════════════════════════════════════════════════════
-  THE COST, AND WHY IT IS ACCEPTABLE
+  Separately, the P-register fragment can need a byte permutation when
+  converting the QK accumulator layout to the next GEMM's A layout.
+  Do not attribute that prmt operation to the V transpose or infer an
+  instruction count for one transformation from the other.
 
-  Per V tile [128 × 128] FP8:
-    16 KB of data
-    ~64 ldmatrix + ~64 prmt + ~64 stmatrix instructions per warp
-    a few hundred cycles
-
+  The following few-hundred-cycle figure is illustrative, not measured.
   Against the model's 2,048 BF16 tensor cycles (about 1,024 in FP8),
   a few hundred cycles is roughly 10–30% of the FP8 interval, not under 5%.
   These are arithmetic estimates; actual overlap must be measured. The transpose of
@@ -1789,7 +1787,7 @@ splitting of the K loop (Chapter 10).
 □ Fuse the quantize into RoPE or whatever precedes attention
 □ E4M3 forward (range 448); E5M2 only if gradients (Chapter 7 §10)
 □ V transposed in SMEM before GEMM1 — K-major is mandatory (§9.2)
-□ ldmatrix.trans + prmt fix-up for 8-bit elements (§9.3)
+□ Match V shared transpose and the separate P-register permutation (§9.3)
 □ Hadamard incoherent processing on Q and K (§9.4)
 □ K-slice the accumulation — Chapter 7 §14, the FP22 issue
 □ Descale the output by (scale_Q · scale_K · scale_V)
@@ -1862,3 +1860,5 @@ barrier for different lifetimes  reuse dependencies      and phase explicitly
 [Chapter 30](30-cutlass-attention-foundations.md) derives a complete small attention problem from Q/K/V coordinates through online-softmax state. [Chapter 31](31-cutlass-hopper-fmha.md) connects that derivation to the pinned CUTLASS Hopper FMHA implementation, its build and runtime arguments, reference checks and measurement boundaries. A fused-attention implementation is not automatically the FlashAttention-3 paper's exact kernel or performance result.
 
 **FP8 layout transformations.** V may need a shared-memory transpose using LDSM/STSM to satisfy the operand-major contract. Separately, converting the QK FP32 accumulator fragment to the probability A-register fragment can require a byte permutation. These are different transformations; neither cost is established by merely naming `prmt`. The 64-register O and S budgets above assume 64 rows per consumer warpgroup, not all 128 CTA rows per warpgroup. A full 128×128 FP32 fragment per 128 threads alone costs 128 registers, so two such live fragments plus temporaries cannot fit 255. Reference `setmaxnreg.inc` values must be at least the launch allocation; the producer/consumer policy and launch bounds must be proved together, not chosen independently.
+
+The causal FULL/DIAG/SKIP grid assumes aligned equal row/key tile extents. When B_r and B_c differ, classify tiles by their element bounds; more than one key tile can intersect a query tile’s diagonal band. Worked softmax decimals are rounded for display.

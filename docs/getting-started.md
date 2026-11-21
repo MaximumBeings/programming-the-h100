@@ -11,7 +11,7 @@ This guide takes you from a terminal to the book's first verified GPU result. Yo
 
     The SSH client instructions describe standard usage; the linked system records identify the exact execution configurations. [System record](validation/2026-11-17/system-information.txt) · [Execution manifest](validation/2026-11-17/results.json) · [Preflight JSON](validation/2026-11-17/preflight.json).
 
-The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **Seventeen original-program revisions retain matching execution records; ten corrected revisions need GPU revalidation** across the H100 and eight-A100 hosts. The [additional H100 record](revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
+The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **Sixteen original-program revisions retain matching execution records; eleven corrected revisions need GPU revalidation** across the H100 and eight-A100 hosts. The [additional H100 record](revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 
 Select a diagram to open its full-size SVG.
 

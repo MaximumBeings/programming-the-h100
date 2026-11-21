@@ -1009,7 +1009,13 @@ Transaction Count — Manual Worked Example with Two Copies
 
   The correct usage: call arrive.expect_tx ONCE to combine arrivals:
     mbarrier.arrive.expect_tx [mbar], 768;   // 512 + 256 combined
-    // OR: call it once with the total
+    // Set the total before submitting either copy.
+
+  Alternatively, add bytes without consuming an arrival using expect_tx:
+    mbarrier.expect_tx [mbar], 256;
+    mbarrier.arrive.expect_tx [mbar], 512; // sole thread arrival
+    // Only now issue both copies: 768 total expected bytes.
+  Arm all expectations before operations can complete the phase.
 
   OR: initialize with thread_count=2 and call arrive.expect_tx twice:
     mbarrier.init [mbar], 2;                 // 2 thread arrivals expected
@@ -1410,9 +1416,9 @@ mbarrier.inval — Formal Invalidation
 
   What it does:
   ├── Formally invalidates the mbarrier object
-  ├── Zeroes out the hardware's tracking state for this barrier
   ├── Frees the 64-bit SMEM slot for other use
-  └── Converts generic pointer to shared-memory offset internally
+  └── Takes the specified shared-memory address; callers convert pointers
+      with __cvta_generic_to_shared where required.
 
   When to call it:
   ├── When the barrier will NEVER be used again in this kernel

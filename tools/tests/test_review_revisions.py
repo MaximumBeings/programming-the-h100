@@ -15,7 +15,7 @@ from review_revisions import historical_hashes, revisions
 class ReviewRepairs(unittest.TestCase):
     def test_pending_revisions_are_exact_and_visible(self):
         rows = revisions(ROOT)
-        self.assertEqual(len(rows), 11)
+        self.assertEqual(len(rows), 12)
         self.assertTrue(all(r['status'] == 'pending_gpu_revalidation' for r in rows))
         actual = {(p['page'],p['example']):p['sha256'] for p in programs()}
         before = historical_hashes(ROOT, actual)

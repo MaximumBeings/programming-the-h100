@@ -1042,7 +1042,7 @@ cvt.satfinite — FP8 Quantization Instruction
 
 ### 12.2 Scaling Factors — Why Quantization Needs Them
 
-Raw FP8 conversion almost always produces poor results because the model's actual value range rarely fits nicely into FP8's limited range. Scaling factors bring the values into the representable range before quantization, then remove the scaling after dequantization.
+Choose a scale from the input's range and underflow/overflow requirements. Scaling shifts the represented range before quantization and is undone during reconstruction; it does not add mantissa bits or guarantee accuracy.
 
 ```
 Scaling Factors — The Core Curriculum of FP8

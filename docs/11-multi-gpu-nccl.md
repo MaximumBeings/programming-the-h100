@@ -921,7 +921,7 @@ Full-buffer checks: PASS
 
 > Executed: `2026-11-17T23:36:24.075201+00:00` (UTC). Compile PASS; execution PASS. System: 2× H100 80GB HBM3, 132 SMs each, NV18 topology; CUDA 12.8.93, driver 580.105.08, Ubuntu 24.04.5 LTS.
 
-[Current tested source](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu) · [Compiler log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log) · [Execution log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log) · [Full audit](final-audit.md).
+[Archived tested source](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu) · [Compiler log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log) · [Execution log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log) · [Full audit](final-audit.md).
 
 ```bash
 nvcc -std=c++17 -arch=sm_90a -O2 ex11_nvlink_bandwidth.cu -o ex11_nvlink_bandwidth
@@ -1479,9 +1479,9 @@ With 4 GPUs, N=16:
 //
 // WHAT TO OBSERVE:
 //   - All GPUs produce the same correct result
-//   - AllReduce bandwidth approaches NVLink theoretical peak
-//   - Timing scales inversely with number of GPUs (more GPUs = more
-//     parallel bandwidth, but more data to sum)
+//   - Record bandwidth for this message size and selected algorithm.
+//   - A fixed-message ring AllReduce does not have inverse-N runtime;
+//     its per-rank send volume is 2*(N-1)/N times the payload.
 //
 // WORKS ON: sm_80+. Requires NCCL >= 2.15.
 // ═══════════════════════════════════════════════════════════════════
@@ -1732,6 +1732,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex12_nccl_allreduce.cu -->
+> **Historical source:** this capture predates the comment correction. GPU revalidation pending for the current source hash; numerical code and captured logs are unchanged.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:56.952819+00:00`. Executed UTC: `2026-11-18T11:19:58.343801+00:00`.
 
 Source SHA-256: `f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889`. [Exact source](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu) · [Compile log](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log) · [Run log](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -1779,7 +1781,7 @@ All-rank numerical verification: PASS
 
 > Executed: `2026-11-17T23:36:28.640907+00:00` (UTC). Compile PASS; execution PASS. System: 2× H100 80GB HBM3, 132 SMs each, NV18 topology; CUDA 12.8.93, driver 580.105.08, Ubuntu 24.04.5 LTS.
 
-[Current tested source](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu) · [Compiler log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log) · [Execution log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log) · [Full audit](final-audit.md).
+[Archived tested source](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu) · [Compiler log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log) · [Execution log](validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log) · [Full audit](final-audit.md).
 
 ```bash
 nvcc -std=c++17 -arch=sm_90a -O2 ex12_nccl_allreduce.cu -o ex12_nccl_allreduce -lnccl
@@ -3369,7 +3371,7 @@ int main() {
 
 > Executed: `2026-11-18T00:03:00.400131+00:00` (UTC). Compile PASS; execution PASS. System: eight A100 GPUs; target `sm_80`. All 16,384 final weights and 16 step-loss values match the CPU reference within tolerance.
 
-[Current tested source](validation/2026-11-18-eight-a100/ex13_hybrid_parallel_training.cu) · [Compiler log](validation/2026-11-18-eight-a100/compile.log) · [Execution log](validation/2026-11-18-eight-a100/run.log) · [System/topology](validation/2026-11-18-eight-a100/system-info.log) · [Full validation](eight-gpu-validation.md).
+[Archived tested source](validation/2026-11-18-eight-a100/ex13_hybrid_parallel_training.cu) · [Compiler log](validation/2026-11-18-eight-a100/compile.log) · [Execution log](validation/2026-11-18-eight-a100/run.log) · [System/topology](validation/2026-11-18-eight-a100/system-info.log) · [Full validation](eight-gpu-validation.md).
 
 ```bash
 nvcc -std=c++17 -arch=sm_80 -O2 ex13_hybrid_parallel_training.cu -o ex13_hybrid_parallel_training -lnccl -Xcompiler -pthread -lcublas

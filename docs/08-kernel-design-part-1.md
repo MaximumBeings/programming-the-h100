@@ -810,7 +810,7 @@ Three Categories of Memory-Bound Kernels
     └── Avoid __syncthreads() where possible (use warp intrinsics)
 
   ─── Category 3: Locality-Bound ──────────────────────────────────
-  Symptom: High DRAM transactions but low bandwidth utilization.
+  Symptom: Excess DRAM traffic relative to useful bytes and poor reuse.
            Many cache misses despite seemingly reasonable access patterns.
   Cause: Data accessed in random order, cache thrashing, TLB pressure,
          working set larger than L2 cache.
@@ -829,7 +829,7 @@ Three Categories of Memory-Bound Kernels
       YES → partially compute-bound → increase occupancy or AI
       NO  → Is SM utilization > 50%?
         YES → Latency-bound → break dependency chains
-        NO  → Locality-bound → improve cache utilization
+        NO  → Check grid size, parallelism, launch geometry and tail effects
 ```
 
 ### 3.2 The Epilogue as the Universal Memory-Bound Killer

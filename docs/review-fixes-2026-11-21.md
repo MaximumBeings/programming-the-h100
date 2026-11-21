@@ -45,6 +45,7 @@ results. They do not independently attest hardware identity or rerun kernels.
 | [ex08_comprehensive.cu](09-kernel-design-part-2.md) | `7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964` | `dc235caa169f07990a5ab75fbd6779feab3142180ed4f0d1e5675a4c4601508b` |
 | [ex11_nvlink_bandwidth.cu](11-multi-gpu-nccl.md) | `67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305` | `e42e582e8510253e85a7eaf56e9af540493068b93fde85502c7a2026e63162d8` |
 | [attention_online.cu](30-cutlass-attention-foundations.md) | `860d4976162dbee47edd0153d0eb8ff8089471d6ff8b7271653e6d8effad7b66` | `ab360def97ca95a553eabcaf66d746e77f05125663b141dbb29a5eeab1aea25a` |
+| [ex12_nccl_allreduce.cu](11-multi-gpu-nccl.md) | `f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889` | `918661e2094757e013ddbce152ef992c3b52a4cb218bd84a09fe5e902c693e7b` |
 
 The workshop system record names its base checkout commit; some captured files were uncommitted. Per-file hashes identify the tested working tree. The archived workshop summary remains byte-identical.
 
