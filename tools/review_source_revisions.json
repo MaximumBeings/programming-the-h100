@@ -66,7 +66,7 @@
     "page": "docs/09-kernel-design-part-2.md",
     "example": "ex06_pingpong.cu",
     "archived_sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd",
-    "current_sha256": "b7f84eacccfe4b59d90a33992c899c24347db12ee4d20380c2822ed31891716c",
+    "current_sha256": "24cae60ab9d067e7337716ff196bf9ff722167c07ff6d05e946b66b20702dccf",
     "archived_source": "audit/review-fixes-2026-11-21/before/09-kernel-design-part-2/ex06_pingpong.cu",
     "status": "pending_gpu_revalidation",
     "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."

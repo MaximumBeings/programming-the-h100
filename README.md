@@ -35,6 +35,10 @@ docs/
   27-precision-block-scaling.md
   28-benchmarking-integration.md
   29-workbook-capstone.md
+  30-cutlass-attention-foundations.md
+  31-cutlass-hopper-fmha.md
+  appendix-blackwell-b200.md
+  review-fixes-2026-11-21.md
   examples/advanced/            new exercise sources and validation plan
   stylesheets/extra.css          typography + code-block tuning
 hooks/fix_anchors.py             build-time link repair (see below)
@@ -43,7 +47,7 @@ mkdocs.yml                       site config and nav
 
 Historical evidence covers 26 H100 program revisions and a later revised training program on eight A100 GPUs across the recorded H100 and A100 hosts on November 17–18, 2026. The [complete validation summary](docs/final-audit.md) combines 26 successful H100 workloads with the [eight-A100 training execution](docs/eight-gpu-validation.md), which checks every final weight and per-step loss against an independent CPU reference.
 
-The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **All 27 current revisions have verified workload records** across the H100 and eight-A100 hosts. The [additional H100 record](docs/revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
+The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **Seventeen original-program revisions retain matching execution records; ten corrected revisions need GPU revalidation** across the H100 and eight-A100 hosts. The [additional H100 record](docs/revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 
 The records retain exact sources, commands, UTC timestamps, topology and raw logs. Original raw archives remain downloadable for provenance. The portable training program targets `sm_80` on A100; Hopper-specific WGMMA and TMA have H100 records. Chapter 12’s executable recurrence reference remains separate from its FA3 skeleton; Chapter 13 distinguishes captured profiles from illustrative diagnoses.
 
@@ -100,7 +104,7 @@ Built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
 
 Start with `docs/getting-started.md`. `python3 tools/h100_preflight.py` checks CUDA-visible Hopper devices and the installed compiler without PyTorch; `--minimum-gpus 8` checks the prerequisite for the eight-GPU teaching workload. The recorded preflight ran on the H100 PCIe host on November 17, 2026.
 
-`python3 tools/verify_validation_records.py` checks historical source downloads, commands, dates and displayed output against their original records. A current chapter source may differ when a fully verified fresh audit contains its exact hash with a successful compile and workload, or when an exact source revision is registered in `tools/gpu_revalidation.json` and visibly labeled as awaiting a GPU rerun. Verified corrections require successful records of their exact source hashes; any future pending correction cannot inherit historical PASS status. This applies to both corrected Chapter 11 programs. CI runs both historical and fresh verifiers before building the documentation; these checks do not execute CUDA.
+`python3 tools/verify_validation_records.py` checks historical source downloads, commands, dates and displayed output against their original records. A current chapter source may differ when a fully verified fresh audit contains its exact hash with a successful compile and workload, or when an exact source revision is registered in `tools/gpu_revalidation.json` or the post-review `tools/review_source_revisions.json` and visibly labeled as awaiting a GPU rerun. Verified corrections require successful records of their exact source hashes; any future pending correction cannot inherit historical PASS status. This applies to both corrected Chapter 11 programs. CI runs both historical and fresh verifiers before building the documentation; these checks do not execute CUDA.
 
 Every chapter includes learning goals, two self-checks with expandable worked answers, and an original SVG opening illustration. `tools/create_chapter_openers.py` regenerates those illustrations.
 

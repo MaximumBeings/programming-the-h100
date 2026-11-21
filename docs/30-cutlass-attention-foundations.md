@@ -180,7 +180,7 @@ The pinned sixteen-bit runner uses the same **mode order**, with `StrideQ`/`Stri
 
 ## 10 — Map the mathematics to the pinned implementation
 
-The [pinned runner’s file comment](https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/README.md) describes four layers:
+The [pinned runner’s file comment](https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/88_hopper_fmha.cu) describes four layers:
 
 | Layer | What to locate | Mathematical obligation |
 | --- | --- | --- |

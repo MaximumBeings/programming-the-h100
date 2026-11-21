@@ -41,7 +41,7 @@ results. They do not independently attest hardware identity or rerun kernels.
 | [ex01_wgmma_basic.cu](06-wgmma-part-1.md) | `282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04` | `a557eb99705eca84366ee23ebd3bea87eadb25edbc69310e5ac9da9a7d3835e1` |
 | [ex01_roofline.cu](08-kernel-design-part-1.md) | `d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449` | `4f3798b5519e14242c962b0f883327501d63e27f41d34afe2de840c67655761c` |
 | [ex05_mbarrier.cu](09-kernel-design-part-2.md) | `c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046` | `ee8a728dbb60691c48a16525ccdb2fbdac87b40658ebb110d153efcb9d343edc` |
-| [ex06_pingpong.cu](09-kernel-design-part-2.md) | `d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd` | `b7f84eacccfe4b59d90a33992c899c24347db12ee4d20380c2822ed31891716c` |
+| [ex06_pingpong.cu](09-kernel-design-part-2.md) | `d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd` | `24cae60ab9d067e7337716ff196bf9ff722167c07ff6d05e946b66b20702dccf` |
 | [ex08_comprehensive.cu](09-kernel-design-part-2.md) | `7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964` | `dc235caa169f07990a5ab75fbd6779feab3142180ed4f0d1e5675a4c4601508b` |
 | [ex11_nvlink_bandwidth.cu](11-multi-gpu-nccl.md) | `67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305` | `e42e582e8510253e85a7eaf56e9af540493068b93fde85502c7a2026e63162d8` |
 | [attention_online.cu](30-cutlass-attention-foundations.md) | `860d4976162dbee47edd0153d0eb8ff8089471d6ff8b7271653e6d8effad7b66` | `ab360def97ca95a553eabcaf66d746e77f05125663b141dbb29a5eeab1aea25a` |

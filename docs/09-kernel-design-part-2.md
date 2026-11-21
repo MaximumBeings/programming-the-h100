@@ -91,7 +91,8 @@ mbarrier — The Core Concept
   Back to Producer:
     [9] When EMPTY fires, producer can load into stage 0 again
 
-  This creates a LOCKSTEP handshake with no polling or busy-waiting.
+  This creates a stage-ownership handshake. Hopper code can poll with
+  try_wait loops; the barrier protocol alone does not eliminate polling.
   Each barrier fires exactly once per stage per pipeline pass.
 
   ─── The Transaction Count ────────────────────────────────────────
@@ -1016,14 +1017,12 @@ Illustrative ordered timeline (the runnable parity demo below does not implement
 // ═══════════════════════════════════════════════════════════════════
 // ex06_pingpong.cu
 //
-// PURPOSE: Simulate the Ping-Pong pipeline architecture.
-//   Demonstrates tile alternation between two consumers,
-//   the ordered barrier protocol, and overlap of MMA+epilogue.
+// PURPOSE: Check even/odd tile assignment on the GPU.
+//   Consumers compute numerical values for their assigned tiles.
 //
-// SIMPLIFICATION: Checks parity assignment only; does not implement atomic ordering (host-side simulation) rather
-//   than actual WGMMA. This is not the production ordered-barrier protocol.
-//   Replace fake_mma() and fake_epilogue() with real WGMMA and TMA
-//   in a production kernel.
+// SCOPE: No ordered barrier, WGMMA or measured overlap is implemented.
+//   This is not a concurrent pipeline protocol test. A production
+//   kernel needs explicit ready/release and phase-order barriers.
 //
 // WORKS ON: sm_80+ (uses only basic CUDA features for simulation)
 // ═══════════════════════════════════════════════════════════════════

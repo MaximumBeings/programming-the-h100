@@ -441,7 +441,8 @@ The Hardware Counter Shortage
   So ncu collects in PASSES. Run the kernel, collect one group
   of counters. Run it again, collect the next group. Repeat.
 
-  --set full on a Hopper kernel is commonly 10-20 passes.
+  The pass count is kernel-, metric- and release-dependent;
+  the timing numbers below are illustrative, not captured measurements.
 
   ══════════════════════════════════════════════════════════════════
   THE CONSEQUENCE THAT SURPRISES PEOPLE
