@@ -64,6 +64,7 @@ theme:
     code: JetBrains Mono
 
 extra_css:
+  - stylesheets/image-viewer.css
   - stylesheets/extra.css
   - stylesheets/code.css
 
@@ -165,3 +166,6 @@ nav:
 
   - Blackwell Appendix:
       - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md
+
+extra_javascript:
+  - javascripts/image-viewer.js

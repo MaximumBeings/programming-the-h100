@@ -133,3 +133,5 @@ Website builds format C, C++ and CUDA listings with pinned clang-format 19.1.7: 
 Chapters 15–29 are sequenced as introductory (15–19), intermediate (20–24) and advanced (25–29). They adapt the supplied tutorial’s useful progression while correcting layout formulas, instruction mappings, framework attribution and precision/performance claims. Chapter 14 adds Nsight Systems.
 
 The [November 18 H100 workshop record](docs/cutlass-workshop-validation.md) captures all ten current workshop sources: eight CUDA translation units, two Python references and eleven passing invocations, with actual sources, commands, system metadata, UTC dates, outputs and two imported Systems reports. The original 27-program evidence remains intact. Use `tools/run_advanced_validation.py` for a new capture or omit execution flags for a side-effect-free plan.
+
+Linked diagrams open in an accessible overlay on the same page. Use Close, Escape or the backdrop to return to the chapter. The viewer also works after instant navigation between chapters.
