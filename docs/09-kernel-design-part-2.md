@@ -20,10 +20,10 @@
     Revisit [Chapter 3](03-asynchronicity-mbarrier.md) for barrier semantics and [Chapter 8](08-kernel-design-part-1.md) for producer/consumer roles.
 <!-- learning:end -->
 
-!!! warning "GPU revalidation pending — November 21 correction"
-    Current source below includes post-capture corrections. Historical outputs
-    validate only their archived hashes. Do not use them as proof of the fixed
-    source. See the [repair record](review-fixes-2026-11-21.md).
+!!! success "GPU revalidation completed — November 21"
+    Corrected current source was compiled and executed on H100. Historical logs
+    remain unchanged. See the [repair record](review-fixes-2026-11-21.md) and
+    [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
 ## 9 — mbarrier — The Two-Barrier Handshake

@@ -1,0 +1,16 @@
+╔══════════════════════════════════════════════════════════╗
+║  ex02: 3D TMA — Attention Tensor [B][S][D] Tile Load     ║
+╚══════════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+3D Tensor: [4][128][64] FP16
+Tile:      [1][32][64] = 2048 elements = 4096 bytes
+
+Descriptor created successfully.
+
+Launching 16 blocks (4 seq_tiles × 4 batches)...
+Element checks: 32768 / 32768 passed
+
+╔══════════════════════════════════════════════════════════╗
+║  ✓ ALL PASS                                              ║
+╚══════════════════════════════════════════════════════════╝

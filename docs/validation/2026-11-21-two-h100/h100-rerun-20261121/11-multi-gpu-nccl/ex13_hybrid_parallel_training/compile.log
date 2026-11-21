@@ -1,0 +1,20 @@
+/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu(474): warning #177-D: variable "output_cols" was declared but never referenced
+      int output_cols = (pp == 0) ? H_SHARD : HIDDEN;
+          ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu(499): warning #550-D: variable "loss_this_gpu" was set but never used
+      float loss_this_gpu = 0.0f;
+            ^
+
+/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu(474): warning #177-D: variable "output_cols" was declared but never referenced
+      int output_cols = (pp == 0) ? H_SHARD : HIDDEN;
+          ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/tmp/h100-rerun-20261121/11-multi-gpu-nccl/ex13_hybrid_parallel_training/ex13_hybrid_parallel_training.cu(499): warning #550-D: variable "loss_this_gpu" was set but never used
+      float loss_this_gpu = 0.0f;
+            ^
+

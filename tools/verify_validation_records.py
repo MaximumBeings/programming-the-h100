@@ -146,8 +146,9 @@ def verify(root, date):
         return 1
     print(f'PASS: {len(rows)} archive records match their downloads and logs; historical displays match captured executions, including {len(superseded)} superseding PASS records.')
     from review_revisions import revisions as review_pending
-    pending_count = sum(r['status'] == 'pending_gpu_revalidation' for r in revisions.values()) + sum('source' not in r for r in review_pending(root))
-    print(f'Current coverage: {27 - pending_count} verified revisions; {pending_count} awaiting GPU revalidation.')
+    pending_count = sum(r['status'] == 'pending_gpu_revalidation' for r in revisions.values()) + sum('source' not in r and r['status'] == 'pending_gpu_revalidation' for r in review_pending(root))
+    print(f'Current source changes awaiting GPU revalidation: {pending_count}.')
+    print('The separate November 21 record executes 26 current programs; ex13 needs eight GPUs.')
     print('Scope: evidence consistency only; this command does not execute CUDA or prove numerical correctness.')
     return 0
 

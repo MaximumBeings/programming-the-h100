@@ -1,0 +1,24 @@
+========= COMPUTE-SANITIZER
+╔══════════════════════════════════════════════════════╗
+║  Thread Block Cluster Inspection — H100 Demo         ║
+╚══════════════════════════════════════════════════════╝
+
+GPU: NVIDIA H100 80GB HBM3 (SM 9.0)
+
+Per-Block Report:
+Block(global) Cluster Rank   Cluster Size   My SMEM Val  Partner Val  Exchange OK?    
+--------------------------------------------------------------------------------
+  0            0              2              0            100          ✓ PASS
+  1            1              2              100          0            ✓ PASS
+  2            0              2              200          300          ✓ PASS
+  3            1              2              300          200          ✓ PASS
+
+DSMEM Exchange Tests: 4/4 passed
+
+Cluster Metadata Verification:
+  ✓ All cluster metadata correct
+
+════════════════════════════════════════════════
+ALL TESTS PASSED — Clusters working correctly!
+════════════════════════════════════════════════
+========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)

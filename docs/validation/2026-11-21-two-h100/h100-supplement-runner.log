@@ -1,0 +1,16 @@
+system 0
+triton-smoke 0
+two-gpu-examples 0
+ex01_cluster_inspect-memcheck 0
+ex01_cluster_inspect-racecheck 0
+ex01_cluster_inspect-synccheck 0
+ex02_ptx_basics-memcheck 0
+ex02_ptx_basics-racecheck 0
+ex02_ptx_basics-synccheck 0
+ex06_comprehensive-memcheck 0
+ex06_comprehensive-racecheck 0
+ex06_comprehensive-synccheck 0
+ex02_reduce_async-memcheck 0
+ex02_reduce_async-racecheck 0
+ex02_reduce_async-synccheck 0
+attention-memcheck 0

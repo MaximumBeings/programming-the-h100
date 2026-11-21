@@ -107,7 +107,7 @@ def verify():
         else:
             device = json.loads((memory/c['stdout']).read_text())
             require(device['CUDA_VISIBLE_DEVICES'] == c['CUDA_VISIBLE_DEVICES'] and device['uuid'].startswith('GPU-'), 'Missing CUDA device identity')
-    print('PASS: complete current listings and exact historical captures: seven H100 row cases, 17 FMHA variants and three memchecks. Corrected attention source remains GPU-pending.')
+    print('PASS: complete current listings and exact historical captures: seven H100 row cases, 17 FMHA variants and three memchecks. Corrected attention source has a separate November 21 H100/memcheck record.')
 
 
 if __name__ == '__main__':

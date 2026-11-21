@@ -1,0 +1,25 @@
+╔══════════════════════════════════════════════════════╗
+║  ex04: PTX Pointers, State Spaces & Packed Types      ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: cvta + ld.shared (smem[0]=42, smem[1]=99)
+  ✓ PASS: loaded 42.0 and 99.0, SMEM offset=0x400
+
+Test 2: st.shared/ld.shared neighbor (expect 7.0 and 17.0)
+  ✓ PASS: my=7.0 neighbor=17.0
+
+Test 3: ld.global/st.global multiply by 2
+  ✓ PASS: all elements×2 correct
+
+Test 4: atom.shared.add (64 threads → counter=64)
+  ✓ PASS: counter=64
+
+Test 5: Packed FP16 add (1+3=4, 2+4=6)
+  ✓ PASS: slot0=4.0 slot1=6.0
+
+Test 6: mov.b32 bit reinterpret (float↔uint32)
+  ✓ PASS: pi bits=0x40490FD0, roundtrip matches
+
+╔══════════════════════════════════════════════════════╗
+║  6/6 tests passed   ✓ ALL PASS                    ║
+╚══════════════════════════════════════════════════════╝

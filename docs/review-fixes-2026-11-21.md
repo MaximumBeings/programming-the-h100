@@ -4,19 +4,21 @@ This repair pass addresses the November 19 and November 21 independent reviews.
 The original execution logs and source snapshots are preserved. A historical
 PASS describes its archived source, not a later corrected program.
 
-## GPU revalidation pending
+## GPU revalidation completed
 
-No GPU was available for this repair pass. Changed complete CUDA programs need
-fresh compilation, numerical checks and applicable memory/race checks on Hopper.
-The current source revisions and their archived predecessors are pinned in the
-repair manifest. Until rerun, do not cite their historical outputs as validation
-of the corrections.
+The changed complete sources were compiled and executed on November 21 on a
+two-H100 host. All 26 programs that fit this host executed successfully; the
+separate attention reference passed seven complete O/LSE checks. Four corrected
+synchronization examples passed memcheck, racecheck and synccheck; the attention
+reference also passed memcheck. See [dated results and raw evidence](validation-2026-11-21.md).
+The eight-GPU hybrid-training workload remains unexecuted on this host. These
+runs do not execute every explanatory protocol sketch or prove every code path.
 
 The Chapter 2 fixes protect remote shared-memory readers before CTA exit and
 remove the special-register output race. Chapter 5 adds an async-proxy fence and
 alignment to the reduction source. Chapter 11 replaces the self-initializing
 error macro. Other source edits correct explanatory comments or output labels;
-they also change source identity and are not presented as newly GPU-tested.
+their current identities are included in the new GPU rerun.
 
 ## Historical evidence and scope
 
@@ -30,7 +32,7 @@ Its native CUTLASS appendix has a distinct test set.
 Evidence verifiers check hashes, commands, dates, inventories and captured
 results. They do not independently attest hardware identity or rerun kernels.
 
-## Exact pending source revisions
+## Exact rerun source revisions
 
 | Chapter / program | Archived SHA-256 | Current SHA-256 |
 | --- | --- | --- |

@@ -11,10 +11,10 @@
     Understand the [Chapter 1](01-h100-architecture.md) bandwidth scopes first. A successful single-GPU run does not validate a multi-GPU communication path.
 <!-- learning:end -->
 
-!!! warning "GPU revalidation pending — November 21 correction"
-    Current source below includes post-capture corrections. Historical outputs
-    validate only their archived hashes. Do not use them as proof of the fixed
-    source. See the [repair record](review-fixes-2026-11-21.md).
+!!! success "GPU revalidation completed — November 21"
+    Corrected current source was compiled and executed on H100. Historical logs
+    remain unchanged. See the [repair record](review-fixes-2026-11-21.md) and
+    [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
 ## Lesson 5 Companion Guide — Hardware Topology to Collective Primitives

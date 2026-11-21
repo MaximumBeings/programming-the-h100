@@ -1,4 +1,4 @@
-"""Verify exact pending source transitions; never certify a corrected GPU run.
+"""Verify exact pending source transitions; check separately captured corrected GPU runs.
 
 Historical verifiers use the returned baseline identities only after verifying
 both the current revision and its immutable pre-correction source. Raw evidence
@@ -20,7 +20,7 @@ def revisions(root):
     seen = set()
     for row in rows:
         key = (row['page'], row['example'])
-        if key in seen or row['status'] != 'pending_gpu_revalidation':
+        if key in seen or row['status'] not in {'pending_gpu_revalidation','verified_gpu_revalidation'}:
             raise ValueError('Invalid pending review revision: '+str(key))
         seen.add(key)
         for field in ('archived_source', 'page', 'source'):
@@ -35,11 +35,18 @@ def revisions(root):
         if actual != after:
             raise ValueError('Unregistered current source drift: '+str(key))
         text = (root/row['page']).read_text()
-        if 'GPU revalidation pending' not in text or 'review-fixes-2026-11-21.md' not in text:
+        notice = 'GPU revalidation completed' if row['status'] == 'verified_gpu_revalidation' else 'GPU revalidation pending'
+        if notice not in text or 'review-fixes-2026-11-21.md' not in text:
             raise ValueError('Missing visible pending notice: '+str(key))
         report = (root/'docs/review-fixes-2026-11-21.md').read_text()
         if before not in report or after not in report:
             raise ValueError('Pending identity absent from public repair report')
+    if any(r['status'] == 'verified_gpu_revalidation' for r in rows):
+        from verify_current_h100 import verified_sources
+        captured = verified_sources(root)
+        for row in rows:
+            if row['status'] == 'verified_gpu_revalidation' and captured.get((row['page'],row['example'])) != row['current_sha256']:
+                raise ValueError('Corrected source lacks matching successful rerun')
     return rows
 
 

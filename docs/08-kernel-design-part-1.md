@@ -11,10 +11,10 @@
     [Chapter 6](06-wgmma-part-1.md) explains Tensor Core arithmetic; [Chapter 13](13-nsight-compute.md) checks whether the proposed bottleneck is real.
 <!-- learning:end -->
 
-!!! warning "GPU revalidation pending — November 21 correction"
-    Current source below includes post-capture corrections. Historical outputs
-    validate only their archived hashes. Do not use them as proof of the fixed
-    source. See the [repair record](review-fixes-2026-11-21.md).
+!!! success "GPU revalidation completed — November 21"
+    Corrected current source was compiled and executed on H100. Historical logs
+    remain unchanged. See the [repair record](review-fixes-2026-11-21.md) and
+    [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
 ## Lesson 3 Companion Guide — High-Performance CUDA Kernels on the H100

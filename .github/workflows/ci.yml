@@ -41,6 +41,9 @@ jobs:
       - name: Verify published execution records
         run: python3 tools/verify_validation_records.py
 
+      - name: Verify November 21 current-source GPU reruns
+        run: python3 tools/verify_current_h100.py
+
       - name: Verify fresh audit evidence
         run: python3 tools/verify_final_audit.py
 

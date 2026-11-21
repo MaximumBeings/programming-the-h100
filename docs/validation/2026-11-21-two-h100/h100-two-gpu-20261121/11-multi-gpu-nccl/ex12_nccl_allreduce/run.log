@@ -1,0 +1,23 @@
+═══════════════════════════════════════════════════════
+  ex12_nccl_allreduce — NCCL AllReduce End-to-End Demo
+═══════════════════════════════════════════════════════
+
+GPUs found: 2
+  GPU 0: NVIDIA H100 80GB HBM3
+  GPU 1: NVIDIA H100 80GB HBM3
+
+  AllReduce results:
+    N_GPUs:     2
+    Data size:  33.55 MB (8M elements × float)
+    Avg time:   0.265 ms
+    Alg BW:     126.86 GB/s  (bytes / time)
+    Bus BW:     126.86 GB/s  (2×(N-1)/N × alg BW)
+    Expected result per element: 3
+    First 8 values: 3 3 3 3 3 3 3 3 
+  GPU 1: PASS ✓ (result[0]=3, expected=3)
+  GPU 0: PASS ✓ (result[0]=3, expected=3)
+
+═══════════════════════════════════════════════════════
+  Expected sum = 2 × (2 + 1) / 2 = 3
+═══════════════════════════════════════════════════════
+All-rank numerical verification: PASS

@@ -1,0 +1,51 @@
+========= COMPUTE-SANITIZER
+╔══════════════════════════════════════════════════════╗
+║  Inline PTX Basics — Full Test Suite                  ║
+╚══════════════════════════════════════════════════════╝
+
+Test 1: add.u32 (42 + 10 = 52)
+  ✓ PASS: result = 52
+
+Test 2: mad.lo.u32 (5*7+3 = 38)
+  ✓ PASS: result = 38
+
+Test 3: fma.rn.f32 (2.5 * 4.0 + 1.5 = 11.5)
+  ✓ PASS: result = 11.5000
+
+Test 4: predicate max
+  ✓ PASS: max(10,20) = 20
+  ✓ PASS: max(30,5) = 30
+
+Test 5: special registers (%tid.x, %ctaid.x, %laneid)
+  ✓ PASS: tid.x = 0
+  INFO: ctaid.x = 0 (block index, not checked — scheduling dependent)
+  INFO: laneid = 0 (should be 0 since tid=0)
+
+Test 6: bitwise ops (a=0xFF00, b=0x0F0F)
+  ✓ PASS: and = 0x00F00
+  ✓ PASS: or = 0x0FF0F
+  ✓ PASS: xor = 0x0F00F
+  ✓ PASS: shl = 0xFF000
+  ✓ PASS: shr = 0x00FF0
+
+Test 7: scoped temporaries — (7+3)*(7-3) = 40
+  ✓ PASS: result = 40
+
+Test 8: read-write operand — 100 + 3 = 103
+  ✓ PASS: result = 103
+
+Test 9: immediate operand template
+  ✓ PASS: 1 << 5 = 32
+  ✓ PASS: 7 << 3 = 56
+
+Test 10: volatile + memory clobber (store 0xDEADBEEF to SMEM)
+  ✓ PASS: loaded 0xDEADBEEF from SMEM
+
+Test 11: vote.ballot (even lanes → 0x55555555)
+  ✓ PASS: ballot = 0x55555555
+
+╔══════════════════════════════════════════════════════╗
+║  Results: 17/17 tests passed                          ║
+║  ✓ ALL PASS                                          ║
+╚══════════════════════════════════════════════════════╝
+========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)

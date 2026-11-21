@@ -16,7 +16,7 @@ class ReviewRepairs(unittest.TestCase):
     def test_pending_revisions_are_exact_and_visible(self):
         rows = revisions(ROOT)
         self.assertEqual(len(rows), 12)
-        self.assertTrue(all(r['status'] == 'pending_gpu_revalidation' for r in rows))
+        self.assertTrue(all(r['status'] == 'verified_gpu_revalidation' for r in rows))
         actual = {(p['page'],p['example']):p['sha256'] for p in programs()}
         before = historical_hashes(ROOT, actual)
         for r in rows:
@@ -33,6 +33,13 @@ class ReviewRepairs(unittest.TestCase):
         def read(path):return b'changed' if path == target else original(path)
         with patch.object(Path,'read_bytes',read):
             with self.assertRaises(ValueError):revisions(ROOT)
+
+    def test_new_gpu_log_tampering_is_rejected(self):
+        original = Path.read_bytes
+        target = ROOT/'docs/validation/2026-11-21-two-h100/h100-supplement-20261121/ex01_cluster_inspect-memcheck.log'
+        def read(path): return b'changed' if path == target else original(path)
+        with patch.object(Path, 'read_bytes', read):
+            with self.assertRaises(ValueError): revisions(ROOT)
 
     def test_macro_named_e_and_single_evaluation(self):
         source=next(p['code'] for p in programs() if p['example']=='ex11_nvlink_bandwidth.cu')

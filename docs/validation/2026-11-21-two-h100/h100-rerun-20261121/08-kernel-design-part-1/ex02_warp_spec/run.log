@@ -1,0 +1,44 @@
+╔══════════════════════════════════════════════════════╗
+║  Warp Specialization Demo                             ║
+║  256 threads = WG0 (producer) + WG1 (consumer)       ║
+╚══════════════════════════════════════════════════════╝
+
+Launch: 1 block × 256 threads
+  WG0 (threads   0-127): PRODUCER role
+  WG1 (threads 128-255): CONSUMER role
+
+Role Assignment Check:
+  WG0 role recorded: 0 (expected 0 = producer)
+  WG1 role recorded: 1 (expected 1 = consumer)
+  Role assignment: ✓ CORRECT
+
+Consumer Output Verification:
+  Expected formula: output[i] = 2 × (3×i + 7) = 6i + 14
+  Checking all 128 outputs...
+
+  Index    Expected     Got          OK?     
+  ────────────────────────────────────────
+  0        14.0         14.0         ✓
+  1        20.0         20.0         ✓
+  2        26.0         26.0         ✓
+  3        32.0         32.0         ✓
+  4        38.0         38.0         ✓
+  ... (checking all 128, showing first 5 and last 3) ...
+  125      764.0        764.0        ✓
+  126      770.0        770.0        ✓
+  127      776.0        776.0        ✓
+
+════════════════════════════════════════════════════════
+Results: 128/128 output values correct
+Role assignment: CORRECT
+
+╔══════════════════════════════════════════════════════╗
+║  ✓ ALL TESTS PASSED                                  ║
+║                                                      ║
+║  KEY OBSERVATIONS:                                   ║
+║  • WG0 (threads 0-127) executed ONLY producer code   ║
+║  • WG1 (threads 128-255) executed ONLY consumer code  ║
+║  • No warp divergence within either warpgroup        ║
+║  • __syncthreads() ensured safe handoff              ║
+║  • In production: replace sync with mbarrier (§9)    ║
+╚══════════════════════════════════════════════════════╝

@@ -144,7 +144,7 @@ def main():
     for error in errors:
         print('FAIL:', error)
     if not errors:
-        print('PASS: historical audit source hashes, evidence inventory, statuses, logs and summary agree; review corrections remain pending.')
+        print('PASS: historical audit source hashes, evidence inventory, statuses, logs and summary agree; current-source November 21 reruns are checked separately.')
         print('Scope: evidence consistency; CUDA is not executed by this verifier.')
     return bool(errors)
 

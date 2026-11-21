@@ -1,0 +1,267 @@
+[
+  {
+    "name": "system",
+    "command": [
+      "bash",
+      "-lc",
+      "date -u; uname -a; nvidia-smi -q; nvidia-smi topo -m; nvcc --version; python3 -m pip freeze"
+    ],
+    "started_utc": "2026-11-21T13:20:53.787074+00:00",
+    "finished_utc": "2026-11-21T13:20:54.640334+00:00",
+    "seconds": 0.8532581950000235,
+    "exit_code": 0,
+    "log": "system.log",
+    "log_sha256": "788d68be94f855deabada62795829877f65ec6b0c9e65394a54c837a371ce40c"
+  },
+  {
+    "name": "triton-smoke",
+    "command": [
+      "python3",
+      "/tmp/triton-review/docs/examples/gpu_smoke.py"
+    ],
+    "started_utc": "2026-11-21T13:20:54.640652+00:00",
+    "finished_utc": "2026-11-21T13:20:56.276257+00:00",
+    "seconds": 1.6356151589999968,
+    "exit_code": 0,
+    "log": "triton-smoke.log",
+    "log_sha256": "ab408d139220abf8a2213e505925d4b5b73a4ecd23bfd142e29fcb8af20d747f"
+  },
+  {
+    "name": "two-gpu-examples",
+    "command": [
+      "python3",
+      "/tmp/h100-review/tools/validate_examples.py",
+      "ex11_nvlink_bandwidth",
+      "ex12_nccl_allreduce",
+      "--out",
+      "/tmp/h100-two-gpu-20261121"
+    ],
+    "started_utc": "2026-11-21T13:20:56.276491+00:00",
+    "finished_utc": "2026-11-21T13:21:03.777857+00:00",
+    "seconds": 7.501372018999973,
+    "exit_code": 0,
+    "log": "two-gpu-examples.log",
+    "log_sha256": "088a825cb1bd26d57f9bd55cf346e3bb3de81842952844eda25ea68f0ccfb9f2"
+  },
+  {
+    "name": "ex01_cluster_inspect-memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "started_utc": "2026-11-21T13:21:03.778095+00:00",
+    "finished_utc": "2026-11-21T13:21:04.558889+00:00",
+    "seconds": 0.7808014789999902,
+    "exit_code": 0,
+    "log": "ex01_cluster_inspect-memcheck.log",
+    "log_sha256": "2aa321bfabdd496ccbda143143cace001b0ffa18d848d0c126d66449a472de67"
+  },
+  {
+    "name": "ex01_cluster_inspect-racecheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "racecheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "started_utc": "2026-11-21T13:21:04.559112+00:00",
+    "finished_utc": "2026-11-21T13:21:05.501497+00:00",
+    "seconds": 0.942394499000045,
+    "exit_code": 0,
+    "log": "ex01_cluster_inspect-racecheck.log",
+    "log_sha256": "5b8db3b2e3e98145ac146852208fea0f08529f96e684323775711f89be75eb77"
+  },
+  {
+    "name": "ex01_cluster_inspect-synccheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex01_cluster_inspect/example"
+    ],
+    "started_utc": "2026-11-21T13:21:05.501723+00:00",
+    "finished_utc": "2026-11-21T13:21:06.126675+00:00",
+    "seconds": 0.6249614170000086,
+    "exit_code": 0,
+    "log": "ex01_cluster_inspect-synccheck.log",
+    "log_sha256": "2aa321bfabdd496ccbda143143cace001b0ffa18d848d0c126d66449a472de67"
+  },
+  {
+    "name": "ex02_ptx_basics-memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "started_utc": "2026-11-21T13:21:06.126922+00:00",
+    "finished_utc": "2026-11-21T13:21:06.754813+00:00",
+    "seconds": 0.6278864019999446,
+    "exit_code": 0,
+    "log": "ex02_ptx_basics-memcheck.log",
+    "log_sha256": "abc0283697d370bca3c13a5cca976852704f37c61838ad8652a03a88f6f0787c"
+  },
+  {
+    "name": "ex02_ptx_basics-racecheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "racecheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "started_utc": "2026-11-21T13:21:06.755061+00:00",
+    "finished_utc": "2026-11-21T13:21:07.801555+00:00",
+    "seconds": 1.0465037269999584,
+    "exit_code": 0,
+    "log": "ex02_ptx_basics-racecheck.log",
+    "log_sha256": "03d32ebd78e5ed0faa7c28eec9547a915703e0ebf4ee15a192c3233c025a73f2"
+  },
+  {
+    "name": "ex02_ptx_basics-synccheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex02_ptx_basics/example"
+    ],
+    "started_utc": "2026-11-21T13:21:07.801809+00:00",
+    "finished_utc": "2026-11-21T13:21:08.428725+00:00",
+    "seconds": 0.626924779000035,
+    "exit_code": 0,
+    "log": "ex02_ptx_basics-synccheck.log",
+    "log_sha256": "abc0283697d370bca3c13a5cca976852704f37c61838ad8652a03a88f6f0787c"
+  },
+  {
+    "name": "ex06_comprehensive-memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "started_utc": "2026-11-21T13:21:08.429021+00:00",
+    "finished_utc": "2026-11-21T13:21:09.101374+00:00",
+    "seconds": 0.6723619800000051,
+    "exit_code": 0,
+    "log": "ex06_comprehensive-memcheck.log",
+    "log_sha256": "e28a4d20546bdd7cb7f72e0ca1c88e3956edece312ea8b9e010af5755e36e3d3"
+  },
+  {
+    "name": "ex06_comprehensive-racecheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "racecheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "started_utc": "2026-11-21T13:21:09.101645+00:00",
+    "finished_utc": "2026-11-21T13:21:10.195471+00:00",
+    "seconds": 1.0938346959999876,
+    "exit_code": 0,
+    "log": "ex06_comprehensive-racecheck.log",
+    "log_sha256": "2a08151535bbb2156a9bc4fb9c203655d2dc11166e68744d0f8d897c355a9dd0"
+  },
+  {
+    "name": "ex06_comprehensive-synccheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/02-clusters-inline-ptx/ex06_comprehensive/example"
+    ],
+    "started_utc": "2026-11-21T13:21:10.195768+00:00",
+    "finished_utc": "2026-11-21T13:21:10.820457+00:00",
+    "seconds": 0.6246983449999561,
+    "exit_code": 0,
+    "log": "ex06_comprehensive-synccheck.log",
+    "log_sha256": "e28a4d20546bdd7cb7f72e0ca1c88e3956edece312ea8b9e010af5755e36e3d3"
+  },
+  {
+    "name": "ex02_reduce_async-memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "started_utc": "2026-11-21T13:21:10.820772+00:00",
+    "finished_utc": "2026-11-21T13:21:11.443630+00:00",
+    "seconds": 0.6228659469999798,
+    "exit_code": 0,
+    "log": "ex02_reduce_async-memcheck.log",
+    "log_sha256": "350212b31d6b8f230f43eed0378fc83b0c2b440cddf6df1ebc763f49c4e54411"
+  },
+  {
+    "name": "ex02_reduce_async-racecheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "racecheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "started_utc": "2026-11-21T13:21:11.443902+00:00",
+    "finished_utc": "2026-11-21T13:21:12.482699+00:00",
+    "seconds": 1.038806070000021,
+    "exit_code": 0,
+    "log": "ex02_reduce_async-racecheck.log",
+    "log_sha256": "b7540dfc6721eba7c26e006a80863bbcd33cc35dd76f35460e1b464bd49a248d"
+  },
+  {
+    "name": "ex02_reduce_async-synccheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-rerun-20261121/05-cp-async-bulk-l2-hinting/ex02_reduce_async/example"
+    ],
+    "started_utc": "2026-11-21T13:21:12.483009+00:00",
+    "finished_utc": "2026-11-21T13:21:13.158911+00:00",
+    "seconds": 0.675908995000043,
+    "exit_code": 0,
+    "log": "ex02_reduce_async-synccheck.log",
+    "log_sha256": "350212b31d6b8f230f43eed0378fc83b0c2b440cddf6df1ebc763f49c4e54411"
+  },
+  {
+    "name": "attention-memcheck",
+    "command": [
+      "compute-sanitizer",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "91",
+      "/tmp/h100-attention-20261121/attention"
+    ],
+    "started_utc": "2026-11-21T13:21:13.159249+00:00",
+    "finished_utc": "2026-11-21T13:21:13.836638+00:00",
+    "seconds": 0.6773963329999901,
+    "exit_code": 0,
+    "log": "attention-memcheck.log",
+    "log_sha256": "06ab76b688ec262e277f565bcfb77625047748f03c3b404d33cd041068077a9b"
+  }
+]
