@@ -3626,7 +3626,7 @@
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    ★ Partial sums, workspaces, and fixup reduction
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    ★ Lock arrays — atomic progress tracking
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    ★ Group locality — L2 cache affinity under Stream-K
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    ★ HyTiS — heterogeneous tile size alternative
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    ★ spatial tail subdivision — heterogeneous tile size alternative
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    ★ GDC instructions (griddepcontrol) — hardware grid handoff
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    ★ Programmatic stream serialization — host launch API
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    ★ Dependent grid overlap — the producer/consumer kernel pair
@@ -3666,7 +3666,7 @@
 <li><a href="#4-the-lock-array">The Lock Array — Atomic Progress Tracking</a></li>
 <li><a href="#5-deterministic-vs-non-deterministic-reduction">Deterministic vs Non-Deterministic Reduction</a></li>
 <li><a href="#6-groups">Groups — L2 Locality Under Stream-K</a></li>
-<li><a href="#7-spatial-tail-subdivision">HyTiS — The Spatial Alternative</a></li>
+<li><a href="#7-spatial-tail-subdivision">spatial tail subdivision — The Spatial Alternative</a></li>
 <li><a href="#8-stream-serialization-the-utilization-gap">Stream Serialization — The Utilization Gap</a></li>
 <li><a href="#9-gdc-instructions-hardware-grid-handoff">GDC Instructions — Hardware Grid Handoff</a></li>
 <li><a href="#10-host-launch-authority-programmatic-serialization">Host Launch Authority — Programmatic Serialization</a></li>
@@ -5243,7 +5243,7 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-34-18"><a id="__codelineno-34-18" name="__codelineno-34-18" href="#__codelineno-34-18"></a>        // done — block exits
 </span><span id="__span-34-19"><a id="__codelineno-34-19" name="__codelineno-34-19" href="#__codelineno-34-19"></a>    }
 </span><span id="__span-34-20"><a id="__codelineno-34-20" name="__codelineno-34-20" href="#__codelineno-34-20"></a>
-</span><span id="__span-34-21"><a id="__codelineno-34-21" name="__codelineno-34-21" href="#__codelineno-34-21"></a>  This fires as early as possible per-CTA. The scheduler waits for
+</span><span id="__span-34-21"><a id="__codelineno-34-21" name="__codelineno-34-21" href="#__codelineno-34-21"></a>  This is a conservative after-store trigger per CTA. The scheduler waits for
 </span><span id="__span-34-22"><a id="__codelineno-34-22" name="__codelineno-34-22" href="#__codelineno-34-22"></a>  ALL CTAs to either fire or retire before dispatching Kernel B.
 </span><span id="__span-34-23"><a id="__codelineno-34-23" name="__codelineno-34-23" href="#__codelineno-34-23"></a>
 </span><span id="__span-34-24"><a id="__codelineno-34-24" name="__codelineno-34-24" href="#__codelineno-34-24"></a>  ─── Persistent Kernel A (one block processes many tiles in a loop) ─
@@ -5253,13 +5253,13 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-34-28"><a id="__codelineno-34-28" name="__codelineno-34-28" href="#__codelineno-34-28"></a>  completion because the dependent waits before reading producer output.
 </span><span id="__span-34-29"><a id="__codelineno-34-29" name="__codelineno-34-29" href="#__codelineno-34-29"></a>  The producer must still drain its own async operations before exit.
 </span><span id="__span-34-30"><a id="__codelineno-34-30" name="__codelineno-34-30" href="#__codelineno-34-30"></a>
-</span><span id="__span-34-31"><a id="__codelineno-34-31" name="__codelineno-34-31" href="#__codelineno-34-31"></a>  WRONG — fires too late (after all work including epilogue):
+</span><span id="__span-34-31"><a id="__codelineno-34-31" name="__codelineno-34-31" href="#__codelineno-34-31"></a>  CONSERVATIVE — trigger after all tile work including epilogue:
 </span><span id="__span-34-32"><a id="__codelineno-34-32" name="__codelineno-34-32" href="#__codelineno-34-32"></a>    while (has_more_tiles()) {
 </span><span id="__span-34-33"><a id="__codelineno-34-33" name="__codelineno-34-33" href="#__codelineno-34-33"></a>        process_tile();         // TMA load → WGMMA → epilogue → store
 </span><span id="__span-34-34"><a id="__codelineno-34-34" name="__codelineno-34-34" href="#__codelineno-34-34"></a>    }
 </span><span id="__span-34-35"><a id="__codelineno-34-35" name="__codelineno-34-35" href="#__codelineno-34-35"></a>    griddepcontrol.launch_dependents;  // ← kernel is basically done
 </span><span id="__span-34-36"><a id="__codelineno-34-36" name="__codelineno-34-36" href="#__codelineno-34-36"></a>
-</span><span id="__span-34-37"><a id="__codelineno-34-37" name="__codelineno-34-37" href="#__codelineno-34-37"></a>  BETTER — fire after the final tile's epilogue store is committed:
+</span><span id="__span-34-37"><a id="__codelineno-34-37" name="__codelineno-34-37" href="#__codelineno-34-37"></a>  EQUIVALENT AFTER-STORE POINT — final tile's epilogue:
 </span><span id="__span-34-38"><a id="__codelineno-34-38" name="__codelineno-34-38" href="#__codelineno-34-38"></a>    while (has_more_tiles()) {
 </span><span id="__span-34-39"><a id="__codelineno-34-39" name="__codelineno-34-39" href="#__codelineno-34-39"></a>        process_tile_mainloop();     // TMA + WGMMA
 </span><span id="__span-34-40"><a id="__codelineno-34-40" name="__codelineno-34-40" href="#__codelineno-34-40"></a>        process_tile_epilogue();     // stores to output
@@ -5457,9 +5457,9 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-37-29"><a id="__codelineno-37-29" name="__codelineno-37-29" href="#__codelineno-37-29"></a>        divides evenly into whole tiles beyond the stream-K portion.
 </span><span id="__span-37-30"><a id="__codelineno-37-30" name="__codelineno-37-30" href="#__codelineno-37-30"></a>        These tiles skip fixup and workspace entirely.
 </span><span id="__span-37-31"><a id="__codelineno-37-31" name="__codelineno-37-31" href="#__codelineno-37-31"></a>
-</span><span id="__span-37-32"><a id="__codelineno-37-32" name="__codelineno-37-32" href="#__codelineno-37-32"></a>  □ 6. CONSIDER HyTiS INSTEAD
+</span><span id="__span-37-32"><a id="__codelineno-37-32" name="__codelineno-37-32" href="#__codelineno-37-32"></a>  □ 6. CONSIDER spatial tail subdivision INSTEAD
 </span><span id="__span-37-33"><a id="__codelineno-37-33" name="__codelineno-37-33" href="#__codelineno-37-33"></a>        If K is small (AI is dominated by M×N, not K):
-</span><span id="__span-37-34"><a id="__codelineno-37-34" name="__codelineno-37-34" href="#__codelineno-37-34"></a>          HyTiS avoids fixup overhead entirely.
+</span><span id="__span-37-34"><a id="__codelineno-37-34" name="__codelineno-37-34" href="#__codelineno-37-34"></a>          spatial tail subdivision avoids fixup overhead entirely.
 </span><span id="__span-37-35"><a id="__codelineno-37-35" name="__codelineno-37-35" href="#__codelineno-37-35"></a>        If K is large relative to M×N: use Stream-K.
 </span><span id="__span-37-36"><a id="__codelineno-37-36" name="__codelineno-37-36" href="#__codelineno-37-36"></a>
 </span><span id="__span-37-37"><a id="__codelineno-37-37" name="__codelineno-37-37" href="#__codelineno-37-37"></a>  □ 7. TEST WITH SMALL TILE COUNTS
@@ -5543,8 +5543,8 @@ Compiler exit: <code>0</code>; process exit: <code>0</code>. Timings and print o
 </span><span id="__span-39-25"><a id="__codelineno-39-25" name="__codelineno-39-25" href="#__codelineno-39-25"></a>    num_groups = min(problem_blocks_m / cluster_m, 8)
 </span><span id="__span-39-26"><a id="__codelineno-39-26" name="__codelineno-39-26" href="#__codelineno-39-26"></a>    output_tile_id = tile_id_in_group × num_groups + group_idx
 </span><span id="__span-39-27"><a id="__codelineno-39-27" name="__codelineno-39-27" href="#__codelineno-39-27"></a>
-</span><span id="__span-39-28"><a id="__codelineno-39-28" name="__codelineno-39-28" href="#__codelineno-39-28"></a>  HyTiS vs Stream-K:
-</span><span id="__span-39-29"><a id="__codelineno-39-29" name="__codelineno-39-29" href="#__codelineno-39-29"></a>    Small K, partial wave in M×N  →  HyTiS (no workspace, no fixup)
+</span><span id="__span-39-28"><a id="__codelineno-39-28" name="__codelineno-39-28" href="#__codelineno-39-28"></a>  spatial tail subdivision vs Stream-K:
+</span><span id="__span-39-29"><a id="__codelineno-39-29" name="__codelineno-39-29" href="#__codelineno-39-29"></a>    Small K, partial wave in M×N  →  spatial tail subdivision (no workspace, no fixup)
 </span><span id="__span-39-30"><a id="__codelineno-39-30" name="__codelineno-39-30" href="#__codelineno-39-30"></a>    Large K, small M×N            →  Stream-K (K-split + fixup)
 </span></code></pre></div>
 <h3 id="gdc-dependent-launch-quick-reference">GDC / Dependent-Launch Quick Reference<a class="headerlink" href="#gdc-dependent-launch-quick-reference" title="Permanent link">&para;</a></h3>

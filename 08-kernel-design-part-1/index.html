@@ -3863,7 +3863,7 @@ confirm them with Chapter 13's counters and timing procedure.</p>
 </span><span id="__span-13-25"><a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a>    └── Avoid __syncthreads() where possible (use warp intrinsics)
 </span><span id="__span-13-26"><a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a>
 </span><span id="__span-13-27"><a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a>  ─── Category 3: Locality-Bound ──────────────────────────────────
-</span><span id="__span-13-28"><a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a>  Symptom: High DRAM transactions but low bandwidth utilization.
+</span><span id="__span-13-28"><a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a>  Symptom: Excess DRAM traffic relative to useful bytes and poor reuse.
 </span><span id="__span-13-29"><a id="__codelineno-13-29" name="__codelineno-13-29" href="#__codelineno-13-29"></a>           Many cache misses despite seemingly reasonable access patterns.
 </span><span id="__span-13-30"><a id="__codelineno-13-30" name="__codelineno-13-30" href="#__codelineno-13-30"></a>  Cause: Data accessed in random order, cache thrashing, TLB pressure,
 </span><span id="__span-13-31"><a id="__codelineno-13-31" name="__codelineno-13-31" href="#__codelineno-13-31"></a>         working set larger than L2 cache.
@@ -3882,7 +3882,7 @@ confirm them with Chapter 13's counters and timing procedure.</p>
 </span><span id="__span-13-44"><a id="__codelineno-13-44" name="__codelineno-13-44" href="#__codelineno-13-44"></a>      YES → partially compute-bound → increase occupancy or AI
 </span><span id="__span-13-45"><a id="__codelineno-13-45" name="__codelineno-13-45" href="#__codelineno-13-45"></a>      NO  → Is SM utilization &gt; 50%?
 </span><span id="__span-13-46"><a id="__codelineno-13-46" name="__codelineno-13-46" href="#__codelineno-13-46"></a>        YES → Latency-bound → break dependency chains
-</span><span id="__span-13-47"><a id="__codelineno-13-47" name="__codelineno-13-47" href="#__codelineno-13-47"></a>        NO  → Locality-bound → improve cache utilization
+</span><span id="__span-13-47"><a id="__codelineno-13-47" name="__codelineno-13-47" href="#__codelineno-13-47"></a>        NO  → Check grid size, parallelism, launch geometry and tail effects
 </span></code></pre></div>
 <h3 id="32-the-epilogue-as-the-universal-memory-bound-killer">3.2 The Epilogue as the Universal Memory-Bound Killer<a class="headerlink" href="#32-the-epilogue-as-the-universal-memory-bound-killer" title="Permanent link">&para;</a></h3>
 <p>In a real training pipeline, the operations after GEMM (bias, activation, scaling) are all memory-bound. Instead of running them as separate kernels (3+ HBM round-trips), they are fused into the GEMM epilogue (0 extra HBM round-trips — the data stays in registers).</p>

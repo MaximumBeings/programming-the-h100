@@ -2871,10 +2871,15 @@ CUDA 12.0 can resolve Auto differently.</p>
 <p>The host lifecycle is unchanged in principle: check <code>can_implement</code>, allocate workspace, initialize, launch, check asynchronous completion, then validate all output values. A new supported fusion does not justify removing those checks. Changing schedules can change shared-memory demand, available stages and launch constraints even when the mathematical shape is identical.</p>
 <p>Do not copy the argument aggregate of an unrelated EVT. Some predefined fusion operations expose flat named fields; custom trees can require nested argument structures that mirror their nodes. Inspect the selected operation and callback definitions in the pinned release.</p>
 <h2 id="5-read-an-epilogue-visitor-tree-as-dataflow">5 — Read an epilogue visitor tree as dataflow<a class="headerlink" href="#5-read-an-epilogue-visitor-tree-as-dataflow" title="Permanent link">&para;</a></h2>
-<p>A conceptual tree for the lab is:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>A,B → MMA accumulator → multiply by alpha ─┐
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>                                         ├→ add → ReLU → convert/store D
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>C → multiply by beta ─────────────────────┘
+<p>The scalar arithmetic below is conceptual; the pinned predefined visitor has
+a ReLU compute node above one <code>Sm90LinearCombination</code> node:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>MMA accumulator, C, alpha, beta
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>             │
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>Sm90LinearCombination: homogeneous_multiply_add(beta, C, alpha*acc)
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>             │
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>     Sm90Compute&lt;ReLU&gt;
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>             │
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>       convert/store D
 </span></code></pre></div>
 <p>Nodes describe fetch, broadcast, computation or storage. Child order and operation type determine the expression. A <code>multiply_add</code> node with the wrong child order can compile while implementing a different formula. A cast in a child node can also move rounding earlier in the graph.</p>
 <p>Pinned example 49 contains a custom tree implementing the linear combination. Start by matching that tree against its scalar formula and argument structure, then identify how a supported activation is attached. Do not write a new callback merely to reproduce a predefined operation that already matches the contract.</p>

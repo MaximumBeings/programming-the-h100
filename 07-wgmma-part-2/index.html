@@ -4642,7 +4642,7 @@ Engine automates.</p>
 </span><span id="__span-15-54"><a id="__codelineno-15-54" name="__codelineno-15-54" href="#__codelineno-15-54"></a>      raw_pair, __NV_SATFINITE, __NV_E4M3);
 </span></code></pre></div>
 <h3 id="122-scaling-factors-why-quantization-needs-them">12.2 Scaling Factors — Why Quantization Needs Them<a class="headerlink" href="#122-scaling-factors-why-quantization-needs-them" title="Permanent link">&para;</a></h3>
-<p>Raw FP8 conversion almost always produces poor results because the model's actual value range rarely fits nicely into FP8's limited range. Scaling factors bring the values into the representable range before quantization, then remove the scaling after dequantization.</p>
+<p>Choose a scale from the input's range and underflow/overflow requirements. Scaling shifts the represented range before quantization and is undone during reconstruction; it does not add mantissa bits or guarantee accuracy.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>Scaling Factors — The Core Curriculum of FP8
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>

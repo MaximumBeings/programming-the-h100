@@ -4649,7 +4649,7 @@ No fixed speedup or link saturation is promised.</p>
 <blockquote>
 <p>Executed: <code>2026-11-17T23:36:24.075201+00:00</code> (UTC). Compile PASS; execution PASS. System: 2× H100 80GB HBM3, 132 SMs each, NV18 topology; CUDA 12.8.93, driver 580.105.08, Ubuntu 24.04.5 LTS.</p>
 </blockquote>
-<p><a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu">Current tested source</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log">Compiler log</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log">Execution log</a> · <a href="../final-audit/">Full audit</a>.</p>
+<p><a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu">Archived tested source</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log">Compiler log</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log">Execution log</a> · <a href="../final-audit/">Full audit</a>.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex11_nvlink_bandwidth.cu<span class="w"> </span>-o<span class="w"> </span>ex11_nvlink_bandwidth
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>./ex11_nvlink_bandwidth
 </span></code></pre></div>
@@ -5153,9 +5153,9 @@ with <code>ncclSum</code>, every GPU should have <code>grad[i] = 1 + 2 = 3</code
 </span><span id="__span-24-18"><a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a><span class="c1">//</span>
 </span><span id="__span-24-19"><a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a><span class="c1">// WHAT TO OBSERVE:</span>
 </span><span id="__span-24-20"><a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a><span class="c1">//   - All GPUs produce the same correct result</span>
-</span><span id="__span-24-21"><a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a><span class="c1">//   - AllReduce bandwidth approaches NVLink theoretical peak</span>
-</span><span id="__span-24-22"><a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a><span class="c1">//   - Timing scales inversely with number of GPUs (more GPUs = more</span>
-</span><span id="__span-24-23"><a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a><span class="c1">//     parallel bandwidth, but more data to sum)</span>
+</span><span id="__span-24-21"><a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a><span class="c1">//   - Record bandwidth for this message size and selected algorithm.</span>
+</span><span id="__span-24-22"><a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a><span class="c1">//   - A fixed-message ring AllReduce does not have inverse-N runtime;</span>
+</span><span id="__span-24-23"><a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a><span class="c1">//     its per-rank send volume is 2*(N-1)/N times the payload.</span>
 </span><span id="__span-24-24"><a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a><span class="c1">//</span>
 </span><span id="__span-24-25"><a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a><span class="c1">// WORKS ON: sm_80+. Requires NCCL &gt;= 2.15.</span>
 </span><span id="__span-24-26"><a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a><span class="c1">// ═══════════════════════════════════════════════════════════════════</span>
@@ -5461,6 +5461,7 @@ with <code>ncclSum</code>, every GPU should have <code>grad[i] = 1 + 2 = 3</code
 </span></code></pre></div>
 <!-- revalidation:start:ex12_nccl_allreduce.cu -->
 <blockquote>
+<p><strong>Historical source:</strong> this capture predates the comment correction. GPU revalidation pending for the current source hash; numerical code and captured logs are unchanged.</p>
 <p><strong>Additional execution — November 18, 2026: PASS.</strong> 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; <code>sm_90a</code>. Compiled UTC: <code>2026-11-18T11:19:56.952819+00:00</code>. Executed UTC: <code>2026-11-18T11:19:58.343801+00:00</code>.</p>
 </blockquote>
 <p>Source SHA-256: <code>f0cc87820667319cc733016feb646d72e31d4bf2dd26a20b8329545b7c062889</code>. <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu">Exact source</a> · <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log">Compile log</a> · <a href="../validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log">Run log</a> · <a href="../revalidation-2026-11-18/">System and rerun summary</a>.</p>
@@ -5502,7 +5503,7 @@ with <code>ncclSum</code>, every GPU should have <code>grad[i] = 1 + 2 = 3</code
 <blockquote>
 <p>Executed: <code>2026-11-17T23:36:28.640907+00:00</code> (UTC). Compile PASS; execution PASS. System: 2× H100 80GB HBM3, 132 SMs each, NV18 topology; CUDA 12.8.93, driver 580.105.08, Ubuntu 24.04.5 LTS.</p>
 </blockquote>
-<p><a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu">Current tested source</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log">Compiler log</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log">Execution log</a> · <a href="../final-audit/">Full audit</a>.</p>
+<p><a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/ex12_nccl_allreduce.cu">Archived tested source</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/compile.log">Compiler log</a> · <a href="../validation/2026-11-17-final-audit/11-multi-gpu-nccl/ex12_nccl_allreduce/run.log">Execution log</a> · <a href="../final-audit/">Full audit</a>.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_90a<span class="w"> </span>-O2<span class="w"> </span>ex12_nccl_allreduce.cu<span class="w"> </span>-o<span class="w"> </span>ex12_nccl_allreduce<span class="w"> </span>-lnccl
 </span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>./ex12_nccl_allreduce
 </span></code></pre></div>
@@ -7189,7 +7190,7 @@ scaling compute.</p>
 <blockquote>
 <p>Executed: <code>2026-11-18T00:03:00.400131+00:00</code> (UTC). Compile PASS; execution PASS. System: eight A100 GPUs; target <code>sm_80</code>. All 16,384 final weights and 16 step-loss values match the CPU reference within tolerance.</p>
 </blockquote>
-<p><a href="../validation/2026-11-18-eight-a100/ex13_hybrid_parallel_training.cu">Current tested source</a> · <a href="../validation/2026-11-18-eight-a100/compile.log">Compiler log</a> · <a href="../validation/2026-11-18-eight-a100/run.log">Execution log</a> · <a href="../validation/2026-11-18-eight-a100/system-info.log">System/topology</a> · <a href="../eight-gpu-validation/">Full validation</a>.</p>
+<p><a href="../validation/2026-11-18-eight-a100/ex13_hybrid_parallel_training.cu">Archived tested source</a> · <a href="../validation/2026-11-18-eight-a100/compile.log">Compiler log</a> · <a href="../validation/2026-11-18-eight-a100/run.log">Execution log</a> · <a href="../validation/2026-11-18-eight-a100/system-info.log">System/topology</a> · <a href="../eight-gpu-validation/">Full validation</a>.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>nvcc<span class="w"> </span>-std<span class="o">=</span>c++17<span class="w"> </span>-arch<span class="o">=</span>sm_80<span class="w"> </span>-O2<span class="w"> </span>ex13_hybrid_parallel_training.cu<span class="w"> </span>-o<span class="w"> </span>ex13_hybrid_parallel_training<span class="w"> </span>-lnccl<span class="w"> </span>-Xcompiler<span class="w"> </span>-pthread<span class="w"> </span>-lcublas
 </span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>./ex13_hybrid_parallel_training
 </span></code></pre></div>

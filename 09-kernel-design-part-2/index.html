@@ -3347,12 +3347,12 @@ source. See the <a href="../review-fixes-2026-11-21/">repair record</a>.</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  ARRIVE (signal that work is done):
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    mbarrier.arrive [&amp;bar];          // thread signals the barrier
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    mbarrier.arrive.expect_tx [&amp;bar], BYTES; // TMA hardware signals it
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                                    // after moving BYTES to SMEM
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    mbarrier.arrive.expect_tx [&amp;bar], BYTES; // producer thread arrives
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                                    // and adds the expected byte count
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  WAIT (block until barrier is complete):
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    mbarrier.try_wait.parity [&amp;bar], phase; // thread waits for expected
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                                             // number of arrivals
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    mbarrier.try_wait.parity [&amp;bar], phase; // wait for both zero pending arrivals
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                                             // and zero transaction bytes
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  ─── The Two-Barrier Protocol ─────────────────────────────────────
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
@@ -3360,50 +3360,51 @@ source. See the <a href="../review-fixes-2026-11-21/">repair record</a>.</p>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>  FULL barrier:
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    Meaning: "Data is ready for the consumer to read"
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    Who arrives: Producer (via TMA hardware automatically after load)
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    Who waits: Consumer (before starting WGMMA on this stage's data)
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>  EMPTY barrier:
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    Meaning: "Consumer has finished reading; stage can be rewritten"
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    Who arrives: Consumer (after WGMMA on this stage is confirmed done)
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    Who waits: Producer (before issuing new TMA load into this stage)
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>  ─── Timeline with Two-Barrier Handshake ─────────────────────────
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>  Stage 0 lifecycle:
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>  Producer:
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    [1] Wait on EMPTY barrier of stage 0   ← stage is free to write
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    [2] Issue TMA load into stage 0
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>        (TMA automatically signals FULL barrier when bytes arrive)
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>    [continue to stage 1]
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>  TMA hardware (runs asynchronously, no thread needed):
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>    [3] Moves data from HBM → stage 0 SMEM
-</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>    [4] Signals FULL barrier of stage 0
-</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>
-</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>  Consumer:
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>    [5] Wait on FULL barrier of stage 0    ← data is ready
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>    [6] Execute WGMMA using stage 0 data
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    [7] Wait for WGMMA to complete (wgmma.wait_group)
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    [8] Signal EMPTY barrier of stage 0    ← stage is free again
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>  Back to Producer:
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    [9] When EMPTY fires, producer can load into stage 0 again
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>  This creates a stage-ownership handshake. Hopper code can poll with
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>  try_wait loops; the barrier protocol alone does not eliminate polling.
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>  Each barrier fires exactly once per stage per pipeline pass.
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>  ─── The Transaction Count ────────────────────────────────────────
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>  When using TMA (which signals the barrier automatically):
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>    Producer calls: mbarrier.expect_tx [&amp;full_bar[stage]], BYTES;
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>    → Tells the barrier: "expect BYTES of data to arrive"
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>    → TMA engine signals the barrier AFTER BYTES have been written
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>    → Consumer's try_wait returns only after the TMA is complete
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>  Without expect_tx, you'd need to poll or use a separate signal.
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>  expect_tx + TMA is the H100's way of making hardware signal software.
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    Who arrives: Producer thread via arrive.expect_tx
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    Who completes transactions: TMA via complete_tx
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    Who waits: Consumer (before starting WGMMA on this stage's data)
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>  EMPTY barrier:
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    Meaning: "Consumer has finished reading; stage can be rewritten"
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    Who arrives: Consumer (after WGMMA on this stage is confirmed done)
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    Who waits: Producer (before issuing new TMA load into this stage)
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>  ─── Timeline with Two-Barrier Handshake ─────────────────────────
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>  Stage 0 lifecycle:
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>  Producer:
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    [1] Wait on EMPTY barrier of stage 0   ← stage is free to write
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>    [2] Issue TMA load into stage 0
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>        (TMA automatically signals FULL barrier when bytes arrive)
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>    [continue to stage 1]
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>  TMA hardware (runs asynchronously, no thread needed):
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>    [3] Moves data from HBM → stage 0 SMEM
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>    [4] Signals FULL barrier of stage 0
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>  Consumer:
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>    [5] Wait on FULL barrier of stage 0    ← data is ready
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    [6] Execute WGMMA using stage 0 data
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    [7] Wait for WGMMA to complete (wgmma.wait_group)
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    [8] Signal EMPTY barrier of stage 0    ← stage is free again
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>  Back to Producer:
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    [9] When EMPTY fires, producer can load into stage 0 again
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>  This creates a stage-ownership handshake. Hopper code can poll with
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>  try_wait loops; the barrier protocol alone does not eliminate polling.
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>  Each barrier fires exactly once per stage per pipeline pass.
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>  ─── The Transaction Count ────────────────────────────────────────
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>  When using TMA (which signals the barrier automatically):
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>    Producer calls: mbarrier.expect_tx [&amp;full_bar[stage]], BYTES;
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>    → Tells the barrier: "expect BYTES of data to arrive"
+</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>    → TMA engine signals the barrier AFTER BYTES have been written
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>    → Consumer's try_wait returns only after the TMA is complete
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>  Without expect_tx, you'd need to poll or use a separate signal.
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>  expect_tx + TMA is the H100's way of making hardware signal software.
 </span></code></pre></div>
 <h3 id="92-mbarrier-in-c-code">9.2 mbarrier in C++ Code<a class="headerlink" href="#92-mbarrier-in-c-code" title="Permanent link">&para;</a></h3>
 <p>The CUDA toolkit provides two interfaces: PTX inline assembly and the <code>cuda::barrier</code> C++ wrapper. We show both.</p>
@@ -5344,7 +5345,7 @@ one-worker-per-SM model.</p>
 </span><span id="__span-33-21"><a id="__codelineno-33-21" name="__codelineno-33-21" href="#__codelineno-33-21"></a>  Some SMs "own" a full output tile:
 </span><span id="__span-33-22"><a id="__codelineno-33-22" name="__codelineno-33-22" href="#__codelineno-33-22"></a>    They compute all K_TILES for that tile → write output directly.
 </span><span id="__span-33-23"><a id="__codelineno-33-23" name="__codelineno-33-23" href="#__codelineno-33-23"></a>  Some SMs "split" a tile with a neighbor:
-</span><span id="__span-33-24"><a id="__codelineno-33-24" name="__codelineno-33-24" href="#__codelineno-33-24"></a>    They compute K/2 of the K-tiles → write partial to scratchpad.
+</span><span id="__span-33-24"><a id="__codelineno-33-24" name="__codelineno-33-24" href="#__codelineno-33-24"></a>    They compute their assigned K interval, often unequal → write partial.
 </span><span id="__span-33-25"><a id="__codelineno-33-25" name="__codelineno-33-25" href="#__codelineno-33-25"></a>    The neighbor reads the scratchpad, adds its partial → writes output.
 </span><span id="__span-33-26"><a id="__codelineno-33-26" name="__codelineno-33-26" href="#__codelineno-33-26"></a>
 </span><span id="__span-33-27"><a id="__codelineno-33-27" name="__codelineno-33-27" href="#__codelineno-33-27"></a>  ─── The Fixup Step ──────────────────────────────────────────────
@@ -5363,19 +5364,20 @@ one-worker-per-SM model.</p>
 </span><span id="__span-33-40"><a id="__codelineno-33-40" name="__codelineno-33-40" href="#__codelineno-33-40"></a>    Writes result to output[T]. (Epilogue applied here.)
 </span><span id="__span-33-41"><a id="__codelineno-33-41" name="__codelineno-33-41" href="#__codelineno-33-41"></a>
 </span><span id="__span-33-42"><a id="__codelineno-33-42" name="__codelineno-33-42" href="#__codelineno-33-42"></a>  The workspace is a global memory buffer of size = num_split_tiles × tile_bytes.
-</span><span id="__span-33-43"><a id="__codelineno-33-43" name="__codelineno-33-43" href="#__codelineno-33-43"></a>  Only the "tail" tiles near wave boundaries are split.
-</span><span id="__span-33-44"><a id="__codelineno-33-44" name="__codelineno-33-44" href="#__codelineno-33-44"></a>
-</span><span id="__span-33-45"><a id="__codelineno-33-45" name="__codelineno-33-45" href="#__codelineno-33-45"></a>  ─── Hybrid Strategy (most production kernels) ────────────────────
-</span><span id="__span-33-46"><a id="__codelineno-33-46" name="__codelineno-33-46" href="#__codelineno-33-46"></a>  Apply standard data-parallel scheduling to tiles that DON'T cross wave
-</span><span id="__span-33-47"><a id="__codelineno-33-47" name="__codelineno-33-47" href="#__codelineno-33-47"></a>  boundaries (the "bulk" of the work). Apply stream-K ONLY to the last
-</span><span id="__span-33-48"><a id="__codelineno-33-48" name="__codelineno-33-48" href="#__codelineno-33-48"></a>  partial wave (the "tail").
-</span><span id="__span-33-49"><a id="__codelineno-33-49" name="__codelineno-33-49" href="#__codelineno-33-49"></a>
-</span><span id="__span-33-50"><a id="__codelineno-33-50" name="__codelineno-33-50" href="#__codelineno-33-50"></a>  Why? Because split tiles have reduction overhead (global workspace write,
-</span><span id="__span-33-51"><a id="__codelineno-33-51" name="__codelineno-33-51" href="#__codelineno-33-51"></a>  atomic synchronization). For tiles that don't need splitting, standard
-</span><span id="__span-33-52"><a id="__codelineno-33-52" name="__codelineno-33-52" href="#__codelineno-33-52"></a>  scheduling is faster and simpler. Only the tail needs Stream-K.
-</span><span id="__span-33-53"><a id="__codelineno-33-53" name="__codelineno-33-53" href="#__codelineno-33-53"></a>
-</span><span id="__span-33-54"><a id="__codelineno-33-54" name="__codelineno-33-54" href="#__codelineno-33-54"></a>  Threshold: If tail wave is &gt; 50% full, use data-parallel.
-</span><span id="__span-33-55"><a id="__codelineno-33-55" name="__codelineno-33-55" href="#__codelineno-33-55"></a>             If tail wave is &lt; 50% full, use Stream-K for the tail.
+</span><span id="__span-33-43"><a id="__codelineno-33-43" name="__codelineno-33-43" href="#__codelineno-33-43"></a>  The set of split tiles depends on the partition; nearly every tile
+</span><span id="__span-33-44"><a id="__codelineno-33-44" name="__codelineno-33-44" href="#__codelineno-33-44"></a>  can be split in this 133-tile example.
+</span><span id="__span-33-45"><a id="__codelineno-33-45" name="__codelineno-33-45" href="#__codelineno-33-45"></a>
+</span><span id="__span-33-46"><a id="__codelineno-33-46" name="__codelineno-33-46" href="#__codelineno-33-46"></a>  ─── Hybrid Strategy (most production kernels) ────────────────────
+</span><span id="__span-33-47"><a id="__codelineno-33-47" name="__codelineno-33-47" href="#__codelineno-33-47"></a>  Apply standard data-parallel scheduling to tiles that DON'T cross wave
+</span><span id="__span-33-48"><a id="__codelineno-33-48" name="__codelineno-33-48" href="#__codelineno-33-48"></a>  boundaries (the "bulk" of the work). Apply stream-K ONLY to the last
+</span><span id="__span-33-49"><a id="__codelineno-33-49" name="__codelineno-33-49" href="#__codelineno-33-49"></a>  partial wave (the "tail").
+</span><span id="__span-33-50"><a id="__codelineno-33-50" name="__codelineno-33-50" href="#__codelineno-33-50"></a>
+</span><span id="__span-33-51"><a id="__codelineno-33-51" name="__codelineno-33-51" href="#__codelineno-33-51"></a>  Why? Because split tiles have reduction overhead (global workspace write,
+</span><span id="__span-33-52"><a id="__codelineno-33-52" name="__codelineno-33-52" href="#__codelineno-33-52"></a>  atomic synchronization). For tiles that don't need splitting, standard
+</span><span id="__span-33-53"><a id="__codelineno-33-53" name="__codelineno-33-53" href="#__codelineno-33-53"></a>  scheduling is faster and simpler. Only the tail needs Stream-K.
+</span><span id="__span-33-54"><a id="__codelineno-33-54" name="__codelineno-33-54" href="#__codelineno-33-54"></a>
+</span><span id="__span-33-55"><a id="__codelineno-33-55" name="__codelineno-33-55" href="#__codelineno-33-55"></a>  Compare data-parallel and hybrid partitions including fixup costs;
+</span><span id="__span-33-56"><a id="__codelineno-33-56" name="__codelineno-33-56" href="#__codelineno-33-56"></a>  there is no universal 50%-full selection rule.
 </span></code></pre></div>
 <hr />
 <h2 id="18-rasterization-and-l2-cache-locality">18 — Rasterization and L2 Cache Locality<a class="headerlink" href="#18-rasterization-and-l2-cache-locality" title="Permanent link">&para;</a></h2>
@@ -5543,16 +5545,15 @@ arithmetic.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>═══════════════════════════════════════════════════════════════════
 </span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>  FILE:    ex08_comprehensive.cu
 </span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>  COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex08_comprehensive.cu -o ex08
-</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>           NOTE: Uses cooperative_groups for cluster API.
-</span><span id="__span-37-5"><a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>                 Persistent scheduling + warp spec require sm_90a.
+</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>           NOTE: Uses ordinary CUDA and __syncthreads; no cluster API,
+</span><span id="__span-37-5"><a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>                 WGMMA, setmaxnreg or mbarrier instructions are used.
 </span><span id="__span-37-6"><a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>  RUN:     ./ex08
 </span><span id="__span-37-7"><a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>  EXPECT:  All 256×256 output elements verified against reference GEMM+ReLU.
 </span><span id="__span-37-8"><a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>           Persistent loop correctly processes all 16 tiles.
 </span><span id="__span-37-9"><a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>           Warp specialization confirmed: WG0 only loads, WG1 only computes.
 </span><span id="__span-37-10"><a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a>
-</span><span id="__span-37-11"><a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a>  HARDWARE: Requires Hopper (H100) or Blackwell. A100 users can remove
-</span><span id="__span-37-12"><a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a>            warp spec and use a single warpgroup version.
-</span><span id="__span-37-13"><a id="__codelineno-37-13" name="__codelineno-37-13" href="#__codelineno-37-13"></a>═══════════════════════════════════════════════════════════════════
+</span><span id="__span-37-11"><a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a>  HARDWARE: Ordinary CUDA, sm_80+; no Hopper-only instruction is required.
+</span><span id="__span-37-12"><a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a>═══════════════════════════════════════════════════════════════════
 </span></code></pre></div>
 <div class="language-cuda highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1">// ═══════════════════════════════════════════════════════════════════</span>
 </span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="c1">// ex08_comprehensive.cu</span>

@@ -4894,32 +4894,38 @@ completes when both are satisfied.</p>
 </span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>
 </span><span id="__span-20-22"><a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a>  The correct usage: call arrive.expect_tx ONCE to combine arrivals:
 </span><span id="__span-20-23"><a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a>    mbarrier.arrive.expect_tx [mbar], 768;   // 512 + 256 combined
-</span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>    // OR: call it once with the total
+</span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a>    // Set the total before submitting either copy.
 </span><span id="__span-20-25"><a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a>
-</span><span id="__span-20-26"><a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a>  OR: initialize with thread_count=2 and call arrive.expect_tx twice:
-</span><span id="__span-20-27"><a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a>    mbarrier.init [mbar], 2;                 // 2 thread arrivals expected
-</span><span id="__span-20-28"><a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a>    mbarrier.arrive.expect_tx [mbar], 512;   // thread 1 arrives, adds 512
-</span><span id="__span-20-29"><a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a>    mbarrier.arrive.expect_tx [mbar], 256;   // thread 2 arrives, adds 256
-</span><span id="__span-20-30"><a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a>    // pending threads: 2→1→0 ✓
-</span><span id="__span-20-31"><a id="__codelineno-20-31" name="__codelineno-20-31" href="#__codelineno-20-31"></a>    // pending tx bytes: 0→512→768, then TMA decrements to 0
-</span><span id="__span-20-32"><a id="__codelineno-20-32" name="__codelineno-20-32" href="#__codelineno-20-32"></a>
-</span><span id="__span-20-33"><a id="__codelineno-20-33" name="__codelineno-20-33" href="#__codelineno-20-33"></a>  Key rule: each arrive.expect_tx call decrements thread count by 1
-</span><span id="__span-20-34"><a id="__codelineno-20-34" name="__codelineno-20-34" href="#__codelineno-20-34"></a>  AND adds to the tx byte count. Design the counts carefully.
-</span><span id="__span-20-35"><a id="__codelineno-20-35" name="__codelineno-20-35" href="#__codelineno-20-35"></a>
-</span><span id="__span-20-36"><a id="__codelineno-20-36" name="__codelineno-20-36" href="#__codelineno-20-36"></a>  ─── What Happens if Counts Don't Match Reality ───────────────────
-</span><span id="__span-20-37"><a id="__codelineno-20-37" name="__codelineno-20-37" href="#__codelineno-20-37"></a>
-</span><span id="__span-20-38"><a id="__codelineno-20-38" name="__codelineno-20-38" href="#__codelineno-20-38"></a>  If you set tx_count=512 but TMA actually copies 1024 bytes:
-</span><span id="__span-20-39"><a id="__codelineno-20-39" name="__codelineno-20-39" href="#__codelineno-20-39"></a>    → accounting no longer matches the linked completion operations.
-</span><span id="__span-20-40"><a id="__codelineno-20-40" name="__codelineno-20-40" href="#__codelineno-20-40"></a>    → do not assume completion at an intermediate 512-byte milestone;
-</span><span id="__span-20-41"><a id="__codelineno-20-41" name="__codelineno-20-41" href="#__codelineno-20-41"></a>      hardware completion granularity does not promise that transition.
-</span><span id="__span-20-42"><a id="__codelineno-20-42" name="__codelineno-20-42" href="#__codelineno-20-42"></a>    → the phase can complete incorrectly or fail to complete. INVALID protocol.
+</span><span id="__span-20-26"><a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a>  Alternatively, add bytes without consuming an arrival using expect_tx:
+</span><span id="__span-20-27"><a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a>    mbarrier.expect_tx [mbar], 256;
+</span><span id="__span-20-28"><a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a>    mbarrier.arrive.expect_tx [mbar], 512; // sole thread arrival
+</span><span id="__span-20-29"><a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a>    // Only now issue both copies: 768 total expected bytes.
+</span><span id="__span-20-30"><a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a>  Arm all expectations before operations can complete the phase.
+</span><span id="__span-20-31"><a id="__codelineno-20-31" name="__codelineno-20-31" href="#__codelineno-20-31"></a>
+</span><span id="__span-20-32"><a id="__codelineno-20-32" name="__codelineno-20-32" href="#__codelineno-20-32"></a>  OR: initialize with thread_count=2 and call arrive.expect_tx twice:
+</span><span id="__span-20-33"><a id="__codelineno-20-33" name="__codelineno-20-33" href="#__codelineno-20-33"></a>    mbarrier.init [mbar], 2;                 // 2 thread arrivals expected
+</span><span id="__span-20-34"><a id="__codelineno-20-34" name="__codelineno-20-34" href="#__codelineno-20-34"></a>    mbarrier.arrive.expect_tx [mbar], 512;   // thread 1 arrives, adds 512
+</span><span id="__span-20-35"><a id="__codelineno-20-35" name="__codelineno-20-35" href="#__codelineno-20-35"></a>    mbarrier.arrive.expect_tx [mbar], 256;   // thread 2 arrives, adds 256
+</span><span id="__span-20-36"><a id="__codelineno-20-36" name="__codelineno-20-36" href="#__codelineno-20-36"></a>    // pending threads: 2→1→0 ✓
+</span><span id="__span-20-37"><a id="__codelineno-20-37" name="__codelineno-20-37" href="#__codelineno-20-37"></a>    // pending tx bytes: 0→512→768, then TMA decrements to 0
+</span><span id="__span-20-38"><a id="__codelineno-20-38" name="__codelineno-20-38" href="#__codelineno-20-38"></a>
+</span><span id="__span-20-39"><a id="__codelineno-20-39" name="__codelineno-20-39" href="#__codelineno-20-39"></a>  Key rule: each arrive.expect_tx call decrements thread count by 1
+</span><span id="__span-20-40"><a id="__codelineno-20-40" name="__codelineno-20-40" href="#__codelineno-20-40"></a>  AND adds to the tx byte count. Design the counts carefully.
+</span><span id="__span-20-41"><a id="__codelineno-20-41" name="__codelineno-20-41" href="#__codelineno-20-41"></a>
+</span><span id="__span-20-42"><a id="__codelineno-20-42" name="__codelineno-20-42" href="#__codelineno-20-42"></a>  ─── What Happens if Counts Don't Match Reality ───────────────────
 </span><span id="__span-20-43"><a id="__codelineno-20-43" name="__codelineno-20-43" href="#__codelineno-20-43"></a>
-</span><span id="__span-20-44"><a id="__codelineno-20-44" name="__codelineno-20-44" href="#__codelineno-20-44"></a>  If you set tx_count=1024 but TMA only copies 512 bytes:
-</span><span id="__span-20-45"><a id="__codelineno-20-45" name="__codelineno-20-45" href="#__codelineno-20-45"></a>    → pending tx goes 1024→512 and STOPS (never reaches 0)
-</span><span id="__span-20-46"><a id="__codelineno-20-46" name="__codelineno-20-46" href="#__codelineno-20-46"></a>    → try_wait spins forever. DEADLOCK.
-</span><span id="__span-20-47"><a id="__codelineno-20-47" name="__codelineno-20-47" href="#__codelineno-20-47"></a>
-</span><span id="__span-20-48"><a id="__codelineno-20-48" name="__codelineno-20-48" href="#__codelineno-20-48"></a>  tx_count MUST exactly equal the bytes that the linked TMA will copy.
-</span><span id="__span-20-49"><a id="__codelineno-20-49" name="__codelineno-20-49" href="#__codelineno-20-49"></a>  Check your tensor descriptor dimensions carefully.
+</span><span id="__span-20-44"><a id="__codelineno-20-44" name="__codelineno-20-44" href="#__codelineno-20-44"></a>  If you set tx_count=512 but TMA actually copies 1024 bytes:
+</span><span id="__span-20-45"><a id="__codelineno-20-45" name="__codelineno-20-45" href="#__codelineno-20-45"></a>    → accounting no longer matches the linked completion operations.
+</span><span id="__span-20-46"><a id="__codelineno-20-46" name="__codelineno-20-46" href="#__codelineno-20-46"></a>    → do not assume completion at an intermediate 512-byte milestone;
+</span><span id="__span-20-47"><a id="__codelineno-20-47" name="__codelineno-20-47" href="#__codelineno-20-47"></a>      hardware completion granularity does not promise that transition.
+</span><span id="__span-20-48"><a id="__codelineno-20-48" name="__codelineno-20-48" href="#__codelineno-20-48"></a>    → the phase can complete incorrectly or fail to complete. INVALID protocol.
+</span><span id="__span-20-49"><a id="__codelineno-20-49" name="__codelineno-20-49" href="#__codelineno-20-49"></a>
+</span><span id="__span-20-50"><a id="__codelineno-20-50" name="__codelineno-20-50" href="#__codelineno-20-50"></a>  If you set tx_count=1024 but TMA only copies 512 bytes:
+</span><span id="__span-20-51"><a id="__codelineno-20-51" name="__codelineno-20-51" href="#__codelineno-20-51"></a>    → pending tx goes 1024→512 and STOPS (never reaches 0)
+</span><span id="__span-20-52"><a id="__codelineno-20-52" name="__codelineno-20-52" href="#__codelineno-20-52"></a>    → try_wait spins forever. DEADLOCK.
+</span><span id="__span-20-53"><a id="__codelineno-20-53" name="__codelineno-20-53" href="#__codelineno-20-53"></a>
+</span><span id="__span-20-54"><a id="__codelineno-20-54" name="__codelineno-20-54" href="#__codelineno-20-54"></a>  tx_count MUST exactly equal the bytes that the linked TMA will copy.
+</span><span id="__span-20-55"><a id="__codelineno-20-55" name="__codelineno-20-55" href="#__codelineno-20-55"></a>  Check your tensor descriptor dimensions carefully.
 </span></code></pre></div>
 <hr />
 <h2 id="11-mbarriertry_wait-and-test_wait">11 — mbarrier.try_wait and test_wait<a class="headerlink" href="#11-mbarriertry_wait-and-test_wait" title="Permanent link">&para;</a></h2>
@@ -5243,9 +5249,9 @@ and Chapter 9 opens by building on exactly this.</p>
 </span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
 </span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>  What it does:
 </span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>  ├── Formally invalidates the mbarrier object
-</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>  ├── Zeroes out the hardware's tracking state for this barrier
-</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>  ├── Frees the 64-bit SMEM slot for other use
-</span><span id="__span-28-11"><a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>  └── Converts generic pointer to shared-memory offset internally
+</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>  ├── Frees the 64-bit SMEM slot for other use
+</span><span id="__span-28-10"><a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>  └── Takes the specified shared-memory address; callers convert pointers
+</span><span id="__span-28-11"><a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>      with __cvta_generic_to_shared where required.
 </span><span id="__span-28-12"><a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>
 </span><span id="__span-28-13"><a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>  When to call it:
 </span><span id="__span-28-14"><a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a>  ├── When the barrier will NEVER be used again in this kernel

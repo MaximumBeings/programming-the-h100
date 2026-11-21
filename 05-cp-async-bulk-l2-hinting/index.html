@@ -4060,7 +4060,7 @@ modifier depends on which one you're in.</p>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  FORM 1: Tensor Layout (with cuTensorMap descriptor)
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>  ─────────────────────────────────────────────────────────────────
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  cp.async.bulk.tensor.{ndim}.{dst_space}.{src_space}.{completion}{.cache}
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>      [dst_addr], [tensor_map], coord_array, [mbar_addr];
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>      [dst_addr], [tensor_map, {coords}], [mbar_addr];
 </span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>  Use when: Data has known multi-dimensional structure (matrices, tensors).
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>  Requires: A cuTensorMap descriptor (see Lesson 4).
@@ -4068,7 +4068,7 @@ modifier depends on which one you're in.</p>
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
 </span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>  Example:
 </span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        [smem_dest], [tma_desc], {col, row}, [mbar_addr];
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        [smem_dest], [tma_desc, {col, row}], [mbar_addr];
 </span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>
 </span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>  ─────────────────────────────────────────────────────────────────
 </span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>  FORM 2: Raw Layout (linear byte copy, no descriptor)
@@ -4093,7 +4093,7 @@ in §9 or §10 has a modifier you don't recognise.</p>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>══════════════════════════════════════════════════════════════════════
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  cp.async.bulk.tensor.{ndim}.{dst}.{src}.{completion}{.cache}{.multicast}
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>      [dst_addr], [tensor_map], {coord0, coord1, ...}, [mbar_addr]{, ctaMask};
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>      [dst_addr], [tensor_map, {coord0, coord1, ...}], [mbar_addr]{, ctaMask};
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>  Field-by-field breakdown:
 </span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>  ─────────────────────────────────────────────────────────────────
@@ -4117,15 +4117,15 @@ in §9 or §10 has a modifier you don't recognise.</p>
 </span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>
 </span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>  2D load (global → shared, mbarrier completion):
 </span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>    cp.async.bulk.tensor.2d.shared::cta.global.mbarrier::complete_tx::bytes
-</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>        [smem], [desc], {col, row}, [mbar];
+</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>        [smem], [desc, {col, row}], [mbar];
 </span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>
 </span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a>  3D load with L2 hint:
 </span><span id="__span-7-32"><a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a>    cp.async.bulk.tensor.3d.shared::cta.global.mbarrier::complete_tx::bytes.L2::cache_hint
-</span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>        [smem], [desc], {hd, seq, batch}, [mbar], [policy];
+</span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>        [smem], [desc, {hd, seq, batch}], [mbar], policy;
 </span><span id="__span-7-34"><a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>
 </span><span id="__span-7-35"><a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>  2D multicast to 4 CTAs (ctaMask = 0x000F = bits 0-3 set):
 </span><span id="__span-7-36"><a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>    cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster
-</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>        [smem], [desc], {col, row}, [mbar], ctaMask;
+</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>        [smem], [desc, {col, row}], [mbar], ctaMask;
 </span><span id="__span-7-38"><a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a>
 </span><span id="__span-7-39"><a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a>  Raw linear copy (no descriptor):
 </span><span id="__span-7-40"><a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a>    cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes
@@ -4133,7 +4133,7 @@ in §9 or §10 has a modifier you don't recognise.</p>
 </span><span id="__span-7-42"><a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a>
 </span><span id="__span-7-43"><a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a>  Store (shared → global):
 </span><span id="__span-7-44"><a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a>    cp.async.bulk.tensor.2d.global.shared::cta.bulk_group
-</span><span id="__span-7-45"><a id="__codelineno-7-45" name="__codelineno-7-45" href="#__codelineno-7-45"></a>        [desc], {col, row}, [smem];
+</span><span id="__span-7-45"><a id="__codelineno-7-45" name="__codelineno-7-45" href="#__codelineno-7-45"></a>        [desc, {col, row}], [smem];
 </span></code></pre></div>
 <hr />
 <h2 id="4-tensor-aware-copies">4 — Tensor-Aware Copies<a class="headerlink" href="#4-tensor-aware-copies" title="Permanent link">&para;</a></h2>
@@ -4228,10 +4228,10 @@ support.</p>
 </span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>
 </span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>  INTER-SMEM (cluster internal copies, no HBM involved):
 </span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>  ─────────────────────────────────────────────────────────────────
-</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>  dst = shared::cta      src = shared::cluster
-</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>    → DSMEM copy: another block's SMEM → this block's SMEM
-</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>    → Uses cluster interconnect (SM-to-SM, not HBM)
-</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>    → Very low latency (~50-80 cycles vs ~500 for HBM)
+</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>  dst = shared::cluster  src = shared::cta
+</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>    → Push local SMEM into the mapped destination CTA
+</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>    → Uses the cluster interconnect; there is no qualifier-reversed pull form
+</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>    → Completion and owner lifetime must both be protected
 </span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>
 </span><span id="__span-9-30"><a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>  ─── Why This Matters ────────────────────────────────────────────
 </span><span id="__span-9-31"><a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>
@@ -4536,7 +4536,7 @@ overhead and this is the right instruction.</p>
 </span><span id="__span-17-29"><a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>  Note: Stores typically use bulk_group (not mbarrier) for completion.
 </span><span id="__span-17-30"><a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>  With optional cache policy:
 </span><span id="__span-17-31"><a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>  cp.async.bulk.global.shared::cta.bulk_group.L2::cache_hint
-</span><span id="__span-17-32"><a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>      [dst_global], [src_smem], size, [cache_policy];
+</span><span id="__span-17-32"><a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>      [dst_global], [src_smem], size, cache_policy;
 </span><span id="__span-17-33"><a id="__codelineno-17-33" name="__codelineno-17-33" href="#__codelineno-17-33"></a>
 </span><span id="__span-17-34"><a id="__codelineno-17-34" name="__codelineno-17-34" href="#__codelineno-17-34"></a>  ─────────────────────────────────────────────────────────────────
 </span><span id="__span-17-35"><a id="__codelineno-17-35" name="__codelineno-17-35" href="#__codelineno-17-35"></a>  VARIANT 3: Shared → DSMEM (cluster-internal copy)
@@ -4951,8 +4951,8 @@ tile is written back. The alternative is reading the destination into
 registers, combining, and writing it back, which costs a round trip and needs
 atomics to be safe.</p>
 <p>This is what split-K GEMM wants, where many blocks accumulate partial results
-into the same output tile. Chapter 10's Stream-K scheduling leans on it
-directly.</p>
+into the same output tile. It is one possible reduction mechanism, not the implementation demonstrated
+by Chapter 10's lock-and-workspace Stream-K example.</p>
 <h3 id="141-what-cpreduceasync-does">14.1 What cp.reduce.async Does<a class="headerlink" href="#141-what-cpreduceasync-does" title="Permanent link">&para;</a></h3>
 <p><code>cp.reduce.async</code> extends TMA beyond simple copies to perform <strong>hardware-accelerated atomic reductions</strong>. Instead of copying a tile of data from SMEM to global memory and adding to an existing global accumulator (which would require thread-driven atomics), cp.reduce.async offloads the entire tile reduction to TMA hardware.</p>
 <p>TMA reads the tile from SMEM, applies the reduction operation to each element against the corresponding element in global memory, and writes the result back — all atomically, all in the background.</p>
