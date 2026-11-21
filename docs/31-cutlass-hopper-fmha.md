@@ -14,6 +14,11 @@ The implementation is [CUTLASS v4.3.6 example 88](https://github.com/NVIDIA/cutl
 
 [Jump to the complete CUDA listing](#319-complete-runnable-cuda-source) · [Download `.cu`](examples/attention/88_hopper_fmha/88_hopper_fmha.cu) · [Download source and local headers](examples/attention/hopper-fmha-source.zip).
 
+The plain-TMA variants use `KernelTma` in `kernel/fmha_kernel_tma.hpp`
+and `collective/fmha_collective_tma.hpp`; they are distinct from the
+warp-specialized TMA path. Trace the exact printed variant before selecting
+a source file.
+
 ## 31.1 Establish the shape and storage contract
 
 For each batch/head, attention computes `O = softmax(Q*K^T / sqrt(D) + mask)*V`. Here Q has Q rows and D columns, K/V have K rows and D columns, and O has Q rows and D columns. The identifier K therefore denotes the key sequence length here; it is not the reduction dimension of the first GEMM, which is D.
@@ -53,7 +58,7 @@ As a **mathematical storage exercise**, choose four query heads and two KV heads
 4. Output storage must retain the query-head identity. Reusing the shared-KV head index for O would cause two different query heads to overwrite the same output. Training also requires the appropriate accumulation of gradient contributions into shared K/V heads.
 5. MQA is the limiting one-KV-head case: all four queries read KV head zero. With the same Nk/D/type, each K or V allocation becomes 24 bytes; Q/O still retain four query heads.
 
-CuTe can represent the duplicated read view through hierarchical/broadcast layout modes. The exact head ordering, strides, query-to-KV grouping and derivative contract must agree between loader, reference and consumers. The offset formula above is a paper contract, not an implemented or executed GQA extension of this lab. Changing only H in the existing runner changes its MHA head count; it does not enable KV sharing.
+CuTe can represent the duplicated read view through hierarchical/broadcast layout modes. For a compact head mode `(2,2)`, CuTe linearizes its first coordinate fastest: stride `(0,12)` produces offsets `[0,0,12,12]`, matching `floor(h/2)*12`. Stride `(12,0)` instead produces `[0,12,0,12]`, an interleaved grouping. A reordered query-head view can use that ordering, but its consumers must agree. The exact head ordering, strides, query-to-KV grouping and derivative contract must agree between loader, reference and consumers. The offset formula above is a paper contract, not an implemented or executed GQA extension of this lab. Changing only H in the existing runner changes its MHA head count; it does not enable KV sharing.
 
 ## 31.2 Read the source in dependency order
 
@@ -134,7 +139,7 @@ Pass `--verify`. Upstream `FwdRunner::verify` compares **O and LSE** to its devi
 
 The reference is a **GPU kernel**, not a CPU/FP64 oracle. It forms one query row's scores in dynamic shared memory and includes FP16 intermediate rounding; it does not materialize a complete global score matrix. Chapter 30's [CPU arithmetic walkthrough](30-cutlass-attention-foundations.md) independently checks the mathematical recurrence on tiny inputs. It does not consume this runner's random device inputs or independently certify the optimized kernel. A stronger new-input audit would export the exact Q/K/V and compare each O/LSE coordinate to a higher-precision reference under the identical mask/scale/layout contract.
 
-Upstream prints `[OK]` only for a passed **verified** variant; `[--]` means execution without verification, and `[FAIL]` indicates failure. Architecture guards and some failed paths can still leave the executable with exit status zero. The collector therefore requires the expected count and exact names/order of `[OK]` variants, one launch header matching requested B/H/Q/K/D, direction and mask, finite reported rates and positive finite verbose timings, no failure diagnostics and successful process status. A duplicated success row, wrong problem header or nonfinite timing cannot become PASS merely because the row count matches. A skipped or missing kernel is **SKIP/INCOMPLETE**, never PASS; one successful variant cannot hide another variant's failure.
+Upstream prints `[OK]` only for a passed **verified** variant; `[--]` means execution without verification, and `[FAIL]` indicates failure. The upstream `main` discards the return value of `main_single` and returns zero, including on its reported failure paths. Architecture guards can also exit zero. The collector therefore requires the expected count and exact names/order of `[OK]` variants, one launch header matching requested B/H/Q/K/D, direction and mask, finite reported rates and positive finite verbose timings, no failure diagnostics and successful process status. A duplicated success row, wrong problem header or nonfinite timing cannot become PASS merely because the row count matches. A skipped or missing kernel is **SKIP/INCOMPLETE**, never PASS; one successful variant cannot hide another variant's failure.
 
 Logs retain argv, UTC start/end, separate stdout/stderr, source hashes and system information in `results.json` and sibling files. Those timestamps become execution dates only after an actual run. The host parser tests exercise false-success cases without claiming GPU validation:
 

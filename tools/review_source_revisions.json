@@ -1,0 +1,102 @@
+[
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "example": "ex01_cluster_inspect.cu",
+    "archived_sha256": "ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3",
+    "current_sha256": "f4324866efbb03aa6ac27632000d031c87b1423a6f5755133aa96bbb8510389a",
+    "archived_source": "audit/review-fixes-2026-11-21/before/02-clusters-inline-ptx/ex01_cluster_inspect.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "example": "ex02_ptx_basics.cu",
+    "archived_sha256": "50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f",
+    "current_sha256": "968130f4fabb8a50aa126c297105214ddfa15f03d554bf829266335c300cc426",
+    "archived_source": "audit/review-fixes-2026-11-21/before/02-clusters-inline-ptx/ex02_ptx_basics.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/02-clusters-inline-ptx.md",
+    "example": "ex06_comprehensive.cu",
+    "archived_sha256": "4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d",
+    "current_sha256": "d0363f7713bdce71b4087b1d9dbc57141d586a8d109a3931a4a207ab8ab773ad",
+    "archived_source": "audit/review-fixes-2026-11-21/before/02-clusters-inline-ptx/ex06_comprehensive.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/05-cp-async-bulk-l2-hinting.md",
+    "example": "ex02_reduce_async.cu",
+    "archived_sha256": "52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a",
+    "current_sha256": "dd125d7cb35b0c188bc09e9d471a366fc4321add59efa4210f2d5b82f5832132",
+    "archived_source": "audit/review-fixes-2026-11-21/before/05-cp-async-bulk-l2-hinting/ex02_reduce_async.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/06-wgmma-part-1.md",
+    "example": "ex01_wgmma_basic.cu",
+    "archived_sha256": "282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04",
+    "current_sha256": "a557eb99705eca84366ee23ebd3bea87eadb25edbc69310e5ac9da9a7d3835e1",
+    "archived_source": "audit/review-fixes-2026-11-21/before/06-wgmma-part-1/ex01_wgmma_basic.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/08-kernel-design-part-1.md",
+    "example": "ex01_roofline.cu",
+    "archived_sha256": "d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449",
+    "current_sha256": "4f3798b5519e14242c962b0f883327501d63e27f41d34afe2de840c67655761c",
+    "archived_source": "audit/review-fixes-2026-11-21/before/08-kernel-design-part-1/ex01_roofline.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "example": "ex05_mbarrier.cu",
+    "archived_sha256": "c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046",
+    "current_sha256": "ee8a728dbb60691c48a16525ccdb2fbdac87b40658ebb110d153efcb9d343edc",
+    "archived_source": "audit/review-fixes-2026-11-21/before/09-kernel-design-part-2/ex05_mbarrier.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "example": "ex06_pingpong.cu",
+    "archived_sha256": "d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd",
+    "current_sha256": "b7f84eacccfe4b59d90a33992c899c24347db12ee4d20380c2822ed31891716c",
+    "archived_source": "audit/review-fixes-2026-11-21/before/09-kernel-design-part-2/ex06_pingpong.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/09-kernel-design-part-2.md",
+    "example": "ex08_comprehensive.cu",
+    "archived_sha256": "7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964",
+    "current_sha256": "dc235caa169f07990a5ab75fbd6779feab3142180ed4f0d1e5675a4c4601508b",
+    "archived_source": "audit/review-fixes-2026-11-21/before/09-kernel-design-part-2/ex08_comprehensive.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/11-multi-gpu-nccl.md",
+    "example": "ex11_nvlink_bandwidth.cu",
+    "archived_sha256": "67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305",
+    "current_sha256": "e42e582e8510253e85a7eaf56e9af540493068b93fde85502c7a2026e63162d8",
+    "archived_source": "audit/review-fixes-2026-11-21/before/11-multi-gpu-nccl/ex11_nvlink_bandwidth.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Independent November 19/21 review correction; current source has not been GPU rerun."
+  },
+  {
+    "page": "docs/30-cutlass-attention-foundations.md",
+    "example": "attention_online.cu",
+    "source": "docs/examples/attention/attention_online.cu",
+    "archived_sha256": "860d4976162dbee47edd0153d0eb8ff8089471d6ff8b7271653e6d8effad7b66",
+    "current_sha256": "ab360def97ca95a553eabcaf66d746e77f05125663b141dbb29a5eeab1aea25a",
+    "archived_source": "audit/review-fixes-2026-11-21/before/attention_online.cu",
+    "status": "pending_gpu_revalidation",
+    "reason": "Remove a line-comment trailing backslash; strict host compilation is checked separately. Archived GPU source is retained."
+  }
+]

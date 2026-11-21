@@ -1,4 +1,11 @@
 # cp.async.bulk, TMA Transfers & L2 Cache Hinting
+
+!!! warning "GPU revalidation pending — November 21 correction"
+    Current source below includes post-capture corrections. Historical outputs
+    validate only their archived hashes. Do not use them as proof of the fixed
+    source. See the [repair record](review-fixes-2026-11-21.md).
+
+
 ## Lesson 5 Companion Guide — Programming the H100
 
 [![CHAPTER 05: Move bytes. Keep computing.](images/chapter-openers/05-tma.svg)](images/chapter-openers/05-tma.svg)
@@ -97,22 +104,22 @@ examples; Chapter 6 explains why WGMMA requires a different implementation.
 
 ## Table of Contents
 
-1. [cp.async.bulk — What It Is and Why It Exists](#1--cpasyncbulk)
-2. [cp.async (Ampere) vs cp.async.bulk (Hopper)](#2--cpasync-ampere-vs-cpasyncbulk-hopper)
-3. [Instruction Layout — The Full Syntax](#3--instruction-layout)
-4. [Tensor-Aware Copies — cp.async.bulk.tensor](#4--tensor-aware-copies)
-5. [State Spaces — Source and Destination](#5--state-spaces)
-6. [Load Modes — tile and im2col](#6--load-modes)
-7. [Completion Mechanisms — mbarrier vs bulk_group](#7--completion-mechanisms)
-8. [L2 Cache Hinting](#8--l2-cache-hinting)
-9. [Unstructured (Raw) Copies](#9--unstructured-raw-copies)
-10. [Structured (Tensor) Copies — All Variants](#10--structured-tensor-copies)
+1. [cp.async.bulk — What It Is and Why It Exists](#1-cpasyncbulk)
+2. [cp.async (Ampere) vs cp.async.bulk (Hopper)](#2-cpasync-ampere-vs-cpasyncbulk-hopper)
+3. [Instruction Layout — The Full Syntax](#3-instruction-layout)
+4. [Tensor-Aware Copies — cp.async.bulk.tensor](#4-tensor-aware-copies)
+5. [State Spaces — Source and Destination](#5-state-spaces)
+6. [Load Modes — tile and im2col](#6-load-modes)
+7. [Completion Mechanisms — mbarrier vs bulk_group](#7-completion-mechanisms)
+8. [L2 Cache Hinting](#8-l2-cache-hinting)
+9. [Unstructured (Raw) Copies](#9-unstructured-raw-copies)
+10. [Structured (Tensor) Copies — All Variants](#10-structured-tensor-copies-all-variants)
 11. [TMA Multicast — One Fetch, Many SMs](#11--tma-multicast)
 12. [Dynamic Shared Memory Layout with TMA](#12--dynamic-shared-memory-layout)
-13. [cp.async.bulk.prefetch — L2 Prefetching](#13--cpasyncbulkprefetch)
-14. [cp.reduce.async — Hardware Atomic Reduction](#14--cpreduceasync)
-15. [Putting It All Together — Full Examples](#15--putting-it-all-together)
-16. [Quick Reference](#16--quick-reference)
+13. [cp.async.bulk.prefetch — L2 Prefetching](#13-cpasyncbulkprefetch)
+14. [cp.reduce.async — Hardware Atomic Reduction](#14-cpreduceasync)
+15. [Putting It All Together — Full Examples](#15-putting-it-all-together)
+16. [Quick Reference](#16-quick-reference)
 
 ---
 
@@ -902,7 +909,7 @@ Unstructured Copy Variants — All State Space Combinations
 
   // Setup:
   __shared__ __align__(8) uint64_t mbar;
-  __shared__ float smem_buf[2048];
+  __shared__ __align__(16) float smem_buf[2048];
   float* src_global = d_data + block_start;
 
   if (tid == 0) {
@@ -1418,7 +1425,7 @@ cp.reduce.async — All Variants and Operands
   ─────────────────────────────────────────────────────────────────
   cp.reduce.async.bulk.tensor.{nd}.{dst}.{src}.{redOp}{.load_mode}
       .{completion}{.cache}
-      [tensorMap, tensorCoords], [srcMem]{, cache_policy};
+      [tensorMap, {tensorCoords}], [srcMem]{, cache_policy};
 
   Operands (raw variant):
     dstMem:       64-bit global memory address (destination of reduction)
@@ -1446,14 +1453,14 @@ cp.reduce.async — All Variants and Operands
 
   Type     redOps supported          Notes
   ──────────────────────────────────────────────────────────────────
-  .f16     .add only (as .add.noftz.f16)   FP16 atomic add — .noftz required
-  .bf16    .add only (as .add.noftz.bf16)  BF16 atomic add — .noftz required
+  .f16     .add.noftz, .min, .max    FP16; .noftz is required for add
+  .bf16    .add.noftz, .min, .max    BF16; .noftz is required for add
   .b32     .and, .or, .xor          32-bit bitwise ops
-  .u32     .add, .min, .max, .inc, .dec, .and, .or, .xor
+  .u32     .add, .min, .max, .inc, .dec
   .s32     .add, .min, .max         signed 32-bit
   .b64     .and, .or, .xor          64-bit bitwise ops
-  .u64     .add, .min, .max, .and, .or, .xor
-  .s64     .add, .min, .max
+  .u64     .add, .min, .max
+  .s64     .min, .max
   .f32     .add                     FP32 atomic add
   .f64     .add                     FP64 atomic add
 
@@ -1814,7 +1821,7 @@ static constexpr int TILE_BYTES = TILE_ELEMS * sizeof(float);
 static constexpr int NUM_BLOCKS = 4;
 
 __global__ void reduce_async_kernel(float* global_acc) {
-    __shared__ float smem_partial[TILE_ELEMS];
+    __shared__ __align__(16) float smem_partial[TILE_ELEMS];
 
     int tid = threadIdx.x;
     int bid = blockIdx.x;
@@ -1824,6 +1831,10 @@ __global__ void reduce_async_kernel(float* global_acc) {
     float my_val = (float)(bid + 1);
     for (int i = tid; i < TILE_ELEMS; i += blockDim.x)
         smem_partial[i] = my_val;
+    __syncthreads();
+
+    // Publish every ordinary shared-memory store to the async proxy.
+    asm volatile("fence.proxy.async.shared::cta;" ::: "memory");
     __syncthreads();
 
     // Producer thread issues the async reduction
@@ -1909,6 +1920,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex02_reduce_async.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:31.351016+00:00`. Executed UTC: `2026-11-18T11:19:32.175941+00:00`.
 
 Source SHA-256: `52617e1a22a4619a1fd65dc92d4eac529b3bd02ee2ea34803ab51213f829f39a`. [Exact source](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/ex02_reduce_async.cu) · [Compile log](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/compile.log) · [Run log](validation/2026-11-18-two-h100/05-cp-async-bulk-l2-hinting/ex02_reduce_async/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -1940,6 +1953,8 @@ Sample: acc[0]=10.0 acc[127]=10.0 acc[255]=10.0
 
 
 <!-- validation:start:ex02_reduce_async.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex02_reduce_async.cu**
 
 > **Executed:** 2026-11-17T21:29:12.439860+00:00 (UTC). **Status:** Compile PASS; execution PASS.
@@ -2078,14 +2093,14 @@ The operation and type matrix. Narrower than you'd expect.
 ```
 Type    Operations
 ──────────────────────────────────────────────────────────────────────────
-.f16    .add  (spelled .add.noftz.f16  — .noftz is required)
-.bf16   .add  (spelled .add.noftz.bf16 — .noftz is required)
+.f16    .add.noftz, .min, .max
+.bf16   .add.noftz, .min, .max
 .f32    .add
 .f64    .add
-.u32    .add, .min, .max, .inc, .dec, .and, .or, .xor
+.u32    .add, .min, .max, .inc, .dec
 .s32    .add, .min, .max
-.u64    .add, .min, .max, .and, .or, .xor
-.s64    .add, .min, .max
+.u64    .add, .min, .max
+.s64    .min, .max
 .b32    .and, .or, .xor
 .b64    .and, .or, .xor
 ```
@@ -2102,9 +2117,9 @@ tile_addr not 128B-aligned with swizzle Silent corruption    Use TILE_OFF=128 ca
 mbarrier not 8B-aligned                 Crash/corruption     Use __align__(8) or offset=0
 Wrong tx_count in expect_tx             Deadlock             Match EXACTLY to copy size
 ctaMask missing a participating CTA     Partial write        Set all participating bits
-Non-issuing CTA calls expect_tx in multicast Deadlock       Only ctaMask CTAs call expect_tx
+Destination CTA omits expect_tx         Incomplete protocol  Every ctaMask destination arms its local barrier
 Using "r" for 64-bit global ptr         Wrong address        Use "l" for all global addrs
-Missing barrier.cluster before DSMEM    Crash               Always arrive+wait first
+Missing barrier.cluster before DSMEM    Undefined behavior               Always arrive+wait first
 cp.async.bulk.prefetch with barrier     API error           Prefetch has no barrier; it's a hint
 ```
 
@@ -2134,3 +2149,5 @@ cp.async.bulk.prefetch with barrier     API error           Prefetch has no barr
 > warp group, why `wgmma.mma_async` is non-blocking, the four-stage pipeline,
 > `ldmatrix` with swizzle-correct addressing, and the 64-bit WGMMA descriptor
 > field by field.
+
+**Instruction-version boundary.** The raw `cp.async.bulk.shared::cta.global` form requires PTX ISA 8.6 / CUDA 12.8 or newer. Earlier Hopper examples use the `shared::cluster` destination form. Do not infer that every PTX variant is available merely because the device is Hopper. Cluster shared copies use the push form `shared::cluster.shared::cta`; there is no symmetric pull instruction obtained by reversing the qualifiers.

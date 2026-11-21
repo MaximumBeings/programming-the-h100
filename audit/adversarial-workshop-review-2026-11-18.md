@@ -1,5 +1,7 @@
 # Adversarial review of the expanded CuTe/CUTLASS course
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 Reviewed November 18, 2026. Three agent reviewers covered technical correctness, comprehensiveness, robustness, beginner explanations and course progression. The parent reviewed integration, diagrams, chapter migration and evidence consistency.
 
 ## Findings resolved

@@ -1,0 +1,42 @@
+{
+  "scope": "Host-only compilation and execution; no CUDA compilation or GPU execution",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "source_sha256": "ab360def97ca95a553eabcaf66d746e77f05125663b141dbb29a5eeab1aea25a",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.4.1.1)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "commands": [
+    {
+      "stage": "compile",
+      "command": [
+        "c++",
+        "-x",
+        "c++",
+        "-std=c++17",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-DATTENTION_HOST_ONLY",
+        "/private/tmp/overlay-programming-the-h100-20261120/docs/examples/attention/attention_online.cu",
+        "-o",
+        "/private/tmp/h100-attention-review-host"
+      ],
+      "started_utc": "2026-11-21T10:47:23.535708+00:00",
+      "finished_utc": "2026-11-21T10:47:24.269963+00:00",
+      "exit_code": 0,
+      "log": "compile.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "stage": "run",
+      "command": [
+        "/private/tmp/h100-attention-review-host"
+      ],
+      "started_utc": "2026-11-21T10:47:24.270173+00:00",
+      "finished_utc": "2026-11-21T10:47:24.539694+00:00",
+      "exit_code": 0,
+      "log": "run.log",
+      "sha256": "a141ea58ef32011d77f863b514b3d6bb1d442aee5c0ea600da23d657a9dd9eb0"
+    }
+  ]
+}

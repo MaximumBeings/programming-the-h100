@@ -87,13 +87,15 @@ def verify():
         for name,path in expected.items():require(archive.read(name)==path.read_bytes(),'Blackwell source ZIP member differs')
     rows=json.loads((COMPAT/'results/results.json').read_text());require(len(rows)==41,'Compatibility source count differs')
     import validate_examples
-    current={x['example']:x['sha256'] for x in validate_examples.programs()}
+    from review_revisions import historical_hashes, historical_file_hash
+    sources=historical_hashes(ROOT,{(x['page'],x['example']):x['sha256'] for x in validate_examples.programs()})
+    current={key[1]:value for key,value in sources.items()}
     require(len(current)==27,'Original program inventory drift')
     for row in rows:
         require(sha(COMPAT/row['source'])==row['sha256'],'Compatibility source snapshot changed')
         name=Path(row['source']).name
         if row['kind']=='original':require(current[name]==row['sha256'],'Compatibility original source differs')
-        elif row['kind']!='hopper_fmha':require(sha(ROOT/row['source'])==row['sha256'],'Compatibility workshop/reference source differs')
+        elif row['kind']!='hopper_fmha':require(historical_file_hash(ROOT,row['source'])==row['sha256'],'Compatibility workshop/reference source differs')
     extra=[dict(row,log=row['stage']+'.log') for row in json.loads((COMPAT/'setmaxnreg-blackwell/results.json').read_text())];require(len(extra)==2,'Missing register-resizing rebuild')
     for row in extra:command(row,COMPAT,'setmaxnreg-blackwell')
     require('-arch=sm_100a' in extra[0]['command'] and 'ALL TESTS PASSED' in command(extra[1],COMPAT,'setmaxnreg-blackwell'),'Register-resizing Blackwell run failed')

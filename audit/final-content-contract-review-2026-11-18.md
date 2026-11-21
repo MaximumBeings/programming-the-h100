@@ -1,5 +1,7 @@
 # Final content-contract review — November 18, 2026
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 This bounded follow-up read prior audits, reviewed the 29-chapter navigation and setup, and challenged residual contracts in the original early chapters. It found explanatory defects, not a confirmed new executable defect. No remote GPU was used and no new GPU execution is claimed.
 
 ## Confirmed corrections

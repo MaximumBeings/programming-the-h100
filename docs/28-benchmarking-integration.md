@@ -1,4 +1,16 @@
 # 28. Benchmarking and Framework Integration Without Changing the Question
+
+!!! note "Scope of framework integration"
+    This chapter supplies benchmarking examples and an integration contract,
+    not a compiled PyTorch extension. A production wrapper must guard the
+    input device, validate dtype/shape/strides/alignment with `TORCH_CHECK`,
+    obtain `at::cuda::getCurrentCUDAStream(device)`, allocate CUTLASS workspace
+    through the framework allocator, call `can_implement`, and propagate
+    initialization/run errors. Retain workspace until the stream finishes.
+    A default-stream standalone program does not establish correct framework
+    stream or graph-capture integration. The separately versioned CuTe DSL
+    documentation is not evidence that its API matches this C++ v4.3.6 pin.
+
 ## Lesson 28 Companion Guide — Measure the Useful Operation and Preserve Framework Semantics
 
 [![CHAPTER 28: 28. Benchmarking and Framework Integration Without Changing the Question — conceptual chapter illustration](images/chapter-openers/28-workshop.svg)](images/chapter-openers/28-workshop.svg)

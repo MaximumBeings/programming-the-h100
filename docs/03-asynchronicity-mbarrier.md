@@ -1,4 +1,5 @@
 # Asynchronicity, Barriers & the mbarrier Pipeline
+
 ## Lesson 3 Companion Guide — Programming the H100
 
 [![CHAPTER 03: When is the data ready?](images/chapter-openers/03-barriers.svg)](images/chapter-openers/03-barriers.svg)
@@ -125,24 +126,24 @@ Save a complete named listing to its indicated filename and use the full compile
 
 ## Table of Contents
 
-1. [The Synchronous World — Doing vs Fetching](#1--the-synchronous-world)
-2. [Asynchronicity — Decoupling Request from Result](#2--asynchronicity)
-3. [Blocking vs Non-Blocking Operations](#3--blocking-vs-non-blocking)
-4. [Asynchrony in GPUs — The H100's Architecture](#4--asynchrony-in-gpus)
-5. [Proxies in CUDA — Generic vs Async](#5--proxies-in-cuda)
-6. [Memory Hazards — RAW and WAR](#6--memory-hazards)
-7. [Fences — Acquire, Release, Cross-Proxy](#7--fences)
-8. [mbarrier — The Core Primitive](#8--mbarrier)
-9. [The mbarrier Pipeline — Step by Step](#9--the-mbarrier-pipeline)
-10. [Phase and Transaction Count](#10--phase-and-transaction-count)
+1. [The Synchronous World — Doing vs Fetching](#1-the-synchronous-world)
+2. [Asynchronicity — Decoupling Request from Result](#2-asynchronicity)
+3. [Blocking vs Non-Blocking Operations](#3-blocking-vs-non-blocking-operations)
+4. [Asynchrony in GPUs — The H100's Architecture](#4-asynchrony-in-gpus)
+5. [Proxies in CUDA — Generic vs Async](#5-proxies-in-cuda)
+6. [Memory Hazards — RAW and WAR](#6-memory-hazards)
+7. [Fences — Acquire, Release, Cross-Proxy](#7-fences)
+8. [mbarrier — The Core Primitive](#8-mbarrier-the-core-primitive)
+9. [The mbarrier Pipeline — Step by Step](#9-the-mbarrier-pipeline-step-by-step)
+10. [Phase and Transaction Count](#10-phase-and-transaction-count)
 11. [mbarrier.try_wait and test_wait](#11--mbarriertry_wait-and-test_wait)
 12. [mbarrier Reuse Pattern](#12--mbarrier-reuse-pattern)
-13. [WAR Hazards and mbarrier.arrive](#13--war-hazards-and-mbarrierarrive)
-14. [barrier.cluster — Cross-Block Synchronization](#14--barriercluster)
-15. [cp.async.bulk Groups — Commit and Wait](#15--cpasyncbulk-groups)
-16. [Named Barriers](#16--named-barriers)
-17. [Putting It All Together — Full Pipeline Examples](#17--putting-it-all-together)
-18. [Quick Reference](#18--quick-reference)
+13. [WAR Hazards and mbarrier.arrive](#13-war-hazards-and-mbarrierarrive)
+14. [barrier.cluster — Cross-Block Synchronization](#14-barriercluster-cross-block-synchronization)
+15. [cp.async.bulk Groups — Commit and Wait](#15-cpasyncbulk-groups-commit-and-wait)
+16. [Named Barriers](#16-named-barriers)
+17. [Putting It All Together — Full Pipeline Examples](#17-putting-it-all-together)
+18. [Quick Reference](#18-quick-reference)
 
 ---
 
@@ -1231,7 +1232,7 @@ mbarrier Reuse — Step-by-Step Pattern
       }
 
       // STEP B: All threads do useful work while TMA runs
-      compute_on_previous_tile();
+      compute_independent_work(); // does not read the destination being filled
 
       // STEP C: Wait for this iteration's copy to complete
       while (true) {
@@ -1246,6 +1247,9 @@ mbarrier Reuse — Step-by-Step Pattern
 
       // STEP E: Use the data that just arrived
       compute_on_new_tile();
+      // All CTA readers finish before the producer overwrites this slot.
+      // Drain any asynchronous readers before reaching this rendezvous.
+      __syncthreads();
   }
 
   What happens to the barrier's internal state:
@@ -1274,6 +1278,8 @@ registers an arrival without waiting for anything.
 
 That two-barrier handshake is the backbone of every real pipeline you'll write,
 and Chapter 9 opens by building on exactly this.
+
+A reusable buffer needs a second ownership edge: after consuming a phase, all participating threads rendezvous (for example `__syncthreads()` for this single-CTA teaching loop) before the producer rearms the barrier or overwrites storage. A readiness wait alone does not establish that every other consumer has finished; reusing parity without this release can alias generations. The complete example includes that rendezvous.
 
 ### 13.1 The Write-After-Read Problem in Pipelines
 
@@ -1663,7 +1669,7 @@ Named Barriers vs __syncthreads — Capabilities
 
   ─── Named Barrier PTX Syntax ─────────────────────────────────────
 
-  bar.sync  a, b;    // Block: "a" warps, reach this, wait for b threads
+  bar.sync  a, b;    // Arrive on barrier ID a; wait for b participating threads
   bar.arrive a, b;   // Arrive but do NOT wait (fire-and-forget signal)
   bar.red   a, b;    // Reduction across barrier participants (sum, etc.)
 
@@ -1672,32 +1678,24 @@ Named Barriers vs __syncthreads — Capabilities
     b:  Expected thread count. Must be a multiple of 32 (warp size).
         Example: b=128 means 128 threads (4 warps) participate.
 
-  ─── Named Barrier Example — Producer/Consumer ────────────────────
+  ─── Named Barrier Example — Producer/Consumer (protocol sketch) ──
 
-  __shared__ float smem_ping[1024];
-  __shared__ float smem_pong[1024];
-
-  // Assume: producer warps = 0,1  consumer warps = 2,3,4,5
-  //         producer uses barrier ID 0 (consumer waits on it)
-  //         consumer uses barrier ID 1 (producer waits on it)
-
+  // Exactly 192 threads participate: 64 producers + 128 consumers.
+  // Every participant arrives once per generation on each barrier.
   if (warp_id < 2) {
-      // PRODUCER WARPS
-      load_data_into(smem_ping);         // fill ping buffer
-      bar.arrive 0, 4*32;               // signal: ping buffer ready
-                                         // (4 consumer warps × 32 threads)
-      bar.sync   1, 2*32;               // wait: consumers done reading pong
-      load_data_into(smem_pong);         // reload pong buffer
-      ...
-  } else {
-      // CONSUMER WARPS
-      bar.sync   0, 4*32;               // wait: ping buffer ready
-      compute_on(smem_ping);             // use ping buffer
-      bar.arrive 1, 2*32;               // signal: done reading pong (for prod)
-      bar.sync   0, 4*32;               // wait: pong buffer ready
-      compute_on(smem_pong);
-      ...
+      for (int tile = 0; tile < tiles; ++tile) {
+          load_data_into(smem);          // ordinary cooperative stores
+          bar.arrive 0, 192;             // ready: producer arrival, no wait
+          bar.sync   1, 192;             // wait until consumers finish
+      }
+  } else if (warp_id < 6) {
+      for (int tile = 0; tile < tiles; ++tile) {
+          bar.sync   0, 192;             // consumers also arrive on ready
+          compute_on(smem);
+          bar.arrive 1, 192;             // acknowledge completion
+      }
   }
+  // Barrier IDs name rendezvous objects; their count includes BOTH roles.
 ```
 
 ---

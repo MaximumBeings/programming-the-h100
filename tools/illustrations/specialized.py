@@ -174,7 +174,7 @@ def im2col(x):
 def ring(x):
     y=x.y
     pts=[(72,y),(448,y),(448,y+226),(72,y+226)]
-    for i,(xx,yy) in enumerate(pts):node(x,xx,yy,240,f'Stage {i}',['FULL','LOADING','FULL','IN USE'][i],['teal','blue','teal','violet'][i],130)
+    for i,(xx,yy) in enumerate(pts):node(x,xx,yy,240,f'Stage {i}',['FULL','LOADING','EMPTY','IN USE'][i],['teal','blue','teal','violet'][i],130)
     x.line(317,y+65,443,y+65,MUTED,2,True);x.line(568,y+135,568,y+221,MUTED,2,True)
     x.line(443,y+291,317,y+291,MUTED,2,True);x.line(192,y+221,192,y+135,MUTED,2,True)
     x.text(380,y+194,'N = 4',24,INK,650,'middle')

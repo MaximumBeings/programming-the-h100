@@ -1,4 +1,12 @@
 # 16. Strides — From Coordinates to Addresses
+
+!!! note "What the small Python check establishes"
+    The reference is an integer-address teaching model. Its transpose equality
+    and alignment assertions are algebraic sanity checks, not independent
+    tests of CuTe, device pointer alignment or GPU transactions. Several output
+    labels are fixed text. The recorded run establishes that the script ran;
+    it does not establish a GPU memory-access experiment.
+
 ## Lesson 16 Companion Guide — Read Every Dimension, Unit and Storage Gap
 
 [![Trace a coordinate through element strides to a physical address](images/chapter-openers/16-workshop.svg)](images/chapter-openers/16-workshop.svg)
@@ -257,7 +265,7 @@ From the repository root:
 python3 docs/examples/advanced/stride_walkthrough.py
 ```
 
-The [complete Python source](examples/advanced/stride_walkthrough.py) checks these integer maps, transpose equality, alias examples, alignment and a tail predicate. It is CPU-only and does not compile CuTe or launch a GPU kernel. Its restrictions are intentional: positive extents, nonnegative integer strides and ordinary element storage. Run it without Python's `-O` option: its correctness checks use assertions, which optimized mode disables. The C++ excerpts above use the pinned CuTe API; this Python run validates the corresponding arithmetic rather than the C++ compiler interface.
+The [complete Python source](examples/advanced/stride_walkthrough.py) enumerates integer maps, alias examples and a tail predicate; its transpose/alignment equalities are algebraic sanity checks rather than independent execution tests. It is CPU-only and does not compile CuTe or launch a GPU kernel. Its restrictions are intentional: positive extents, nonnegative integer strides and ordinary element storage. Run it without Python's `-O` option: its correctness checks use assertions, which optimized mode disables. The C++ excerpts above use the pinned CuTe API; this Python run evaluates its own integer model rather than the C++ compiler interface.
 
 **Actual local execution:** November 18, 2026, `14:52:18 UTC`, Python 3.14.5 on macOS 26.6, arm64. The retained source SHA-256 is `57d0ddb0d04fef6c1c3c34f3d5ce9c5de46671dc1279db078af61af6928e2cae`. Compilation by `py_compile` and execution both exited zero. [System information](validation/2026-11-18-strides/system.json) · [Exact commands and UTC timestamps](validation/2026-11-18-strides/commands.json) · [Raw output](validation/2026-11-18-strides/run.log) · [Integrity inventory](validation/2026-11-18-strides/integrity.json). This is separate from the H100 workshop's frozen GPU captures.
 

@@ -1,4 +1,11 @@
 # Clusters, Inline PTX, Data Types & Pointers
+
+!!! warning "GPU revalidation pending — November 21 correction"
+    Current source below includes post-capture corrections. Historical outputs
+    validate only their archived hashes. Do not use them as proof of the fixed
+    source. See the [repair record](review-fixes-2026-11-21.md).
+
+
 ## Lesson 2 Companion Guide — Programming the H100 & Beyond
 
 [![CHAPTER 02: Blocks that work together](images/chapter-openers/02-clusters.svg)](images/chapter-openers/02-clusters.svg)
@@ -46,7 +53,7 @@ The six complete programs in this chapter were compiled and run on the recorded 
 | Thread block clusters and distributed shared memory | Introduced at compute capability 9.0; the cluster API itself is available with `sm_90` | Cluster examples tested on H100 |
 | Basic inline PTX arithmetic, constraints and address-space operations | Check each instruction’s target notes and operand types | Earlier GPUs may support selected snippets; not a whole-chapter compatibility claim |
 | Architecture-specific instructions elsewhere in the book | Matching architecture target; Hopper WGMMA uses `sm_90a` | Do not infer support from basic PTX or cluster API support |
-| Blackwell | Rebuild for the actual device and audit instruction support | Not executed in this validation pass |
+| Blackwell | Rebuild for the actual device and audit instruction support | Historical revisions also rebuilt/executed in the separate B200 compatibility pass; current fixes require rerun |
 
 The `a` suffix enables architecture-specific features; it is not part of the runtime compute-capability number. See NVIDIA’s [cluster documentation](https://docs.nvidia.com/cuda/archive/12.8.0/cuda-c-programming-guide/index.html#thread-block-clusters) and [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html). In particular, `compute_90a` PTX is not supported on Blackwell.
 
@@ -77,7 +84,7 @@ An Ada or Ampere desktop GPU can run suitable ordinary CUDA programs, but cannot
 
 Basic CUDA concepts and many inline PTX operations carry over, but a successful H100 build does not establish Blackwell compatibility. Select the actual device target, check every instruction’s supported targets, and rerun the numerical checks. The cluster API alone does not require the architecture-specific `a` target.
 
-NVIDIA’s [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html) distinguishes ordinary PTX forward compatibility from architecture-specific code: `compute_90a` PTX does not run on Blackwell. Changing a compiler flag does not translate Hopper-specific WGMMA into Blackwell Tensor Core instructions. No Blackwell execution is claimed here.
+NVIDIA’s [Blackwell compatibility guide](https://docs.nvidia.com/cuda/blackwell-compatibility-guide/index.html) distinguishes ordinary PTX forward compatibility from architecture-specific code: `compute_90a` PTX does not run on Blackwell. Changing a compiler flag does not translate Hopper-specific WGMMA into Blackwell Tensor Core instructions. The historical B200 compatibility record is separate; current corrections have no new Blackwell execution here.
 
 ### How to Compile and Run Each Example
 
@@ -98,16 +105,16 @@ Throughout this guide, each code block has a compile/run box like this:
 
 ## Table of Contents
 
-1. [Thread Block Clusters](#1--thread-block-clusters)
-2. [Distributed Shared Memory (DSMEM)](#2--distributed-shared-memory)
-3. [TMA Multicast with DSMEM](#3--tma-multicast-with-dsmem)
-4. [PTX — Parallel Thread Execution](#4--ptx--parallel-thread-execution)
-5. [Inline PTX Assembly](#5--inline-ptx-assembly)
-6. [PTX Operands, Constraints & Clobbers](#6--ptx-operands-constraints--clobbers)
-7. [State Spaces in CUDA/PTX](#7--state-spaces-in-cudaptx)
-8. [Data Types in PTX](#8--data-types-in-ptx)
-9. [Deep Learning Data Types](#9--deep-learning-data-types)
-10. [Packed Data Types](#10--packed-data-types)
+1. [Thread Block Clusters](#1-thread-block-clusters)
+2. [Distributed Shared Memory (DSMEM)](#2-distributed-shared-memory)
+3. [TMA Multicast with DSMEM](#3-tma-multicast-with-dsmem)
+4. [PTX — Parallel Thread Execution](#4-ptx-parallel-thread-execution)
+5. [Inline PTX Assembly](#5-inline-ptx-assembly)
+6. [PTX Operands, Constraints & Clobbers](#6-ptx-operands-constraints-clobbers)
+7. [State Spaces in CUDA/PTX](#7-state-spaces-in-cudaptx)
+8. [Data Types in PTX](#8-data-types-in-ptx)
+9. [Deep Learning Data Types](#9-deep-learning-data-types)
+10. [Packed Data Types](#10-packed-data-types)
 11. [Memory Addresses & Byte Addressing](#11--memory-addresses--byte-addressing)
 12. [Shared Memory Banks — Programming Perspective](#12--shared-memory-banks--programming-perspective)
 13. [Pointers & State Spaces](#13--pointers--state-spaces)
@@ -115,7 +122,7 @@ Throughout this guide, each code block has a compile/run box like this:
 15. [cvta — Convert To Address](#15--cvta--convert-to-address)
 16. [mapa & Cluster-Wide Memory](#16--mapa--cluster-wide-memory)
 17. [Putting It All Together — Full Worked Examples](#17--putting-it-all-together)
-18. [Quick Reference](#18--quick-reference)
+18. [Quick Reference](#18-quick-reference)
 
 ---
 
@@ -431,6 +438,7 @@ The partner rank is `1 - my_rank = 0`, which is Block 0 globally.
 // REQUIRES: sm_90a (H100/Hopper) or sm_100a (B200/Blackwell)
 // ═══════════════════════════════════════════════════════════════════
 
+#include <string>
 #include <cstdio>
 #include <cstdint>
 #include <cooperative_groups.h>    // for cg::this_cluster(), cluster_group
@@ -545,6 +553,8 @@ inspect_cluster(BlockInfo* output) {
         output[global_id].my_smem_value      = my_val;
         output[global_id].partner_smem_value = partner_val;
     }
+    // Every CTA must finish all remote reads before any owner exits.
+    cluster.sync();
 }
 
 // ─── Main ──────────────────────────────────────────────────────────
@@ -660,6 +670,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex01_cluster_inspect.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:10.753247+00:00`. Executed UTC: `2026-11-18T11:19:13.520596+00:00`.
 
 Source SHA-256: `ff9c3f47e5bc98d502ca02011672ee2fe024f52e93614d3eb91284953ce6e2f3`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/ex01_cluster_inspect.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex01_cluster_inspect/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -699,6 +711,8 @@ ALL TESTS PASSED — Clusters working correctly!
 
 
 <!-- validation:start:ex01_cluster_inspect.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex01_cluster_inspect.cu**
 
 > **Executed:** 2026-11-17T21:28:33.276960+00:00 (UTC). **Status:** Compile PASS; execution PASS.
@@ -786,14 +800,14 @@ The H100 has ~3.35 TB/s of HBM3 bandwidth shared across all 132 SMs. Per-SM, tha
 ```
 H100 System Bandwidth Numbers (approximate):
   HBM3 bandwidth:            3.35 TB/s  (all SMs share this)
-  L2 cache bandwidth:       12.0 TB/s  (all SMs share this)
+  L2 cache bandwidth:       workload-dependent; measure on the target SKU
   Per-SM share (132 SMs):   ~25 GB/s global / ~90 GB/s L2
 
 DSMEM Interconnect:
   - Dedicated SM-to-SM bandwidth within GPC
   - Available SIMULTANEOUSLY with global memory accesses
   - Does NOT consume HBM or L2 bandwidth
-  - Estimated: ~256 GB/s SM-to-SM per cluster (estimated)
+  - SM-to-SM bandwidth depends on access pattern and active cluster size; no measurement is supplied here.
 ```
 
 [![Compare exchange paths with evidence](images/ch02/05-dsmem-bandwidth-comparison.svg)](images/ch02/05-dsmem-bandwidth-comparison.svg)
@@ -818,22 +832,31 @@ clusters worth the complexity for GEMM and attention kernels.
 
 TMA (Tensor Memory Accelerator) is the H100's hardware unit for copying large tiles of data from global memory (HBM) to shared memory without involving the CPU or the thread warps. TMA multicast distributes a requested tile to selected cluster blocks; this is not an exact physical HBM-transaction-count guarantee.
 
-This is especially powerful for GEMM (matrix multiplication) kernels. In a typical GEMM, every block in a cluster needs the same tile of matrix A. Without multicast, each block issues its own TMA fetch, causing N redundant HBM reads for cluster size N. With multicast, a single TMA fetch delivers the data to all N SMs at once.
+This is especially powerful for GEMM (matrix multiplication) kernels. In a GEMM cluster, CTAs with the same output-row tile can share an A tile; CTAs with the same output-column tile can share a B tile. Without multicast, each block issues its own TMA fetch, causing N redundant HBM reads for cluster size N. With multicast, a single TMA fetch delivers the data to all N SMs at once.
 
 [![Multicast: one request, several destinations](images/ch02/06-tma-multicast-bandwidth.svg)](images/ch02/06-tma-multicast-bandwidth.svg)
 
 *A TMA multicast request delivers an operand tile to selected blocks in a cluster.*
 
-For a GEMM kernel computing output tiles `C = A × B`, each output tile needs a row-stripe of A (shared by every block in a row of the cluster) and a column-stripe of B (shared by every block in a column). With multicast, all row-blocks share one A fetch and all col-blocks share one B fetch — for a 2×2 cluster, both reads are halved, a 2× bandwidth saving. This is one reason FlashAttention 3 achieves such high throughput on H100.
+For a GEMM kernel computing output tiles `C = A × B`, each output tile needs a row-stripe of A (shared by every block in a row of the cluster) and a column-stripe of B (shared by every block in a column). With multicast, all row-blocks share one A fetch and all col-blocks share one B fetch — for a 2×2 cluster, both reads are halved, a 2× bandwidth saving. The traffic saving depends on the selected operand sharing and cluster arrangement; this example does not establish a FlashAttention speedup.
 
 ```
-Code pattern — only one thread per cluster issues the TMA:
-  if (cluster.block_rank() == 0 && threadIdx.x == 0) {
-      // Issue TMA multicast: delivers to ALL blocks in cluster
-      cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes [smem_desc], [gmem_desc];
-  }
-  cluster.sync();  // All blocks wait until TMA completes
-  // Now all blocks' SMEM contains the loaded tile
+Conceptual multicast protocol (not a standalone program):
+  All CTAs initialize their local shared mbarrier (arrival count 1).
+  Publish initialization with fence.proxy.async.shared::cta;
+  cluster.sync();  // initialization rendezvous, NOT transfer completion
+  One elected thread in EVERY destination CTA:
+    mbarrier.arrive.expect_tx(..., tile_bytes);
+  cluster.sync();  // every destination has armed its own phase
+  Only CTA 0's elected issuing thread submits:
+    cp.async.bulk.tensor.2d.shared::cluster.global
+      .mbarrier::complete_tx::bytes.multicast::cluster
+      [dst_shared], [tensor_map, {x, y}], [mbar_shared], ctaMask;
+  Each consumer waits for its LOCAL mbarrier phase to complete.
+  Now it can read its local tile. Before storage reuse or CTA exit,
+  coordinate every consumer, including any outstanding remote readers.
+  tensor_map is a CUtensorMap descriptor address; ctaMask is 16 bits.
+  Destination buffers and barriers have identical offsets in each CTA.
 ```
 
 ---
@@ -994,7 +1017,7 @@ The asm() Statement — Anatomy
   "d"    Read-only 64-bit float register
   "n"    Immediate integer constant — MUST be compile-time constant!
   "+r"   Read-write 32-bit register (variable is both input and output)
-  "=&r"  Early-clobber write-only register (see Section 6.3)
+  "=r"  Early-clobber write-only register (see Section 6.3)
 ```
 
 **Manual Worked Example for asm():**
@@ -1024,7 +1047,7 @@ Let's manually trace what happens with `fma.rn.f32` (fused multiply-add):
 //
 // PURPOSE: Introduce inline PTX assembly from the ground up.
 // Covers: integer arithmetic, FP arithmetic, FMA, predicates,
-//         special registers, bitwise ops, early clobber, templates.
+//         special registers, bitwise ops, scoped temporaries, templates.
 //
 // READING THIS CODE:
 //   Each test kernel demonstrates ONE PTX concept.
@@ -1214,7 +1237,7 @@ __global__ void test_special_regs(uint32_t* tid_out, uint32_t* ctaid_out,
     asm("mov.u32 %0, %laneid;"   : "=r"(laneid));   // lane within warp
 
     // Only thread 0 of the first warp writes to avoid races
-    if (tid == 0) {
+    if (tid == 0 && ctaid == 0) {
         tid_out[0]    = tid;
         ctaid_out[0]  = ctaid;
         laneid_out[0] = laneid;  // should be 0 since tid==0
@@ -1261,17 +1284,17 @@ __global__ void test_bitwise(uint32_t* out, uint32_t a, uint32_t b) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TEST 7: Multi-Instruction Block with Early Clobber
+// TEST 7: Multi-Instruction Block with Scoped PTX Temporaries
 // ═══════════════════════════════════════════════════════════════════
 //
 // When you write multiple PTX instructions in a single asm() block,
 // you can use temporary PTX registers with .reg declarations.
 // The { } braces create a local scope for these declarations.
 //
-// The "&" modifier (early clobber) tells the compiler:
-//   "This output register may be written BEFORE all inputs are read."
-//   Without "&", the compiler might assign the output and one input
-//   to the SAME physical register, causing a read-after-write hazard.
+// Use documented NVIDIA constraints: "=r" for this output, "+r" for
+// read/write operands. Both inputs are consumed into scoped PTX temporaries
+// before the output is written. Do not infer physical register allocation
+// from virtual PTX register names or require a GCC-only modifier.
 //
 // This kernel computes (a + b) * (a - b) = a² - b² using PTX temps.
 //
@@ -1279,7 +1302,7 @@ __global__ void test_bitwise(uint32_t* out, uint32_t a, uint32_t b) {
 //   sum  = 7 + 3 = 10
 //   diff = 7 - 3 = 4
 //   result = 10 × 4 = 40  (= 7² - 3² = 49 - 9 = 40 ✓)
-__global__ void test_early_clobber(int32_t* out, int32_t a, int32_t b) {
+__global__ void test_scoped_temporaries(int32_t* out, int32_t a, int32_t b) {
     int32_t result;
     asm(
         "{\n\t"
@@ -1289,9 +1312,7 @@ __global__ void test_early_clobber(int32_t* out, int32_t a, int32_t b) {
         "  sub.s32 diff, %1, %2;\n\t"   // diff = a - b
         "  mul.lo.s32 %0, sum, diff;\n\t" // result = sum × diff
         "}\n\t"
-        : "=&r"(result)   // "&" = early clobber: result gets its OWN register,
-                          // guaranteed different from %1 and %2.
-                          // Without "&", compiler might alias %0 and %1!
+        : "=r"(result)    // Output is written only after both inputs are consumed.
         : "r"(a), "r"(b)
     );
     out[0] = result;
@@ -1589,11 +1610,11 @@ int main() {
 
     // ─── Test 7: Early clobber ────────────────────────────────────
     // Expected: (7+3) * (7-3) = 10 * 4 = 40
-    printf("\nTest 7: early clobber — (7+3)*(7-3) = 40\n");
+    printf("\nTest 7: scoped temporaries — (7+3)*(7-3) = 40\n");
     {
         int32_t *d_out, h_out;
         ALLOC_DEV(d_out, 1);
-        test_early_clobber<<<1, 1>>>(d_out, 7, 3);
+        test_scoped_temporaries<<<1, 1>>>(d_out, 7, 3);
         CHECK_CUDA(cudaDeviceSynchronize());
         COPY_FROM_DEV(&h_out, d_out, 1);
         tests++;
@@ -1688,6 +1709,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex02_ptx_basics.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:14.175173+00:00`. Executed UTC: `2026-11-18T11:19:15.109469+00:00`.
 
 Source SHA-256: `50b26d6098753bb1cf202e4482308bf86020d3e0eee4fad0b59f2cfcc2eef70f`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/ex02_ptx_basics.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex02_ptx_basics/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -1754,6 +1777,8 @@ Test 11: vote.ballot (even lanes → 0x55555555)
 
 
 <!-- validation:start:ex02_ptx_basics.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex02_ptx_basics.cu**
 
 > **Executed:** 2026-11-17T21:28:39.443220+00:00 (UTC). **Status:** Compile PASS; execution PASS.
@@ -1969,78 +1994,9 @@ Operand Numbering — Visual Guide
   // Used to feed tensor cores before wgmma.mma_async.
 ```
 
-### 6.3 The Early Clobber Problem — When to Use "&"
+### 6.3 Multi-instruction blocks and scoped temporaries
 
-This is one of the most subtle bugs in inline assembly. It happens with multi-instruction asm blocks where the output is written before all inputs have been consumed.
-
-```
-Early Clobber — Why It Exists and When to Use It
-══════════════════════════════════════════════════════════════════════
-
-  ─── The Bug Without "&" ─────────────────────────────────────────
-
-  uint32_t x = 5;
-  uint32_t result;
-
-  asm(
-      "mov.u32 %0, 99;\n\t"   // Instruction 1: result = 99
-      "add.u32 %0, %0, %1;"   // Instruction 2: result = result + x
-      : "=r"(result)           // %0 maps to result
-      : "r"(x)                 // %1 maps to x
-  );
-
-  THE BUG: The compiler might allocate the SAME physical register
-  for %0 and %1, because:
-    - "=r" (write-only) suggests %0 is only WRITTEN
-    - "r"  (read-only) suggests %1 is only READ
-    - The compiler sees no data dependency between them
-    - So it assigns both to, say, %R7
-
-  Execution with aliased registers:
-    mov.u32 %R7, 99;     // Instruction 1: %R7 = 99  (overwrites x!)
-    add.u32 %R7, %R7, %R7; // Instruction 2: %R7 = 99 + 99 = 198 (WRONG!)
-
-  Expected result: 99 + 5 = 104. Got: 198. Silent corruption!
-
-  ─── The Fix With "&" ────────────────────────────────────────────
-
-  asm(
-      "mov.u32 %0, 99;\n\t"
-      "add.u32 %0, %0, %1;"
-      : "=&r"(result)          // "&" forces %0 into a DIFFERENT register than %1
-      : "r"(x)
-  );
-
-  Execution with distinct registers:
-    mov.u32 %R7, 99;      // %R7 = 99 (result)  ← separate register
-    add.u32 %R7, %R7, %R8; // %R8 = x = 5 (untouched)
-    // %R7 = 99 + 5 = 104 ✓
-
-  ─── Rule of Thumb ───────────────────────────────────────────────
-  │                                                                 │
-  │  Use "=&r" (early clobber) when:                                │
-  │    • Your asm block has MORE THAN ONE instruction               │
-  │    • The output is written (even partially) before all inputs   │
-  │      have been consumed                                         │
-  │                                                                 │
-  │  It's safe to always use "&" in multi-instruction blocks —      │
-  │  the only cost is one extra register allocation.                │
-  └─────────────────────────────────────────────────────────────────
-
-  ─── Another Common Pattern Needing "&" ──────────────────────────
-
-  int32_t a, result;  // We want: result = a * 2 + a * 3 = 5a
-  asm(
-      "{\n\t"
-      "  .reg .s32 tmp;\n\t"
-      "  mul.lo.s32 %0, %1, 2;\n\t"   // result = a*2  (output written!)
-      "  mul.lo.s32 tmp, %1, 3;\n\t"  // tmp = a*3    (need %1 still!)
-      "  add.s32 %0, %0, tmp;\n\t"    // result = result + tmp
-      "}\n\t"
-      : "=&r"(result)   // MUST use "&" — result written before %1 last use
-      : "r"(a)
-  );
-```
+NVIDIA's documented inline-PTX output modifiers are `=` (write-only) and `+` (read/write). Do not require GCC's `&` early-clobber modifier as a CUDA contract. In a multi-instruction block, declare scoped PTX temporary registers, consume the inputs into those temporaries, and write a write-only output after the input uses. If an operand is both read and modified, declare it with `+`. PTX names identify virtual registers; they do not prove that two operands occupy a specific physical SASS register. See the [NVIDIA Inline PTX guide](https://docs.nvidia.com/cuda/inline-ptx-assembly/index.html#constraints).
 
 ### 6.4 Local Register Scoping with { }
 
@@ -2121,7 +2077,7 @@ Step 3: and.b32 result, tmp, nc
   result = 0000 1111 0000 1111  (0x0F0F)
 
 Constraints:
-  result: "=&r" (early clobber — written before all inputs are done)
+  result: "=r" (written after the input uses; scoped PTX temporaries hold intermediates)
   a, b, c: "r" (read-only 32-bit registers)
 ```
 ---
@@ -2242,7 +2198,7 @@ Global Memory — Key Properties and Usage Patterns
   1 transaction!     32 transactions!
 
   PTX vectorized loads (coalescing helper):
-    ld.global.v2.f32 {%f0, %f1}, [%addr]; // load 2 floats atomically
+    ld.global.v2.f32 {%f0, %f1}, [%addr]; // vector load of 2 floats; not an atomic snapshot
     ld.global.v4.f32 {%f0,%f1,%f2,%f3}, [%addr]; // load 4 floats = 128-bit
     These maximize memory bandwidth by requesting wider chunks.
 ```
@@ -2920,8 +2876,8 @@ Modern deep learning training and inference use a variety of reduced-precision f
 
 The progression from FP32 → BF16 → FP8 trades precision for speed:
 - FP32: 1 FLOP/cycle on CUDA cores
-- BF16: 2× throughput on CUDA cores, 16× on Tensor Cores vs FP32
-- FP8: 32× on Tensor Cores vs FP32 (E4M3 or E5M2)
+- BF16: 2× throughput on CUDA cores, ~14.8× dense Tensor Core throughput vs FP32 CUDA cores (SXM)
+- FP8: ~29.6× dense Tensor Core throughput vs FP32 CUDA cores (SXM) (E4M3 or E5M2)
 
 ```
 Deep Learning Float Formats — Complete Bit Layout and Tradeoffs
@@ -4300,7 +4256,7 @@ Full syntax:
 Constraint modifiers (outputs only):
   "="   write-only
   "+"   read-write (same var is input and output)
-  "&"   early clobber (guarantee separate register from inputs)
+  Use documented = and + modifiers; scope PTX temporaries in braces.
 
 Register constraints:
   "h"   .u16/.f16  (16-bit)
@@ -4419,9 +4375,9 @@ failure mode that produces wrong answers rather than error messages.
    uint16_t → "h", uint32_t → "r", uint64_t → "l", float → "f"
    SMEM addr → "r" (32-bit offset, NOT 64-bit!)
 
-4. USE EARLY CLOBBER "&" FOR MULTI-INSTRUCTION BLOCKS
-   If output is written before all inputs are consumed:
-   use "=&r" not "=r" — prevents silent register aliasing.
+4. USE SCOPED TEMPORARIES FOR MULTI-INSTRUCTION BLOCKS
+   Consume inputs into local PTX temporaries before writing an = output.
+   Use + for read/write operands; do not assume an undocumented & modifier.
 
 5. PREFER C++ INTRINSICS OVER RAW PTX WHEN AVAILABLE
    __cvta_generic_to_shared() > hand-written cvta PTX.
@@ -4511,6 +4467,7 @@ After exchange:
 //   The cluster API, mapa, and DSMEM semantics are unchanged.
 // ═══════════════════════════════════════════════════════════════════
 
+#include <string>
 #include <cstdio>
 #include <cstdint>
 #include <cmath>
@@ -4609,8 +4566,8 @@ distributed_vector_add(const float* __restrict__ input,
     asm volatile("ld.shared.f32 %0, [%1];"
                  : "=f"(my_val) : "r"(my_s_addr));
 
-    // Read partner SMEM — this goes through DSMEM interconnect (~50-80 cycles)
-    // partner_smem[tid] uses ld.shared::cluster internally
+    // Read partner SMEM — this reads the mapped remote shared-memory allocation
+    // map_shared_rank maps the address with mapa; the compiler may emit a generic load
     partner_val = partner_smem[tid];
 
     // ── Step 7: Compute sum using PTX FMA ────────────────────────
@@ -4628,6 +4585,8 @@ distributed_vector_add(const float* __restrict__ input,
         asm volatile("st.global.f32 [%0], %1;"
                      : : "l"(out_addr), "f"(result) : "memory");
     }
+    // Keep every CTA's shared allocation alive through the remote reads.
+    cluster.sync();
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -4757,6 +4716,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex06_comprehensive.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:20.571501+00:00`. Executed UTC: `2026-11-18T11:19:23.333448+00:00`.
 
 Source SHA-256: `4c5fb40a537b3c5dfc2190023302f953f98867349e486a5daeba6e73e823be8d`. [Exact source](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/ex06_comprehensive.cu) · [Compile log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/compile.log) · [Run log](validation/2026-11-18-two-h100/02-clusters-inline-ptx/ex06_comprehensive/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -4817,6 +4778,8 @@ Verification (first 8 and last 4 elements):
 
 
 <!-- validation:start:ex06_comprehensive.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex06_comprehensive.cu**
 
 > **Executed:** 2026-11-17T21:28:51.667149+00:00 (UTC). **Status:** Compile PASS; execution PASS.

@@ -25,7 +25,7 @@ The implementation is pinned to **CUTLASS v4.3.6**, commit `1afc6d355b8cb992398f
 
 **Step 3: carry the dependency proof across.** TMA must finish producing an operand stage before its MMA consumer reads it. That stage remains live until its readers finish. Separately, an accumulator remains live until its epilogue consumer finishes. CUTLASS implements the matching SM100 completion protocol; substituting a Hopper `wgmma.wait_group` sequence is not a port.
 
-**Step 4: change schedules as well as the architecture tag.** The original Hopper fused example chooses Hopper-specific epilogue and ping-pong schedules. Merely renaming `Sm90` to `Sm100` failed compilation. The tested B200 sources use SM100-capable `EpilogueScheduleAuto` and `KernelScheduleAuto`, with stage capacity reduced by the epilogue's actual shared storage. Auto selection is version-dependent, which is one reason the pin is part of the example.
+**Step 4: distinguish the plain and fused builders.** The original Hopper fused example chooses Hopper-specific epilogue and ping-pong schedules. For that fused example, merely renaming `Sm90` to `Sm100` failed compilation. The plain GEMM already uses Auto schedules and needs only the architecture-tag change. The tested B200 sources use SM100-capable `EpilogueScheduleAuto` and `KernelScheduleAuto`, with stage capacity reduced by the epilogue's actual shared storage. Auto selection is version-dependent, which is one reason the pin is part of the example.
 
 The programs below demonstrate UMMA through CUTLASS's native SM100 implementation. They are not handwritten `tcgen05` assembly tutorials and do not claim to implement every Blackwell scheduling mode.
 
@@ -381,7 +381,7 @@ For the recorded GQA case, Hq=2 and Hkv=1. K and V each halve to 32,768 bytes, w
 
 ## 8 — Precisely what the attention adaptation supports
 
-The full upstream [CUTLASS example 77](https://github.com/NVIDIA/cutlass/tree/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/77_blackwell_fmha) compiles many attention modes. Its unrestricted build exceeded the bounded compile window on this rented host. The appendix therefore **narrows its dispatcher**, while retaining its kernel implementations and reference verifier:
+The full upstream [CUTLASS example 77](https://github.com/NVIDIA/cutlass/tree/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/77_blackwell_fmha) compiles many attention modes. Its unrestricted build hit the collector’s self-imposed 100-second timeout (exit -9). This is not evidence that the upstream source is broken. The appendix therefore **narrows its dispatcher**, while retaining its kernel implementations and reference verifier:
 
 - FP16 fixed-length **forward** attention; D is exactly 64 or 128.
 - Full attention or explicitly **top-left causal** attention, `j <= i`.
@@ -1566,7 +1566,7 @@ int main(int argc, char const **args) {
 
 ```bash
 nvcc -std=c++17 -O2 -arch=sm_100a --expt-relaxed-constexpr \
-    --use_fast_math -DFP16 \
+    --use_fast_math \
     -I"$CUTLASS_ROOT/include" -I"$CUTLASS_ROOT/tools/util/include" \
     -Idocs/examples/blackwell/77_blackwell_fmha \
     docs/examples/blackwell/blackwell_fmha_forward.cu \
@@ -1586,7 +1586,7 @@ nvcc -std=c++17 -O2 -arch=sm_100a --expt-relaxed-constexpr \
 
 ## 10 — Actual source identities, dates and sample outputs
 
-All dates are **November 19, 2026**, with precise **UTC** timestamps below. [Raw command records and logs](validation/2026-11-19-b200-native/evidence-integrity.json) preserve the actual paths and earlier failed build attempts. The final successful fused source uses SM100-capable schedules; the successful attention source is the narrowed dispatcher above, not the timed-out unrestricted runner.
+All dates are **November 19, 2026**, with precise **UTC** timestamps below. [Raw command records](validation/2026-11-19-b200-native/results/forward-book-results.json) and [complete final hash inventory](validation/2026-11-19-b200-native/evidence-integrity.json) preserve the actual paths and earlier failed build attempts. The final successful fused source uses SM100-capable schedules; the successful attention source is the narrowed dispatcher above, not the timed-out unrestricted runner.
 
 ### blackwell_gemm.cu
 
@@ -1650,3 +1650,18 @@ Source SHA-256: `1fd11cfd0ee4cf2c1af2a58e6b68b8715790eced49f111cdcd9e9bfc6be6f03
 ## Appendix summary
 
 Preserve the equation and coordinate proof, but rebuild the instruction/storage/schedule contract for the target architecture. The recorded single-device B200 tests cover native FP16-to-FP32 GEMM, fused ReLU and four FP16 forward-attention configurations. Treat the complete source, exact CUTLASS pin and captured output together as the reproducible example; extend the workload only with new numerical and memory checks.
+
+## Follow the native accumulator lifetime
+
+The pinned one-SM builder selects a 128×128 SM100 MMA and six shared-memory stages; its shared storage is 230400 bytes, below the B200 per-CTA 232448-byte limit. This is a source-derived resource calculation, not a SASS capture. The tested builder uses one-SM UMMA, not a demonstrated two-SM kernel.
+
+1. Allocate accumulator columns in tensor memory (TMEM). These are not Hopper’s per-thread FP32 accumulator registers.
+2. Acquire a shared-memory input stage and submit its TMA transfers. Wait for the stage’s transaction barrier before MMA reads it.
+3. Issue the selected `tcgen05.mma` operation through the pinned CuTe UMMA wrapper. Descriptor and TMEM-address operands have Blackwell-specific contracts.
+4. Commit its asynchronous completion to the appropriate barrier. Do not treat instruction issue as completed accumulation.
+5. Wait for completion before loading accumulator values out of TMEM for epilogue conversion and stores. Release input stages only after their asynchronous readers finish.
+6. Deallocate TMEM only after its readers have finished; reuse requires the complete allocation/ownership protocol.
+
+Two-SM forms coordinate a CTA pair and change operand, allocation and completion contracts. They cannot be obtained by launching twice as many independent one-SM CTAs. Consult the pinned UMMA wrappers and Blackwell functionality guide linked in Step 2 for the exact instruction forms. No handwritten tcgen05 listing or two-SM execution is claimed here.
+
+The inner historical `integrity.json` contains an earlier runner-log hash; `evidence-integrity.json` inventories the final captured tree, including that earlier manifest. Both are retained. The unused historical `-DFP16` flag is absent from the suggested command above; raw commands remain unchanged. Attention verification uses the same build’s GPU reference under `--use_fast_math`, not an independent float64 CPU oracle.

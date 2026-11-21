@@ -1,4 +1,5 @@
 # 15. CuTe — Layout Algebra You Can Check by Hand
+
 ## Lesson 15 Companion Guide — From Address Arithmetic to CuTe Foundations
 
 [![CHAPTER 15: 15. CuTe — Layout Algebra You Can Check by Hand — conceptual chapter illustration](images/chapter-openers/15-workshop.svg)](images/chapter-openers/15-workshop.svg)
@@ -6,7 +7,7 @@
 
 !!! tip "Your goal in this chapter"
 
-    Read a CuTe layout as an address function and distinguish a view from a transfer. Begin with ordinary array indexing, element sizes and row strides; the numbered calculations below build the CuTe vocabulary from those facts. The earlier [shared-memory layout](04-cutensormap-tma-swizzling.md) and [WGMMA fragments](06-wgmma-part-1.md) chapters become useful again when Chapters 19–21 connect these maps to actual instructions.
+    Read a CuTe layout as an address function and distinguish a view from a transfer. Begin with ordinary array indexing, element sizes and row strides; the numbered calculations below build the CuTe vocabulary from those facts. The earlier [shared-memory layout](04-cutensormap-tma-swizzling.md) and [WGMMA fragments](06-wgmma-part-1.md) chapters become useful again when Chapters 20–22 connect these maps to actual instructions.
 
 ## 1 — The missing bridge to library kernels
 

@@ -96,6 +96,7 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 hooks:
+  - hooks/review_status.py
   - hooks/fix_anchors.py
   - hooks/diagram_readability.py
   - hooks/reader_comments.py
@@ -114,6 +115,7 @@ extra:
 
 nav:
   - Home: index.md
+  - November 21 Review Corrections: review-fixes-2026-11-21.md
   - Getting Started & Installation: getting-started.md
   - November 18 H100 Rerun: revalidation-2026-11-18.md
   - H100 CuTe/CUTLASS Workshop Results: cutlass-workshop-validation.md

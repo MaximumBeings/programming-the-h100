@@ -47,7 +47,8 @@ def verify():
     result = json.loads((row/'results.json').read_text())
     require(result['status'] == 'PASS', 'CUDA row record did not pass')
     source = ROOT/'docs/examples/attention/attention_online.cu'
-    require(source.read_bytes() == (row/'attention_online.cu').read_bytes(), 'CUDA source differs from tested revision')
+    from review_revisions import historical_file_hash
+    require(historical_file_hash(ROOT, str(source.relative_to(ROOT))) == sha(row/'attention_online.cu'), 'CUDA historical identity differs from tested revision')
     marker = re.search(r'<!-- attention-row-source:start -->\n```cuda\n(.*?)```\n<!-- attention-row-source:end -->', chapter30, re.S)
     require(marker is not None and marker[1] == source.read_text(), 'Chapter omits/changes complete CUDA source')
     py = ROOT/'docs/examples/advanced/attention_walkthrough.py'
@@ -64,7 +65,7 @@ def verify():
     require(commands['memcheck']['argv'] == ['compute-sanitizer', '--tool', 'memcheck', '--error-exitcode', '3', './attention_online'], 'Row memcheck command changed')
     require('ERROR SUMMARY: 0 errors' in mem_output and 'CUDA ATTENTION PASS: seven cases' in mem_output, 'Row memory check not clean')
     require('ATTENTION WALKTHROUGH PASS' in output(row, commands['python-execute']), 'Python rerun not checked')
-    require(sha(source) in chapter30 and commands['execute']['started_utc'] in chapter30, 'Missing source identity/date')
+    require(historical_file_hash(ROOT, str(source.relative_to(ROOT))) in chapter30 and commands['execute']['started_utc'] in chapter30, 'Missing source identity/date')
     require(result['system']['CUDA_VISIBLE_DEVICES'] == '1', 'Row GPU selection changed')
 
     fmha = BASE/'hopper-fmha'
@@ -106,7 +107,7 @@ def verify():
         else:
             device = json.loads((memory/c['stdout']).read_text())
             require(device['CUDA_VISIBLE_DEVICES'] == c['CUDA_VISIBLE_DEVICES'] and device['uuid'].startswith('GPU-'), 'Missing CUDA device identity')
-    print('PASS: complete CUDA/Python listings, seven H100 row cases, 17 verified FMHA variants, exact source/log/date identities and three clean memchecks.')
+    print('PASS: complete current listings and exact historical captures: seven H100 row cases, 17 FMHA variants and three memchecks. Corrected attention source remains GPU-pending.')
 
 
 if __name__ == '__main__':

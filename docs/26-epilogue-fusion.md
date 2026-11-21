@@ -1,4 +1,16 @@
 # 26. Epilogue Fusion — Preserve the Operation, Remove a Pass
+
+!!! note "Correctness build versus performance build"
+    The archived H100 build reports ptxas C7510: WGMMA instructions were
+    serialized across a function boundary. Its output establishes the stated
+    numerical checks, not representative WGMMA overlap or performance.
+    For a new benchmark, add `-DNDEBUG` to the complete documented command,
+    inspect the new compiler diagnostics and validate the resulting binary
+    again. No optimized-build timing is inferred from the old capture.
+    Auto schedules depend on toolkit and CUTLASS versions; the recorded
+    plain GEMM selected Cooperative with seven stages under CUDA 12.8.
+    CUDA 12.0 can resolve Auto differently.
+
 ## Lesson 26 Companion Guide — Preserve Numerical Semantics While Removing a Memory Pass
 
 [![CHAPTER 26: 26. Epilogue Fusion — Preserve the Operation, Remove a Pass — conceptual chapter illustration](images/chapter-openers/26-workshop.svg)](images/chapter-openers/26-workshop.svg)

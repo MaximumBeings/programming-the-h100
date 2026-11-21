@@ -1,5 +1,7 @@
 # CUTLASS attention extension — November 18, 2026
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 Chapters 30–31 connect the existing FlashAttention-3 design chapter and CuTe/CUTLASS course to the complete Hopper FMHA example 88 at CUTLASS v4.3.6 commit `1afc6d355b8cb992398f17beb4425702f1d57ddd`.
 
 ## Teaching and review

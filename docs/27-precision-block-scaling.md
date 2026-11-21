@@ -1,4 +1,5 @@
 # 27. Precision, Block Scaling and the Hopper–Blackwell Boundary
+
 ## Lesson 27 Companion Guide — Separate Stored Codes, Scale Layouts and Executed Arithmetic
 
 [![CHAPTER 27: 27. Precision, Block Scaling and the Hopper–Blackwell Boundary — conceptual chapter illustration](images/chapter-openers/27-workshop.svg)](images/chapter-openers/27-workshop.svg)
@@ -12,6 +13,36 @@
 A low-bit GEMM has two independent questions: what numbers do the stored bits represent, and what instructions execute the multiplication? A four-bit allocation answers neither question completely. This chapter separates representation, quantization, scale layout and accumulation so a storage experiment cannot accidentally become a claim about native Tensor Core support.
 
 The executed CUTLASS GEMM labs in this track use FP16 operands and FP32 accumulation. Hopper also supports BF16, but changing these labs to BF16 requires a separate build and numerical validation. The CPU exercise below explores E2M1 representation with exact floating-point block scales. It is a format reference, not an NVFP4 kernel or an implementation of NVIDIA's complete quantization recipe.
+
+### Hopper FP8 before Blackwell FP4
+
+Hopper supports FP8 E4M3 (largest finite magnitude 448; no infinity) and
+E5M2 (largest finite magnitude 57344; infinity available). Both are floating
+point, not evenly spaced integer codes. INT8 is another supported GEMM input
+family; its quantization and accumulation contracts differ.
+
+For per-tensor scaling define `q = quantize(x/s)` and reconstruct `x ≈ s*q`.
+If x=[1,2,4,8] and s=2, the values before rounding are [0.5,1,2,4]; multiplying
+back by 2 reconstructs this particular example exactly. Real values generally
+round. Choose s to manage overflow and underflow; scaling does not add mantissa
+bits. Delayed per-tensor scaling uses a previous step's reduced amax, not an
+unavailable future maximum.
+
+Hopper also has software/library blockwise-scaled FP8 GEMM. In pinned CUTLASS,
+read examples 67 (single GEMM) and 68 (grouped GEMM), and
+`KernelTmaWarpSpecializedCooperativeFP8Blockwise`. For each K block t,
+accumulate `sA[m,t]*sB[n,t]*dot(qA[m,t],qB[n,t])` in the output's higher-precision
+accumulation. With two block dot products 3 and -1, and scale products 2 and
+8, the reconstructed sum is 2*3 + 8*(-1) = -2. Applying one final scale to
+the unscaled sum 2 is generally wrong because the block scales differ.
+
+The `KernelTmaWarpSpecialized*FP8FastAccum` policies make a distinct precision/
+throughput choice. Promoting partial results and fast tensor-core accumulation
+are not interchangeable error contracts; compare against a higher-precision
+reference on the actual input distribution. These are source-reading and
+worked-arithmetic examples, not new GPU execution claims. Blackwell's native
+NVFP4 scale/storage contract below is a separate architecture feature.
+
 
 ## 1 — Write the numerical contract before the datatype
 

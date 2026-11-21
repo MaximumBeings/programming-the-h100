@@ -322,7 +322,7 @@ x.segments('Three operand stages',[('Stage 0: 64 KiB',64,'teal'),('Stage 1: 64 K
 x.note('Arithmetic','3 × (32 + 32) KiB = 192 KiB\n228 − 192 = 36 KiB before accounting for barriers, alignment and other live storage.')
 x.note('A fourth stage does not fit this model','4 × 64 KiB = 256 KiB exceeds 228 KiB per SM. Per-block limits and residency constraints can be tighter than this simple capacity subtraction.','amber');end(x)
 x=d(8,7,'A circular buffer recycles storage, not time','Producers and consumers track both stage ownership and generation.')
-x.columns([('Stage 0','FULL: waiting to be consumed.','teal'),('Stage 1','LOADING: producer owns the destination.','blue'),('Stage 2','FULL: another ready tile.','teal'),('Stage 3','IN USE: consumer still owns the data.','violet')])
+x.columns([('Stage 0','FULL: waiting to be consumed.','teal'),('Stage 1','LOADING: producer owns the destination.','blue'),('Stage 2','EMPTY: its older tile has been consumed.','teal'),('Stage 3','IN USE: consumer still owns the data.','violet')])
 x.note('Advance only when the protocol permits','stage_next = (stage + 1) mod stage_count\nA wrap changes the generation / phase. The producer cannot assume it always stays a fixed number of stages ahead.');end(x)
 
 # CHAPTER 9 — Lifetimes, generations and work ordering.

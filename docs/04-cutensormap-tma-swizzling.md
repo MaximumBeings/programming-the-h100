@@ -1,4 +1,5 @@
 # cuTensorMap, TMA & Swizzling
+
 ## Lesson 4 Companion Guide — Programming the H100
 
 [![CHAPTER 04: Describe a tile. Choose its layout.](images/chapter-openers/04-descriptors.svg)](images/chapter-openers/04-descriptors.svg)
@@ -92,21 +93,21 @@ Save a complete named listing to its indicated filename and use the full compile
 
 ## Table of Contents
 
-1. [What Is TMA — The Motivation](#1--what-is-tma)
-2. [How Descriptors Replace Address Calculation](#2--how-descriptors-replace-address-calculation)
-3. [cuTensorMap — The Descriptor Object](#3--cutensormap)
-4. [cuTensorMapEncodeTiled — All 12 Parameters](#4--cutensormapencodetiled)
-5. [Data Types](#5--data-types)
-6. [Tensor Rank and Global Address](#6--tensor-rank-and-global-address)
-7. [Global Dimensions and Strides](#7--global-dimensions-and-strides)
-8. [Box Dimensions and Element Strides](#8--box-dimensions-and-element-strides)
-9. [Shared Memory and Bank Conflicts](#9--shared-memory-and-bank-conflicts)
-10. [Swizzling — Eliminating Bank Conflicts](#10--swizzling)
+1. [What Is TMA — The Motivation](#1-what-is-tma)
+2. [How Descriptors Replace Address Calculation](#2-how-descriptors-replace-address-calculation)
+3. [cuTensorMap — The Descriptor Object](#3-cutensormap-the-descriptor-object)
+4. [cuTensorMapEncodeTiled — All 12 Parameters](#4-cutensormapencodetiled-all-12-parameters)
+5. [Data Types](#5-data-types)
+6. [Tensor Rank and Global Address](#6-tensor-rank-and-global-address)
+7. [Global Dimensions and Strides](#7-global-dimensions-and-strides)
+8. [Box Dimensions and Element Strides](#8-box-dimensions-and-element-strides)
+9. [Shared Memory and Bank Conflicts](#9-shared-memory-and-bank-conflicts)
+10. [Swizzling — Eliminating Bank Conflicts](#10-swizzling)
 11. [Interleaving — Non-Linear Global Layouts](#11--interleaving)
 12. [L2 Promotion — Prefetching Policy](#12--l2-promotion)
 13. [Out-of-Bounds Fill](#13--out-of-bounds-fill)
-14. [Putting It All Together — Full TMA Examples](#14--putting-it-all-together)
-15. [Quick Reference](#15--quick-reference)
+14. [Putting It All Together — Full TMA Examples](#14-putting-it-all-together)
+15. [Quick Reference](#15-quick-reference)
 
 ---
 
@@ -305,7 +306,7 @@ Descriptor as Job Specification
   │  ├────────────────┼──────────────────────────────────────────┤   │
   │  │ Global strides │ [8192 bytes] (2048 cols × 4 bytes/float) │   │
   │  ├────────────────┼──────────────────────────────────────────┤   │
-  │  │ Box (tile)     │ [128, 64] (128 cols × 64 rows per tile)  │   │
+  │  │ Box (tile)     │ [64, 64] (64 cols × 64 rows per tile)  │   │
   │  ├────────────────┼──────────────────────────────────────────┤   │
   │  │ Data type      │ FLOAT32                                  │   │
   │  ├────────────────┼──────────────────────────────────────────┤   │
@@ -473,14 +474,14 @@ cuTensorMapEncodeTiled — All 12 Parameters
 
 ### 4.2 Manual Worked Example — Setting Up All 12 Parameters
 
-Before examining each parameter individually, let's trace through a complete realistic example: setting up TMA for loading 128×64 BF16 tiles from a 4096×2048 matrix stored in row-major format.
+Before examining each parameter individually, let's trace through a complete realistic example: setting up TMA for loading 64×64 BF16 tiles from a 4096×2048 matrix stored in row-major format.
 
 ```
-Manual Worked Example — 4096×2048 BF16 Matrix, 128×64 Tile
+Manual Worked Example — 4096×2048 BF16 Matrix, 64×64 Tile
 ══════════════════════════════════════════════════════════════════════
 
   Global matrix: 4096 columns × 2048 rows, BF16 (2 bytes/element)
-  Tile size: 128 columns × 64 rows (the chunk TMA loads per call)
+  Tile size: 64 columns × 64 rows (the chunk TMA loads per call)
   Storage: row-major (rows are contiguous, rows separated by 4096×2 bytes)
 
   Physical layout in HBM:
@@ -511,10 +512,10 @@ Manual Worked Example — 4096×2048 BF16 Matrix, 128×64 Tile
       → globalStrides[0] = stride for globalDim[1] (rows)
       → To advance by 1 ROW: skip 4096 cols × 2 bytes = 8192 bytes ✓
 
-  [7] boxDim:        {128, 64}
-      → boxDim[0] = 128 columns per tile (innermost dimension)
+  [7] boxDim:        {64, 64}
+      → boxDim[0] = 64 columns per tile (innermost dimension)
       → boxDim[1] = 64 rows per tile (outermost dimension)
-      → Total tile: 128 × 64 × 2 = 16384 bytes = 16 KB
+      → Total tile: 64 × 64 × 2 = 8192 bytes = 8 KiB
 
   [8] elementStrides: {1, 1}
       → Dense tile: take every element (stride = 1 in each dim)
@@ -524,18 +525,18 @@ Manual Worked Example — 4096×2048 BF16 Matrix, 128×64 Tile
       → Linear row-major layout, no interleaving needed
 
   [10] swizzle:      CU_TENSOR_MAP_SWIZZLE_128B
-       → Full 128-byte swizzle: maximally conflict-free for BF16/FP16
+       → 128-byte swizzle; assess bank conflicts against the actual access pattern
 
   [11] l2Promotion:  CU_TENSOR_MAP_L2_PROMOTION_L2_128B
        → Prefetch full 128-byte cache lines (standard for dense ops)
 
   [12] oobFill:      CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE
-       → Don't fill OOB regions (we handle padding manually)
+       → Use the default zero fill for out-of-bounds loads
 
   Full call:
     cuuint64_t gdim[2]    = {4096, 2048};
     cuuint64_t gstride[1] = {8192};          // bytes per row
-    cuuint32_t bdim[2]    = {128, 64};
+    cuuint32_t bdim[2]    = {64, 64};
     cuuint32_t estride[2] = {1, 1};
 
     cuTensorMapEncodeTiled(
@@ -604,7 +605,7 @@ Data Types — All Options with Properties
 
   3. swizzle compatibility:
      Some swizzle modes require minimum element sizes.
-     SWIZZLE_128B with UINT8 requires special handling (boxDim[0] ≥ 128).
+     SWIZZLE_128B with UINT8 requires special handling (boxDim[0] ≤ 128).
 
   ─── Flush-to-Zero (FTZ) Modes ───────────────────────────────────
 
@@ -724,7 +725,7 @@ globalAddress — Requirements and Common Mistakes
   // DANGEROUS: manual offset that may break alignment
   float* d_tile = d_matrix + 3;  // offset by 3 floats = 12 bytes
   // (uint64_t)d_tile % 16 = 12  ← NOT 16-byte aligned! ✗
-  // TMA will silently read wrong data or crash.
+  // Check the encoder status: an invalid base alignment is rejected.
 
   // SAFE: aligned offset
   float* d_tile = d_matrix + 4;  // offset by 4 floats = 16 bytes aligned ✓
@@ -799,7 +800,7 @@ globalDim — Detailed Specification
 
   Example: tile at col=4000, boxDim[0]=128 → tile covers cols 4000-4127
     Cols 4000-4095: within globalDim[0]=4096, fetched normally
-    Cols 4096-4127: OUT OF BOUNDS → filled with zero (if oobFill=ZERO)
+    Cols 4096-4127: OUT OF BOUNDS → filled with zero (if oobFill=CU_TENSOR_MAP_FLOAT_OOB_FILL_NONE)
 
   This automatic edge handling eliminates the need for boundary
   check code in kernels — TMA does it for free.
@@ -894,17 +895,17 @@ boxDim — Tile Dimensions in Elements
   ├── boxDim[0] × element_size MUST be a multiple of 16 bytes
   │   (TMA fetches in 16-byte aligned chunks)
   ├── boxDim[0] must be ≤ swizzle span (see §10 for swizzle constraints)
-  ├── Product of all boxDim values must be ≤ some implementation limit
-  │   (typically 2^20 elements ≈ 1M elements total per tile)
+  ├── Each boxDim component must satisfy the API's per-dimension limit;
+  │   there is no general product ≤ 2^20 rule
   └── Total tile bytes must fit in the SMEM allocation for the tile
 
   ─── Choosing boxDim for GEMM ─────────────────────────────────────
 
-  For a 128×64 BF16 tile (128 cols × 64 rows):
+  For an UNSWIZZLED 128×64 BF16 tile (128 columns × 64 rows):
     boxDim = {128, 64}
     Tile size = 128 × 64 × 2 bytes = 16384 bytes = 16 KB per tile
 
-  For a 256×128 FP16 tile:
+  For an UNSWIZZLED 256×128 FP16 tile:
     boxDim = {256, 128}
     Tile size = 256 × 128 × 2 = 65536 bytes = 64 KB per tile
     (This fills 64 KB of SMEM — feasible with 228 KB total)
@@ -925,29 +926,23 @@ boxDim — Tile Dimensions in Elements
       BF16 (2B):   boxDim[0] ≤ 64 elements
       FP32 (4B):   boxDim[0] ≤ 32 elements
 
-  Wait — but GEMM uses boxDim[0]=128 for BF16 with SWIZZLE_128B!
-  That's 128 × 2 = 256 bytes > 128. How?
-
-  Answer: SWIZZLE_128B operates on 128-byte rows, but the FULL TILE
-  can span MULTIPLE swizzle rows. The boxDim[0] constraint means:
-  the innermost dim must fit in ONE swizzle row = 64 BF16 elements.
-  For wider tiles (128 cols), you use multiple columns of swizzle rows.
-  The TMA descriptor handles this internally. In practice the rule is:
-  boxDim[0] × sizeof must be a multiple of the swizzle atom (16 bytes)
-  AND the inner dim must be ≤ 256 bytes (hardware limit).
+  A BF16 box with 128 innermost elements spans 256 bytes and is
+  INVALID with SWIZZLE_128B. The descriptor does not split that
+  dimension implicitly. Use at most 64 BF16 elements per 128B row,
+  issue separate transfers, or choose a different valid layout.
 
   ─── Manual Worked Example: Computing Tile Bytes ─────────────────
 
-  tile A (BF16): boxDim = {128, 64}
-    Total = 128 × 64 × 2 = 16,384 bytes = 16 KB
+  tile A (BF16), 128B swizzle: boxDim = {64, 64}
+    Total = 64 × 64 × 2 = 8,192 bytes = 8 KiB
 
   tile B (BF16): boxDim = {64, 128}
     Total = 64 × 128 × 2 = 16,384 bytes = 16 KB
 
-  Both tiles: 16 KB each. For double-buffering: 2 × (16+16) = 64 KB
+  The two tiles occupy 8 + 16 = 24 KiB. Double-buffering needs 48 KiB.
   H100 has 228 KB of shared memory per SM, but a single thread block
   can opt into at most 227 KB of it (CUDA reserves 1 KB per block).
-  Leaves 227 - 64 = 163 KB for accumulator tiles, mbarrier, etc.
+  Leaves 227 - 48 = 179 KiB for other shared allocations. Accumulators normally occupy registers, not this shared-memory budget.
 ```
 
 ### 8.2 elementStrides — Subsampling Within the Tile
@@ -963,8 +958,8 @@ elementStrides — Intra-Tile Subsampling
   Constraint: each value must be ≤ 8
 
   elementStrides = {1, 1, ...}  →  dense tile (almost always what you want)
-  elementStrides = {2, 1}       →  take every other column, all rows
-  elementStrides = {1, 2}       →  all columns, every other row
+  elementStrides = {2, 1}       →  with interleave NONE, entry 0 is ignored
+  elementStrides = {1, 2}       →  sample every other row within the bounding box
 
   When is elementStrides > 1 useful?
   ─────────────────────────────────────────────────────────────────
@@ -998,6 +993,8 @@ instructions and transaction decomposition require their actual bank mapping;
 this is not a universal one-cycle latency guarantee.
 
 If Chapter 1's version is still fresh, skim to §10.
+
+With `INTERLEAVE_NONE`, `elementStrides[0]` is ignored. Outer stride `s` selects coordinates `origin + q*s`; to return N such positions, the bounding-box extent must cover `N*s` coordinate units, with the API's dimension/alignment rules still satisfied. This is a bounding region, not a request to return N consecutive positions.
 
 ### 9.1 Shared Memory Banks — The Hardware Reality
 
@@ -1431,33 +1428,23 @@ then check the code against your arithmetic — not the other way round.
 **Manual Worked Example Before the Code:**
 
 ```
-Setup: 1024×512 matrix of FP32. Load 64×32 tiles (64 cols × 32 rows).
+Setup: 256 columns × 128 rows of FP32. Load 32×32 tiles.
 
-Parameters:
-  [1] tensorMap:        &desc
-  [2] tensorDataType:   FLOAT32 (4 bytes/element)
-  [3] tensorRank:       2
-  [4] globalAddress:    d_matrix (cudaMalloc, 256B aligned ✓)
-  [5] globalDim:        {1024, 512}
-      → globalDim[0] = 1024 (cols, innermost)
-      → globalDim[1] = 512  (rows, outermost)
-  [6] globalStrides:    {4096}  (1024 cols × 4 bytes = 4096 bytes per row)
-  [7] boxDim:           {64, 32}  (64 cols × 32 rows per tile)
-      Tile bytes = 32 columns × 32 rows × 4 = 4096 bytes = 4 KB; the 128B swizzle requires the contiguous FP32 tile width to be at most 32 elements.
-  [8] elementStrides:   {1, 1}  (dense)
-  [9] interleave:       NONE
-  [10] swizzle:         SWIZZLE_128B
-       Inner dim: 32 × 4 = 128 bytes (within the 128B swizzle span)
-  [11] l2Promotion:     L2_128B  (64×4=256B tile → need 2 cache lines)
-  [12] oobFill:         NAN_REQUEST_ZERO_FMA
+1. globalDim = {256, 128}: coordinates are (column, row).
+2. globalStrides = {1024}: 256 columns × 4 bytes per row.
+3. boxDim = {32, 32}: one tile contains 1024 floats = 4096 bytes.
+4. elementStrides = {1, 1}; interleave = NONE.
+5. SWIZZLE_128B: contiguous tile width = 32 × 4 = 128 bytes.
+6. L2 promotion = L2_128B (a cache policy, not a tile-size requirement).
+7. oobFill = NONE: out-of-bounds loads produce zero.
+8. d_matrix is device storage; the CUtensorMap descriptor is 64-byte aligned.
 
-For tile at (col=0, row=0): fetches matrix[0:32][0:64]
-For tile at (col=64, row=0): fetches matrix[0:32][64:128]
-For tile at (col=0, row=32): fetches matrix[32:64][0:64]
+Tile (0,0) covers rows [0,32), columns [0,32).
+Tile (32,0) covers rows [0,32), columns [32,64).
+Tile (0,32) covers rows [32,64), columns [0,32).
 
-Kernel launch coordinates: {col_start, row_start} where:
-  col_start ∈ {0, 64, 128, ..., 960}   (1024/64 = 16 tile columns)
-  row_start ∈ {0, 32, 64, ..., 480}    (512/32 = 16 tile rows)
+Launch an 8×4 grid: column origins 0,32,...,224 and row origins
+0,32,64,96. The 32 tiles cover all 32768 elements exactly once.
 ```
 
 ```
@@ -2148,7 +2135,7 @@ check.
 ```
 Parameter        Type                      Notes
 ──────────────────────────────────────────────────────────────────────────────
-tensorMap        CUtensorMap*              Output. Must be 128B aligned.
+tensorMap        CUtensorMap*              Output. Must be at least 64B aligned (128B also satisfies this).
 tensorDataType   CUtensorMapDataType       Element type (FLOAT32, BFLOAT16...)
 tensorRank       cuuint32_t                1 to 5 (number of dimensions)
 globalAddress    void*                     Must be 16B aligned. GPU memory.
@@ -2189,10 +2176,10 @@ Which swizzle mode for which tile width. When in doubt with BF16 or FP16, it is
 ```
 Use Case                            Recommended Swizzle
 ──────────────────────────────────────────────────────────────────────
-FP16/BF16 GEMM (inner ≥ 64 elem)   SWIZZLE_128B  ★ default
+FP16/BF16 GEMM (inner ≤ 64 elem)   SWIZZLE_128B  ★ default
 FP16/BF16 GEMM (inner = 32 elem)   SWIZZLE_64B
 FP16/BF16 GEMM (inner = 16 elem)   SWIZZLE_32B
-FP32 GEMM (inner ≥ 32 elem)        SWIZZLE_128B
+FP32 GEMM (inner ≤ 32 elem)        SWIZZLE_128B
 FP32 GEMM (inner = 16 elem)        SWIZZLE_64B
 INTERLEAVE_32B (required coupling)  SWIZZLE_32B only
 No bank-conflict concerns           SWIZZLE_NONE
@@ -2237,7 +2224,7 @@ globalAddress not 16B aligned        Crash or silent error  Use cudaMalloc or al
 INTERLEAVE_32B with SWIZZLE_128B    Descriptor error       Must use SWIZZLE_32B
 boxDim × sizeof > smem allocation   SMEM overflow          Reduce boxDim or smem
 tensorRank < 3 with interleaving    API error              Use rank ≥ 3 for interleave
-CUtensorMap not 128B aligned        Silent corruption      Use alignas(128)
+CUtensorMap not 64B aligned         Invalid argument       Use alignas(64) or stronger
 ```
 
 <!-- practice:start -->

@@ -1,4 +1,11 @@
 # 30. CUTLASS Attention Foundations — Work Every Softmax State
+
+!!! warning "GPU revalidation pending — November 21 correction"
+    Current source below includes post-capture corrections. Historical outputs
+    validate only their archived hashes. Do not use them as proof of the fixed
+    source. See the [repair record](review-fixes-2026-11-21.md).
+
+
 ## Lesson 30 Companion Guide — From Two GEMMs to One Streaming Attention Contract
 
 [![Chapter 30: CUTLASS attention foundations](images/chapter-openers/30-workshop.svg)](images/chapter-openers/30-workshop.svg)
@@ -173,7 +180,7 @@ The pinned sixteen-bit runner uses the same **mode order**, with `StrideQ`/`Stri
 
 ## 10 — Map the mathematics to the pinned implementation
 
-The [pinned example README](https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/README.md) describes four layers:
+The [pinned runner’s file comment](https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/README.md) describes four layers:
 
 | Layer | What to locate | Mathematical obligation |
 | --- | --- | --- |
@@ -328,7 +335,7 @@ The complete Python reference was also byte-compiled and executed on this host w
 ```cuda
 // Educational FP32 online attention: one CUDA thread per query row.
 // No CUTLASS, Tensor Cores, dropout, bias or performance claim.
-// CPU-only check: clang++ -x c++ -std=c++17 -O2 \
+// CPU-only check: clang++ -x c++ -std=c++17 -O2  (continued)
 //   -DATTENTION_HOST_ONLY attention_online.cu -o attention_host
 // Hopper: nvcc -std=c++17 -O2 -arch=sm_90a attention_online.cu -o attention_online
 #include <algorithm>

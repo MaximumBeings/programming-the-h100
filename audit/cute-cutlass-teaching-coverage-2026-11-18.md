@@ -1,5 +1,7 @@
 # CuTe/CUTLASS teaching coverage
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 Reviewed November 18, 2026. The scope is every CuTe/CUTLASS chapter, 15–29. Chapter 16 is the teaching baseline, not the only chapter with worked visuals. This matrix records a manual content review; SVG presence alone is not a test of teaching quality.
 
 | Chapter | Worked illustration | Reasoning and code connection |

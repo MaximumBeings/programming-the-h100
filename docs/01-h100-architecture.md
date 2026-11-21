@@ -1,4 +1,5 @@
 # NVIDIA H100 GPU Architecture
+
 ## Lesson 1 Companion Guide — A Deep Dive into Hopper
 
 [![CHAPTER 01: Inside the Hopper machine](images/chapter-openers/01-architecture.svg)](images/chapter-openers/01-architecture.svg)
@@ -36,25 +37,25 @@ chapter needs them. Nothing here requires you to write code yet.
 
 ## Table of Contents
 
-1. [The Big Picture — Why H100 Matters](#1--the-big-picture)
-2. [Asynchronous Execution & The TMA](#2--asynchronous-execution--the-tma)
+1. [The Big Picture — Why H100 Matters](#1-the-big-picture)
+2. [Asynchronous Execution & The TMA](#2-asynchronous-execution-the-tma)
 3. [4th Generation Tensor Cores](#3--4th-generation-tensor-cores)
-4. [The Full GPU Die — Top-Level Organization](#4--the-full-gpu-die)
-5. [HBM3 Memory System](#5--hbm3-memory-system)
-6. [L2 Cache](#6--l2-cache)
-7. [GPCs — Graphics Processing Clusters](#7--gpcs--graphics-processing-clusters)
-8. [NVLink 4.0](#8--nvlink-40)
-9. [The Streaming Multiprocessor (SM)](#9--the-streaming-multiprocessor-sm)
-10. [SM Quadrants (SMSPs)](#10--sm-quadrants-smsps)
+4. [The Full GPU Die — Top-Level Organization](#4-the-full-gpu-die)
+5. [HBM3 Memory System](#5-hbm3-memory-system)
+6. [L2 Cache](#6-l2-cache)
+7. [GPCs — Graphics Processing Clusters](#7-gpcs-graphics-processing-clusters)
+8. [NVLink 4.0](#8-nvlink-40)
+9. [The Streaming Multiprocessor (SM)](#9-the-streaming-multiprocessor-sm)
+10. [SM Quadrants (SMSPs)](#10-sm-quadrants-smsps)
 11. [Warp Schedulers & Dispatch](#11--warp-schedulers--dispatch)
 12. [Execution Units Deep Dive](#12--execution-units-deep-dive)
-13. [Unified Shared Memory + L1 Cache](#13--unified-shared-memory--l1-cache)
-14. [Registers](#14--registers)
-15. [Instruction Caches (L0 & L1)](#15--instruction-caches-l0--l1)
-16. [Thread Block Distribution](#16--thread-block-distribution)
-17. [PCIe 5.0 Host Interface](#17--pcie-50-host-interface)
-18. [Putting It All Together — Data Flow Summary](#18--putting-it-all-together)
-19. [Quick Reference Tables](#19--quick-reference-tables)
+13. [Unified Shared Memory + L1 Cache](#13-unified-shared-memory-l1-cache)
+14. [Registers](#14-registers)
+15. [Instruction Caches (L0 & L1)](#15-instruction-caches-l0-l1)
+16. [Thread Block Distribution](#16-thread-block-distribution)
+17. [PCIe 5.0 Host Interface](#17-pcie-50-host-interface)
+18. [Putting It All Together — Data Flow Summary](#18-putting-it-all-together)
+19. [Quick Reference Tables](#19-quick-reference-tables)
 
 ---
 
@@ -222,7 +223,7 @@ CUDA Core (FP32):
 
 Tensor Core (FP16, 4th Gen):
   1 tensor core does: A[m×k] × B[k×n] + C[m×n] → D[m×n]
-  Where m=16, k=16, n=16 for wgmma (with warp groups)
+  Where m=64, k=16, n=8..256 in steps of 8 (dense FP16/BF16 WGMMA) for wgmma (with warp groups)
   4 tensor cores/SM working together via WGMMA.
 
   Dense throughput per SM, at the applicable Tensor Core clock:
@@ -385,25 +386,15 @@ long your tile actually takes to arrive. That's what this does.
 Bus width: 5120 bits = 640 bytes (10 × 512-bit memory controllers)
 [NVIDIA Hopper Architecture whitepaper, GTC22, v1.02]
 
-TMA can move 128 bytes of data at once in a single transaction.
-This fits cleanly into the bus width:
-  5120 bits / 8 = 640 bytes wide
-  640 / 128 = 5 concurrent 128-byte transactions, bus-width-wise
+The bus width and a TMA transfer's granularity describe different layers.
+Dividing 640 bus bytes by 128 does not establish five concurrent TMA requests.
 
-For a 64×64 BF16 tile:
-  64 × 64 × 2 bytes = 8,192 bytes
-
-At the official aggregate HBM3 bandwidth of 3.35 TB/s
-[NVIDIA H100 datasheet, PB-11773-001]:
-  8,192 bytes / 3.35 TB/s ≈ 2.4 ns for one tile transfer once the
-  request is in flight -- fast enough to keep tensor cores fed.
-
-  Note: HBM3's own per-pin signaling clock runs far higher than, and
-  in a completely separate clock domain from, the SM's 1,980 MHz boost
-  clock. An earlier draft of this section estimated tile-transfer time
-  from an assumed "~1.8 GHz memory clock," which conflated the two
-  domains. This version derives the same number from the published
-  aggregate bandwidth instead, so it doesn't need that assumption.
+For a 64×64 BF16 tile: 64 × 64 × 2 = 8,192 bytes.
+8,192 / 3.35 TB/s ≈ 2.45 ns is an aggregate bandwidth-only lower bound,
+not a single-SM tile latency. If 132 SMs shared that bandwidth equally,
+one SM's share would be about 25.4 GB/s and 8 KiB would require about
+323 ns of bandwidth service. Request latency, cache hits and contention
+are additional concerns. This arithmetic does not prove Tensor Cores stay fed.
 ```
 
 ---
@@ -762,7 +753,7 @@ FP32 CUDA Cores
 
 The important claim here is the one in capitals: integer and floating-point work
 proceed at the same time, on separate datapaths. This is why the address
-arithmetic in a tiled loop costs you almost nothing.
+arithmetic can sometimes overlap floating-point work, subject to issue bandwidth and dependencies.
 
 ```
 INT32 Units
@@ -782,18 +773,18 @@ INT32 Units
 
   This means: while the FP32 pipeline computes on data,
   the INT32 pipeline can be computing the next set of
-  addresses — zero stall for address generation.
+  addresses from another ready warp; address-generation stalls are still possible.
 
   Typical pattern in a GEMM kernel:
     FP32: compute partial sum  (data path)
     INT32: calculate next tile address  (address path)
-    Both execute in the SAME cycle (different warps or instructions).
+    Separate warps may overlap work on the distinct pipelines. A scheduler
+    does not issue an INT and an FP instruction from one warp in the same cycle.
 ```
 
 ### 12.3 FP64 Units
 
-Double precision. On the H100 it runs at deliberately half the FP32 rate — this
-chip was designed for machine learning, not for simulation.
+H100 supports scientific computing as well as machine learning. Its scalar FP64 peak is half the scalar FP32 peak; FP64 Tensor Core throughput is a separate rate.
 
 ```
 FP64 Units
@@ -803,8 +794,7 @@ FP64 Units
   Total (SXM5):  8,448
 
   FP64 throughput = exactly HALF of FP32.
-  This is by design — H100 prioritizes ML (FP16/FP8/BF16)
-  over scientific computing (FP64).
+  This ratio concerns the scalar datapaths, not a restriction to ML workloads.
 
   Used for:
     ├── High-precision scientific simulations
@@ -814,7 +804,8 @@ FP64 Units
   For comparison:
     A100:  FP64 = 1/2 FP32 throughput
     H100:  FP64 = 1/2 FP32 throughput  (same ratio)
-    The absolute FP64 throughput is higher because the clock is higher.
+    H100 doubles the FP64 execution units per SM relative to A100;
+    the SM count and clock also change the chip-wide peak.
 ```
 
 ### 12.4 Special Function Units (SFUs)
@@ -989,34 +980,9 @@ Why?
 This is EXACTLY why swizzling exists.
 ```
 
-### 13.5 Swizzling — The Fix for Bank Conflicts
+### 13.5 Swizzle the 16-byte chunks
 
-The fix is to scramble where each row starts, so that a column no longer lands
-in a single bank. That is swizzling — and the good news at the end is that the
-TMA can apply it for you on the way in.
-
-[![A swizzle changes the physical bank pattern](images/ch01/22-swizzling.svg)](images/ch01/22-swizzling.svg)
-
-*Figure 13.3 — A small XOR permutation makes column-wise access easier to see.*
-
-```
-  Swizzle formula (simplified):
-    swizzled_bank = bank XOR (row % 32)
-
-  Column 0 access after swizzling:
-    Thread 0 (row 0): bank = 0 XOR 0 = 0
-    Thread 1 (row 1): bank = 0 XOR 1 = 1
-    Thread 2 (row 2): bank = 0 XOR 2 = 2
-    Thread 3 (row 3): bank = 0 XOR 3 = 3
-    ...
-    Thread 31 (row 31): bank = 0 XOR 31 = 31
-
-    ALL 32 threads hit DIFFERENT banks → conflict-free!
-
-  The hardware (TMA) can apply swizzling automatically
-  when copying into shared memory, so you don't need
-  to do the XOR manually in your kernel code.
-```
+For the 128-byte TMA swizzle, reason in 16-byte chunks, not independent four-byte bank numbers. A useful aligned-atom mapping XORs the chunk index with `row % 8`. For the column-0 access above, rows 0–31 then hit banks `0,4,8,12,16,20,24,28` repeated four times. This changes the simplified pattern from a 32-way to a four-way conflict; it does not make every possible access conflict-free. The result depends on element width, lane addresses and the chosen atom. Chapter 4 derives the byte mapping; use the matching descriptor and physical layout together.
 
 ---
 
@@ -1248,11 +1214,13 @@ Multiple CTAs Running Concurrently on One SM
     How many Block A's fit?
       Warps:  64 / 4 = 16 blocks
       Regs:   256 KB / 32 KB = 8 blocks
-      Shared: 228 KB / 32 KB = 7 blocks
-      Answer: min(16, 8, 7) = 7 blocks per SM
+      Shared: floor(228 KiB / (32 + 1) KiB) = 6 blocks
+      (include CUDA's 1 KiB reserved shared memory per CTA)
+      Answer: min(16, 8, 6) = 6 blocks per SM
 
-    With 7 blocks: 28 warps active, 224 KB regs, 224 KB shared
-    That's 28/64 = 43.75% warp occupancy.
+    With 6 blocks: 24 warps active, 192 KiB registers,
+    192 KiB dynamic shared plus 6 KiB reserved.
+    That is 24/64 = 37.5% warp occupancy.
 
   Higher occupancy → more warps to hide latency → usually better.
   But diminishing returns after ~50-60% for compute-bound kernels.
@@ -1326,7 +1294,7 @@ H100 Memory Hierarchy — Bandwidth vs Capacity
   ──────────────────────────────────────────────────────────────
   Registers     256 KB/SM    ~128 R/W/cycle   operand access; instruction-dependent
   Shared Mem    228 KB/SM    ~0.25 TB/s/SM      ~20 cycles, varies
-  L1 Cache      28-224 KB    (part of shared) ~30 cycles, varies
+  L1 Cache      28–256 KiB    (part of shared) ~30 cycles, varies
   L2 Cache      50 MB        ~12 TB/s agg    ~200 cycles, varies
   HBM3          80 GB        3.35 TB/s       ~500 cycles, varies
   ──────────────────────────────────────────────────────────────
@@ -1379,7 +1347,7 @@ Component            Size        Bandwidth      Line/Sector
 HBM3                 80 GB       3.35 TB/s      —
 L2 Cache             50 MB       ~12 TB/s       128B / 32B
 Shared Mem (max)    228 KB/SM    ~0.25 TB/s/SM     32 banks × 4B
-L1 Data Cache       28-224 KB    (part of shared) 128B / 32B
+L1 Data Cache       28–256 KiB    (part of shared) 128B / 32B
 Register File       256 KB/SM    128 R/W/cycle   32-bit slots
 L1 I-Cache          Shared/SM    Not specified here; profile instruction-fetch stalls
 L0 I-Cache          tiny/SMSP    1 insn/cycle    —
@@ -1400,7 +1368,8 @@ Bank Conflict:
   No conflict: all threads access different banks OR same address
 
 Swizzle:
-  swizzled_bank = bank XOR (row_index % 32)
+  128B TMA swizzle XORs the 16-byte chunk index with row_index % 8;
+  it is not a bank-index XOR with row modulo 32.
 
 Tensor Core throughput (SXM5, derived from published full-GPU totals):
   FP16/BF16: 4,096 FLOPS/cycle/SM (dense)

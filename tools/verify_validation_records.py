@@ -32,6 +32,8 @@ def verify(root, date):
             if key in complete:
                 errors.append(f'Duplicate program: {key}')
             complete[key] = digest(code)
+    from review_revisions import historical_hashes
+    complete = historical_hashes(root, complete)
     current_only = {('docs/11-multi-gpu-nccl.md', name) for name in (
         'ex11_nvlink_bandwidth.cu', 'ex12_nccl_allreduce.cu', 'ex13_hybrid_parallel_training.cu')}
     from pending_revalidation import pending
@@ -142,8 +144,9 @@ def verify(root, date):
         print('FAIL:', message)
     if errors:
         return 1
-    print(f'PASS: {len(rows)} archive records match their downloads and logs; current displays match verified executions, including {len(superseded)} superseding PASS records.')
-    pending_count = sum(r['status'] == 'pending_gpu_revalidation' for r in revisions.values())
+    print(f'PASS: {len(rows)} archive records match their downloads and logs; historical displays match captured executions, including {len(superseded)} superseding PASS records.')
+    from review_revisions import revisions as review_pending
+    pending_count = sum(r['status'] == 'pending_gpu_revalidation' for r in revisions.values()) + sum('source' not in r for r in review_pending(root))
     print(f'Current coverage: {27 - pending_count} verified revisions; {pending_count} awaiting GPU revalidation.')
     print('Scope: evidence consistency only; this command does not execute CUDA or prove numerical correctness.')
     return 0

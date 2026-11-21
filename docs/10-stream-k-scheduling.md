@@ -82,22 +82,22 @@ Compile Patterns
 
 ## Table of Contents
 
-1.  [Stream-K — The Wave Quantization Problem](#1--stream-k)
-2.  [Work Units, Splits, and K-Tile Ranges](#2--work-units-and-splits)
-3.  [The Triplet: First, Middle, and Final Splits](#3--the-triplet)
-4.  [The Lock Array — Atomic Progress Tracking](#4--the-lock-array)
-5.  [Deterministic vs Non-Deterministic Reduction](#5--deterministic-vs-non-deterministic)
-6.  [Groups — L2 Locality Under Stream-K](#6--groups)
-7.  [HyTiS — The Spatial Alternative](#7--hytis)
-8.  [Stream Serialization — The Utilization Gap](#8--stream-serialization)
-9.  [GDC Instructions — Hardware Grid Handoff](#9--gdc-instructions)
-10. [Host Launch Authority — Programmatic Serialization](#10--host-launch-authority)
+1.  [Stream-K — The Wave Quantization Problem](#1-stream-k)
+2.  [Work Units, Splits, and K-Tile Ranges](#2-work-units-and-splits)
+3.  [The Triplet: First, Middle, and Final Splits](#3-the-triplet-first-middle-and-final-splits)
+4.  [The Lock Array — Atomic Progress Tracking](#4-the-lock-array)
+5.  [Deterministic vs Non-Deterministic Reduction](#5-deterministic-vs-non-deterministic-reduction)
+6.  [Groups — L2 Locality Under Stream-K](#6-groups)
+7.  [HyTiS — The Spatial Alternative](#7-spatial-tail-subdivision)
+8.  [Stream Serialization — The Utilization Gap](#8-stream-serialization-the-utilization-gap)
+9.  [GDC Instructions — Hardware Grid Handoff](#9-gdc-instructions-hardware-grid-handoff)
+10. [Host Launch Authority — Programmatic Serialization](#10-host-launch-authority-programmatic-serialization)
 11. [The Producer's Green Light — launch_dependents Placement](#11--the-producers-green-light)
 12. [The Dependent's Wall — wait Fence Behavior](#12--the-dependents-wall)
-13. [The L2 Prefetch Trick — Split DMA](#13--the-l2-prefetch-trick)
+13. [The L2 Prefetch Trick — Split DMA](#13-the-l2-prefetch-trick)
 14. [Tuning the Overlap Window](#14--tuning-the-overlap-window)
-15. [Putting It All Together — Production Checklist](#15--putting-it-all-together)
-16. [Quick Reference](#16--quick-reference)
+15. [Putting It All Together — Production Checklist](#15-putting-it-all-together-production-checklist)
+16. [Quick Reference](#16-quick-reference)
 
 ---
 
@@ -308,6 +308,12 @@ Split Descriptor Fields
 
 ---
 
+### Required order within a CTA's assigned interval
+
+This chapter uses CUTLASS's tile-end ownership rule. A CTA processes its assigned output-tile fragments **backwards**, from the interval's highest tile index toward its lowest. The first-split fragment at the high end can publish progress before a lower final-split fragment waits for another CTA. Walking those fragments forward can serialize the grid into a dependency chain. Do not mix this ownership rule with the Stream-K paper's tile-start-owner protocol.
+
+For 270 K-iterations and four CTA intervals, a worker whose interval crosses a tile boundary processes the higher tile's head before the lower tile's tail. The runnable role example below launches a separate block per fragment; it checks sums and role labels, not this multi-fragment scheduling order or its performance. The source of the backward ordering is CUTLASS v4.3.6 `include/cutlass/gemm/kernel/sm90_tile_scheduler_stream_k.hpp`.
+
 ## 3 — The Triplet: First, Middle, and Final Splits
 
 ### 3.1 Role Assignment by K_idx and is_final_split
@@ -465,7 +471,9 @@ Sources: [CUDA atomic memory ordering](https://docs.nvidia.com/cuda/archive/12.8
 
 **Manual Worked Example:**
 
-We simulate 3 output tiles with 90 K-tiles each and 4 CTAs, mapping the scenario from Section 2.
+We simulate 3 output tiles with 90 K-tiles each and four logical worker intervals, mapping the scenario from Section 2.
+The demo launches six one-thread CTAs, one per fragment; it does not implement
+the four workers’ sequential fragment order.
 
 ```
 Expected split assignments (from Section 2.1):
@@ -1002,11 +1010,13 @@ Reduction Mode Comparison
 
 ## 6 — Groups
 
-### 6.1 Why Groups Exist: Cluster TMA Multicast, Not Just L2 Locality
+### 6.1 Why Groups Exist: L2 Locality
 
-Standard wave-based rasterization gives L2 locality naturally: adjacent output tiles in rasterization order share rows of A and columns of B. Stream-K breaks this because a single CTA may work on K-tile ranges spanning output tiles from completely different spatial regions.
-
-**Correction:** earlier printings of this chapter framed Groups as primarily a generic, grid-wide L2-cache-adjacency trick. That is a real secondary effect, but it is not what CUTLASS's own Stream-K scheduler source gives as the reason Groups exist. The actual driving mechanism is Hopper's **thread block cluster** feature: CTAs within the same cluster that share a K-offset can have their TMA (Tensor Memory Accelerator) operand loads **multicast** across the cluster — one load from global memory serves every CTA in the cluster, instead of each CTA issuing its own redundant load. That multicast path is only available to CTAs within a cluster, and only when they're aligned on the same K-offset; grid-wide L2 reuse across CTAs that are *not* in the same cluster is a real but secondary benefit, not the mechanism Groups was built to exploit. Without Groups, a CTA's K-offset is essentially arbitrary relative to its cluster-mates (as the walkthrough below shows), which breaks multicast eligibility entirely — not just "lowers the L2 hit rate." (Source: the CUTLASS Stream-K scheduler implementation and Colfax Research's public write-up on Hopper cluster-aware GEMM scheduling both describe K-offset-aligned grouping as what enables TMA multicast within a cluster.)
+CUTLASS groups Stream-K work to preserve L2 locality of partial chunks.
+This is the purpose stated in the pinned `tile_scheduler_params.h`.
+Cluster peers' K-offset alignment enables operand multicast, but that is
+separate from the Stream-K group partition. Neither mechanism guarantees
+an L2 hit or eliminates the need for compatible descriptors and masks.
 
 [![Align grouped work with operand reuse](images/ch10/07-groups-cluster-multicast.svg)](images/ch10/07-groups-cluster-multicast.svg)
 
@@ -1072,7 +1082,7 @@ Group Hierarchy — Full Breakdown
   Heuristic: num_groups = problem_blocks_m / cluster_m
     (number of output tile rows in rasterization direction)
 
-  Caps at 8 (hardware and workspace sizing constraint).
+  Caps at 8 in this pinned scheduler heuristic; this is not a hardware maximum.
   Minimum 1 (no grouping).
 
   Example: M=4096, tile_m=128, cluster_m=2
@@ -1097,69 +1107,25 @@ Group Hierarchy — Full Breakdown
 
 ---
 
-## 7 — HyTiS
+## 7 — Spatial Tail Subdivision
 
-### 7.1 The Spatial Alternative to Stream-K
+### 7.1 An Alternative to K Splitting
 
-HyTiS (Heterogeneous Tile Sizes) addresses wave quantization through a completely different mechanism: instead of splitting K across CTAs and merging partial sums, it uses **two different tile sizes in a single kernel launch** so the partial wave uses smaller tiles that fill the remaining SMs more efficiently.
+This is an illustrative scheduling construction, not an implementation or
+performance result attributed to a named paper. Suppose 140 output tiles
+of size 128×256 run on 132 SMs. After one full wave, eight large tiles
+remain. Merely assigning eight smaller tiles loses output coverage.
 
-**Citation:** HyTiS is a real, peer-reviewed scheduling technique, not a hypothetical. It was published at ACM in 2026: *"HyTiS: Hybrid Tile Scheduling for Efficient GEMM on GPUs"* (DOI: [10.1145/3712285.3759771](https://doi.org/10.1145/3712285.3759771)). The description in this section follows that paper's core idea — handling the partial wave spatially with a second, smaller tile size, rather than via Stream-K's K-splitting — but any numbers not directly drawn from the paper (the 132/140-SM worked example below, the rule-of-thumb threshold) are this book's own illustrative construction, not figures quoted from it.
+1. Each remaining 128×256 tile contains eight nonoverlapping 64×64 tiles.
+2. Subdivide all eight remaining tiles: 8×8 = 64 smaller CTAs.
+3. Those 64 CTAs cover the same output area and can use up to 64 SMs.
+4. Each CTA computes its entire K reduction, so no cross-CTA sum is needed.
+5. Smaller tiles can reduce reuse and increase scheduling overhead. Compare
+   that cost against the shortened tail before choosing this strategy.
 
-```
-HyTiS vs Stream-K — Conceptual Comparison
-══════════════════════════════════════════════════════════════════════
-
-  ─── Stream-K Approach ────────────────────────────────────────────
-
-  Decomposition axis:      K dimension
-  How:                     Split K-tile ranges across CTAs
-  Partial wave handling:   K-split + fixup reduction
-  Workspace:               Yes (partial sums + lock array)
-  Synchronization:         Atomic lock spinning
-  Works when:              M×N small OR K large → K split helps
-
-  ─── HyTiS Approach ──────────────────────────────────────────────
-
-  Decomposition axis:      M×N spatial (output grid)
-  How:                     Large tiles for full waves,
-                           small tiles for partial wave
-  Partial wave handling:   Assign small tiles to remaining SMs
-  Workspace:               NONE
-  Synchronization:         NONE (fully independent tiles)
-  Works when:              M×N has partial wave,
-                           but NOT when M×N is small and K is large
-
-  ─── HyTiS Tile Layout ───────────────────────────────────────────
-
-  Problem: 132 SMs, 140 output tiles (at 128×256 tile size)
-           Full wave: 132 tiles → 8 leftover SMs need work
-
-  HyTiS solution:
-    Main wave: 132 tiles at 128×256 (full throughput)
-    Partial wave: 8 SMs get smaller 64×64 tiles
-
-  No CTA needs to wait for any other CTA.
-  No reduction, no workspace, no fixup predicate.
-  Epilogue runs independently in each tile, small or large.
-
-  ─── When HyTiS Wins ────────────────────────────────────────────
-
-  Problem: inference shapes — large M, large N, moderate K
-    → wave quantization is the bottleneck
-    → HyTiS eliminates it with zero overhead
-
-  Problem: training GEMMs — any shape where K is large relative
-  to M×N
-    → Stream-K splits K and shares partial sums
-    → HyTiS can't help because the partial wave SMs still have
-       too few output tiles in M×N even at the smallest tile size
-
-  Rule of thumb:
-    If (M × N) / (large_tile_area) < 2 → use Stream-K
-    If (M × N) / (large_tile_area) ≥ 2 → HyTiS often sufficient
-```
-
----
+This does not fully occupy 132 SMs, and is not a zero-overhead cure. Stream-K
+instead splits K work, retaining tile geometry at the cost of reduction
+workspace and synchronization.
 
 ## 8 — Stream Serialization — The Utilization Gap
 
@@ -1899,109 +1865,9 @@ Kernel B Execution Before and After .wait
 
 ## 13 — The L2 Prefetch Trick
 
-### 13.1 Split DMA — Asymmetric Warp Roles Before .wait
+### 13.1 Choose prefetch or transfer deliberately
 
-The most powerful use of the overlap window is weight prefetching. While activation loads must wait behind the fence (they read Kernel A's output), weight loads are entirely independent — they read a weight tensor that was already present before Kernel A even launched.
-
-[![Prefetch only dependency-independent inputs](images/ch10/06-l2-prefetch-warp-roles.svg)](images/ch10/06-l2-prefetch-warp-roles.svg)
-
-*A later kernel can prepare reusable weights while waiting on earlier output.*
-
-```
-L2 Prefetch Trick — Warp Role Division in Kernel B
-══════════════════════════════════════════════════════════════════════
-
-  ─── Setup ───────────────────────────────────────────────────────
-
-  Kernel A: attention block → produces activation tensor of size A_bytes
-  Kernel B: FFN block → needs:
-              activations (A_bytes) ← READ Kernel A output: MUST WAIT
-              weight matrix W       ← static, always resident: NO WAIT
-
-  ─── Without Prefetch Trick ──────────────────────────────────────
-
-  All warps park at .wait, then ALL load activations, then load weights.
-
-  Timeline:
-    [overlap window] → [.wait] → [load W] → [load A] → [GEMM]
-                                  ^^^^^
-                                  W loads happen AFTER .wait,
-                                  adding W-load latency to critical path.
-
-  ─── With Prefetch Trick ─────────────────────────────────────────
-
-  Assign DIFFERENT warp roles within Kernel B:
-
-  Prefetch warp (warp 0 in each block, or a dedicated warpgroup):
-    run_setup();
-    issue DMA prefetch for weight tiles → L2
-    griddepcontrol.wait;          ← park AFTER issuing prefetch
-    load activations from L2...   ← these are now the bottleneck
-
-  Activation warp (all other warps):
-    run_setup();
-    griddepcontrol.wait;          ← park without issuing anything extra
-    load activations...
-    load weights (now L2-resident, almost free)
-    GEMM...
-
-  Timeline:
-    [overlap: weight DMA to L2] → [.wait] → [load A + W from L2] → [GEMM]
-                                              ^^^^
-                                              W already in L2!
-                                              Latency: ~L2 hit (30-50 ns)
-                                              vs cold HBM load (300-500 ns)
-
-  ─── Why This Works ──────────────────────────────────────────────
-
-  Weight prefetch does NOT read Kernel A's output (no dependency).
-  Weight prefetch runs BEFORE .wait (during the overlap window).
-  Weight data travels: HBM → L2 cache (during Kernel A's tail).
-  By the time .wait releases, weights are already in L2.
-  The GEMM in Kernel B sees L2-hit latency for weights, not HBM.
-
-  This strategy only helps if:
-    1. Weights are reused enough times to be worth caching.
-       (Large weight tiles with multiple activation rows: yes.
-        Tiny weight vectors changed every iteration: no.)
-    2. The weight data fits in L2 without evicting other critical lines.
-       H100 L2 = 50 MB. Typical attention K/V cache is large.
-       FFN weights for d_model=8192 layer = 8192×32768×2 = 512 MB.
-       → Only a TILE of weights can be prefetched, not all of them.
-    3. The overlap window (Kernel A's tail duration) is long enough
-       to issue and complete the prefetch DMA before .wait fires.
-
-  ─── Implementation Pattern ──────────────────────────────────────
-
-  // In Kernel B, before griddepcontrol.wait:
-  if (warp_id == 0) {
-      // Elected prefetch warp: issue weight TMA load into SMEM
-      // This is a cp.async.bulk.tensor — fully async, no stall.
-      if (threadIdx.x == 0) {   // one thread issues TMA
-          asm volatile(
-              "cp.async.bulk.tensor.2d.shared::cluster.global.mbarrier::complete_tx::bytes"
-              " [%0], [%1, {%2, %3}], [%4], %5;"
-              :: "r"(smem_weight_addr), "l"(gmem_weight_ptr),
-                 "r"(tile_k), "r"(tile_n),
-                 "r"(mbar_addr), "r"(weight_tile_bytes)
-          );
-      }
-      // Don't wait for completion yet — just issued the prefetch
-  }
-
-  // ALL warps park here
-  griddepcontrol.wait;
-
-  // After .wait: weights are arriving or already in L2/SMEM.
-  // Activations can now be safely loaded.
-  load_activations();
-  // Wait for weight prefetch to complete (mbarrier wait)
-  wait_on_weight_mbarrier();
-  // Run GEMM
-  wgmma(accum, smem_weight, smem_activation);
-```
-
----
+For L2-only prefetch, use the documented `cp.async.bulk.prefetch.tensor` L2 form, as in Chapter 5. A `cp.async.bulk.tensor...shared::cluster.global` load instead transfers into shared memory and requires a CUtensorMap address, shared destination and mbarrier. Its transaction bytes belong in the barrier's `arrive.expect_tx`, not an extra trailing transfer operand. A raw global weight pointer is not a tensor-map descriptor. Do not present an SMEM load as an L2-only prefetch or assume one fixed cache-hit latency.
 
 ## 14 — Tuning the Overlap Window
 
@@ -2020,8 +1886,9 @@ Overlap Tuning — What You're Balancing
 
   PRESSURE 2 — Resource contention:
     Parked Kernel B warps consume SM slots, register file, SMEM.
-    If Kernel B takes too many SMs, Kernel A's tail runs slower
-    (fewer SMs available, potentially more register pressure).
+    Co-resident work can compete for execution bandwidth and memory.
+    A's already-resident CTAs are not evicted by B; inspect the
+    actual overlap and resource availability, not an SM-count subtraction.
     This pushes toward: fire launch_dependents as LATE as possible
     (or limit Kernel B's SM count).
 
@@ -2040,9 +1907,8 @@ Overlap Tuning — What You're Balancing
           Note: how long is Kernel A's tail? (T_tail)
 
   Step 2: Enable GDC with no prefetch.
-          Measure T_gdc. Expect T_gdc < T_base by roughly T_tail / 2.
-          (You hide half the tail on average, since Kernel B's
-           cold-start may be shorter than the full tail.)
+          Measure T_gdc; compare identical useful work against T_base.
+          Neither overlap nor a fixed fraction of tail hiding is guaranteed.
 
   Step 3: Add weight prefetch for one tensor.
           Measure L2 hit rate for that tensor in Kernel B.
@@ -2086,10 +1952,11 @@ Stream-K Production Checklist
 ══════════════════════════════════════════════════════════════════════
 
   □ 1. MEASURE WAVE QUANTIZATION LOSS FIRST
-        Compute: loss = (num_output_tiles % num_SMs) / num_SMs
-        If loss < 5%: static tiling is fine. Don't use Stream-K.
-        If loss > 15%: Stream-K likely beneficial.
-        If output tiles << num_SMs: Stream-K is mandatory.
+        Compute: r = num_output_tiles % num_SMs;
+    idle_fraction = r ? (num_SMs-r)/(num_SMs*ceil(num_output_tiles/num_SMs)) : 0
+        Compare predicted idle time against measured split/fixup costs.
+        No fixed 5%/15% threshold establishes a win; small output
+        grids are candidates for K splitting, not a mandatory policy.
 
   □ 2. SIZE THE WORKSPACE CORRECTLY
         workspace_bytes = num_output_tiles × output_tile_size_bytes
@@ -2282,3 +2149,7 @@ GDC Instruction Summary
 > the DGX H100 node and the SuperPOD, InfiniBand rail networks, SLURM and PMIx,
 > NCCL's six collective primitives, and the four parallelism strategies — data,
 > tensor, pipeline, and expert.
+
+**Tail and dependency checks.** For T=133 equal tiles and S=132 workers, the nonempty last wave has one active worker; the idle share over two waves is 131/(2×132) ≈ 49.6%, not 0.8%. For 20 full waves plus eight tiles, it is 124/(21×132) ≈ 4.47%. With 8,512 K-iterations and a ceiling chunk of 65, clip each worker interval to the valid total; the last workers are not all full. Splits are not generally K/2. Redistributing eight 128×256 tail tiles into 64×64 tiles yields 64 small tiles, rather than merely handing the same eight workers smaller work. This arithmetic does not establish a separately named published algorithm.
+
+CUTLASS v4.3.6 emits `griddepcontrol.launch_dependents` and `griddepcontrol.wait` through its architecture wrappers; the CUDA runtime API names are related interfaces, not literal calls in those headers. Programmatic dependent kernels can contend for co-resident resources after primary CTAs trigger; this is not a claim that unstarted primary CTAs lose dispatch slots. Trigger placement and overlap require an application-specific measurement, not a guaranteed half-tail speedup.

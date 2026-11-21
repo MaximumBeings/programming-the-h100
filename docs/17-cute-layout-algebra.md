@@ -1,4 +1,13 @@
 # 17. CuTe Layout Algebra — Hierarchy, Composition and Tiling
+
+!!! note "Composition algebra versus a bounded tensor"
+    CuTe accepts `composition(4:3, 16:2)` and simplifies it to `16:6`.
+    A single-mode affine layout is an algebraic mapping, not an automatic
+    bounds check. If the outer layout is being used as a finite four-element
+    domain, the inner result at x=2 is 4 and already exceeds that domain.
+    The composition can therefore be valid algebra while being unsafe for a
+    particular allocation. Do not expect CuTe to reject it at x=3.
+
 ## Lesson 17 Companion Guide — Derive Hierarchical Layouts Before Composing Them
 
 [![CHAPTER 17: 17. CuTe Layout Algebra — Hierarchy, Composition and Tiling — conceptual chapter illustration](images/chapter-openers/17-workshop.svg)](images/chapter-openers/17-workshop.svg)
@@ -135,9 +144,9 @@ Here A and B are **layout functions**, not GEMM operands. Give physical word s t
 
 **Check:** compare `composed(x)` with `twice(every_third(x))` for each valid x. A correct printed output shape alone cannot establish that the intermediate indices fit the outer domain.
 
-**Guided exercise.** Why is blindly reversing these particular operands invalid at x=3?
+**Guided exercise.** Does CuTe reject the reversed affine composition? When would its intermediate index exceed a finite four-element outer domain?
 
-**Worked answer:** `twice(3)=6`, but `every_third` has only valid input indices 0 through 3. The fact that both functions individually return integers does not make this reverse-domain composition a valid use of the chosen layouts.
+**Worked answer:** CuTe accepts it as `16:6`. At x=2, `twice(2)=4` is already outside a finite outer domain 0–3. The affine map is valid algebra; using it with bounded storage still requires an independent bounds proof.
 
 Composition is not arbitrary pointer arithmetic disguised as a template. Check the inner image, outer domain, resulting hierarchy and divisibility constraints. Reversing the argument order need not even define the same valid domain. Neither composing a tensor layout nor creating an intermediate layout moves existing values into the composed order.
 

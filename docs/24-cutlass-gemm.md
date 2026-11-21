@@ -1,4 +1,16 @@
 # 24. CUTLASS — Build a Hopper GEMM You Can Verify
+
+!!! note "Correctness build versus performance build"
+    The archived H100 build reports ptxas C7510: WGMMA instructions were
+    serialized across a function boundary. Its output establishes the stated
+    numerical checks, not representative WGMMA overlap or performance.
+    For a new benchmark, add `-DNDEBUG` to the complete documented command,
+    inspect the new compiler diagnostics and validate the resulting binary
+    again. No optimized-build timing is inferred from the old capture.
+    Auto schedules depend on toolkit and CUTLASS versions; the recorded
+    plain GEMM selected Cooperative with seven stages under CUDA 12.8.
+    CUDA 12.0 can resolve Auto differently.
+
 ## Lesson 24 Companion Guide — Assemble a Pinned Hopper Kernel and Its Launch Contract
 
 [![CHAPTER 24: 24. CUTLASS — Build a Hopper GEMM You Can Verify — conceptual chapter illustration](images/chapter-openers/24-workshop.svg)](images/chapter-openers/24-workshop.svg)
@@ -6,7 +18,7 @@
 
 !!! tip "Your goal in this chapter"
 
-    Construct a reproducible CUTLASS GEMM, explain every operand’s physical layout, and check every output against an independent CPU reference. Read the introductory [CuTe sequence](15-cute-layouts.md), the [tiled GEMM baseline](23-gemm-construction.md), [WGMMA](06-wgmma-part-1.md) and [epilogues](07-wgmma-part-2.md) first.
+    Construct a reproducible CUTLASS GEMM, explain every operand’s physical layout, and check every output against an independent CPU reference. Read the introductory [CuTe sequence](15-cute-layouts.md), the [tiled GEMM baseline](23-gemm-construction.md), [WGMMA](06-wgmma-part-1.md) and [epilogues](09-kernel-design-part-2.md) first.
 
 ## 1 — From a library name to a specific kernel
 

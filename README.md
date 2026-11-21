@@ -41,7 +41,7 @@ hooks/fix_anchors.py             build-time link repair (see below)
 mkdocs.yml                       site config and nav
 ```
 
-The recorded revisions of all **27 original complete CUDA programs compiled and executed successfully** across the recorded H100 and A100 hosts on November 17–18, 2026. The [complete validation summary](docs/final-audit.md) combines 26 successful H100 workloads with the [eight-A100 training execution](docs/eight-gpu-validation.md), which checks every final weight and per-step loss against an independent CPU reference.
+Historical evidence covers 26 H100 program revisions and a later revised training program on eight A100 GPUs across the recorded H100 and A100 hosts on November 17–18, 2026. The [complete validation summary](docs/final-audit.md) combines 26 successful H100 workloads with the [eight-A100 training execution](docs/eight-gpu-validation.md), which checks every final weight and per-step loss against an independent CPU reference.
 
 The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **All 27 current revisions have verified workload records** across the H100 and eight-A100 hosts. The [additional H100 record](docs/revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 
@@ -54,6 +54,8 @@ Collect fresh evidence with `python3 tools/validate_examples.py`; each run gets 
 `tools/publish_eight_gpu_audit.py` and `tools/verify_eight_gpu_audit.py` publish and verify the separate A100 training supplement. The historical verifiers allow its changed source only when that exact program has a fully verified supplemental PASS record.
 
 `python3 tools/validate_attention.py` runs the online-softmax recurrence checks on CUDA. `tools/audit_nonuniform_epilogue.py --run` builds and runs the stronger Chapter 7 host-input/reference variant while preserving its device implementation. `tools/render_diagrams.py` renders SVGs for inspection (requires CairoSVG and Pillow).
+
+> **November 21 corrections:** historical executions apply to their archived source hashes. Some current examples have subsequent fixes and require fresh GPU validation; see the [repair record](docs/review-fixes-2026-11-21.md). An evidence-verifier pass is an offline consistency check, not a GPU rerun.
 
 ## Local preview
 
@@ -135,3 +137,5 @@ Chapters 15–29 are sequenced as introductory (15–19), intermediate (20–24)
 The [November 18 H100 workshop record](docs/cutlass-workshop-validation.md) captures all ten current workshop sources: eight CUDA translation units, two Python references and eleven passing invocations, with actual sources, commands, system metadata, UTC dates, outputs and two imported Systems reports. The original 27-program evidence remains intact. Use `tools/run_advanced_validation.py` for a new capture or omit execution flags for a side-effect-free plan.
 
 Linked diagrams open in an accessible overlay on the same page. Use Close, Escape or the backdrop to return to the chapter. The viewer also works after instant navigation between chapters.
+
+[Native B200 appendix](docs/appendix-blackwell-b200.md) · [B200 compatibility scope](docs/validation-b200.md)

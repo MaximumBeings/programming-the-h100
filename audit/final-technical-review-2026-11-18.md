@@ -1,5 +1,7 @@
 # Final independent technical review — 2026-11-18
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 This review inspected instructions, reference arithmetic and explanatory models across all 13 chapters. The independent offline review was followed by the November 18 two-H100 rerun: all four barrier corrections passed numerical checks and zero-error memcheck. All 27 current programs have verified workload records across the recorded H100 and eight-A100 hosts. The later adversarial exposition review below changed no complete program or captured evidence.
 
 ## P1 — bulk-async barrier initialization needed proxy publication

@@ -1,7 +1,8 @@
-# 14. Nsight Systems — Find the Application Bottleneck
-## Lesson 14 Companion Guide — From Kernel Counters to the Application Timeline
+# Nsight Systems — Find the Application Bottleneck
 
-[![CHAPTER 14: 14. Nsight Systems — Find the Application Bottleneck — conceptual chapter illustration](images/chapter-openers/14-workshop.svg)](images/chapter-openers/14-workshop.svg)
+## Chapter Companion Guide — From Kernel Counters to the Application Timeline
+
+[![CHAPTER 14: Nsight Systems — Find the Application Bottleneck — conceptual chapter illustration](images/chapter-openers/14-workshop.svg)](images/chapter-openers/14-workshop.svg)
 
 
 !!! tip "Your goal in this chapter"
@@ -60,11 +61,11 @@ QdstrmImporter --input-file trace.qdstrm --output-file trace.nsys-rep
 nsys stats --report cuda_gpu_kern_sum trace.nsys-rep
 ```
 
-On the recorded provider image, the matching importer was installed at `/usr/lib/nsight-systems/host-linux-x64/QdstrmImporter`. The following provider-specific setup made it discoverable to the collector without changing a system symlink:
+On the recorded provider image, the matching importer was installed at `/home/ubuntu/.local/bin/QdstrmImporter`. The following provider-specific setup made it discoverable to the collector without changing a system symlink:
 
 ```bash
-/usr/lib/nsight-systems/host-linux-x64/QdstrmImporter --version
-export PATH="/usr/lib/nsight-systems/host-linux-x64:$PATH"
+/home/ubuntu/.local/bin/QdstrmImporter --version
+export PATH="$HOME/.local/bin:$PATH"
 command -v QdstrmImporter
 ```
 
@@ -244,7 +245,7 @@ A long NCCL kernel may be doing communication, waiting for peers or both. A rank
 
 Suppose Systems shows that the same GEMM dominates every iteration. Run the application separately under Compute, selecting the kernel name observed in the trace and an appropriate launch filter. Do not stack both profilers around one process by default: collection/replay can change behavior and tools can contend for instrumentation.
 
-After changing the GEMM, repeat the correctness check, unprofiled application measurement and Systems capture. Perhaps the epilogue is faster but the next host-side preprocessing phase now determines the iteration. That is a new bottleneck, not a contradiction. [Chapters 23–24](24-cutlass-gemm.md) apply this loop to CUTLASS.
+After changing the GEMM, repeat the correctness check, unprofiled application measurement and Systems capture. Perhaps the epilogue is faster but the next host-side preprocessing phase now determines the iteration. That is a new bottleneck, not a contradiction. [Chapter 23](23-gemm-construction.md) and [Chapter 24](24-cutlass-gemm.md) apply this loop to CUTLASS.
 
 ??? question "Self-check: CPU range or completed GPU work?"
 
@@ -385,3 +386,5 @@ OVERLAP PASS: mode=overlap slots=2 checked=4194304 errors=0 device_span_ms=4.426
 
 - Retain the actual timeline, timing scope and numerical result together; a visually busy GPU is not by itself evidence of a faster application.
 <!-- companion-summary:end -->
+
+The recorded overlap span was 5.027 ms under profiling versus 4.426 ms in the separate unprofiled run; these are distinct executions and illustrate instrumentation overhead, not a controlled speedup comparison.

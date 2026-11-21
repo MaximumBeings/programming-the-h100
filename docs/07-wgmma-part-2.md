@@ -1,4 +1,5 @@
 # WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+
 ## Lesson 7 Companion Guide — Programming the H100
 
 [![CHAPTER 07: Queue the math. Collect the result.](images/chapter-openers/07-groups.svg)](images/chapter-openers/07-groups.svg)
@@ -88,25 +89,25 @@ Blackwell does **not** execute Hopper WGMMA kernels unchanged. It uses the `tcge
 
 ## Table of Contents
 
-1. [WGMMA Groups — Why Grouping Exists](#1--wgmma-groups)
-2. [wgmma.commit_group — Closing a Batch](#2--wgmmacommit_group)
-3. [wgmma.wait_group — The Synchronization Point](#3--wgmmawait_group)
-4. [The Commit/Wait Pipeline — What Actually Overlaps](#4--the-commitwait-pipeline)
-5. [wgmma.fence — Dual Role Review](#5--wgmmafence-dual-role)
-6. [stmatrix — Writing Accumulators Back to SMEM](#6--stmatrix)
-7. [stmatrix — Address and Register Phases](#7--stmatrix-phases)
-8. [stmatrix and FP32 Accumulators — The Conversion Requirement](#8--stmatrix-and-fp32)
-9. [FP8 — The Paradigm Shift](#9--fp8-the-paradigm-shift)
-10. [FP8 Formats — E4M3 vs E5M2](#10--fp8-formats)
+1. [WGMMA Groups — Why Grouping Exists](#1-wgmma-groups)
+2. [wgmma.commit_group — Closing a Batch](#2-wgmmacommit_group)
+3. [wgmma.wait_group — The Synchronization Point](#3-wgmmawait_group)
+4. [The Commit/Wait Pipeline — What Actually Overlaps](#4-the-commitwait-pipeline-what-actually-overlaps)
+5. [wgmma.fence — Dual Role Review](#5-wgmmafence-dual-role-review)
+6. [stmatrix — Writing Accumulators Back to SMEM](#6-stmatrix-writing-accumulators-back-to-smem)
+7. [stmatrix — Address and Register Phases](#7-stmatrix-address-and-register-phases)
+8. [stmatrix and FP32 Accumulators — The Conversion Requirement](#8-stmatrix-and-fp32-accumulators-the-conversion-requirement)
+9. [FP8 — The Paradigm Shift](#9-fp8-the-paradigm-shift)
+10. [FP8 Formats — E4M3 vs E5M2](#10-fp8-formats-e4m3-vs-e5m2)
 11. [FP8 Packed Types — e4m3x2/x4 and e5m2x2/x4](#11--fp8-packed-types)
-12. [FP8 Quantization — cvt.satfinite](#12--fp8-quantization)
-13. [FP8 WGMMA — Instruction and Layout Rules](#13--fp8-wgmma)
-14. [FP8 Precision Pitfalls — K-Slicing](#14--fp8-precision-pitfalls)
-15. [Sparse WGMMA — 2:4 Structured Sparsity](#15--sparse-wgmma)
-16. [sp-meta — The Metadata Register](#16--sp-meta)
-17. [sp-sel — The Thread Selector](#17--sp-sel)
-18. [Putting It All Together — Full Examples](#18--putting-it-all-together)
-19. [Quick Reference](#19--quick-reference)
+12. [FP8 Quantization — cvt.satfinite](#12-fp8-quantization-cvtsatfinite)
+13. [FP8 WGMMA — Instruction and Layout Rules](#13-fp8-wgmma-instruction-and-layout-rules)
+14. [FP8 Precision Pitfalls — K-Slicing](#14-fp8-precision-pitfalls-k-slicing)
+15. [Sparse WGMMA — 2:4 Structured Sparsity](#15-sparse-wgmma-24-structured-sparsity)
+16. [sp-meta — The Metadata Register](#16-sp-meta-the-metadata-register)
+17. [sp-sel — The Thread Selector](#17-sp-sel-the-thread-selector)
+18. [Putting It All Together — Full Examples](#18-putting-it-all-together)
+19. [Quick Reference](#19-quick-reference)
 
 ---
 
@@ -135,8 +136,8 @@ This is the same design philosophy as `cp.async.bulk.commit_group` / `cp.async.b
 The Tracking Problem — Why Individual Wait Would Be Slow
 ══════════════════════════════════════════════════════════════════════
 
-  Scenario: Computing a 64×256 output tile requires 8 wgmma calls
-            (each wgmma handles 64×32, and 256/32 = 8 calls).
+  Scenario: Accumulating eight K-slices into a 64×256 output tile
+            uses eight m64n256k16 instructions (one per K-slice).
 
   WITHOUT grouping (hypothetical "wait for each"):
   ─────────────────────────────────────────────────────────────────
@@ -237,13 +238,12 @@ wgmma.commit_group — Mechanics
 
   ─── Multiple Groups In-Flight ───────────────────────────────────
 
-  The hardware can track multiple committed groups simultaneously.
-  You can have groups 0, 1, 2 all computing at the same time.
-  This enables deep pipelining:
-    Group 0: wgmma computing output tile (0,0)
-    Group 1: wgmma computing output tile (0,1)
-    Group 2: wgmma computing output tile (0,2)
-  All running concurrently — tensor cores continuously busy.
+  Multiple committed groups may be outstanding. That lets ordinary
+  instructions and memory movement overlap asynchronous MMA progress;
+  it does not promise concurrent execution of multiple tensor-core
+  instructions from this warpgroup. Independent output tiles require
+  distinct accumulator fragments. Reusing a shared-memory operand slot
+  also requires waiting for every WGMMA group still reading that slot.
 ```
 
 ---
@@ -474,7 +474,7 @@ stmatrix — The Scatter Operation
   Thread 1 holds: D[0][2], D[0][3], D[8][2], D[8][3]
   Thread 2 holds: D[0][4], D[0][5], D[8][4], D[8][5]
   ...
-  Thread 31 holds: D[7][14], D[7][15], D[15][14], D[15][15]
+  Thread 31 holds: D[7][6], D[7][7], D[15][6], D[15][7]
 
   If Thread 0 used st.shared at addresses [row=0,col=0] and [row=0,col=1]:
     fine for those two, but [row=8,col=0] requires a completely different address.
@@ -717,8 +717,8 @@ stmatrix and FP32 — The Conversion Requirement
     // Now SMEM has all FP32 values in a known layout
     // Threads copy from smem_scratch to smem_output in order
 
-  Most production kernels use FP16 accumulators for BF16 input GEMM
-  to avoid this conversion overhead in the epilogue.
+  BF16-input Hopper WGMMA accumulates in FP32. Convert to the desired
+  output type in the epilogue; there is no BF16-input/FP16-accumulator variant.
 ```
 
 ---
@@ -1012,30 +1012,32 @@ cvt.satfinite — FP8 Quantization Instruction
   Without satfinite:  value 500.0 → Inf or NaN → destroys training immediately.
   With satfinite:     value 500.0 → 448.0 (max FP8 E4M3) → distorted but finite.
   Use satfinite for TRAINING (stability over exactness).
-  Use non-saturating (rare) only if you are certain no overflow will occur.
+  PTX conversions to FP8 x2 require .satfinite. C++ conversion APIs
+  separately expose __NV_NOSAT; E4M3 has no infinity encoding.
 
   ─── Manual Worked Example ───────────────────────────────────────
 
   Input: two FP16 values [300.0h, 450.0h] packed in one f16x2 register.
   Target: FP8 E4M3 (max = 448).
 
-  Element 0: 300.0 → within ±448 → rounds to nearest E4M3 = 304.0 (say)
+  Element 0: 300.0 → within ±448 → rounds to nearest E4M3 = 288.0
   Element 1: 450.0 → EXCEEDS 448 → .satfinite CLAMPS to 448.0
 
-  Output: [E4M3(304.0) | E4M3(448.0)] packed in 16 bits.
+  Output: [E4M3(288.0) | E4M3(448.0)] packed in 16 bits.
 
   In CUDA C++ (using CUDA 12+ intrinsics):
   ─────────────────────────────────────────────────────────────────
-  __half2 fp16_pair = __float2half2_rn(300.0f, 450.0f);
+  __half2 fp16_pair = __floats2half2_rn(300.0f, 450.0f);
 
   // Method 1: PTX directly
   uint16_t fp8_pair;
   asm("cvt.rn.satfinite.e4m3x2.f16x2 %0, %1;"
       : "=h"(fp8_pair) : "r"(*reinterpret_cast<uint32_t*>(&fp16_pair)));
 
-  // Method 2: CUDA 12 intrinsic (sm_90+):
-  __nv_fp8x2_e4m3 result = __nv_cvt_halfraw2_to_fp8x2(
-      fp16_pair.__x, __NV_SATFINITE, __NV_E4M3);
+  // Method 2: CUDA intrinsic; packed conversion is supported from sm_89.
+  __half2_raw raw_pair = static_cast<__half2_raw>(fp16_pair);
+  __nv_fp8x2_storage_t result = __nv_cvt_halfraw2_to_fp8x2(
+      raw_pair, __NV_SATFINITE, __NV_E4M3);
 ```
 
 ### 12.2 Scaling Factors — Why Quantization Needs Them
@@ -1050,7 +1052,10 @@ Scaling Factors — The Core Curriculum of FP8
   ─────────────────────────────────────────────────────────────────
   FP8 E4M3 max = 448. Your activation tensor max value = 12.5.
   Without scaling: you only use the range [0, 12.5] out of [0, 448].
-  That means only ~16 distinct FP8 values are used — terrible precision!
+  E4M3 has 85 nonnegative finite encodings at or below 12.5, out of 127.
+  Floating-point spacing is logarithmic; this is not integer quantization.
+  Scaling positions the range to manage overflow, subnormals and underflow;
+  it does not add mantissa bits or guarantee better relative precision.
 
   With scaling:
     scale = 448.0 / 12.5 = 35.84
@@ -1153,13 +1158,10 @@ stricter than the BF16 case in Chapter 6 §7.
 FP8 A Loading — SS vs RS Path (Hopper AND Blackwell)
 ══════════════════════════════════════════════════════════════════════
 
-  CORRECTION — this is not a Hopper-only limitation:
-  ldmatrix has no variant for plain 8-bit FP8 (e4m3/e5m2) on ANY current
-  architecture. Its documented element types are .b16 (sm_75+) and, on
-  Blackwell only, two sub-byte PACKED forms for the MX microscaling formats
-  (.b8x16.b6x16_p32, .b8x16.b4x16_p64 — 6-bit/4-bit values for tcgen05, not
-  ordinary FP8). So the "no ldmatrix for FP8" constraint below applies on
-  Hopper (sm_90a) and on Blackwell (sm_100a) alike.
+  On Hopper, ldmatrix.b16 moves bytes and can load a K-major packed
+  8-bit A fragment in its non-transposed form. It does not convert FP8.
+  There is no corresponding Hopper 8-bit transpose instruction.
+  Blackwell adds its own b8 forms; its instruction contracts differ.
 
   This means you have two options for loading FP8 A tiles into registers:
 
@@ -1170,13 +1172,14 @@ FP8 A Loading — SS vs RS Path (Hopper AND Blackwell)
   Both A and B are read directly from SMEM via descriptors.
   No register loading of A required.
 
-  Pros: Simple, no ldmatrix complication, avoids FP8 ldmatrix limitation.
+  Pros: Simple, no ldmatrix complication, avoids register-fragment staging.
   Cons: Doubles SMEM bandwidth pressure (both A and B streaming from SMEM).
   Use when: A is NOT reused, or register pressure is already high.
 
   ─── Option 2: Register-based (RS path) — A in registers ──────────
 
-  Manually load A using plain ld.shared.b32 instructions:
+  Load a K-major packed fragment with non-transposed ldmatrix.b16,
+  or explicitly assemble it with ld.shared.b32 as illustrated here:
     uint32_t a_reg[4];   // 4 × 32-bit registers = 16 bytes = 16 FP8 E4M3 values
     uint32_t smem_addr = compute_fp8_a_address(tid, k_block, m_block);
     asm("ld.shared.b32 %0, [%1];" : "=r"(a_reg[0]) : "r"(smem_addr));
@@ -1828,7 +1831,7 @@ it is TRANSPOSE-ONLY (.trans is mandatory, not optional), and it requires
 Blackwell-family targets (sm_100a and newer) — not sm_90a. On Hopper, an
 INT8 uses s32 accumulators; store them with integer stores or explicitly convert.
 FP8 inputs support f16/f32 accumulators; choose the corresponding output path.
-(or a manual scatter), same as any other type stmatrix.b16 can't take.
+
 
 FP32 accumulators: stmatrix has NO .f32 variant!
   Option A: cvt.rn.f16x2.f32 to downcast + pack → stmatrix.b16 (lossy)
@@ -1846,7 +1849,7 @@ E4M3     8     4  3  448        Forward pass (weights, acts)  Has NaN, no Inf
 E5M2     8     5  2  57344      Backward pass (gradients)     Has Inf and NaN
 e4m3x2   16    —  —  —          Conversion/transport pack       2 E4M3 packed
 e4m3x4   32    —  —  —          Storage, transport            4 E4M3 packed
-e5m2x2   16    —  —  —          WGMMA input, cvt output       2 E5M2 packed
+e5m2x2   16    —  —  —          cvt output (not a full RS register)  2 E5M2 packed
 e5m2x4   32    —  —  —          Storage, transport            4 E5M2 packed
 ```
 
@@ -1906,7 +1909,7 @@ Fence used instead of completion wait      Pending d[] accesses  Commit and wait
 Reading d[] while group still pending       Race condition         wait_group<0> first
 stmatrix.b16 with FP32 d[] registers        Type mismatch compile  cvt to FP16 first
 FP8 data in MN-major layout for wgmma      Scrambled results      Stage in K-major SMEM
-Using ldmatrix.b8 on Hopper (sm_90a)       Compile error          Use SS path or ld.shared.b32
+Using ldmatrix.b8 on Hopper (sm_90a)       Compile error          Use SS or a matching non-transposed ldmatrix.b16 packed-byte load
 sp-sel nonzero for FP8 sparse wgmma        Wrong/undefined result Use sp-sel=0 for FP8/INT8
 Metadata does not match the current A tile Wrong sparse product Supply correct per-lane metadata
 TF32 metadata uses 1-bit indices          Invalid encoding      Pack 4-bit indices 4 or 14
@@ -1939,3 +1942,5 @@ FP8 numerical error exceeds tolerance      Accuracy failure      Test scaling an
 > roofline model — deciding whether a kernel is compute- or memory-bound before
 > optimising it — then covers producer/consumer warp specialisation, `setmaxnreg`
 > for dynamic register allocation, and multi-stage circular buffering.
+
+**Shared-stage lifetime.** A committed WGMMA group may still read its shared operands. Wait until the last group using a stage completes before releasing that stage to TMA or another producer. Commit is not release, and waiting solely before the epilogue does not protect a buffer that is overwritten earlier. A 64×256 output slice can be covered by one `m64n256k16` instruction per K step; eight `m64n32k16` calls are only one possible decomposition, not a hardware requirement.

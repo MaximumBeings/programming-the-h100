@@ -3,7 +3,8 @@
   position: fixed;
   inset: 0;
   margin: auto;
-  width: fit-content;
+  width: 96vw;
+  box-sizing: border-box;
   max-width: 96vw;
   max-height: 96dvh;
   padding: 3rem .75rem .75rem;
@@ -18,8 +19,8 @@
   display: block;
   max-width: 100%;
   max-height: calc(96dvh - 4rem);
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: calc(96dvh - 4rem);
   object-fit: contain;
 }
 .book-image-viewer__close {
@@ -31,7 +32,9 @@
   background: #16457e;
   border: 1px solid #8ed5c4;
   border-radius: .3rem;
-  font: inherit;
+  font: 600 16px/1.2 system-ui, sans-serif;
+  min-width: 44px;
+  min-height: 44px;
   cursor: pointer;
 }
 .book-image-viewer__close:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }

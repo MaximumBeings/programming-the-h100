@@ -18,15 +18,15 @@ Omit both `--execute` and `--profiles` for a side-effect-free plan. A fresh outp
 | Source | Main chapter | Scope |
 | --- | --- | --- |
 | [cute_layouts.cu](cute_layouts.cu) | 15 | Real CuTe host coordinate checks |
-| [cute_algebra.cu](cute_algebra.cu) | 16 | Nested layouts, coalesce and composition |
-| [cute_fragments.cu](cute_fragments.cu) | 20 | Actual pinned MMA trait ownership |
-| [cute_copy.cu](cute_copy.cu) | 19 | Scalar CuTe GPU copy, predicates, ownership and guards |
-| [tiled_gemm.cu](tiled_gemm.cu) | 22 | SIMT GPU GEMM, padding, batches, ragged dimensions and K=0 |
-| [cutlass_gemm.cu](cutlass_gemm.cu) | 23 | Hopper Tensor Core GEMM with a full CPU oracle |
-| [cutlass_gemm_relu.cu](cutlass_gemm_relu.cu) | 25 | Supported fused ReLU epilogue with a full CPU oracle |
+| [cute_algebra.cu](cute_algebra.cu) | 17 | Nested layouts, coalesce and composition |
+| [cute_fragments.cu](cute_fragments.cu) | 21 | Actual pinned MMA trait ownership |
+| [cute_copy.cu](cute_copy.cu) | 20 | Scalar CuTe GPU copy, predicates, ownership and guards |
+| [tiled_gemm.cu](tiled_gemm.cu) | 23 | SIMT GPU GEMM, padding, batches, ragged dimensions and K=0 |
+| [cutlass_gemm.cu](cutlass_gemm.cu) | 24 | Hopper Tensor Core GEMM with a full CPU oracle |
+| [cutlass_gemm_relu.cu](cutlass_gemm_relu.cu) | 26 | Supported fused ReLU epilogue with a full CPU oracle |
 | [nsys_overlap.cu](nsys_overlap.cu) | 14 | Serial/two-stream CUDA work and complete output checks |
-| [indexing_workbook.py](indexing_workbook.py) | 18/28 | CPU arithmetic and modeled ownership/state checks |
-| [fp4_reference.py](fp4_reference.py) | 26 | CPU E2M1 format/layout reference, not native NVFP4 execution |
+| [indexing_workbook.py](indexing_workbook.py) | 19/29 | CPU arithmetic and modeled ownership/state checks |
+| [fp4_reference.py](fp4_reference.py) | 27 | CPU E2M1 format/layout reference, not native NVFP4 execution |
 
 Preserve the complete results directory before shutting down the instance. Expected checks in the prose explain the oracle; published execution blocks identify actual captured source revisions and outputs. A new source change needs its own rerun.
 

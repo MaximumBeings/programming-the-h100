@@ -20,9 +20,11 @@ def verify(root=ROOT):
         raise ValueError('Rerun summary hash differs')
     rows=json.loads((public/'results.json').read_text())
     current={(x['page'],x['example']):x['sha256'] for x in programs()}
+    from review_revisions import historical_hashes
+    current = historical_hashes(root, current)
     recorded={(x['page'],x['example']):x['sha256'] for x in rows}
     if len(rows)!=27 or len(recorded)!=27 or recorded!=current:
-        raise ValueError('Rerun must cover all 27 exact current sources')
+        raise ValueError('Rerun must cover all 27 archived source revisions (current corrections remain pending)')
     passed=blocked=0
     for row in rows:
         folder=public/Path(row['page']).stem/Path(row['example']).stem
@@ -70,4 +72,4 @@ def verify(root=ROOT):
     return {(r['page'],r['example']):r for r in rows}
 
 if __name__=='__main__':
-    verify(); print('PASS: 27 exact current sources, 26 H100 executions, eight-GPU prerequisite, dated chapter outputs, 12 attention cases and four memchecks.')
+    verify(); print('PASS: 27 archived source revisions (current corrections remain pending), 26 H100 executions, eight-GPU prerequisite, dated chapter outputs, 12 attention cases and four memchecks.')

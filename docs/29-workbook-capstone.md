@@ -1,4 +1,5 @@
 # 29. CuTe and CUTLASS Workbook — From Coordinates to Evidence
+
 ## Lesson 29 Companion Guide — Progress from Coordinate Proofs to a Reproducible Capstone
 
 [![CHAPTER 29: 29. CuTe and CUTLASS Workbook — From Coordinates to Evidence — conceptual chapter illustration](images/chapter-openers/29-workshop.svg)](images/chapter-openers/29-workshop.svg)
@@ -190,7 +191,7 @@ Keep accumulation and epilogue arithmetic in the specified precision, then conve
 
 For NVFP4, account for E2M1 elements, E4M3 block scales and global FP32 scaling. Zero blocks, rounding, saturation and the unused nibble need explicit rules. At large aligned sizes, elements plus one byte per 16-value scale cost 0.5625 bytes/value, approximately 7.11× smaller than FP32 before global scales and padding. Hopper dequantization followed by FP16/BF16 GEMM is not native NVFP4 Tensor Core execution; native Blackwell experiments need separate compatibility and execution evidence. See [NVIDIA's NVFP4 description](https://docs.nvidia.com/deeplearning/transformer-engine-releases/release-2.16/user-guide/features/low_precision_training/nvfp4/nvfp4.html).
 
-For a separate hypothetical benchmark with **FP16 A, B and D**, beta zero, `M=N=2048` and `K=4096`, the conventional GEMM count is 34,359,738,368 operations. At a hypothetical 85 microseconds, throughput is approximately **404.23 TFLOPS**, not 203. Reading A and B once and writing D once requires 41,943,040 bytes, excluding C reads, scales and extra passes. At one millisecond that minimum traffic implies 41.94 GB/s. With FP32 D instead, its output store costs twice as many bytes and the corresponding total becomes 50,331,648 bytes; state the output type rather than importing a traffic count from another kernel. These calculations are consistency checks, not measured bandwidth or peak-utilization claims.
+For a separate hypothetical benchmark with **FP16 A, B and D**, beta zero, `M=N=2048` and `K=4096`, the conventional GEMM count is 34,359,738,368 operations. At a hypothetical 85 microseconds, throughput is approximately **404.23 TFLOPS**, not approximately 202.1. Reading A and B once and writing D once requires 41,943,040 bytes, excluding C reads, scales and extra passes. At one millisecond that minimum traffic implies 41.94 GB/s. With FP32 D instead, its output store costs twice as many bytes and the corresponding total becomes 50,331,648 bytes; state the output type rather than importing a traffic count from another kernel. These calculations are consistency checks, not measured bandwidth or peak-utilization claims.
 
 ### Exercise: account for padding before quoting a compression ratio
 

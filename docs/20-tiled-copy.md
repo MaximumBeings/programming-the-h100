@@ -1,4 +1,5 @@
 # 20. Thread/Value Ownership and a Real CuTe Tiled Copy
+
 ## Lesson 20 Companion Guide — Prove Thread Ownership Before Issuing a Copy
 
 [![CHAPTER 20: 20. Thread/Value Ownership and a Real CuTe Tiled Copy — conceptual chapter illustration](images/chapter-openers/20-workshop.svg)](images/chapter-openers/20-workshop.svg)

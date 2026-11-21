@@ -1,6 +1,6 @@
 // Educational FP32 online attention: one CUDA thread per query row.
 // No CUTLASS, Tensor Cores, dropout, bias or performance claim.
-// CPU-only check: clang++ -x c++ -std=c++17 -O2 \
+// CPU-only check: clang++ -x c++ -std=c++17 -O2  (continued)
 //   -DATTENTION_HOST_ONLY attention_online.cu -o attention_host
 // Hopper: nvcc -std=c++17 -O2 -arch=sm_90a attention_online.cu -o attention_online
 #include <algorithm>

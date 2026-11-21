@@ -1,4 +1,7 @@
 # Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+
+> **November 21 corrections:** historical executions apply to their archived source hashes. Some current examples have subsequent fixes and require fresh GPU validation; see the [repair record](review-fixes-2026-11-21.md). An evidence-verifier pass is an offline consistency check, not a GPU rerun.
+
 ## A Hardware-Level Companion Guide to NVIDIA Hopper
 
 [![Programming the H100: CUDA, CuTe, and CUTLASS from First Principles](images/chapter-openers/00-cover.svg)](images/chapter-openers/00-cover.svg)
@@ -115,7 +118,7 @@ Each level builds on the previous one. Introductory chapters establish mappings;
 
 !!! success "Original suite — November 17–18, 2026"
 
-    The recorded current revisions of all **27 original complete CUDA programs compiled and executed successfully** across the recorded hosts: 26 workloads on H100 and the revised training workload on eight A100 GPUs. The [complete audit](final-audit.md) links the successful program records, stronger Chapter 7 coordinate test and twelve attention-reference cases. The [training supplement](eight-gpu-validation.md) uses `sm_80` and independently checks final weights and per-step losses; it is not an eight-H100 result.
+    Historical evidence covers 26 H100 program revisions and a later revised training program on eight A100 GPUs across the recorded hosts: 26 workloads on H100 and the revised training workload on eight A100 GPUs. The [complete audit](final-audit.md) links the successful program records, stronger Chapter 7 coordinate test and twelve attention-reference cases. The [training supplement](eight-gpu-validation.md) uses `sm_80` and independently checks final weights and per-step losses; it is not an eight-H100 result.
 
     The four barrier-ordering corrections in Chapters 3–5 passed the [November 18 two-H100 rerun](revalidation-2026-11-18.md) and memory checks. That host had **2× H100 80GB HBM3, 132 SMs each, NV18 peer topology**, Ubuntu 24.04.5 LTS, driver 580.105.08 and CUDA compiler 12.8.93; the recorded builds used `sm_90a`, C++17 and `-O2`.
 
@@ -185,3 +188,5 @@ Open <http://127.0.0.1:8000> on the same machine. [Getting Started](getting-star
 For your own fork, set `site_url` and `repo_url` in `mkdocs.yml` to that repository before publishing. This repository's `.github/workflows/ci.yml` verifies and deploys changes pushed to `main`.
 
 Built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
+
+[Separate B200 compatibility results](validation-b200.md) distinguish CPU checks, GPU-using programs and architecture exclusions.

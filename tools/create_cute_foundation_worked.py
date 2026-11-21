@@ -44,7 +44,7 @@ def composition():
         ('Choose x=3', 'B(3)=3×3=9. This is an index into A’s 16-index domain.', 'blue'),
         ('Apply the outer layout', 'A(9)=2×9=18 elements. With FP32 words, the displacement is 18×4=72 bytes.', 'teal'),
         ('Read only when an engine is used', 'A tensor using this layout would select stored value 118. Constructing the layout alone performs no read.', 'violet')])
-    d.note('Check before reversing the order', 'A(B(x)) is not B(A(x)). In particular, B has only four valid logical indices, so A(3)=6 is outside B’s domain.', 'amber')
+    d.note('Check before reversing the order', 'CuTe accepts the reversed map as 16:6. For a finite four-index outer domain, A(2)=4 already exceeds its bounds.', 'amber')
     assert [2*(3*x) for x in range(4)] == [0, 6, 12, 18]
     return d
 

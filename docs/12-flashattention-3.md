@@ -1,4 +1,5 @@
 # FlashAttention-3 on the H100
+
 ## Chapter 12 Companion Guide — Every Primitive in This Book, Working at Once
 
 [![CHAPTER 12: Attention, one tile at a time.](images/chapter-openers/12-attention.svg)](images/chapter-openers/12-attention.svg)
@@ -118,31 +119,34 @@ Mapping This Chapter to the Real Source
 
   This chapter's §      flash-attention/hopper/
   ────────────────────────────────────────────────────────────────────
-  §5  warp specialization   flash_fwd_kernel.h — the WarpScheduler split
+  §5  warp specialization   flash_fwd_kernel_sm90.h — the WarpScheduler split
   §6  ping-pong             mainloop_fwd_sm90_tma_gmma_ws.hpp
   §7  2-stage pipeline      the same file — see the "PV" / "QK" ordering
-  §9  FP8                   flash_fwd_kernel.h with Element = cutlass::float_e4m3_t
-  §9.2 V transpose          the SmemTransposeFp8 helper
+  §9  FP8                   flash_fwd_kernel_sm90.h with Element = cutlass::float_e4m3_t
+  §9.2 V transpose          the Transpose_V path in the pinned SM90 mainloop
 
   Read this chapter first for the ideas, then that code for the details.
   The CuTe layout algebra is a language of its own; do not expect to
   read it cold.
 ```
 
+Source-reading pin: [FlashAttention SM90 mainloop at cc7b69d4](https://github.com/Dao-AILab/flash-attention/blob/cc7b69d4b67145f3822bd75344e3877eccd3c34e/hopper/mainloop_fwd_sm90_tma_gmma_ws.hpp). This pin is for inspecting implementation names and protocols, not a new execution claim.
+
+
 ---
 
 ## Table of Contents
 
-1. [Why Attention Is Hard on a GPU](#1--why-attention-is-hard-on-a-gpu)
-2. [Online Softmax](#2--online-softmax)
-3. [The FlashAttention Family](#3--the-flashattention-family)
-4. [The FA3 Kernel at a Glance](#4--the-fa3-kernel-at-a-glance)
-5. [Technique 1 — Producer/Consumer Warp Specialization](#5--technique-1--producerconsumer-warp-specialization)
-6. [Technique 2 — Ping-Pong Scheduling](#6--technique-2--ping-pong-scheduling)
-7. [Technique 3 — Intra-Warpgroup 2-Stage Pipelining](#7--technique-3--intra-warpgroup-2-stage-pipelining)
-8. [Causal Masking and Load Imbalance](#8--causal-masking-and-load-imbalance)
-9. [FP8 FlashAttention](#9--fp8-flashattention)
-10. [Putting It All Together](#10--putting-it-all-together)
+1. [Why Attention Is Hard on a GPU](#1-why-attention-is-hard-on-a-gpu)
+2. [Online Softmax](#2-online-softmax)
+3. [The FlashAttention Family](#3-the-flashattention-family)
+4. [The FA3 Kernel at a Glance](#4-the-fa3-kernel-at-a-glance)
+5. [Technique 1 — Producer/Consumer Warp Specialization](#5-technique-1-producerconsumer-warp-specialization)
+6. [Technique 2 — Ping-Pong Scheduling](#6-technique-2-ping-pong-scheduling)
+7. [Technique 3 — Intra-Warpgroup 2-Stage Pipelining](#7-technique-3-intra-warpgroup-2-stage-pipelining)
+8. [Causal Masking and Load Imbalance](#8-causal-masking-and-load-imbalance)
+9. [FP8 FlashAttention](#9-fp8-flashattention)
+10. [Putting It All Together](#10-putting-it-all-together)
 11. [Measured Results](#11--measured-results)
 12. [Quick Reference](#12--quick-reference)
 
@@ -389,11 +393,11 @@ Worked Example — One Row, Two Blocks
     m = max(1,3,5,2) = 5
     p = [exp(-4), exp(-2), exp(0), exp(-3)]
       = [0.01832, 0.13534, 1.00000, 0.04979]
-    l = 1.20345
-    softmax = [0.015223, 0.112459, 0.830943, 0.041373]
-    O = 0.015223(10) + 0.112459(20) + 0.830943(30) + 0.041373(40)
+    l = 1.203438
+    softmax = [0.015219, 0.112457, 0.830953, 0.041371]
+    O = 0.015219(10) + 0.112457(20) + 0.830953(30) + 0.041371(40)
       = 0.15223 + 2.24918 + 24.92829 + 1.65492
-      = 29.0 (to 3 s.f.  → 28.98462)
+      = 29.0 (to 3 s.f.  → 28.98475)
 
   ─── Online, block by block ──────────────────────────────────────
 
@@ -419,14 +423,14 @@ Worked Example — One Row, Two Blocks
                  = [exp(0), exp(-3)] = [1.00000, 0.04979]
     l            = 0.13534 × 1.13534 + (1.00000 + 0.04979)
                  = 0.15366 + 1.04979
-                 = 1.20345                        ◄── matches reference l ✓
+                 = 1.203438                        ◄── matches reference l ✓
     O            = 0.13534 × 21.35340 + (1.00000×30 + 0.04979×40)
-                 = 2.89000 + (30.00000 + 1.99160)
-                 = 2.89000 + 31.99160
-                 = 34.88160
+                 = 2.88986 + (30.00000 + 1.99160)
+                 = 2.88986 + 31.99160
+                 = 34.88134
 
   ── FINALIZE ────────────────────────────────────────────────
-    O = 34.88160 / 1.20345 = 28.98462             ◄── matches ✓
+    O = 34.88134 / 1.203438 = 28.98475             ◄── matches ✓
 
   ══════════════════════════════════════════════════════════════════
   Note what happened in block 1. The old accumulator, 21.35340,
@@ -475,8 +479,8 @@ FlashAttention 1 → 2 → 3
             SMEM round-trips
   Fix:      rescale O once at the end rather than every block where
             possible; parallelise over sequence-length blocks as
-            well as heads/batch; split K/V across warps instead of
-            Q ("split-K" → "split-Q")
+            well as heads/batch; split Q across warps while sharing K/V
+            (FA1 split-K → FA2 split-Q)
   Result:   ~2× over FA1; ~70% of A100 peak
   Left on the table: EVERYTHING Hopper-specific
 
@@ -668,7 +672,7 @@ FA3 Block Layout — Who Does What
   │    • issues cp.async.bulk.tensor for K_j and V_j               │
   │    • does mbarrier.arrive.expect_tx for the byte count          │
   │    • waits on the "buffer free" barrier before reusing a slot  │
-  │  Register budget: setmaxnreg.dec  →  32 registers              │
+  │  Register budget: setmaxnreg.dec  →  24 registers              │
   ├────────────────────────────────────────────────────────────────┤
   │  WARPGROUP 1  (warps 4-7)                CONSUMER A            │
   │  WARPGROUP 2  (warps 8-11)               CONSUMER B            │
@@ -677,7 +681,7 @@ FA3 Block Layout — Who Does What
   │    • wgmma QK^T                                                │
   │    • online softmax on the result                              │
   │    • wgmma PV, accumulating into O                             │
-  │  Register budget: setmaxnreg.inc  →  160-232 registers         │
+  │  Register budget: setmaxnreg.inc  →  240 registers         │
   └────────────────────────────────────────────────────────────────┘
 
   Why two consumers rather than one?
@@ -715,7 +719,7 @@ __device__ void producer_loop(
     int             q_block_idx)
 {
     // Give registers back to the consumers (Chapter 8 §5).
-    asm volatile("setmaxnreg.dec.sync.aligned.u32 %0;\n" :: "n"(32));
+    asm volatile("setmaxnreg.dec.sync.aligned.u32 %0;\n" :: "n"(24));
 
     const int lane = threadIdx.x % 32;
     const int warp = (threadIdx.x / 32) % 4;
@@ -785,7 +789,7 @@ __device__ void consumer_loop_naive(
     int            k_block_begin,
     int            k_block_end)
 {
-    asm volatile("setmaxnreg.inc.sync.aligned.u32 %0;\n" :: "n"(160));
+    asm volatile("setmaxnreg.inc.sync.aligned.u32 %0;\n" :: "n"(240));
 
     int  stage = 0;
     uint32_t phase = 0;
@@ -845,7 +849,7 @@ Ping-Pong — Staggering Two Consumers
         ▲▲▲▲▲▲        ▲▲▲▲▲▲▲
         both compute   BOTH doing softmax — tensor cores idle
 
-  Tensor core utilisation: ~66%
+  Tensor core utilisation: not quantified by this schematic
   (both warpgroups leave the same hole at the same time)
 
 
@@ -859,7 +863,7 @@ Ping-Pong — Staggering Two Consumers
                while WG1        while WG2
                does softmax     does softmax
 
-  Tensor core utilisation: ~85%
+  Tensor core utilisation: not quantified by this schematic
   The holes interleave instead of coinciding.
 
   ══════════════════════════════════════════════════════════════════
@@ -901,36 +905,23 @@ __device__ inline void named_barrier_arrive(int id, int count) {
 
 __device__ void consumer_loop_pingpong(/* ... */ int wg_id)
 {
-    // ── PROLOGUE: create the offset ──────────────────────────────
-    // WG2 waits once at the very top. From then on the two
-    // warpgroups stay half a phase apart for the whole loop.
-    if (wg_id == 1) {
-        named_barrier_sync(kBarrierWG1, kConsumerThreads);
-    }
+    // Seed WG0's own turn once, with one arrival per WG1 thread.
+    if (wg_id == 1)
+        named_barrier_arrive(kBarrierWG1, kConsumerThreads);
 
     for (int j = k_block_begin; j < k_block_end; ++j) {
-
-        // ── GEMM PHASE — one warpgroup at a time ─────────────────
-        wgmma_fence();
-        wgmma_qk(S, smem.q, smem.k[stage]);
-        wgmma_pv(O, P_prev, smem.v[stage_prev]);   // see §7
-        wgmma_commit_group();
-
-        // Hand the baton to the other warpgroup: it may now run
-        // ITS GEMMs while we go and do softmax.
-        named_barrier_arrive(wg_id == 0 ? kBarrierWG2 : kBarrierWG1,
-                             kConsumerThreads);
-
-        wgmma_wait_group<0>();
-
-        // ── SOFTMAX PHASE — overlaps the other WG's GEMMs ────────
-        online_softmax_update(S, m, l, alpha);
-        rescale_accumulator(O, alpha);
-
-        // Wait for our turn at the tensor cores again.
+        // Both groups contribute once to each generation. Wait BEFORE GEMM.
         named_barrier_sync(wg_id == 0 ? kBarrierWG1 : kBarrierWG2,
                            kConsumerThreads);
-
+        wgmma_fence();
+        wgmma_qk(S, smem.q, smem.k[stage]);
+        wgmma_pv(O, P_prev, smem.v[stage_prev]);
+        wgmma_commit_group();
+        named_barrier_arrive(wg_id == 0 ? kBarrierWG2 : kBarrierWG1,
+                            kConsumerThreads);
+        wgmma_wait_group<0>();
+        online_softmax_update(S, m, l, alpha);
+        rescale_accumulator(O, alpha);
         if (++stage == kNumStages) { stage = 0; phase ^= 1; }
     }
 }
@@ -1038,35 +1029,21 @@ iteration j+1".
                             ▲▲▲▲                            ▲▲▲▲
                             stall                           stall
 
-  PIPELINED ORDER:
+  PIPELINED ORDER (one consumer):
+    Prologue: issue QK_0, commit, wait, softmax_0.
+    Iteration j>0: issue QK_j, then PV_(j-1), in separate groups.
+    wait_group<1> makes QK_j available; softmax_j may overlap PV_(j-1).
+    wait_group<0> completes PV_(j-1) before rescaling O or releasing V.
+    Drain: issue the final PV_(n-1), commit, wait, then normalize/store.
 
-    iteration j:   issue QK_{j+1}      (commit, DO NOT wait)
-                   issue PV_j          (commit, DO NOT wait)
-                   softmax on S_{j+1}  ◄── computed last iteration,
-                                            available NOW
-                   wait for the group
+    j    QK issued    PV issued    Softmax after QK wait
+    0    QK_0         —            softmax_0
+    1    QK_1         PV_0         softmax_1 (may overlap PV_0)
+    2    QK_2         PV_1         softmax_2 (may overlap PV_1)
+    drain —           PV_(n-1)     —
 
-  ══════════════════════════════════════════════════════════════════
-  The reordering that makes it work:
-
-  At the top of iteration j, S_{j} is ALREADY COMPUTED — it was
-  issued during iteration j-1. So we can immediately fire the next
-  two GEMMs, and then do this iteration's softmax while they run.
-
-  Rendered as a table, with ● = tensor cores busy:
-
-    iter │ issue QK   │ issue PV   │ softmax    │ tensor busy?
-    ─────┼────────────┼────────────┼────────────┼──────────────
-      0  │ QK_0       │ —          │ —          │ ●
-      1  │ QK_1       │ PV_0       │ softmax_0  │ ● overlapped
-      2  │ QK_2       │ PV_1       │ softmax_1  │ ● overlapped
-      3  │ QK_3       │ PV_2       │ softmax_2  │ ● overlapped
-     ... │            │            │            │
-      n  │ —          │ PV_{n-1}   │ softmax_{n-1} │ ●
-
-  Every iteration in the steady state has two wgmma groups in
-  flight while the SFUs chew through the previous block's exp().
-  ══════════════════════════════════════════════════════════════════
+    Only the older QK group must be complete at the partial wait.
+    The second wait is essential: O and V remain owned by pending PV.
 ```
 
 [![Pipeline matrix work within a consumer](images/ch12/05-twostage-pipeline-timeline.svg)](images/ch12/05-twostage-pipeline-timeline.svg)
@@ -1074,8 +1051,8 @@ iteration j+1".
 ```cuda
 // ─────────────────────────────────────────────────────────────────
 // REFERENCE — illustrates structure; not compiled or benchmarked.
-// The 2-stage inner loop. Note that NOTHING waits until after the
-// softmax: both wgmma groups are in flight across it.
+// Protocol sketch for n_blocks > 0. QK_j completes before softmax_j;
+// PV_(j-1) may overlap softmax_j, but must finish before O is rescaled.
 // ─────────────────────────────────────────────────────────────────
 
 // ── PROLOGUE: prime the pipeline with QK for block 0 ────────────
@@ -1094,7 +1071,7 @@ for (int j = 1; j < n_blocks; ++j) {
 
     wgmma_fence();
 
-    //  Next iteration's QK — result not needed until next pass.
+    // Current QK_j: its scores are needed by softmax_j below.
     wgmma_qk(S_next, smem.q, smem.k[stage]);
     wgmma_commit_group();
 
@@ -1102,11 +1079,12 @@ for (int j = 1; j < n_blocks; ++j) {
     wgmma_pv(O, P_cur, smem.v[stage_prev]);
     wgmma_commit_group();
 
-    //  ── Both groups now in flight. Do softmax underneath them. ──
-    //  S_next is not ready yet, so this softmax works on the
-    //  scores from the PREVIOUS QK, which completed last iteration.
-    wgmma_wait_group<1>();      // ◄── let ONE group stay outstanding
+    // QK_j is the older group. Retire it before reading S_next.
+    // PV_(j-1) may still be outstanding while softmax_j runs.
+    wgmma_wait_group<1>();
     online_softmax_update(S_next, m, l, alpha);
+    // O and the previous V stage are still owned by PV_(j-1).
+    wgmma_wait_group<0>();
     rescale_accumulator(O, alpha);
     swap(S_cur, S_next);
     P_cur = S_cur;
@@ -1115,14 +1093,19 @@ for (int j = 1; j < n_blocks; ++j) {
     stage_prev = stage;
     if (++stage == kNumStages) { stage = 0; phase ^= 1; }
 }
-// ── EPILOGUE: drain the final PV ────────────────────────────────
+// ── DRAIN: the final probabilities still need their PV update. ──
+wgmma_fence();
+wgmma_pv(O, P_cur, smem.v[stage_prev]);
+wgmma_commit_group();
 wgmma_wait_group<0>();
+mbarrier_arrive(&smem.buffer_free[stage_prev]);
+// Normalize O by the final softmax denominator after completion.
 ```
 
 The `wgmma_wait_group<1>()` is the crux. Chapter 7 §3 made the point that the
 argument is how many groups may remain *outstanding* — so `<1>` waits for the
 older group (the QK whose scores we are about to use) while deliberately leaving
-the newer one running. Write `<0>` there and the whole technique evaporates.
+the newer one running. An immediate `<0>` before softmax would remove this overlap; the later `<0>` before O rescaling and V release is mandatory.
 
 ### 7.2 The Register Cost
 
@@ -1132,7 +1115,7 @@ Nothing is free, and this one is paid for in the scarcest resource on the chip.
 2-Stage Pipelining — The Register Bill
 ══════════════════════════════════════════════════════════════════════
 
-  Without the pipeline, per consumer thread:
+  For a 128-row CTA split across two consumer WGs, each owns B_r=64 rows; with B_c=d=128, per consumer thread:
     O accumulator  [B_r × d] / 128 threads, FP32   =  64 regs
     S accumulator  [B_r × B_c] / 128 threads, FP32 =  64 regs
     m, l, alpha    row statistics                   ≈   6 regs
@@ -1148,7 +1131,7 @@ Nothing is free, and this one is paid for in the scarcest resource on the chip.
 
   Against the 255-per-thread hardware ceiling (Chapter 1 §14),
   that is tight — and it is exactly why the producer warpgroup
-  runs setmaxnreg.dec down to 32. Those registers are not being
+  may release registers according to the selected policy (FA3 commonly uses 24 producer / 240 consumer registers). Those registers are not being
   saved, they are being TRANSFERRED.
 
   When it does not fit:
@@ -1216,8 +1199,9 @@ Causal Masking — The Block Taxonomy
     (j > diag_block: never executed)                     ◄── SKIP
 
   A mask check inside the FULL blocks would cost a predicate
-  per element across ~99% of the work, to catch a case that
-  cannot occur there. Specialising the loop removes it entirely.
+  in every FULL tile. Here 15 of the 21 visited tiles are FULL
+  (71.4% by tile count); six need masking. Specialization removes
+  those redundant checks. The proportions depend on the grid.
   ══════════════════════════════════════════════════════════════════
 ```
 
@@ -1244,7 +1228,7 @@ The Load Imbalance
   Naive mapping (one Q block per thread block) on 132 SMs:
     The SM that drew Q0 finishes almost immediately and then
     sits idle for the entire remaining runtime of the kernel.
-    Utilisation ≈ 50% — you are paying for the full square
+    Causal tile skipping saves arithmetic; the remaining triangular work can create scheduling imbalance
     while doing half the work.
 
   ─── FIX 1: Pair the blocks ──────────────────────────────────────
@@ -1340,7 +1324,7 @@ Quantization Granularity
   waiting on HBM the entire time. Folding a multiply and a
   cvt.satfinite into it costs literally zero additional time.
 
-    read Q → apply RoPE → × scale → cvt.satfinite.e4m3x4 → write
+    read Q → apply RoPE → × scale → cvt.rn.satfinite.e4m3x2.f32 → write
 
   Chapter 7 §12 has the conversion instruction itself.
   ══════════════════════════════════════════════════════════════════
@@ -1431,8 +1415,9 @@ SMEM Transpose via ldmatrix / stmatrix
     ~64 ldmatrix + ~64 prmt + ~64 stmatrix instructions per warp
     a few hundred cycles
 
-  Against the ~8,000 tensor-core cycles per iteration from §6.3,
-  that is under 5% — AND it can be overlapped. The transpose of
+  Against the model's 2,048 BF16 tensor cycles (about 1,024 in FP8),
+  a few hundred cycles is roughly 10–30% of the FP8 interval, not under 5%.
+  These are arithmetic estimates; actual overlap must be measured. The transpose of
   V_{j+1} happens during the GEMMs of iteration j, using the
   same pipelining logic as §7.
 
@@ -1463,7 +1448,7 @@ Incoherent Processing
     scaled:  [1.0, 2.0, 1.5, 3.0, 448.0]
     to E4M3: [1.0, 2.0, 1.5, 3.0, 448.0]
 
-    E4M3 near 1.0 has ~3 decimal digits of resolution, so the
+    E4M3 near 1.0 has 3 mantissa bits (spacing 0.125 near 1.0, roughly one decimal digit), so the
     small values survive — but only just. Push the outlier to
     450× and they quantize to a handful of distinct levels.
 
@@ -1479,8 +1464,10 @@ Incoherent Processing
   weighted sum of many entries of Q — so an outlier gets smeared
   across the whole row instead of sitting in one place.
 
-    before:  [0.1, 0.2, 0.15, 0.3, 45.0]   max/mean ≈ 200
-    after:   [9.2, -7.1, 11.4, -8.8, 6.3]  max/mean ≈ 1.4
+    before:  [1, 1, 1, 9], max/mean(abs) = 9/3 = 3
+    H4/2:    [6, -4, -4, 4], max/mean(abs) = 6/4.5 = 4/3
+    Both squared norms = 84. This is a normalized length-4 Hadamard
+    transform, so it preserves dot products when applied to BOTH operands.
 
   Same dot products. Far friendlier distribution.
 
@@ -1552,7 +1539,7 @@ somewhere in Chapters 3–9; what is new is only the arrangement.
 // ─────────────────────────────────────────────────────────────────
 // REFERENCE IMPLEMENTATION — structure only.
 // Not compiled, not benchmarked, not numerically validated.
-// Read alongside flash-attention/hopper/flash_fwd_kernel.h.
+// Read alongside flash-attention/hopper/flash_fwd_kernel_sm90.h.
 // ─────────────────────────────────────────────────────────────────
 
 template <int kBlockM,     // B_r — Q rows per block
@@ -1623,7 +1610,7 @@ void flash_fwd_kernel(
             /*causal=*/kIsCausal);
 
         // ── Epilogue ──────────────────────────────────────────────
-        //  1. Finalize: O /= l                     (§2.2 step 6)
+        //  1. Finalize: O /= l                     (§2.2 final normalization)
         //  2. Convert FP32 accumulator → BF16      (Chapter 7 §8 —
         //     stmatrix has no 32-bit form)
         //  3. stmatrix into SMEM                   (Chapter 7 §6)
@@ -1773,10 +1760,10 @@ FP8 (§9)                   Block quant + V transpose        Separate FP8 path
 ```
 WG   Warps   Role       setmaxnreg   Responsibility
 ──────────────────────────────────────────────────────────────────
-0    0-3     Producer   dec →  32    TMA loads of K_j, V_j;
+0    0-3     Producer   dec →  24    TMA loads of K_j, V_j;
                                      expect_tx; buffer_free waits
-1    4-7     Consumer   inc → 160+   QK, softmax, PV for its Q rows
-2    8-11    Consumer   inc → 160+   same, offset half a phase
+1    4-7     Consumer   inc → 240   QK, softmax, PV for its Q rows
+2    8-11    Consumer   inc → 240   same, offset half a phase
 ```
 
 ### Causal Block Types
@@ -1873,3 +1860,5 @@ barrier for different lifetimes  reuse dependencies      and phase explicitly
 ## Continue from the design to CUTLASS attention
 
 [Chapter 30](30-cutlass-attention-foundations.md) derives a complete small attention problem from Q/K/V coordinates through online-softmax state. [Chapter 31](31-cutlass-hopper-fmha.md) connects that derivation to the pinned CUTLASS Hopper FMHA implementation, its build and runtime arguments, reference checks and measurement boundaries. A fused-attention implementation is not automatically the FlashAttention-3 paper's exact kernel or performance result.
+
+**FP8 layout transformations.** V may need a shared-memory transpose using LDSM/STSM to satisfy the operand-major contract. Separately, converting the QK FP32 accumulator fragment to the probability A-register fragment can require a byte permutation. These are different transformations; neither cost is established by merely naming `prmt`. The 64-register O and S budgets above assume 64 rows per consumer warpgroup, not all 128 CTA rows per warpgroup. A full 128×128 FP32 fragment per 128 threads alone costs 128 registers, so two such live fragments plus temporaries cannot fit 255. Reference `setmaxnreg.inc` values must be at least the launch allocation; the producer/consumer policy and launch bounds must be proved together, not chosen independently.

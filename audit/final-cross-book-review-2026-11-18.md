@@ -1,5 +1,7 @@
 # Final cross-book adversarial review — November 18, 2026
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 ## H100 findings corrected
 
 - Cluster placement is guaranteed within one GPC, not a portable physical-neighbor SM map; cluster size alone does not determine occupancy. DSMEM access requires initialized storage and sufficient target-block lifetime.

@@ -11,6 +11,12 @@
     Understand the [Chapter 1](01-h100-architecture.md) bandwidth scopes first. A successful single-GPU run does not validate a multi-GPU communication path.
 <!-- learning:end -->
 
+!!! warning "GPU revalidation pending — November 21 correction"
+    Current source below includes post-capture corrections. Historical outputs
+    validate only their archived hashes. Do not use them as proof of the fixed
+    source. See the [repair record](review-fixes-2026-11-21.md).
+
+
 ## Lesson 5 Companion Guide — Hardware Topology to Collective Primitives
 
 > **Validation — November 17–18, 2026.** The [two-H100 follow-up audit](final-audit.md) compiled all three complete programs and executed the corrected peer-transfer benchmark and NCCL AllReduce with full-buffer checks. The revised portable training program subsequently passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run. All three programs have successful execution records linked below; earlier raw archives remain downloadable from the validation page.
@@ -86,25 +92,25 @@ Compile Patterns
 
 ## Table of Contents
 
-1.  [Why Multi-GPU — The Arithmetic of Scale](#1--why-multi-gpu)
-2.  [NVLink — The GPU-to-GPU Interconnect](#2--nvlink)
-3.  [NVSwitch — Full Non-Blocking Fabric](#3--nvswitch)
-4.  [The DGX H100 Node — Full Hardware Layout](#4--the-dgx-h100-node)
-5.  [ConnectX-7 and the Inter-Node Bottleneck](#5--connectx-7)
-6.  [The SuperPOD — Cluster-Scale Architecture](#6--the-superpod)
-7.  [Rail Networks and SHARP](#7--rail-networks-and-sharp)
-8.  [InfiniBand Topology — Leaf, Spine, Core](#8--infiniband-topology)
-9.  [UVA and Peer Access — Software Abstractions](#9--uva-and-peer-access)
-10. [SLURM — Workload Management and Rank Identity](#10--slurm)
+1.  [Why Multi-GPU — The Arithmetic of Scale](#1-why-multi-gpu)
+2.  [NVLink — The GPU-to-GPU Interconnect](#2-nvlink)
+3.  [NVSwitch — Full Non-Blocking Fabric](#3-nvswitch)
+4.  [The DGX H100 Node — Full Hardware Layout](#4-the-dgx-h100-node)
+5.  [ConnectX-7 and the Inter-Node Bottleneck](#5-connectx-7-and-the-inter-node-bottleneck)
+6.  [The SuperPOD — Cluster-Scale Architecture](#6-the-superpod)
+7.  [Rail Networks and SHARP](#7-rail-networks-and-sharp)
+8.  [InfiniBand Topology — Leaf, Spine, Core](#8-infiniband-topology-leaf-spine-core)
+9.  [UVA and Peer Access — Software Abstractions](#9-uva-and-peer-access)
+10. [SLURM — Workload Management and Rank Identity](#10-slurm)
 11. [PMIx — Exascale Process Management](#11--pmix)
-12. [NCCL — Architecture and Communicator Init](#12--nccl)
-13. [NCCL Collective Primitives — The Big Six](#13--nccl-collective-primitives)
-14. [Data Parallelism](#14--data-parallelism)
-15. [Tensor Parallelism and Sequence Parallelism](#15--tensor-parallelism)
-16. [Pipeline Parallelism](#16--pipeline-parallelism)
-17. [Expert Parallelism and MoE](#17--expert-parallelism)
-18. [Putting It All Together — Production Checklist](#18--putting-it-all-together)
-19. [Quick Reference](#19--quick-reference)
+12. [NCCL — Architecture and Communicator Init](#12-nccl)
+13. [NCCL Collective Primitives — The Big Six](#13-nccl-collective-primitives-the-big-six)
+14. [Data Parallelism](#14-data-parallelism)
+15. [Tensor Parallelism and Sequence Parallelism](#15-tensor-parallelism-and-sequence-parallelism)
+16. [Pipeline Parallelism](#16-pipeline-parallelism)
+17. [Expert Parallelism and MoE](#17-expert-parallelism-and-moe)
+18. [Putting It All Together — Production Checklist](#18-putting-it-all-together-production-checklist)
+19. [Quick Reference](#19-quick-reference)
 
 ---
 
@@ -214,7 +220,8 @@ NVLink Gen 4 — H100 Physical Specifications
   In-network reduction (via NVSwitch ALUs):
     The NVSwitch chips on the HGX board contain ALUs. AllReduce is
     performed IN THE SWITCH as data transits, not by the GPUs.
-    This makes AllReduce across 8 GPUs as fast as sending to 1 GPU.
+    NVLS can offload supported reductions when the topology and NCCL tuner select it.
+    It does not make an eight-GPU AllReduce equal to a one-GPU transfer.
 ```
 
 ---
@@ -257,29 +264,27 @@ NVSwitch Topology — 8 GPUs via 4 NVSwitch Chips
   NVSwitch is not just a crossbar. It contains arithmetic units
   (ALUs) that can perform reductions AS DATA TRANSITS:
 
-  How AllReduce works on DGX H100:
-    GPU 0,1,2,...,7 push gradient chunks onto NVLink simultaneously.
-    Data arrives at NVSwitch.
-    NVSwitch ADDS the incoming values from all 8 GPUs in hardware.
-    NVSwitch BROADCASTS the sum back to all 8 GPUs simultaneously.
-    Total time: approximately one send, not 2×(N-1) sends.
-
-  This is why AllReduce across 8 GPUs on an HGX board is nearly
-  as fast as broadcasting 1 value to all 8. The switch IS the reducer.
+  One available path is NCCL NVLS (NVLink SHARP), not every AllReduce:
+    Participating GPUs submit data; supported reductions use the fabric.
+    For payload D, ideal per-endpoint send volume is about D versus
+    2(N-1)D/N for ring AllReduce; receive volumes follow the same convention.
+    This suggests at most about 2x bandwidth-bound improvement in that
+    simplified model, not N-fold scaling or a guaranteed measured speedup.
+    NCCL selects algorithms per collective using size, operation and topology.
 
   ─── NVLink Switch System (external, for >8 GPUs) ────────────────
 
   For clusters of 16-256 GPUs, NVIDIA uses NVLink Switch System:
     External trays containing NVSwitch chips.
     Connect up to 256 H100 GPUs at native chip speeds.
-    32 server racks → one "SuperPOD" with NVLink everywhere.
+    32 DGX H100 servers → one "SuperPOD" with NVLink everywhere.
 
   ─── 4-5 NVLink ports per switch (HGX board) ─────────────────────
 
   On the HGX H100 board:
-    4 NVSwitch chips × (4 NVLink ports to each of 8 GPUs) = 32 connections
+    Each GPU's 18 links are distributed 5/4/4/5 across four NVSwitches.
     Each GPU has 18 total NVLink links → split across 4 switches:
-    18 / 4 ≈ 4-5 links per switch per GPU  (some asymmetric)
+    Across eight GPUs there are 8×18 = 144 GPU-side links.
 ```
 
 [![NVSwitch gives peer GPUs a switched fabric](images/ch11/02-nvswitch-fabric.svg)](images/ch11/02-nvswitch-fabric.svg)
@@ -319,7 +324,7 @@ DGX H100 Single Node — Complete Hardware Layout
     Physical connectors: 4× OSFP cages (twin-port = 2×400Gb per cage)
 
   CPU:
-    2× Intel Xeon Platinum (or AMD EPYC, config-dependent)
+    2× Intel Xeon Platinum 8480C (DGX H100; OEM HGX configurations vary)
     Primarily manages scheduling; GPUs bypass CPU for data
 
   Storage:
@@ -377,7 +382,7 @@ The Inter-Node Bandwidth Gap
     Inter-node traffic per step ≈ 2 GB per GPU per step
 
     At 100 GB/s inter-node bandwidth:
-      Transfer time ≈ 2 GB / 100 GB/s = 20 ms per step
+      Transfer time ≈ 2 GB / 50 GB/s = 40 ms (per-direction ideal bound) per step
     If forward + backward = 100 ms per step:
       Communication = 20% of total time → significant
 
@@ -391,7 +396,7 @@ The Inter-Node Bandwidth Gap
   2. In-network reduction (SHARP):
      The InfiniBand switches themselves perform arithmetic reductions.
      Like NVSwitch ALUs for intra-node, SHARP does it for inter-node.
-     Converts AllReduce from O(N) traffic to O(1) traffic (see §7).
+     Reduces endpoint traffic for supported collectives; aggregate traffic still grows with the number of endpoints (see §7).
 
   3. Rail alignment:
      GPU 0 from every node connects to the SAME set of switches.
@@ -439,17 +444,14 @@ SuperPOD Hierarchy — 128 GPUs to 4096 GPUs
       32 uplink ports (to spine layer) = 64 ports exactly.
       → One QM9700 handles one rail of one SU perfectly.
 
-  Standard SuperPOD:
-    4 SUs = 4 × 32 nodes = 128 nodes = 1,024 GPUs
-    (NVIDIA's reference architecture docs list this as the SMALLEST
-     full reference configuration, not an upper bound -- the same
-     reference architecture tables scale the identical SU building
-     block up to 56+ SUs / ~2,048 nodes / ~16,384 GPUs. "Standard"
-     here means "the smallest unit NVIDIA documents as a complete
-     SuperPOD," not "the typical size deployed.")
+  Illustrative four-SU configuration:
+    4 × 32 nodes = 128 nodes = 1,024 GPUs in a simple capacity model.
+    Actual reference configurations reserve management/service capacity;
+    four SUs is not a universal minimum deployment size. Check the
+    selected NVIDIA SuperPOD reference architecture and port plan.
 
   SuperPOD with NVLink Switching:
-    16 SUs = 512 nodes = 4,096 GPUs (using external NVLink trays)
+    16 SUs = 512 nodes = 4,096 GPUs (connected across nodes with InfiniBand; not a 4,096-GPU NVLink domain)
     Or: 256 GPUs connected via NVLink Switch System for ultra-fast
     intra-cluster AllReduce before InfiniBand scale-out.
 
@@ -536,18 +538,16 @@ Rail Architecture — 8 Isolated Communication Planes
     SHARPv3 "provides 32x more acceleration engines for AI applications
     compared with the previous generation."
 
-  SHARP flow for AllReduce (without SHARP → O(N) traffic):
-    GPU 0 sends gradient to GPU 1, GPU 1 adds and sends to GPU 2, ...
-    N-1 hops of data transmission for a ring-reduce.
-    Total bytes moved on the fabric: 2×(N-1)/N × data_size × N
-    ≈ 2 × data_size (regardless of N, but each link carries ~2× data)
+  Ring AllReduce traffic, payload D across N endpoints:
+    Sent bytes per endpoint: 2(N-1)D/N, approaching 2D.
+    Sum of sent bytes over endpoints: 2(N-1)D, which is O(ND).
+    Receiving contributes the same endpoint volume; do not mix conventions.
 
-  SHARP flow for AllReduce (with SHARP → O(1) traffic):
-    GPU 0 sends gradient to switch. Leaf switch accumulates.
-    Only ONE copy of the data transits the fabric.
-    Switch broadcasts the sum back to all participants.
-    Result: network traffic does NOT grow with number of GPUs.
-    This is why large-scale training scales linearly: O(1) traffic.
+  In-network reduction can reduce endpoint injection and repeated traffic
+  on shared upper links. A simple reduction/broadcast model sends D and
+  receives D per endpoint. Aggregate endpoint volume remains O(ND),
+  not O(D). Topology, implementation, latency and supported operations
+  determine actual performance; this is not a linear-scaling guarantee.
 
   The ConnectX-7 NIC works with SHARP:
     NIC and switch handshake to create a "reduction tree" in hardware.
@@ -606,9 +606,8 @@ Three-Layer Fat Tree — Full SuperPOD Network
     GPU 0 (SU1, Node 1) → Leaf(SU1, Rail 1) → Spine(Group 1)
     → Leaf(SU2, Rail 1) → GPU 0 (SU2, Node 1)
 
-  Adaptive routing at the spine (SHIELD):
-    SHIELD (Scalable Hierarchical In-network Environment for Lossless
-    Data) is the Quantum-2 hardware fault recovery system.
+  Link-failure self-healing (SHIELD; distinct from adaptive routing):
+    SHIELD (Self-Healing Interconnect Enhancement for Intelligent Datacenters) is the Quantum-2 hardware fault recovery system.
     If a link fails, SHIELD detects it IN HARDWARE (not software).
     Recovery time: microseconds (vs 5-30 seconds for software) --
     confirmed real: NVIDIA/Mellanox's own SHIELD whitepaper cites
@@ -720,13 +719,13 @@ EXPECT: Full-buffer verification PASS for each executed path; timings vary.
 #include <chrono>
 #include <cuda_runtime.h>
 
-#define CHECK_CUDA(call) do { \
-    cudaError_t e = (call); \
-    if (e != cudaSuccess) { \
-        fprintf(stderr, "CUDA %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
-        exit(1); \
-    } \
-} while (0)
+static inline void check_cuda_status(cudaError_t status, const char* file, int line) {
+    if (status != cudaSuccess) {
+        fprintf(stderr, "CUDA %s:%d: %s\n", file, line, cudaGetErrorString(status));
+        exit(1);
+    }
+}
+#define CHECK_CUDA(call) check_cuda_status((call), __FILE__, __LINE__)
 
 __global__ void peer_copy_kernel(const float* __restrict__ src,
                                  float* __restrict__ dst, size_t n) {
@@ -882,6 +881,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex11_nvlink_bandwidth.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:53.204677+00:00`. Executed UTC: `2026-11-18T11:19:54.198165+00:00`.
 
 Source SHA-256: `67e71f448fd51c1e130ef1c87abeece5d694e5546f6c32c837ca44db30b6c305`. [Exact source](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/ex11_nvlink_bandwidth.cu) · [Compile log](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/compile.log) · [Run log](validation/2026-11-18-two-h100/11-multi-gpu-nccl/ex11_nvlink_bandwidth/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -1099,7 +1100,8 @@ PMIx — The Bootstrap Key-Value Store
   Step 2: Get local rank (which GPU to use)
     PMIx_Get(&myproc, PMIX_LOCAL_RANK, NULL, 0, &val);
     local_rank = val->data.uint16;
-    cudaSetDevice(local_rank);   // bind to correct GPU
+    int visible = 0; cudaGetDeviceCount(&visible);
+    cudaSetDevice(visible == 1 ? 0 : local_rank); // respect per-task GPU visibility
 
   Step 3: Get total job size (for NCCL nranks)
     PMIx_Get(&myproc, PMIX_JOB_SIZE, NULL, 0, &val);
@@ -1151,7 +1153,7 @@ NCCL Architecture — From API Call to Hardware
   NCCL dispatcher:
     Checks communicator topology: are all GPUs on same node (NVLink)?
     Or multi-node (NVLink + InfiniBand)?
-    Selects algorithm: Ring, Tree, NVLS (NVLink SHARP), or All-in-one.
+    Selects algorithm: Ring, Tree, CollNetDirect/CollNetChain or NVLS/NVLSTree, according to version and support.
     Enqueues GPU kernels + network ops onto the CUDA stream.
     ↓
 
@@ -1211,11 +1213,13 @@ NCCL Architecture — From API Call to Hardware
       Rank 0 waits for exactly nranks connections.
       Metadata exchanged: rank, device, PCI bus ID, NVLink topology.
 
-    Phase 2 — Topology Analysis (Rank 0 as architect):
-      Rank 0 analyzes the full connection graph.
+    Phase 2 — Topology Analysis (each rank):
+      Every rank analyzes the peer/topology information exchanged during bootstrap.
       Decides: which pairs are NVLink? Which are InfiniBand?
       Builds a "routing table": for AllReduce, who sends to whom.
-      Chooses algorithm: Ring (latency), Tree (bandwidth), NVLS.
+      Builds candidate paths. For each collective call the tuner selects:
+      Ring (bandwidth-efficient, O(N) step latency), Tree (O(log N) depth),
+      or supported NVLS/CollNet variants; size, operation and topology matter.
 
     Phase 3 — Hardware Setup:
       Intra-node: NVSwitch fabric configured for direct access.
@@ -1224,10 +1228,11 @@ NCCL Architecture — From API Call to Hardware
       Inter-node: InfiniBand RDMA handshake.
         Each node-pair creates Queue Pairs (QPs) for RDMA.
         Registered memory regions: GPU HBM exposed to remote NICs.
-        Rank 0 distributes QP addresses to all ranks.
+        Connecting peers exchange connection metadata through bootstrap.
 
     Phase 4 — Scratch Buffer Allocation:
-      NCCL allocates 4-8 MB per rank in GPU HBM.
+      NCCL_BUFFSIZE defaults to 4 MiB per communication buffer;
+      total allocation depends on channels, peers, protocols and other workspace.
       Used for: staging partial sums, ring buffers, headers.
       Also allocates small CPU staging areas for PCIe fallback.
 
@@ -1295,12 +1300,12 @@ The Six Collective Primitives — Data Flow Diagrams
   Use in training: gradient aggregation in Data Parallelism.
   MOST IMPORTANT collective for AI training.
 
-  ncclRedOp_t options and their hardware path:
-    ncclSum:  NVSwitch hardware → fastest, in-switch reduction.
-    ncclMin:  NVSwitch hardware (FP8 support on H100).
-    ncclMax:  NVSwitch hardware (FP8 support on H100).
-    ncclProd: Tensor Cores (NVSwitch can't multiply FP) → slower.
-    ncclAvg:  NVSwitch does sum, GPUs divide → two-phase.
+  ncclRedOp_t includes Sum, Prod, Min, Max and Avg.
+  Ordinary NCCL GPU kernels perform reductions using SM arithmetic,
+  not Tensor Core matrix instructions. Selected NVLS paths can offload
+  supported operation/type combinations; check the installed version,
+  capabilities and NCCL's actual algorithm choice rather than assuming
+  that an operation name always identifies the hardware path.
 
   ─── 4. AllGather ───────────────────────────────────────────────
   "GPUs start with DIFFERENT slices, ALL end with the FULL tensor"
@@ -1381,7 +1386,7 @@ NCCL Function Signatures — Complete Reference
   ncclAllReduce(sendbuff, recvbuff, count, datatype, op, comm, stream)
     ALL recvbuffs receive the result.
     In-place: sendbuff == recvbuff → typical usage in gradient sync.
-    ncclSum is the only op fully offloaded to NVSwitch hardware.
+    NVLS offload depends on the selected operation, datatype and topology.
 
   ncclReduceScatter(sendbuff, recvbuff, recvcount, datatype, op, comm, stream)
     recvcount: elements PER GPU (= total/nranks, NOT total)
@@ -1874,10 +1879,10 @@ Data Parallelism — Full Training Step
 
   Per AllReduce: 2 × param_bytes  (reduce + broadcast, ring algorithm)
   For GPT-3 (175B params, BF16): 2 × 175×10⁹ × 2 = 700 GB per step
-  At 100 GB/s inter-node: 700 GB / 100 GB/s = 7 seconds per step!
+  At 100 GB/s inter-node: 700 GB / 50 GB/s = 14 seconds (per-direction ideal bound) per step!
 
   This is why DP alone cannot scale to 1,000 GPUs:
-    More GPUs = more gradient traffic = slower per-step time.
+    Per-GPU ring bytes approach 2D; shrinking compute per rank makes fixed communication harder to hide = slower per-step time.
   Solution: combine DP with Tensor or Pipeline Parallelism (hybrid).
 
   ─── Broadcast at Initialization ─────────────────────────────────
@@ -1893,7 +1898,7 @@ Data Parallelism — Full Training Step
   ─── DP with ncclSum vs ncclAvg ──────────────────────────────────
 
   Option A (common): AllReduce with ncclSum, optimizer divides by N.
-    Pro: ncclSum is the only op fully offloaded to NVSwitch hardware.
+    Pro: NVLS offload depends on the selected operation, datatype and topology.
     Con: optimizer must know N and divide manually.
 
   Option B: AllReduce with ncclAvg.
@@ -1963,7 +1968,7 @@ Tensor Parallelism — Column and Row Splitting
   Activations for B=1, S=2048, d=8192, BF16:
     activation_bytes = 2048 × 8192 × 2 bytes = 32 MB
   Per-block cost: 2 × 32 MB × 2 (reduce+gather) = 128 MB
-  Total: 160 × 128 MB = 20 GB of AllReduce traffic per forward pass.
+  Total: 80 blocks × 128 MB = 10,240 MB of approximate per-GPU ring sent traffic per forward pass (not 160 × the per-block volume).
 ```
 
 ### 15.2 Sequence Parallelism — Eliminating Redundant Replication
@@ -2023,7 +2028,8 @@ Sequence Parallelism — Splitting the Non-Linear Ops
     (each GPU holds only its sequence chunk)
 
   For S=2048, N=8: memory per GPU = 2048/8 = 256 tokens × d_model
-  vs 2048 tokens × d_model without SP. 8× reduction in activation memory.
+  vs 2048 tokens × d_model without SP. 8× reduction for the sharded LayerNorm/dropout activation regions,
+  not every saved activation in the transformer.
 
   ─── NCCL Ops in TP+SP ────────────────────────────────────────────
 
@@ -2038,9 +2044,9 @@ Sequence Parallelism — Splitting the Non-Linear Ops
        Reassemble for next matmul.
     6. ReduceScatter (after FFN row-parallel): same pattern.
 
-  Net: same number of communication ops as without SP (2 per block),
+  Net: four collective calls per block instead of two, with the same modeled communication volume,
   but ReduceScatter+AllGather individually are slightly cheaper than
-  a single AllReduce because intermediate memory is 2× smaller.
+  a single ring AllReduce in volume; latency and implementation can differ. Smaller intermediate storage is not itself a bandwidth saving.
 ```
 
 ---
@@ -2054,50 +2060,28 @@ splitting individual weight tensors. GPU 0 holds layers 0-L/N, GPU 1 holds layer
 L/N to 2L/N, and so on.
 
 ```
-Pipeline Parallelism — Layer Splitting and Micro-Batches
-══════════════════════════════════════════════════════════════════════
+GPipe with four equal-cost stages; Fm/Bm denotes microbatch m.
 
-  ─── Naive PP (the bubble problem) ───────────────────────────────
+One microbatch: 8 slots, 8 active stage-slots out of 32 (25%).
+  slot:  0  1  2  3  4  5  6  7
+  GPU0: F0  .  .  .  .  .  . B0
+  GPU1:  . F0  .  .  .  . B0  .
+  GPU2:  .  . F0  .  . B0  .  .
+  GPU3:  .  .  . F0 B0  .  .  .
 
-  4 GPUs, 4 layers each. One batch:
+Four microbatches: all forwards, then all backwards (GPipe).
+  slot:  0  1  2  3  4  5  6  7  8  9 10 11 12 13
+  GPU0: F0 F1 F2 F3  .  .  .  .  .  . B3 B2 B1 B0
+  GPU1:  . F0 F1 F2 F3  .  .  .  . B3 B2 B1 B0  .
+  GPU2:  .  . F0 F1 F2 F3  .  . B3 B2 B1 B0  .  .
+  GPU3:  .  .  . F0 F1 F2 F3 B3 B2 B1 B0  .  .  .
 
-  Time:   0    1    2    3    4    5    6    7    8    9
-  GPU 0: [F0]────────────────────────────────[B0]
-  GPU 1:      [F1]────────────────────────────[B1]
-  GPU 2:           [F2]────────────────────────[B2]
-  GPU 3:                [F3]──────────────────[B3]
-
-  F = forward, B = backward, each takes time 1.
-  During forward: GPU 1,2,3 wait. During backward: GPU 0,1,2 wait.
-  Utilization: 4 stages forward + 4 backward = 8 active slots
-  Total timeline: 9 time units. 4 GPUs × 9 = 36 GPU-time.
-  Useful: 8/36 = 22%. "Bubble" = 78% idle time. Unacceptable.
-
-  ─── Micro-batch PP (eliminates the bubble) ───────────────────────
-
-  Split the batch into M micro-batches (M = 4 here).
-  As soon as GPU 0 finishes forward on micro-batch 0, pass to GPU 1
-  and immediately start forward on micro-batch 1.
-
-  Time:  0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
-  GPU 0: F0 F1 F2 F3          B3 B2 B1 B0
-  GPU 1:    F0 F1 F2 F3       B3 B2 B1 B0
-  GPU 2:       F0 F1 F2 F3    B3 B2 B1 B0
-  GPU 3:          F0 F1 F2 F3 B3 B2 B1 B0
-
-  Bubble: only at startup (N-1 = 3 idle slots) and drain (N-1 = 3)
-  -- but startup and drain idle time overlap across the N stages
-  (while stage 0 is draining/waiting, stages 1..N-1 are also still
-  draining their own backward chains), so the wasted fraction is
-  NOT simply "2x(N-1) idle slots out of the total." Corrected
-  (verified by direct event-driven simulation of the schedule, and
-  matching the standard GPipe bubble-overhead result, Huang et al.
-  2018, O((K-1)/M)):
-  Bubble fraction = (N-1) / (M + N-1) → 0 as M → ∞.
-  For M=8, N=4: bubble = 3 / 11 ≈ 27%. Already much better than naive.
-  For M=32, N=4: bubble = 3 / 35 ≈ 8.6%. Reasonable.
-
-  Rule: use M >> N to minimize pipeline bubble.
+Each backward follows its forward and the next stage's backward.
+32 active stage-slots / (4 × 14) = 57.14% utilization.
+Bubble fraction = (N−1)/(M+N−1) = 3/7 = 42.86%.
+For M=8 the fraction is 3/11; for M=32 it is 3/35.
+These equal-cost, zero-communication-overhead schedules are models.
+Microbatching amortizes fill/drain; it does not eliminate the bubble.
 ```
 
 [![More microbatches amortise pipeline fill](images/ch11/06-pipeline-bubble-timeline.svg)](images/ch11/06-pipeline-bubble-timeline.svg)
@@ -2158,16 +2142,18 @@ Mixture of Experts — Key Concepts
 
   Standard dense FFN (every token uses every parameter):
     token → Linear(d, 4d) → GeLU → Linear(4d, d) → output
-    All parameters always active. Compute = 2 × 4 × d² per token.
+    All parameters always active. Compute ≈ 16d² FLOPs per token (two d×4d/4d×d matvecs; FMA = 2 FLOPs).
 
   MoE FFN (each token uses only top-K of E experts):
     token → Router → selects expert j and expert k (top-2)
          → Expert_j(token) + Expert_k(token) → output
     Only 2 of E expert FFNs active per token.
-    Compute = 2 × 4 × d² × 2 / E per token (if E=64: 32× less compute).
-    Parameters = E × 4d² (if E=64: 64× more parameters than dense).
+    Compute ≈ K × 16d² FLOPs per token for same-sized experts; top-2 ≈ 32d².
+    This is approximately twice one dense FFN, independent of the expert count E.
+    Expert parameters ≈ E × 8d² (plus router); E=64 gives about 64× the dense FFN parameters.
 
-  Result: same compute, 64× more parameters → higher model capacity.
+  Result: top-2 uses about 2× dense-FFN compute and E× expert parameters,
+  under the stated equal-expert-width comparison. Router costs are additional.
   Cost: routing communication and load balancing.
 
   ─── Expert Parallelism Layout ───────────────────────────────────
@@ -2308,12 +2294,14 @@ Choosing Your Parallelism Strategy
 NCCL Production Tuning
 ══════════════════════════════════════════════════════════════════════
 
-  □ Use ncclSum for gradient AllReduce (only op on NVSwitch hardware).
-  □ Set NCCL_ALGO=NVLS for intra-node AllReduce (NVLink SHARP).
-  □ Set NCCL_PROTO=Simple for latency-sensitive small tensors.
-  □ Set NCCL_PROTO=LL128 for throughput-sensitive large tensors.
-  □ Set NCCL_BUFFSIZE=4194304 (4MB) for large transfer optimization.
-  □ Enable SHARP for inter-node: NCCL_SHARP_ENABLE=1.
+  □ Start with NCCL's automatic algorithm/protocol selection.
+  □ Use NCCL_DEBUG=INFO to inspect the selected transports and algorithms.
+  □ LL/LL128 target low latency; Simple commonly favors large-message bandwidth.
+    Measure the actual sizes and topology before overriding NCCL_PROTO/NCCL_ALGO.
+  □ NCCL_BUFFSIZE=4194304 is the default buffer size, not a new optimization.
+  □ NVLS availability is controlled by NCCL_NVLS_ENABLE on supported systems.
+  □ Inter-node SHARP requires a compatible plugin and fabric configuration;
+    NCCL_COLLNET_ENABLE is relevant to CollNet. NCCL_SHARP_ENABLE is not an NCCL option.
   □ Use ncclGroupStart/End for P2P send/recv batches.
   □ Overlap NCCL with compute using async streams:
       Launch NCCL op on stream_comm.
@@ -2345,7 +2333,7 @@ H100 DGX Node — Bandwidth at a Glance
     NVLink / PCIe:        450 / 64  =  7×   (why we use peer access)
     NVLink / HBM3:        450 / 3350 = 0.13× (network is slower than memory)
 
-  NVSwitch reduction (8 GPUs):
+  Optional NVLS bandwidth-bound ideal (supported operation/type):
     AllReduce appears as ≈1 send + 1 recv (in-switch arithmetic).
     Effective AllReduce time: ≈ data_size / 450 GB/s  (theoretical peak)
 ```
@@ -2363,15 +2351,13 @@ NCCL Collective Selection Guide
   ncclAllReduce   Gradient sync (DP)          op (use ncclSum)
   ncclReduceScatter SP gradient scatter       recvcount = total/nranks
   ncclAllGather   Weight reconstruct (TP)     sendcount = my slice size
-  ncclAllToAll    Expert routing (MoE)        see DeepEP for production
-  ncclSend/Recv   Pipeline activations (PP)   always in Group pairs
+  ncclAlltoAll (NCCL 2.28.3+; older versions use grouped Send/Recv)    Expert routing (MoE)        see DeepEP for production
+  ncclSend/Recv   Pipeline activations (PP)   group multiple dependent P2P ops
 
-  AllReduce hardware path by operator:
-    ncclSum  → NVSwitch ALU (fastest, in-switch)
-    ncclMin  → NVSwitch ALU (FP8 on H100)
-    ncclMax  → NVSwitch ALU (FP8 on H100)
-    ncclAvg  → NVSwitch sum + GPU divide
-    ncclProd → Tensor Core (no switch multiply support)
+  Reduction arithmetic runs in the selected NCCL implementation.
+  GPU kernels use ordinary SM arithmetic, not Tensor Core GEMM.
+  NVLS can offload supported operation/type combinations when selected;
+  inspect the actual algorithm and topology instead of assuming offload.
 
   AllReduce = ReduceScatter + AllGather
     → Insert SP (LayerNorm, Dropout) between them.
@@ -2396,7 +2382,7 @@ Parallelism Strategy Selection
   EP         Expert weights  All-to-All (tokens) Intra+inter (DeepEP)
   SP         Sequence dim    ReduceScatter+AG   Same as TP
 
-  TP MUST use NVLink: TP generates 2 AllReduces per layer per step.
+  TP MUST use NVLink: TP generates two AllReduces per forward layer, plus two in backward for a training step.
   These are latency-critical and require 450 GB/s, not 50 GB/s.
   DO NOT span TP groups across nodes.
 
@@ -2462,8 +2448,8 @@ This is the capstone example for the entire guide. It implements a minimal but
   using ncclSend/ncclRecv inside ncclGroupStart/End
 - **Three separate NCCL communicators:** one for TP (intra-node), one for PP
   (inter-node neighbors), one for DP (same-position replicas)
-- **Async compute/communication overlap:** NCCL AllReduce on a separate CUDA
-  stream overlapped with the next layer's forward pass
+- **Communication ordering:** collectives use the compute stream and explicit
+  synchronization; compute/communication overlap is not implemented.
 - **SGD optimizer step** with gradient clipping, applied after DP AllReduce
 
 **Manual Worked Example:**
@@ -3475,17 +3461,17 @@ Code Component → Concept It Demonstrates
       weight loading using stream_comm.
 
   ncclGroupStart / ncclGroupEnd around ncclSend + ncclRecv
-    → The GROUP is mandatory for correctness. If stage 0 issues Send
-      and stage 1 issues Recv sequentially (not in a group), one side
-      may block forever waiting for the other. The group lets NCCL
-      schedule both sides atomically.
+    → Group multiple P2P operations issued by one rank when they must
+      progress together. One isolated Send and a peer's isolated Recv
+      do not require grouping solely because they form a pair.
 
   DP AllReduce after backward, then divide by DP
     → Gradient averaging = Sum / DP replicas.
       ncclAllReduce(ncclSum) + manual divide is equivalent to
       ncclAllReduce(ncclAvg) but gives you explicit control.
       In production: overlap this with the next micro-batch's forward
-      pass (gradient checkpointing + async AllReduce).
+      pass only after proving weight/update dependencies. Gradient
+      checkpointing is a separate storage/recomputation technique.
 
   sum_sq_kernel + sgd_clip_kernel
     → Gradient clipping prevents exploding gradients in large models.
@@ -3534,3 +3520,9 @@ Code Component → Concept It Demonstrates
 > close the gap from FlashAttention-2's 35%, and the FP8 path with its layout
 > constraints and outlier problem.
 
+
+**Scope of the address drawing.** Numeric UVA ranges above are schematic, not a prescribed CUDA/x86-64 address partition. Never infer a device from pointer bits. NCCL uses CUDA IPC or cuMem mechanisms for multiprocess intra-node mappings; ordinary peer enabling in a single process is not the whole communicator setup. The published H100 peer/AllReduce executions used two H100 SXM devices; the eight-rank training record used A100s, not the original single-PCIe compile host.
+
+**Pipeline schedule, checked dependency example.** For four stages and four microbatches, unit-time forward slots are F0 at slots 0/1/2/3 on stages 0/1/2/3; F1 starts one slot later, then F2 and F3. After F3 reaches stage 3 at slot 6, its backward step starts at slot 7 on stage 3 and then slots 8,9,10 on stages 2,1,0. B2/B1/B0 follow that dependency cascade. The total is 14 slots and 32 stage-operations, utilization 32/(14×4)=4/7. A single-microbatch forward/backward spans eight slots and eight stage-operations: 25% utilization, 75% idle slots. A diagram that starts B3 simultaneously on all four stages violates the backward dependencies.
+
+A group is needed when several NCCL P2P operations on one rank must progress together; a rank issuing one isolated Send to a peer issuing one Recv does not require a group solely for that pair. Gradient checkpointing changes activation storage/recomputation, while asynchronous AllReduce concerns communication overlap; they are separate mechanisms.

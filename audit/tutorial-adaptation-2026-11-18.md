@@ -1,5 +1,7 @@
 # Tutorial adaptation review — November 18, 2026
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 ## Scope and source identity
 
 Reviewed the supplied `cute_cutlass_very_comprehensive_tutorial` reference package as educational source material. Its instructions, installation examples and performance claims were treated as content to inspect, not commands to execute or evidence to import. The five overview/planning files below were read completely (3,200 lines). SHA-256 identifies the reviewed source bytes; paths are package-relative.

@@ -1,5 +1,7 @@
 # Final adversarial review: CuTe and CUTLASS Chapters 15–29
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 Review date: November 18, 2026. Reviewers were reassigned across the previous authoring groups to challenge accuracy, completeness, clarity and flow independently of their most recent contributions. The parent reviewed the resulting changes and integration.
 
 ## Findings fixed

@@ -1,4 +1,11 @@
 # WGMMA — Warp Group Matrix Multiply-Accumulate
+
+!!! warning "GPU revalidation pending — November 21 correction"
+    Current source below includes post-capture corrections. Historical outputs
+    validate only their archived hashes. Do not use them as proof of the fixed
+    source. See the [repair record](review-fixes-2026-11-21.md).
+
+
 ## Lesson 6 Companion Guide — Programming the H100
 
 [![CHAPTER 06: Meet the Tensor Cores](images/chapter-openers/06-wgmma.svg)](images/chapter-openers/06-wgmma.svg)
@@ -91,23 +98,23 @@ Blackwell does **not** execute Hopper WGMMA kernels unchanged. It uses the `tcge
 
 ## Table of Contents
 
-1. [Four Key Innovations in Hopper MMA](#1--four-key-innovations)
-2. [The Paradigm Shift — Warp to Warp Group](#2--warp-to-warp-group)
-3. [The WGMMA Pipeline — Overview](#3--the-wgmma-pipeline)
-4. [wgmma.fence.sync.aligned — The Register Barrier](#4--wgmmafencesyncaligned)
-5. [wgmma.mma_async — The Core Instruction](#5--wgmmamma_async)
-6. [Instruction Qualifiers — .sync, .aligned, Shape, Dtype](#6--instruction-qualifiers)
-7. [Operand Locations — A, B, C/D Rules](#7--operand-locations)
-8. [The D Register Operand — Output Layout](#8--the-d-register-operand)
-9. [A in Registers — ldmatrix](#9--a-in-registers-ldmatrix)
-10. [ldmatrix — Address and Register Phases](#10--ldmatrix-address-and-register-phases)
+1. [Four Key Innovations in Hopper MMA](#1-four-key-innovations)
+2. [The Paradigm Shift — Warp to Warp Group](#2-warp-to-warp-group)
+3. [The WGMMA Pipeline — Overview](#3-the-wgmma-pipeline)
+4. [wgmma.fence.sync.aligned — The Register Barrier](#4-wgmmafencesyncaligned-the-register-barrier)
+5. [wgmma.mma_async — The Core Instruction](#5-wgmmamma_async-the-core-instruction)
+6. [Instruction Qualifiers — .sync, .aligned, Shape, Dtype](#6-instruction-qualifiers)
+7. [Operand Locations — A, B, C/D Rules](#7-operand-locations)
+8. [The D Register Operand — Output Layout](#8-the-d-register-operand-output-layout)
+9. [A in Registers — ldmatrix](#9-a-in-registers-ldmatrix)
+10. [ldmatrix — Address and Register Phases](#10-ldmatrix-address-and-register-phases)
 11. [Swizzle Address Calculation for ldmatrix](#11--swizzle-address-calculation)
-12. [The WGMMA Descriptor — 64-Bit Layout](#12--the-wgmma-descriptor)
-13. [Descriptor Fields — LBO, SBO, Base Offset, Swizzle](#13--descriptor-fields)
-14. [All Supported Tile Shapes](#14--all-supported-tile-shapes)
-15. [stmatrix — Writing Results Back to SMEM](#15--stmatrix)
-16. [Putting It All Together — Full WGMMA Examples](#16--putting-it-all-together)
-17. [Quick Reference](#17--quick-reference)
+12. [The WGMMA Descriptor — 64-Bit Layout](#12-the-wgmma-descriptor)
+13. [Descriptor Fields — LBO, SBO, Base Offset, Swizzle](#13-descriptor-fields-lbo-sbo-base-offset-swizzle)
+14. [All Supported Tile Shapes](#14-all-supported-tile-shapes)
+15. [stmatrix — Writing Results Back to SMEM](#15-stmatrix-writing-results-back-to-smem)
+16. [Putting It All Together — Full WGMMA Examples](#16-putting-it-all-together)
+17. [Quick Reference](#17-quick-reference)
 
 ---
 
@@ -428,9 +435,9 @@ Shape and Dtype — Tile Dimensions and Data Types
 
   dtypeD / dtypeA / dtypeB:
   ─────────────────────────────────────────────────────────────────
-  dtypeD:  The output/accumulator type (always higher precision than inputs).
+  dtypeD:  The output/accumulator type (determined by the selected input/accumulator instruction variant).
            .f32 for BF16/FP16/TF32/FP8 inputs.
-           .f16 for FP8 inputs (when lower accumulator precision is OK).
+           .f16 for FP16 or FP8 inputs (when the variant supports it).
            .s32 for INT8 inputs.
 
   dtypeA, dtypeB: Input types.
@@ -477,7 +484,7 @@ The Immediate Operands — Scale and Transpose
 
   Why only 1 or -1?
     A full scaling factor (like 0.5) would require a 16-bit float.
-    There are not enough bits left in the instruction encoding for that.
+    The documented instruction accepts only the listed immediate values.
     Negation only requires flipping one sign bit — fits in 1 bit.
     Apply numerical scaling in arithmetic before quantization/staging or in
     a suitable epilogue. A TMA tensor copy does not multiply values by a scale.
@@ -497,7 +504,7 @@ The Immediate Operands — Scale and Transpose
     Useful when the GEMM formulation naturally has a transposed operand
     (e.g., computing Q×K^T in attention, where K is stored non-transposed).
 
-  Stored in bits because: not enough instruction encoding space for full floats.
+  The ISA defines these as immediate sign controls, not arbitrary floating-point scales.
 ```
 
 ---
@@ -549,24 +556,16 @@ Operand Location Rules — Where Data Must Reside
   The distribution of the output across threads is described in §8.
   Results written to registers after wgmma.wait_group<0>.
 
-  ─── Decision Tree: A in Registers vs SMEM ───────────────────────
+  ─── Choosing SS or RS ───────────────────────────────────────────
 
-  Will A be used in MULTIPLE wgmma calls with the SAME data?
-  (e.g., A is fixed while B changes across N tiles of a row)
-    YES → Load A to registers with ldmatrix once, reuse in registers.
-          Load once and reuse register fragments; subsequent instruction costs
-          depend on their opcode, dependencies and scheduling.
-          Avoid: SMEM bank pressure from reading A AND B each wgmma call.
+  Start with SS for ordinary GEMM: TMA stages A and B in shared memory,
+  and WGMMA consumes their descriptors. This is the CUTLASS default.
 
-  Will A be used in ONLY ONE wgmma call (not reused)?
-    YES → Read A directly from SMEM via descriptor.
-          No register consumption.
-          But: SMEM bandwidth is shared with B reads.
-
-  Practical guidance for GEMM:
-    Typical GEMM outer loop (over N tiles): A is the SAME across all N calls.
-    → Load A into registers ONCE, pass registers to all N wgmma calls.
-    → Save SMEM bandwidth for B reads.
+  Use RS when A is already produced in registers (for example the
+  softmax probability fragment in attention), or conversion/reuse
+  benefits justify its register pressure. A register fragment must
+  match the instruction's exact per-lane layout. Reuse alone is not
+  enough to establish that RS is faster; benchmark both designs.
 ```
 
 ---
@@ -911,7 +910,7 @@ WGMMA Descriptor — 64-Bit Layout
                Which 128B block within the swizzle pattern your matrix starts at.
                0 if your matrix is at a swizzle-pattern boundary; nonzero otherwise.
 
-  Bits 46-48 and 52-61: Reserved (set to 0).
+  Bits 14-15, 30-31, 46-48 and 52-61: Reserved (set to 0).
 
   Bits 62-63:  Swizzle mode (2 bits):
                00 = no swizzle
@@ -1166,12 +1165,9 @@ FP8 Tile Shapes — m64nXk32
   Throughput advantage:
     FP8 wgmma provides 2× throughput vs BF16 wgmma, on the SAME H100 chip.
     K=32 per tile vs K=16 for BF16 — processes 2× more data per instruction.
-    H100 dense peaks: ~989 TFLOPS BF16 → ~1,979 TFLOPS FP8 (the 2× figure above).
-    (The ~312 TFLOPS BF16 number from §1 is Ampere A100, not H100 — don't
-    compare it to H100's FP8 number directly; that conflates a precision
-    change with a generation change.)
+    H100 SXM5 dense peaks: ~989 TFLOPS BF16 → ~1,979 TFLOPS FP8 (the 2× figure above).
 
-  scale_a, scale_b: NOT available for FP8 variants (no sign flip).
+  scale_a, scale_b: available as immediate +1 or -1 factors for FP8.
   imm-trans: NOT available for FP8 variants.
 ```
 
@@ -1261,7 +1257,7 @@ stmatrix — The Inverse of ldmatrix
   stmatrix.x4.b16 writes 16×16 BF16 = 512 bytes per call.
   For m64n128k16: 64×128×2 bytes (post-downcast) = 16384 bytes
     → 16384 / 512 = 32 calls.
-  → 32 stmatrix instructions, regardless of whether the accumulator was
+  → 32 warp-issued stmatrix instructions total (8 per warp), regardless of whether the accumulator was
     originally FP32 (downcast first) or FP16 (no conversion needed) —
     the call count only depends on the OUTPUT width, not the input.
 
@@ -1298,12 +1294,12 @@ Separate descriptor-field illustration for B (K-major, 128B swizzle):
   smem_B base at, say, offset 0x0400 in SMEM.
   base_field = 0x0400 >> 4 = 0x040 = 64
   LBO for K-major 128B = 1 (hardware ignores for K-major 128B)
-  SBO for K-major BF16 K=16: 8 rows × 16 cols × 2B = 256B → 256/16=16
+  SBO for K-major BF16 K=16: 8 rows × 128 bytes = 1024B → 1024/16=64
   base_offset = 0 (tile starts at swizzle pattern boundary)
   swizzle = 01 (128B)
 
-  desc = (64) | (1 << 16) | (16 << 32) | (0 << 49) | (1LL << 62)
-       = 0x4000001000010040
+  desc = (64) | (1 << 16) | (64ULL << 32) | (0 << 49) | (1LL << 62)
+       = 0x4000004000010040
 
 Verify: A[2][3] × B[3][5] should contribute to D[2][5].
 After accumulation across K=16: D should contain the correct dot products.
@@ -1404,11 +1400,11 @@ __global__ void wgmma_kernel(
     uint32_t* __restrict__ pass_count)
 {
     // This kernel requires exactly 128 threads (1 warp group of 4 warps)
-    static_assert(true, "launch with 128 threads");
+    // Host launch below supplies the required 128 threads.
 
     // ── Shared memory ─────────────────────────────────────────────
     // A tile: M×K = 64×16 BF16 = 2048 bytes → 128B swizzle needs 1024B alignment
-    // B tile: K×N = 16×64 BF16 = 2048 bytes → 128B swizzle needs 1024B alignment
+    // B tile: K×N = 16×64 BF16 = 2048 bytes; this example is unswizzled.
     __shared__ __align__(1024) __nv_bfloat16 smem_A[M][K];
     __shared__ __align__(1024) __nv_bfloat16 smem_B[K][N];
 
@@ -1581,6 +1577,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex01_wgmma_basic.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:32.743235+00:00`. Executed UTC: `2026-11-18T11:19:34.146676+00:00`.
 
 Source SHA-256: `282064c18eedf80395d5c5ed41bc0d1e4160c8d3886bf831c90b68628b84ad04`. [Exact source](validation/2026-11-18-two-h100/06-wgmma-part-1/ex01_wgmma_basic/ex01_wgmma_basic.cu) · [Compile log](validation/2026-11-18-two-h100/06-wgmma-part-1/ex01_wgmma_basic/compile.log) · [Run log](validation/2026-11-18-two-h100/06-wgmma-part-1/ex01_wgmma_basic/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -1614,6 +1612,8 @@ Sample d[0] = -0.246094 (expected -0.246094)
 
 
 <!-- validation:start:ex01_wgmma_basic.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex01_wgmma_basic.cu**
 
 > **Executed:** 2026-11-17T21:38:12.120542+00:00 (UTC). **Status:** Compile PASS; execution PASS.
@@ -1693,8 +1693,8 @@ Section 7 on one line: B in SMEM, always.
 ```
 Operand    Location Options         Notes
 ──────────────────────────────────────────────────────────────────────────
-A          Registers (ldmatrix)     Use when A is reused across N tiles
-           OR SMEM (descriptor)     Use when A is single-use (saves registers)
+A          Registers (ldmatrix)     Use for register-produced/converted A when profitable
+           OR SMEM (descriptor)     Ordinary GEMM default; preserves register capacity
 B          SMEM ONLY (descriptor)   No register option for B
 C/D        Registers ONLY           Store via a valid scalar/vector or staged epilogue
 ```
@@ -1757,7 +1757,7 @@ Bits     Field                  Encoding
 16-29    LBO (leading stride)   stride_bytes / 16
 32-45    SBO (other stride)     stride_bytes / 16
 49-51    Matrix base offset     Mode-specific pattern offset (see §13.3)
-46-48,52-61 Reserved             0
+14-15,30-31,46-48,52-61 Reserved             0
 62-63    Swizzle mode           00=none, 01=128B★, 10=64B, 11=32B
 ```
 
@@ -1805,3 +1805,5 @@ SBO/LBO encoded in bytes not /16 units    Wrong SMEM navigation Divide by 16 bef
 > commit/wait groups and what actually overlaps, `stmatrix` for the epilogue, FP8
 > with its scaling discipline and the FP22 accumulation pitfall, and 2:4
 > structured sparsity.
+
+**Choose the operand path deliberately.** Descriptor/descriptor (SS) is the common starting point for staged GEMM. Register/descriptor (RS) is valuable when A is produced or transformed in registers, as for attention probabilities. FP16 inputs allow FP16/FP32 accumulation, BF16 and TF32 require FP32, FP8 permits FP16/FP32 variants, and INT8 accumulates in S32. The descriptor also reserves bits 14–15 and 30–31; initialize all reserved bits to zero. Peak figures in this chapter refer to H100 SXM unless the PCIe execution SKU is explicitly named.

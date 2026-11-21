@@ -7,13 +7,22 @@ This guide takes you from a terminal to the book's first verified GPU result. Yo
 
 !!! success "What was actually tested"
 
-    The recorded revisions of all **27 complete CUDA programs compiled and executed successfully across the recorded hosts**. On November 17, 2026, the original validation used **one H100 PCIe**: all 27 complete programs compiled and 24 single-GPU workloads passed. The [follow-up audit](final-audit.md) used **two H100 80GB HBM3 GPUs connected through NV18**, compiling all 27 programs and executing 26 workloads, including peer transfer and NCCL AllReduce. Both hosts used **Ubuntu 24.04.5 LTS**, driver **580.105.08**, CUDA Toolkit **12.8.93**, GCC **13.3.0**, C++17, `-O2`, and `sm_90a`. On November 18 (UTC), the revised portable training program passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run.
+    Historical records cover 26 H100 program revisions and the revised training program on eight A100 GPUs. Current post-review source changes still need GPU revalidation. On November 17, 2026, the original validation used **one H100 PCIe**: all 27 complete programs compiled and 24 single-GPU workloads passed. The [follow-up audit](final-audit.md) used **two H100 80GB HBM3 GPUs connected through NV18**, compiling all 27 programs and executing 26 workloads, including peer transfer and NCCL AllReduce. Both hosts used **Ubuntu 24.04.5 LTS**, driver **580.105.08**, CUDA Toolkit **12.8.93**, GCC **13.3.0**, C++17, `-O2`, and `sm_90a`. On November 18 (UTC), the revised portable training program passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run.
 
     The SSH client instructions describe standard usage; the linked system records identify the exact execution configurations. [System record](validation/2026-11-17/system-information.txt) · [Execution manifest](validation/2026-11-17/results.json) · [Preflight JSON](validation/2026-11-17/preflight.json).
 
 The four barrier-ordering corrections in Chapters 3–5 passed the November 18 two-H100 rerun and memory checks. **All 27 current revisions have verified workload records** across the H100 and eight-A100 hosts. The [additional H100 record](revalidation-2026-11-18.md) includes fresh compilation dates, execution times, system information and sample outputs.
 
 Select a diagram to open its full-size SVG.
+
+!!! warning "B200 architecture targets"
+    Every command using `-arch=sm_90a` produces Hopper-specific GPU code and
+    cannot be run on B200. Portable examples must be rebuilt for the actual
+    supported Blackwell target. Architecture-specific WGMMA kernels require
+    a native implementation, not only a flag change. See the
+    [compatibility scope](validation-b200.md) and [native appendix](appendix-blackwell-b200.md).
+
+> **November 21 corrections:** historical executions apply to their archived source hashes. Some current examples have subsequent fixes and require fresh GPU validation; see the [repair record](review-fixes-2026-11-21.md). An evidence-verifier pass is an offline consistency check, not a GPU rerun.
 
 ## 1 — Choose the right machine
 
@@ -180,7 +189,7 @@ To persist this selection in interactive Bash sessions, add these exports once t
 
 ### Install NCCL runtime and development files
 
-NCCL is needed by the collective examples. Install **both** the runtime and development package with the same CUDA-compatible version. For the recorded NCCL 2.26.2/CUDA 12.8 combination, first confirm package availability:
+NCCL is needed by the collective examples. Install **both** the runtime and development package with the same CUDA-compatible version. For the documented NCCL 2.26.2/CUDA 12.8 installation baseline (the original H100 capture did not record an NCCL package version), first confirm package availability:
 
 ```bash
 apt-cache madison libnccl2 libnccl-dev
@@ -240,7 +249,7 @@ The clone explicitly selects the source branch. If already cloned, check `git br
 
 The checker uses the CUDA Driver API to count CUDA-visible devices, including the effect of `CUDA_VISIBLE_DEVICES`. It checks Hopper capability, the compiler, and the availability of optional inspection tools. It needs Python's standard library, not PyTorch. It **does not** prove that a kernel is correct or that multiple GPUs have a suitable interconnect.
 
-Selected lines captured on the validation host:
+Selected fields rendered from the validation host’s preflight JSON (not a verbatim terminal capture):
 
 ```text
 H100 book preflight: PASS

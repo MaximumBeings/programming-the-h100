@@ -1,4 +1,5 @@
-# 25. Read Hopper CUTLASS Pipelines, Fusion and Tuning
+# Hopper Pipelines and Scheduling
+
 ## Lesson 25 Companion Guide — Trace Readiness, Reuse and the Cost of More Stages
 
 [![CHAPTER 25: 25. Read Hopper CUTLASS Pipelines, Fusion and Tuning — conceptual chapter illustration](images/chapter-openers/25-workshop.svg)](images/chapter-openers/25-workshop.svg)
@@ -61,6 +62,47 @@ The mainloop tags above live in `cutlass::gemm`; epilogue tags in `cutlass::epil
 
 Do not change only one side from Auto to an explicit schedule and assume compatibility. Likewise, do not call every persistent kernel “Stream-K.” Persistent residency, the distribution of output tiles, and splitting reduction work are distinct decisions. Example 49 separately supplies a tile-scheduler type when demonstrating Stream-K.
 
+### Read the two consumer timelines
+
+Use the pinned kernel headers, not schedule names alone, to identify ownership.
+
+| Interval | Ping-pong consumer 0 | Ping-pong consumer 1 | Cooperative consumers |
+| --- | --- | --- | --- |
+| A | MMA for output tile 0 | Wait for MMA turn | Both compute disjoint row slices of tile 0 |
+| B | Epilogue tile 0 | MMA for output tile 1 | Both finish tile 0 and its epilogue |
+| C | MMA for output tile 2 | Epilogue tile 1 | Both advance to tile 1 |
+
+Ping-pong gives each math warpgroup its own output tile. Ordered math and
+epilogue barriers alternate the phases; two MMA phases are not promised to
+execute simultaneously. Cooperative divides one CTA tile between the math
+warpgroups, sharing staged operands. The producer stages operands ahead of
+consumers in both organizations. Inspect the selected header for exact thread
+counts rather than treating all schedule tags as one fixed CTA geometry.
+
+Step through one stage: (1) `producer_acquire` waits until the slot is empty;
+its elected leader also calls `arrive_and_expect_tx(transaction_bytes)` on
+the full barrier. (2) TMA submits the transfer and later completes its byte
+count. (3) `consumer_wait` establishes readiness. (4) MMA consumes the slot.
+(5) Wait for asynchronous MMA reads before `consumer_release`. Acquisition
+and submission are different edges; do not arm the expected bytes twice.
+
+Producer warps can donate registers with `setmaxnreg.dec`; math warps request
+more with `.inc`. Check the launch allocation and CTA register pool together.
+`PersistentTileSchedulerSm90` assigns subsequent output tiles to resident CTAs;
+raster order and swizzle alter reuse, not the GEMM equation. `StreamKScheduler`
+also partitions K and needs compatible workspace/fixup logic (Chapter 10).
+
+The Python workbook checks slot/generation arithmetic only: its serial state
+assignments do not validate concurrent ready/read/release protocols or phase
+safety. Its 15 cases do not include the three-stage/eight-tile walkthrough.
+Use the source-level pipeline edges above and GPU race/memory checks for that
+stronger claim. The archived PASS label is retained as historical output.
+
+The optional profiler's first two-job build was terminated; the later successful
+capture used eight jobs. A small job count reduces memory pressure but is not a
+promise of a short full-profiler build.
+
+
 ## 4 — Follow the stage state machine
 
 The implementation in [sm90_pipeline.hpp](https://github.com/NVIDIA/cutlass/blob/v4.3.6/include/cutlass/pipeline/sm90_pipeline.hpp) is the contract to read. `PipelineAsync`, `PipelineTmaAsync` and `PipelineTmaStore` describe different producer/completion mechanisms. They are not interchangeable barrier wrappers.
@@ -101,7 +143,7 @@ In the prologue, issue only the tiles that exist, up to the permitted in-flight 
 
 K shorter than pipeline depth is an important test. If there is one K tile and three storage stages, waiting for a full event on all three stages deadlocks because two transfers never existed. K=0 requires the API/kernel’s explicit supported behavior; the scalar baseline handles it, while a selected library path may reject it. Do not inherit that support across implementations.
 
-The CPU indexing workbook checks slot/generation arithmetic and valid state transitions for 15 small depth/tile-count combinations. It does not simulate the GPU memory model or validate concurrent TMA/WGMMA behavior. The actual library kernel and sanitizer records supply separate evidence.
+The CPU indexing workbook checks slot/generation arithmetic for 15 small depth/tile-count combinations; it does not validate concurrent state transitions. It does not simulate the GPU memory model or validate concurrent TMA/WGMMA behavior. The actual library kernel and sanitizer records supply separate evidence.
 
 ### Walk one stage reuse without confusing readiness and release
 
@@ -114,7 +156,7 @@ Use the three-stage/eight-tile model above. Let the operand tile be `128*128*64`
 5. **Wrap to tile 3.** After slots 1 and 2, tile 3 maps to slot `3%3=0`, generation `floor(3/3)=1`. The producer phase is now 0 and the consumer phase 1. An old full signal for tile 0 must not satisfy the wait for tile 3.
 6. **Drain exactly the actual work.** Tile 7 maps to slot 1, generation 2. There is no tile 8. Finish pending reader/store obligations and release the actual occupied slots; do not issue or await an imaginary transfer merely to visit every slot once more.
 
-**Check:** slot sequence `0,1,2,0,1,2,0,1` and generation sequence `0,0,0,1,1,1,2,2` must match the earlier table. Halving K until only one tile exists should remove seven transfers, not add waits for unused stages. This is the reasoning behind the workbook's bounded transition checks; actual concurrent ordering remains the GPU implementation's responsibility.
+**Check:** slot sequence `0,1,2,0,1,2,0,1` and generation sequence `0,0,0,1,1,1,2,2` must match the earlier table. Halving K until only one tile exists should remove seven transfers, not add waits for unused stages. This is a manual trace beyond the workbook's limited serial arithmetic checks; actual concurrent ordering remains the GPU implementation's responsibility.
 
 ### Draw the generation change at one physical slot
 

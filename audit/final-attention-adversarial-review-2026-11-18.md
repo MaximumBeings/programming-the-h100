@@ -1,5 +1,7 @@
 # Final attention adversarial review — November 18, 2026
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 Baseline: `9f45d2d`. Three agents independently challenged Chapters 30–31, the CPU oracle/evidence checker, the Hopper collector, worked exercises and attention artwork. The parent reviewed integration and independently checked the backward row with finite differences and the raw/scaled softmax identities.
 
 ## Findings corrected

@@ -1,3 +1,5 @@
+# Pipelines, Epilogues and Persistent Scheduling
+
 ---
 
 [![CHAPTER 09: The art of safe reuse](images/chapter-openers/09-pipelines.svg)](images/chapter-openers/09-pipelines.svg)
@@ -17,6 +19,12 @@
 
     Revisit [Chapter 3](03-asynchronicity-mbarrier.md) for barrier semantics and [Chapter 8](08-kernel-design-part-1.md) for producer/consumer roles.
 <!-- learning:end -->
+
+!!! warning "GPU revalidation pending — November 21 correction"
+    Current source below includes post-capture corrections. Historical outputs
+    validate only their archived hashes. Do not use them as proof of the fixed
+    source. See the [repair record](review-fixes-2026-11-21.md).
+
 
 ## 9 — mbarrier — The Two-Barrier Handshake
 
@@ -206,7 +214,7 @@ Expected sequence:
 //   a producer warpgroup and a consumer warpgroup.
 //
 // LAYOUT:
-//   128 threads, 2 warpgroups, 1 pipeline stage, 3 rounds.
+//   256 threads, 2 warpgroups, 1 pipeline stage, 3 rounds.
 //   WG0 (producer): writes SMEM → signals FULL barrier.
 //   WG1 (consumer): waits FULL barrier → reads SMEM → signals EMPTY.
 //
@@ -448,6 +456,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex05_mbarrier.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:42.375062+00:00`. Executed UTC: `2026-11-18T11:19:43.203635+00:00`.
 
 Source SHA-256: `c6a18427946c38f4305dc305ece5ade0461dffe09bce0fae6c87f3d53eefe046`. [Exact source](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/ex05_mbarrier.cu) · [Compile log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/compile.log) · [Run log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex05_mbarrier/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -492,6 +502,8 @@ Handshake Results:
 
 
 <!-- validation:start:ex05_mbarrier.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex05_mbarrier.cu**
 
 > **Executed:** 2026-11-17T21:30:36.171223+00:00 (UTC). **Status:** Compile PASS; execution PASS.
@@ -689,11 +701,11 @@ Producer Loop — Full State Machine
   the TMA has actually finished.
 
   ─── The expect_tx Instruction ───────────────────────────────────
-  // Without expect_tx: the full_bar would fire as soon as ANY thread
-  // calls mbar_arrive. With TMA, no thread arrives — TMA does.
-  // expect_tx registers a "transaction count" with the barrier.
-  // The barrier fires when:
-  //   (number of arrive calls) + (bytes completed by TMA / 16) == expected
+  // A phase completes only when BOTH counters reach zero:
+  //   pending thread arrivals == 0 AND pending transaction bytes == 0.
+  // A thread executes arrive.expect_tx: it arrives and adds expected bytes.
+  // TMA complete_tx retires transaction bytes; it is not a thread arrival.
+  // Do not add arrivals to bytes/16 or treat these as one counter.
   //
   // For 32KB of A + 32KB of B = 65536 bytes:
   asm volatile(
@@ -941,64 +953,39 @@ Ping-Pong Pipeline — The Key Insight
   Consumer 1: processes ODD tiles (step_size = 2, start = 1)
     T1, T3, T5, T7, ...
 
-  Inside the outer tile loop:
-    Consumer 0 does K_TILES iterations of MMA for T0
-    Consumer 1 does K_TILES iterations of MMA for T1 (SIMULTANEOUSLY)
-    Consumer 0 epilogue for T0 → Consumer 1 epilogue for T1 (OVERLAPPED)
+  Ordered ping-pong phases:
+    C0 MMA(tile 0), then C1 MMA(tile 1), then C0 MMA(tile 2), ...
+    C0 epilogue(tile 0) may overlap C1 MMA(tile 1).
+    Epilogues are also ordered C0, C1, C0, ...
 
-  ─── The Ordered Barrier — Preventing Overlap Corruption ─────────
+  A logical 2×2 grid holds independent MMA-order and epilogue-order tokens.
+  C0 waits for the prior C1 MMA token before its MMA, and signals C1's
+  MMA token after issuing/completing the required MMA phase.
+  C0 waits for the prior C1 epilogue token before its epilogue and
+  signals C1's epilogue token afterward. C1 uses the opposite tokens.
+  Initialize the first owner's tokens explicitly; separate stage-lifetime
+  barriers still protect all shared operands. The order barrier is not
+  a substitute for waiting for asynchronous readers to finish.
 
-  Problem: C0's epilogue and C1's MMA run simultaneously.
-  Both use shared memory (C1 loads tiles into SMEM for its MMA,
-  C0 might write its results to SMEM for its epilogue).
-  If they share SMEM buffers, they race!
-
-  Solution: The 2×2 ordered barrier grid (mbarrier objects).
-    Ensures C1's MMA does not start until C0's epilogue is DONE.
-    Ensures C0's epilogue does not start until C1's MMA is DONE.
-    (Not full serialization — they're on DIFFERENT tiles, so
-     their SMEM regions are actually separate.)
-
-  ─── The 2×2 Barrier Grid ─────────────────────────────────────────
-
-  Logical grid:
-               Consumer 0    Consumer 1
-  MMA phase:   bar[0][0]    bar[0][1]
-  Epilogue ph: bar[1][0]    bar[1][1]
-
-  Protocol for Consumer 0 (group_id = 0):
-    MMA phase entry:      wait on bar[0][0] (wait for C1's epilogue to be done)
-    MMA phase exit:       arrive on bar[0][1] (signal C1 that MMA is done)
-    Epilogue phase entry: wait on bar[1][0] (wait for C1's MMA to be done)
-    Epilogue phase exit:  arrive on bar[1][1] (signal C1 that epilogue is done)
-
-  Protocol for Consumer 1 (group_id = 1):
-    MMA phase entry:      wait on bar[0][1] (wait for C0's MMA to be done)
-    MMA phase exit:       arrive on bar[0][0] (signal C0 that MMA is done)
-    Epilogue phase entry: wait on bar[1][1] (wait for C0's epilogue to be done)
-    Epilogue phase exit:  arrive on bar[1][0] (signal C0 epilogue is done)
-
-  This guarantees:
-    ✓ Only one consumer does MMA at a time (per phase)
-    ✓ Only one consumer does epilogue at a time
-    ✓ MMA and epilogue for DIFFERENT tiles can overlap safely
-    ✓ No deadlock (alternating arrive/wait pattern)
+  Only one consumer owns a given phase at a time. Different phases
+  on different tiles can overlap. This is not simultaneous MMA by
+  both consumers and is not a guarantee that Tensor Cores never idle.
 ```
 
 ---
 
-### ★ Sections 13-14 — Runnable Code: Ping-Pong Pipeline Simulation
+### ★ Sections 13-14 — Runnable Code: Even/Odd Tile-Assignment Check
 
 **Manual Worked Example:**
 
 We simulate a ping-pong pipeline with N_TILES=6, K_TILES=4. Consumer 0 handles tiles 0, 2, 4 (even). Consumer 1 handles tiles 1, 3, 5 (odd).
 
 ```
-Expected overlap timeline:
+Illustrative ordered timeline (the runnable parity demo below does not implement it):
   Tile 0 (C0 MMA):  steps 0-3
-  Tile 1 (C1 MMA):  steps 0-3 [overlaps with Tile 0!]
+  Tile 1 (C1 MMA):  after Tile 0 MMA, potentially under Tile 0 epilogue
   Tile 0 epilogue (C0): after step 3
-  Tile 1 epilogue (C1): after step 3 [overlaps with Tile 0 epi!]
+  Tile 1 epilogue (C1): after its MMA and after Tile 0 epilogue
   Tile 2 (C0 MMA): after Tile 0 epi is done
   Tile 3 (C1 MMA): after Tile 1 epi is done
   ...
@@ -1021,8 +1008,7 @@ Expected overlap timeline:
   COMPILE: nvcc -std=c++17 -arch=sm_90a -O2 ex06_pingpong.cu -o ex06_pingpong
            (Also works on sm_80 — no Hopper-specific features)
   RUN:     ./ex06_pingpong
-  EXPECT:  All 6 tile outputs verified, overlap log shows C0 epi
-           and C1 MMA running in the same "time slot".
+  EXPECT:  All 6 even/odd tile outputs verified; no overlap is measured.
 ═══════════════════════════════════════════════════════
 ```
 
@@ -1034,8 +1020,8 @@ Expected overlap timeline:
 //   Demonstrates tile alternation between two consumers,
 //   the ordered barrier protocol, and overlap of MMA+epilogue.
 //
-// SIMPLIFICATION: Uses atomic ordering (host-side simulation) rather
-//   than actual WGMMA. The ordering logic is identical to production.
+// SIMPLIFICATION: Checks parity assignment only; does not implement atomic ordering (host-side simulation) rather
+//   than actual WGMMA. This is not the production ordered-barrier protocol.
 //   Replace fake_mma() and fake_epilogue() with real WGMMA and TMA
 //   in a production kernel.
 //
@@ -1206,7 +1192,7 @@ int main() {
         printf("║  In production, C0's epilogue overlaps C1's MMA:     ║\n");
         printf("║  C0: [MMA T0][EPI T0][MMA T2][EPI T2]               ║\n");
         printf("║  C1:    [MMA T1][EPI T1][MMA T3][EPI T3]            ║\n");
-        printf("║  Tensor cores: NEVER idle (perfect overlap)          ║\n");
+        printf("║  Tile assignment checked; no Tensor Core utilization or overlap measured          ║\n");
     } else {
         printf("║  ✗ %d FAILURES — check output above                  ║\n", errors);
     }
@@ -1220,6 +1206,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex06_pingpong.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:43.758040+00:00`. Executed UTC: `2026-11-18T11:19:44.640676+00:00`.
 
 Source SHA-256: `d1b6baf573465e1a90bef7d3a51c91508fbe818dbb311a49c8fe532beb3930cd`. [Exact source](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/ex06_pingpong.cu) · [Compile log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/compile.log) · [Run log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex06_pingpong/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -1269,6 +1257,8 @@ Ping-Pong Behavior Check:
 
 
 <!-- validation:start:ex06_pingpong.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex06_pingpong.cu**
 
 > **Executed:** 2026-11-17T21:30:38.836350+00:00 (UTC). **Status:** Compile PASS; execution PASS.
@@ -1423,7 +1413,7 @@ Epilogue Fusion Operation Catalog
 
   ─── Scaling (for FP8 output) ─────────────────────────────────────
   amax = max(|acc|) over the tile  [reduction across threads]
-  scale = amax / MAX_FP8_VALUE      [per-tensor or per-row]
+  scale = amax / MAX_FP8_VALUE      [per-tile in this local sketch]
   D_fp8 = clip(acc / scale)         [quantize to FP8]
   This requires a reduction step before storing (covered in §16).
 
@@ -1436,8 +1426,9 @@ Epilogue Fusion Operation Catalog
   After computing QK^T scores (WGMMA result in registers):
     1. Scale: acc = acc × (1/sqrt(d))
     2. Row-softmax: exp(acc - row_max) / row_sum  [reduction]
-    3. (Optional) ReLU masking for causal attention
-  All register operations → epilogue fuses these for free.
+    3. (Optional) score masking to negative infinity for causal attention
+  These are attention mainloop operations, not a free GEMM epilogue.
+  Online softmax also rescales earlier PV contributions across K tiles.
 
   ─── What Cannot Be Fused ─────────────────────────────────────────
   ✗ Operations that need the ENTIRE output matrix (e.g., layer norm
@@ -1930,7 +1921,7 @@ earlier worked example for one.]
 
 ### 17.1 Why Kernels Are Launched Persistently
 
-Non-persistent kernels launch one thread block per output tile. This has three problems: kernel launch overhead, wave quantization (last partial wave wastes SM capacity), and poor cache locality (tiles assigned in a bad order). Persistent scheduling fixes all three.
+Non-persistent kernels launch one thread block per output tile. This has three problems: kernel launch overhead, wave quantization (last partial wave wastes SM capacity), and poor cache locality (tiles assigned in a bad order). Persistent scheduling can reduce repeated CTA setup and control tile order.
 
 [![133 tiles on 132 SMs: the last wave](images/ch09/06-wave-quantization.svg)](images/ch09/06-wave-quantization.svg)
 
@@ -1966,7 +1957,7 @@ Persistent vs Non-Persistent Scheduling
 
   Benefits:
   1. ONE kernel launch overhead (even for 10,000 tiles).
-  2. No wave quantization: work is distributed evenly.
+  2. Tile-granularity tail quantization remains: 133 tiles on 132 workers still leave a tail.
      (Stream-K for exact balance — see §17.3)
   3. Cache locality control: tiles are visited in a programmer-controlled
      order (rasterization, covered in §18).
@@ -2174,8 +2165,8 @@ Rasterization — Why L2 Locality Matters
 
   Clusters GUARANTEE co-scheduled execution: all CTAs in a cluster
   run simultaneously on neighboring SMs. By placing a cluster at
-  tiles (0,0) and (1,0) simultaneously, both CTAs have the SAME A-strip
-  in L2 at the SAME TIME. The TMA multicast delivers A-strip ONCE for both.
+  tiles (0,0) and (1,0) simultaneously, both CTAs have the SAME B-strip
+  in L2 at the SAME TIME. The TMA multicast can share B-strip 0 across those row-distinct CTAs for both.
   This is the highest-quality L2 reuse possible.
 ```
 
@@ -2491,7 +2482,7 @@ int main(int argc, char** argv) {
     printf("Tile:    %d×%d (K-step=%d, stages=%d)\n", TILE_M, TILE_N, TILE_K, N_STAGES);
     printf("Tiles:   %d (tiles_m=%d × tiles_n=%d)\n", total_tiles, tiles_m, tiles_n);
     printf("AI:      %.1f FLOP/Byte (%s)\n\n", ai,
-           ai > 20.0 ? "COMPUTE-BOUND ✓" : "memory-bound");
+           ai > 20.0 ? "High AI; measured bottleneck undetermined" : "memory-bound");
 
     // ── Allocate and initialize host matrices ──────────────────────
     size_t sA = M*K*sizeof(float), sB = K*N*sizeof(float), sC = M*N*sizeof(float);
@@ -2595,6 +2586,8 @@ int main(int argc, char** argv) {
 ```
 
 <!-- revalidation:start:ex08_comprehensive.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:46.577755+00:00`. Executed UTC: `2026-11-18T11:19:47.903815+00:00`.
 
 Source SHA-256: `7c9011cfcbcf2cc91ff61610b8b55e4d3548700e8435178fa9967dff80fd0964`. [Exact source](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/ex08_comprehensive.cu) · [Compile log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/compile.log) · [Run log](validation/2026-11-18-two-h100/09-kernel-design-part-2/ex08_comprehensive/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -2659,6 +2652,8 @@ Design Summary:
 
 
 <!-- validation:start:ex08_comprehensive.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex08_comprehensive.cu**
 
 > **Executed:** 2026-11-17T21:40:17.045545+00:00 (UTC). **Status:** Compile PASS; execution PASS.
@@ -2933,3 +2928,5 @@ Recommended swizzle: 2-4 for most GEMMs on H100 (L2=50MB)
 > decomposition, the lock array and deterministic reduction, and the launch
 > protocols — GDC and programmatic dependent launch — that overlap one kernel's
 > tail with the next kernel's head.
+
+**What the parity example establishes.** `ex06_pingpong` checks even/odd tile assignment and numerical partial sums. It has no 2×2 ordered barrier, no measured MMA/epilogue overlap and no hardware utilization measurement. Its historical “perfect overlap” banner is unsupported. The full CTA example is ordinary CUDA; its use of `__syncthreads()` and absence of WGMMA/setmaxnreg do not require an architecture-specific Hopper instruction. For FP8 per-tensor delayed scaling, reduce amax across the tensor and use the resulting scale according to the next-step policy; an immediately applied tile-local amax is a different contract.

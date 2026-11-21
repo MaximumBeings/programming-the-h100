@@ -1,4 +1,5 @@
 # Profiling with Nsight Compute
+
 ## Chapter 13 Companion Guide — Measuring What the Rest of This Book Claims
 
 [![CHAPTER 13: Turn intuition into evidence.](images/chapter-openers/13-profiling.svg)](images/chapter-openers/13-profiling.svg)
@@ -12,7 +13,7 @@
 
 > **Tool versions move.** Nsight Compute ships with the CUDA Toolkit and its
 > section names, metric names and CLI flags shift between releases. Every command
-> here is written for the 2025.x line (CUDA 12.9 / 13.x). Where a name may have
+> here is written for the 2025.1 line (CUDA 12.8) and later. Where a name may have
 > changed, the text says which `--list-*` command will tell you the truth on your
 > install rather than asserting a version-specific answer.
 > **Docs:** [Nsight Compute Profiling Guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)
@@ -80,6 +81,7 @@ Registers Per Thread: 58
 Theoretical Occupancy: 50%
 Achieved Occupancy: 6.25%
 # SMs: 114
+
 ```
 
 [Ordinary-user log](validation/2026-11-17/nsight-basic.log) · [Full successful report](validation/2026-11-17/nsight-basic-admin.log) · [Tool version](validation/2026-11-17/nsight-version.log). The one-CTA grid does not fill the GPU. Replayed profiler timings and achieved occupancy must not be treated as end-to-end application benchmarks. See the [NVIDIA profiling guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/) for replay and measurement limitations.
@@ -142,19 +144,19 @@ Compile with line info
 
 ## Table of Contents
 
-1. [Why Profile at All](#1--why-profile-at-all)
-2. [Getting ncu Running](#2--getting-ncu-running)
-3. [Replay — What ncu Does to Your Program](#3--replay--what-ncu-does-to-your-program)
-4. [Speed of Light — The First Screen](#4--speed-of-light--the-first-screen)
-5. [The Roofline Chart](#5--the-roofline-chart)
-6. [Memory Workload Analysis](#6--memory-workload-analysis)
-7. [Scheduler and Warp State Statistics](#7--scheduler-and-warp-state-statistics)
-8. [Occupancy — and Why It Is Not the Goal](#8--occupancy--and-why-it-is-not-the-goal)
-9. [The Metric Naming Scheme](#9--the-metric-naming-scheme)
-10. [The Source Page — SASS and Stall Sampling](#10--the-source-page--sass-and-stall-sampling)
-11. [Profiling Hopper Kernels](#11--profiling-hopper-kernels)
-12. [Four Worked Diagnoses](#12--four-worked-diagnoses)
-13. [Quick Reference](#13--quick-reference)
+1. [Why Profile at All](#1-why-profile-at-all)
+2. [Getting ncu Running](#2-getting-ncu-running)
+3. [Replay — What ncu Does to Your Program](#3-replay-what-ncu-does-to-your-program)
+4. [Speed of Light — The First Screen](#4-speed-of-light-the-first-screen)
+5. [The Roofline Chart](#5-the-roofline-chart)
+6. [Memory Workload Analysis](#6-memory-workload-analysis)
+7. [Scheduler and Warp State Statistics](#7-scheduler-and-warp-state-statistics)
+8. [Occupancy — and Why It Is Not the Goal](#8-occupancy-and-why-it-is-not-the-goal)
+9. [The Metric Naming Scheme](#9-the-metric-naming-scheme)
+10. [The Source Page — SASS and Stall Sampling](#10-the-source-page-sass-and-stall-sampling)
+11. [Profiling Hopper Kernels](#11-profiling-hopper-kernels)
+12. [Four Worked Diagnoses](#12-four-worked-diagnoses)
+13. [Quick Reference](#13-quick-reference)
 
 ---
 
@@ -183,7 +185,7 @@ What Reasoning Gets Right, and What It Doesn't
                                                  the time
 
   Chapter 12 §6.3 is an honest example. A careful cycle model
-  predicted ~94% tensor core utilisation for the ping-pong
+  illustrated an idealized overlapping schedule, not a measured utilization percentage for the ping-pong
   pipeline. Published FA3 result: about 63% of peak at 620 TFLOP/s.
   This is a paper result, not this book’s validation measurement.
   The model was not wrong about
@@ -327,8 +329,9 @@ The Minimal Useful Command
           ./my_kernel
 
     --set full          collect everything, including roofline
-    --kernel-name       only this kernel (substring match; use
-                        --kernel-name-base demangled for C++)
+    --kernel-name       exact function-name match by default; for a substring
+                        use -k regex:flash_fwd; choose the appropriate
+                        --kernel-name-base for C++ names
     --launch-skip 5     ignore the first 5 launches — they hit
                         cold caches and JIT
     --launch-count 1    profile exactly one launch
@@ -370,10 +373,13 @@ overhead you can tolerate.
       ncu --list-sets
 
     Typically:
-      basic       Speed of Light only. One replay pass. Fast.
-      default     SoL + launch + occupancy. A few passes.
-      detailed    Most sections. Noticeably slower.
-      full        Everything, including roofline. Slowest.
+      basic       Release-dependent basic section bundle.
+      detailed    Broader section bundle; inspect --list-sets.
+      full        Broad collection; restrict to the relevant launch.
+
+    No separate default set is assumed. The recorded --set basic
+    profile collected SoL, launch, occupancy and workload distribution
+    in TEN replay passes. A small set does not guarantee one pass.
 
     Rule of thumb: --set full on one launch of one kernel.
     Never --set full on a whole application.
@@ -404,10 +410,10 @@ overhead you can tolerate.
 
   ── METRICS: individual counters ─────────────────────────────────
 
-      ncu --metrics dram__throughput.pct_of_peak_sustained_elapsed,\
+      ncu --metrics dram__throughput.avg.pct_of_peak_sustained_elapsed,\
 sm__throughput.avg.pct_of_peak_sustained_elapsed ./app
 
-    One pass, minimal overhead, exactly the numbers you asked
+    The required pass count depends on counter compatibility; these are the numbers requested
     for. This is what you use in a tuning loop or a CI check.
     §9 explains how to construct these names.
 
@@ -1267,7 +1273,8 @@ The Source Page
   LDGSTS / LDG / STG       global memory ops
   LDSM / STSM              ldmatrix / stmatrix (Ch 6 §9, Ch 7 §6)
   HGMMA / QGMMA            wgmma — BF16/FP16 and FP8 variants
-  UBLKCP                   TMA bulk copy (Ch 5)
+  UTMALDG / UTMASTG        tensor-map TMA load / store
+  UTMAPF / UBLKCP          tensor prefetch / non-tensor bulk copy
   BAR.SYNC / BAR.ARV       barriers, named barriers (Ch 3 §16)
   LDL / STL                LOCAL memory — ◄── REGISTER SPILLS
 
@@ -1284,8 +1291,9 @@ The Source Page
 
       nvcc -arch=sm_90a -O2 --ptxas-options=-v kernel.cu
 
-      ptxas info : Used 232 registers, 0 stack, 0 spill stores,
-                   0 spill loads              ◄── what you want
+      ptxas info : 0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+      ptxas info : Used 232 registers
+      # Illustrative register count; spill quantities are BYTES.
 ```
 
 ---
@@ -1409,8 +1417,8 @@ DIAGNOSIS 1 — Low/low, Long Scoreboard
     → waiting on global memory.
 
   STEP 2 — Memory Workload Analysis (§6.2)
-    l1tex__t_sectors_...global_op_ld.sum    1.31e9
-    l1tex__t_requests_...global_op_ld.sum   4.10e7
+    l1tex__t_sectors_...global_op_st.sum    1.31e9
+    l1tex__t_requests_...global_op_st.sum   4.10e7
     sectors / request = 32.0                ◄── worst possible
 
   STEP 3 — Source page (§10)
@@ -1505,7 +1513,7 @@ DIAGNOSIS 3 — Barrier stalls in a TMA kernel
       Producers are NOT waiting for free buffers.
 
   STEP 2 — check DRAM
-    dram__throughput.pct_of_peak_sustained_elapsed = 38%
+    dram__throughput.avg.pct_of_peak_sustained_elapsed = 38%
     → HBM is not the limit. The data COULD arrive faster.
 
   DIAGNOSIS
@@ -1516,7 +1524,7 @@ DIAGNOSIS 3 — Barrier stalls in a TMA kernel
 
   FIX
     Raise kNumStages from 2 to 4 and check the shared memory
-    budget (Chapter 1 §13.1 — 228 KB per SM):
+    budget (Chapter 1 §13.1 — 228 KiB per SM (at most 227 KiB available to one CTA)):
 
         2 stages × (K + V) × 128×128×2 B   = 128 KB
         4 stages × (K + V) × 128×128×2 B   = 256 KB   ◄── too big
@@ -1545,7 +1553,8 @@ DIAGNOSIS 4 — MIO Throttle in an attention kernel
     Chapter 12-style attention kernel, warp-specialised, TMA
     pipeline healthy.
     sm__pipe_tensor_cycles_active...active = 52 %
-    Expected, from the technique ladder in Ch 12 §4.1: ~85%.
+    No measured utilization follows from the Chapter 12 technique comparison;
+    compare against a profile of the actual selected kernel.
 
   STEP 1 — Warp State Statistics
     Stall MIO Throttle          41 %
@@ -1599,29 +1608,36 @@ DIAGNOSIS 4 — MIO Throttle in an attention kernel
 
 ```
 # save a report for one launch of one kernel
+
 ncu --set full --kernel-name my_kernel --launch-skip 5 \
     --launch-count 1 -o report ./app
 
 # quick terminal summary
+
 ncu --set basic --launch-count 1 --print-summary per-kernel ./app
 
 # specific metrics only — fast, for a tuning loop
+
 ncu --metrics sm__throughput.avg.pct_of_peak_sustained_elapsed,\
 gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed ./app
 
 # re-read a saved report in the terminal
+
 ncu --import report.ncu-rep --page details
 
 # discovery
+
 ncu --list-sets
 ncu --list-sections
 ncu --query-metrics
 
 # production-realistic timing (unlocked clocks, warm caches)
+
 ncu --clock-control none --cache-control none --set basic ./app
 
 # multi-stream / dependent launch kernels
-ncu --replay-mode range --set full ./app
+
+ncu --replay-mode range --profile-from-start off --set full ./app
 ```
 
 ### The Triage Table

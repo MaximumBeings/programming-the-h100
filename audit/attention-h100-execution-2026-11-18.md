@@ -1,5 +1,7 @@
 # Attention code and H100 execution — November 18, 2026 (America/New_York)
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 The user requested complete code in Chapter 30 and supplied a new two-H100 instance. Chapter 30 now displays its complete standalone CUDA reference and the complete Python oracle, each with a download and run commands. Chapter 31 retains the complete pinned CUTLASS source/header bundle. A reviewer independently checked the new CUDA reference's dimensions, ownership, masks, numerical criteria and agreement with the prose; no correction to the tested CUDA source was needed.
 
 ## Actual execution

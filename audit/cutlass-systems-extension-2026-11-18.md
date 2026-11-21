@@ -1,5 +1,7 @@
 # Systems and CUTLASS extension — November 18, 2026
 
+> Historical audit, scoped to its stated date and source revision. Later source corrections and outstanding GPU reruns are tracked in [the November 21 review repair record](../docs/review-fixes-2026-11-21.md). This note does not upgrade an old execution to a result for corrected source.
+
 Added Chapters 14–17: Nsight Systems application timelines, CuTe C++ layout algebra, a pinned CUTLASS Hopper GEMM, and pipeline/fusion/profiler source reading. Updated navigation, the homepage contents and reading map, installation cross-links and the former Chapter13 ending. Added four original SVG chapter maps.
 
 Reference baseline: NVIDIA CUTLASS v4.3.6, commit `1afc6d355b8cb992398f17beb4425702f1d57ddd`; CUDA12.8; C++17; Hopper sm_90a. Ubuntu2204/Ubuntu2404 NVIDIA metadata confirms cuda-nsight-systems-12-8 selects nsight-systems-2024.6.2. Current tool version is recorded independently of NVCC/Compute.

@@ -33,6 +33,8 @@ def verify(root, public=None, summary=None):
     # programs() intentionally uses the identical collector extraction heuristic.
     current = {(x['page'], x['example']): x['sha256'] for x in programs()}
     rows = json.loads((public / 'results.json').read_text())
+    from review_revisions import historical_hashes
+    current = historical_hashes(root, current)
     recorded = {(x['page'], x['example']): x['sha256'] for x in rows}
     expected_current = dict(recorded)
     from pending_revalidation import pending
@@ -142,7 +144,7 @@ def main():
     for error in errors:
         print('FAIL:', error)
     if not errors:
-        print('PASS: fresh audit source hashes, evidence inventory, statuses, logs and summary agree.')
+        print('PASS: historical audit source hashes, evidence inventory, statuses, logs and summary agree; review corrections remain pending.')
         print('Scope: evidence consistency; CUDA is not executed by this verifier.')
     return bool(errors)
 

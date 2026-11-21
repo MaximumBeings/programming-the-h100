@@ -11,6 +11,12 @@
     [Chapter 6](06-wgmma-part-1.md) explains Tensor Core arithmetic; [Chapter 13](13-nsight-compute.md) checks whether the proposed bottleneck is real.
 <!-- learning:end -->
 
+!!! warning "GPU revalidation pending — November 21 correction"
+    Current source below includes post-capture corrections. Historical outputs
+    validate only their archived hashes. Do not use them as proof of the fixed
+    source. See the [repair record](review-fixes-2026-11-21.md).
+
+
 ## Lesson 3 Companion Guide — High-Performance CUDA Kernels on the H100
 
 > **Validation — November 17, 2026.** 4 complete CUDA programs compiled and executed successfully.
@@ -71,7 +77,7 @@ Compile Patterns
   nvcc -std=c++17 -arch=sm_90a -O2 \
        -I/usr/local/cuda/include example.cu -o example
 
-  # For B100/Blackwell (drop-in replacement)
+  # For compatible source on B100/Blackwell (revalidate instruction support)
   nvcc -std=c++17 -arch=sm_100a -O2 example.cu -o example
 
   # Show register/SMEM usage (always useful for optimization)
@@ -85,26 +91,26 @@ Compile Patterns
 
 ## Table of Contents
 
-1. [The Roofline Model — Classifying Your Kernel](#1--the-roofline-model)
-2. [Compute-Bound Kernels — Characteristics & Diagnosis](#2--compute-bound-kernels)
-3. [Memory-Bound Kernels — Characteristics & Diagnosis](#3--memory-bound-kernels)
-4. [Warp Specialization — Splitting Producer and Consumer](#4--warp-specialization)
-5. [setmaxnreg — Dynamic Register Allocation](#5--setmaxnreg)
-6. [Warp Group Count Selection](#6--warp-group-count-selection)
-7. [Pipelining — The Fundamental Overlap Principle](#7--pipelining)
-8. [Circular Buffering and Multi-Stage Pipelines](#8--circular-buffering)
-9. [mbarrier — The Two-Barrier Handshake](#9--mbarrier)
-10. [ABA Ambiguity and Phase Bits](#10--aba-ambiguity-and-phase-bits)
-11. [Producer Flow — The Full TMA Pipeline Loop](#11--producer-flow)
-12. [Consumer Flow — WGMMA Pipelining](#12--consumer-flow)
-13. [The Cooperative Pipeline Architecture](#13--cooperative-pipeline)
-14. [The Ping-Pong Pipeline Architecture](#14--ping-pong-pipeline)
-15. [Epilogue Fundamentals — From Registers to Global Memory](#15--epilogue-fundamentals)
-16. [Epilogue Fusion — The Six-Stage Lifecycle](#16--epilogue-fusion)
-17. [Persistent Scheduling — Static, Grouped, Stream-K](#17--persistent-scheduling)
-18. [Rasterization and L2 Cache Locality](#18--rasterization)
-19. [Putting It All Together — Full Worked Examples](#19--putting-it-all-together)
-20. [Quick Reference](#20--quick-reference)
+1. [The Roofline Model — Classifying Your Kernel](#1-the-roofline-model)
+2. [Compute-Bound Kernels — Characteristics & Diagnosis](#2-compute-bound-kernels)
+3. [Memory-Bound Kernels — Characteristics & Diagnosis](#3-memory-bound-kernels)
+4. [Warp Specialization — Splitting Producer and Consumer](#4-warp-specialization)
+5. [setmaxnreg — Dynamic Register Allocation](#5-setmaxnreg-dynamic-register-allocation)
+6. [Warp Group Count Selection](#6-warp-group-count-selection)
+7. [Pipelining — The Fundamental Overlap Principle](#7-pipelining)
+8. [Circular Buffering and Multi-Stage Pipelines](#8-circular-buffering-and-multi-stage-pipelines)
+9. [mbarrier — The Two-Barrier Handshake](09-kernel-design-part-2.md#9-mbarrier-the-two-barrier-handshake)
+10. [ABA Ambiguity and Phase Bits](09-kernel-design-part-2.md#10-aba-ambiguity-and-phase-bits)
+11. [Producer Flow — The Full TMA Pipeline Loop](09-kernel-design-part-2.md#11-producer-flow-the-full-tma-pipeline-loop)
+12. [Consumer Flow — WGMMA Pipelining](09-kernel-design-part-2.md#12-consumer-flow-wgmma-pipelining)
+13. [The Cooperative Pipeline Architecture](09-kernel-design-part-2.md#13-the-cooperative-pipeline-architecture)
+14. [The Ping-Pong Pipeline Architecture](09-kernel-design-part-2.md#14-the-ping-pong-pipeline-architecture)
+15. [Epilogue Fundamentals — From Registers to Global Memory](09-kernel-design-part-2.md#15-epilogue-fundamentals)
+16. [Epilogue Fusion — The Six-Stage Lifecycle](09-kernel-design-part-2.md#16-epilogue-fusion-the-six-stage-lifecycle)
+17. [Persistent Scheduling — Static, Grouped, Stream-K](09-kernel-design-part-2.md#17-persistent-scheduling)
+18. [Rasterization and L2 Cache Locality](09-kernel-design-part-2.md#18-rasterization-and-l2-cache-locality)
+19. [Putting It All Together — Full Worked Examples](09-kernel-design-part-2.md#19-putting-it-all-together)
+20. [Quick Reference](09-kernel-design-part-2.md#20-quick-reference)
 
 ---
 
@@ -245,11 +251,13 @@ Kernel B: matrix_multiply_naive (M=N=K=512)
   Output: C matrix = 1MB
   Total bytes: 3 MB
   FLOPs: 2 × 512³ = 268M FLOPs
-  AI = 268M / 3M = ~89 FLOP/Byte → compute-bound (above FP32 ridge of ~20)
+  AI = 268435456 / 3145728 = 85.3 FLOP/byte, above the FP32 ridge.
+  This rules out the HBM roof as the tightest ideal roof; it does not
+  establish the measured kernel's limiting issue/SMEM dependency.
 
 Expected profiler output:
   elementwise_scale: AI ≈ 0.125 → MEMORY-BOUND
-  matrix_multiply:   AI ≈ 89    → COMPUTE-BOUND
+  matrix_multiply:   AI ≈ 85.3    → COMPUTE-BOUND
 ```
 
 ```
@@ -348,7 +356,7 @@ __global__ void elementwise_scale(
 // For TILE=32, M=N=K=512:
 //   FLOPs = 2 × 512³ = 268M
 //   Bytes = (512²+512²+512²) × 4 = 3MB
-//   AI ≈ 89 FLOP/Byte → well above FP32 ridge (~20 FLOP/Byte)
+//   AI ≈ 85.3 FLOP/Byte → well above FP32 ridge (~20 FLOP/Byte)
 //
 // The tiling pattern (load tile to SMEM, compute from SMEM) is
 // the classic way to improve AI: each element of A and B is loaded
@@ -487,7 +495,7 @@ int main() {
 
         printf("  M=N=K=%d    FLOPs: %.1f M    Bytes: %.1f MB    AI: %.1f FLOP/Byte\n",
                M, flops_total/1e6, bytes_total/1e6, ai);
-        printf("  → AI=%.1f >> 20 → COMPUTE-BOUND ✓\n\n", ai);
+        printf("  → AI=%.1f >> 20 → HIGH-AI: inspect issue/shared-memory/dependency limits\n\n", ai);
 
         float *d_A, *d_B, *d_C;
         CHECK_CUDA(cudaMalloc(&d_A, M * K * sizeof(float)));
@@ -520,7 +528,7 @@ int main() {
         printf("  Time: %.3f ms\n", ms);
         printf("  GFLOPS achieved: %.1f\n", gflops_achieved);
         printf("  Effective BW:    %.1f GB/s (not the bottleneck)\n", bw_achieved);
-        printf("  → Kernel is COMPUTE limited (bandwidth not saturated)\n");
+        printf("  → AI selects the compute roof; measured bottleneck is not established (bandwidth not saturated)\n");
 
         cudaEventDestroy(start); cudaEventDestroy(stop);
         CHECK_CUDA(cudaFree(d_A)); CHECK_CUDA(cudaFree(d_B)); CHECK_CUDA(cudaFree(d_C));
@@ -538,6 +546,8 @@ int main() {
 ```
 
 <!-- revalidation:start:ex01_roofline.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 > **Additional execution — November 18, 2026: PASS.** 2× H100 80GB HBM3; NV18; CUDA 12.8.93; driver 580.105.08; `sm_90a`. Compiled UTC: `2026-11-18T11:19:36.642155+00:00`. Executed UTC: `2026-11-18T11:19:37.502670+00:00`.
 
 Source SHA-256: `d4e66adac175c64e13c8761c308a1a5c2151164a5505cd6959d04b8abab61449`. [Exact source](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/ex01_roofline.cu) · [Compile log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/compile.log) · [Run log](validation/2026-11-18-two-h100/08-kernel-design-part-1/ex01_roofline/run.log) · [System and rerun summary](revalidation-2026-11-18.md).
@@ -592,6 +602,8 @@ KERNEL B: tile_matmul (expected: COMPUTE-BOUND)
 
 
 <!-- validation:start:ex01_roofline.cu -->
+> **Historical source:** this capture predates the November 21 correction. GPU revalidation pending for the current source; the archive below is retained for evidence.
+
 **Captured output — ex01_roofline.cu**
 
 > **Executed:** 2026-11-17T21:29:22.446323+00:00 (UTC). **Status:** Compile PASS; execution PASS.
@@ -911,14 +923,11 @@ Warp Specialization — Before and After
   Reason 1 — Resource separation:
     A WGMMA consumer needs ~200 registers/thread for its accumulator tile.
     A TMA producer needs ~32 registers/thread for barrier management.
-    Without separation, every thread in a mixed warpgroup must be
-    allocated the UNION of both needs — ~200+32 = 232 registers/thread —
-    even though on any given iteration a thread is doing only one job.
-    For a 128-thread warpgroup that's 128 × 232 = 29,696 registers
-    committed (CORRECTED: this is the same 29,696-register figure
-    Section 6 derives for one consumer warpgroup at 232 regs/thread —
-    the two sections now agree), most of it paying for headroom that
-    sits idle on the producer-role threads most of the time.
+    A kernel starts with one allocation per thread, determined by its
+    maximum live set. Sequential roles do not automatically add their
+    register counts. Without reallocation the producer warps reserve
+    the same per-thread budget as consumer warps, even while using
+    fewer registers. setmaxnreg redistributes this CTA register pool.
     With separation: producer threads commit only ~32 registers/thread
     (128 × 32 = 4,096 total) and consumer threads commit the full
     ~200-232 registers/thread — each role pays only for what it
@@ -1449,7 +1458,7 @@ setmaxnreg — What It Does and When to Use It
   explicitly synchronize before a subsequent setmaxnreg operation.
 
   ─── C++ Interface ───────────────────────────────────────────────
-  // CUDA 12.3+ provides intrinsics:
+  // Use the documented inline-PTX setmaxnreg instruction; __syncwarp is synchronization, not a resizing intrinsic:
   __syncwarp();
   // Decrease (for producers):
   asm volatile("setmaxnreg.dec.sync.aligned.u32 %0;" :: "n"(32));
@@ -1828,7 +1837,7 @@ Warp Group Count Selection — Decision Tree
     Accumulator registers = M × N / (threads_per_WG × REGS_PER_ELEMENT)
     For M=64, N=64: 64×64 floats / 128 threads = 32 floats/thread = 32 regs
     For M=64, N=128: 64×128 floats / 128 threads = 64 floats = 64 regs
-    For M=64, N=256: 128 regs  (2 WGs needed: 64 regs each)
+    For M=64, N=256: 128 regs/thread in one WG; two WGs are not required by this slice
     For M=128, N=128: 128 regs (2 WGs cooperative: 64 regs each)
 
   ─── The Practical Decision ──────────────────────────────────────
@@ -1849,8 +1858,8 @@ Warp Group Count Selection — Decision Tree
     └── Prefer fewer CTAs per tile with larger effective WGMMA width
 
   Use Cluster of CTAs when:
-    └── Tile > 256×128 (even 2 cooperative WGs can't hold accumulators)
-        Multiple CTAs share computation via DSMEM (Lesson 2)
+    └── The tile grid has operand reuse suitable for multicast.
+        CTAs share A/B transfers; each CTA retains its own accumulator tile.
 ```
 
 ---
@@ -1998,10 +2007,10 @@ Circular Buffer — Ring Operation
   ┌─────────┬─────────┬─────────┬─────────┐
   │ Stage 0 │ Stage 1 │ Stage 2 │ Stage 3 │
   │         │         │         │         │
-  │ FULL    │ LOADING │ FULL    │ IN_USE  │
-  │ (next   │ (prod   │ (next   │ (cons   │
-  │ for     │ writing │ in      │ reading │
-  │ consumer│ here)   │ queue)  │ here)   │
+  │ FULL    │ LOADING │ EMPTY   │ IN_USE  │
+  │ (next   │ (prod   │ (k=2    │ (cons   │
+  │ for     │ writing │ already │ reading │
+  │ consumer│ here)   │ read)   │ here)   │
   └─────────┴─────────┴─────────┴─────────┘
           ↑                           ↑
      Write pointer                Read pointer
@@ -2480,3 +2489,5 @@ Every physical stage gets read exactly once between the writes that would otherw
 > at §9 with the two-barrier handshake, then covers ABA ambiguity and phase bits,
 > cooperative versus ping-pong pipeline architectures, the six-stage epilogue
 > fusion lifecycle, persistent scheduling, and rasterisation for L2 locality.
+
+**Interpreting the roofline demonstration.** Its 256³ GEMM performs 268,435,456 FLOPs for 3,145,728 modeled HBM bytes: 85.33 FLOP/B. Selecting the compute roof by intensity does not prove that the measured kernel saturates it. The recorded 8 TFLOP/s is far below the scalar FP32 peak; inspect shared-memory traffic, issue throughput, dependencies and parallelism. Historical output calling it “COMPUTE-BOUND” is not a measured diagnosis. Register allocation is governed by peak live ranges; role specialization also avoids charging every warp the same consumer-sized allocation.
