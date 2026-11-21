@@ -2893,7 +2893,7 @@ source. See the <a href="../review-fixes-2026-11-21/">repair record</a>.</p>
 <p>For two batches and three heads, choose illustrative mode order <code>(sequence,feature,(batch,head))</code> with Q strides <code>(d,1,(H*Nq*d,Nq*d))</code>. At <code>(i,c,b,h)=(1,1,1,2)</code>, offset is <code>1*2+1+1*12+2*4=23</code> elements, or 46 bytes for FP16. The last valid element occupies bytes 46–47 of the 48-byte Q allocation. K/V use Nk instead of Nq, so their batch/head strides are different.</p>
 <p>The pinned sixteen-bit runner uses the same <strong>mode order</strong>, with <code>StrideQ</code>/<code>StrideK</code> represented as <code>tuple&lt;int,_1,tuple&lt;int,int&gt;&gt;</code>. Its FP8 V specialization uses a different stride pattern; do not transplant the sixteen-bit V map into the byte-element path. Supported TMA alignment and head dimensions impose additional restrictions beyond this affine address calculation.</p>
 <h2 id="10-map-the-mathematics-to-the-pinned-implementation">10 — Map the mathematics to the pinned implementation<a class="headerlink" href="#10-map-the-mathematics-to-the-pinned-implementation" title="Permanent link">&para;</a></h2>
-<p>The <a href="https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/README.md">pinned runner’s file comment</a> describes four layers:</p>
+<p>The <a href="https://github.com/NVIDIA/cutlass/blob/1afc6d355b8cb992398f17beb4425702f1d57ddd/examples/88_hopper_fmha/88_hopper_fmha.cu">pinned runner’s file comment</a> describes four layers:</p>
 <table>
 <thead>
 <tr>
