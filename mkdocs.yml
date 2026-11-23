@@ -178,6 +178,7 @@ nav:
 
   - Part XIII — Hardware-Agnostic Inference Systems:
       - 38. Semantic Cache — Thresholds, False Hits, Economics: 38-semantic-cache.md
+      - 39. Multi-Model Complexity Router — Entropy, Calibration, Cost: 39-complexity-router.md
   - Blackwell Appendix:
       - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md
       - Native FP4 — NVFP4 and MXFP4 Formats and Emulation: appendix-blackwell-fp4.md

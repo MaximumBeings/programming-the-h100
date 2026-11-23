@@ -23,7 +23,7 @@ The project list comes from a public LinkedIn post by Ravi A Samy listing twelve
 | 7 | Speculative decoding harness | Triton Part 8 (verify kernel); [Chapter 37](37-speculative-decoding-70b.md) (70B cost model) |
 | 8 | Queue-based GPU autoscaler | Part XIII (planned) |
 | 9 | Semantic AI gateway and cache | [Chapter 38](38-semantic-cache.md) |
-| 10 | Multi-model complexity router | Part XIII (planned) |
+| 10 | Multi-model complexity router | [Chapter 39](39-complexity-router.md) |
 | 11 | WebGPU / MLX edge fallback | Part XIII (planned) |
 | 12 | Public inference benchmark teardown | [Chapter 36](36-benchmark-teardown.md) |
 
