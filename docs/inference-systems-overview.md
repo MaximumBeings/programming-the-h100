@@ -19,7 +19,7 @@ The project list comes from a public LinkedIn post by Ravi A Samy listing twelve
 | 3 | Hierarchical KV-cache offloader | [Chapter 34](34-kv-cache-offloading.md) |
 | 4 | Grammar-constrained decoding engine | Triton from First Principles, Part 8 |
 | 5 | MoE expert-parallel router | [Chapter 33](33-moe-expert-parallel.md) |
-| 6 | FP4/INT4 quantization and calibration pipeline | Triton from First Principles, Part 8; native FP4 in the Blackwell appendix (planned) |
+| 6 | FP4/INT4 quantization and calibration pipeline | Triton from First Principles, Part 8; [native FP4 in the Blackwell appendix](appendix-blackwell-fp4.md) |
 | 7 | Speculative decoding harness | Triton Part 8 (verify kernel); [Chapter 37](37-speculative-decoding-70b.md) (70B cost model) |
 | 8 | Queue-based GPU autoscaler | Part XIII (planned) |
 | 9 | Semantic AI gateway and cache | Part XIII (planned) |

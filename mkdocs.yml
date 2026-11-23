@@ -178,6 +178,7 @@ nav:
 
   - Blackwell Appendix:
       - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md
+      - Native FP4 — NVFP4 and MXFP4 Formats and Emulation: appendix-blackwell-fp4.md
 
 extra_javascript:
   - javascripts/image-viewer.js
