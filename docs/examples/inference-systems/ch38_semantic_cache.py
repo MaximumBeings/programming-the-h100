@@ -1,0 +1,389 @@
+#!/usr/bin/env python3
+"""Chapter 38: a semantic response cache, its threshold, its false hits, its economics, and its failure modes.
+
+Run:  python3 ch38_semantic_cache.py            # self-tests + all experiments (about 30-60 s, CPU, needs numpy)
+      python3 ch38_semantic_cache.py --selftest # self-tests only
+
+WHAT IS REAL: the cache data structure (partitioned by tenant/model/params, TTL, LRU, cosine lookup), the Wilson
+confidence interval, the economics formulas, and the experimental method.
+WHAT IS INVENTED: the "embeddings". There is no embedding model here: queries are synthetic unit vectors in which a
+paraphrase is its intent's centre plus noise, and "sibling" intents (the same question with a different number,
+negation, entity...) are centres placed close together. Every similarity value, every threshold and every rate printed
+below is a property of this synthetic world. NONE of them transfers to a real embedding model; Section 38.9 shows how
+to measure the real ones.
+"""
+import math
+import sys
+import time
+
+import numpy as np
+
+
+# =============================================================== 1. synthetic world (stand-in for an embedding model)
+def unit(m):
+    return m / np.linalg.norm(m, axis=-1, keepdims=True)
+
+
+class World:
+    """F families of M sibling intents. Siblings are near each other (hard negatives); families are far apart.
+    s_para: paraphrase noise (bigger = noisier embedding model). s_sib: sibling spread inside a family."""
+    def __init__(self, seed=0, families=60, members=4, dim=64, s_para=0.20, s_sib=0.30):
+        self.rng = np.random.default_rng(seed)
+        self.dim, self.F, self.M, self.s_para = dim, families, members, s_para
+        fam = unit(self.rng.standard_normal((families, dim)))
+        self.family = np.repeat(np.arange(families), members)
+        self.centres = unit(fam[self.family] + s_sib * self._noise(families * members))
+        self.n_intents = families * members
+
+    def _noise(self, rows):
+        return self.rng.standard_normal((rows, self.dim)) / math.sqrt(self.dim)
+
+    def paraphrase(self, intents):
+        intents = np.asarray(intents)
+        return unit(self.centres[intents] + self.s_para * self._noise(len(intents)))
+
+    def stream(self, n, zipf=1.0, dup_frac=0.10):
+        """n queries: intents ~ Zipf; a fraction are exact repeats of an earlier query vector."""
+        p = 1.0 / np.arange(1, self.n_intents + 1) ** zipf
+        p /= p.sum()
+        intents = self.rng.choice(self.n_intents, size=n, p=p)
+        vecs = self.paraphrase(intents)
+        for i in range(1, n):
+            if self.rng.random() < dup_frac:                      # exact repeat of an earlier request
+                j = self.rng.integers(0, i)
+                intents[i], vecs[i] = intents[j], vecs[j]
+        return intents, vecs
+
+
+# =============================================================== 2. the cache
+class SemanticCache:
+    """Cosine-similarity response cache.
+
+    Entries live in PARTITIONS keyed by whatever must be identical for an answer to be reusable (tenant, model,
+    system prompt hash, sampling parameters...). A lookup only ever compares against its own partition.
+    Per partition: at most `max_entries` (LRU eviction) and entries older than `ttl` seconds are invalid (strict:
+    an entry created at t is valid for now < t + ttl). Vectors must be unit length; lookup returns the best match
+    at or above the threshold, or None."""
+    def __init__(self, dim, threshold, ttl=math.inf, max_entries=100000):
+        self.dim, self.threshold, self.ttl, self.max_entries = dim, threshold, ttl, max_entries
+        self.parts = {}                                           # key -> dict(mat, n, meta[list of dict])
+
+    def _part(self, key):
+        if key not in self.parts:
+            self.parts[key] = dict(mat=np.zeros((64, self.dim)), n=0, meta=[])
+        return self.parts[key]
+
+    def lookup(self, key, vec, now=0.0):
+        p = self.parts.get(key)
+        if p is None or p["n"] == 0:
+            return None, -1.0
+        sims = p["mat"][:p["n"]] @ vec
+        created = np.array([m["created"] for m in p["meta"]])
+        sims = np.where(now < created + self.ttl, sims, -np.inf)    # expired entries cannot match
+        j = int(np.argmax(sims))
+        if sims[j] >= self.threshold:
+            p["meta"][j]["last_used"] = now
+            return p["meta"][j], float(sims[j])
+        return None, float(sims[j]) if np.isfinite(sims[j]) else -1.0
+
+    def insert(self, key, vec, answer, now=0.0, **extra):
+        p = self._part(key)
+        meta = dict(answer=answer, created=now, last_used=now, **extra)
+        if p["n"] < self.max_entries:
+            if p["n"] == p["mat"].shape[0]:
+                p["mat"] = np.vstack([p["mat"], np.zeros_like(p["mat"])])
+            slot = p["n"]; p["n"] += 1
+            p["meta"].append(meta)
+        else:                                                      # evict least recently used (ties: oldest created)
+            slot = min(range(p["n"]), key=lambda i: (p["meta"][i]["last_used"], p["meta"][i]["created"]))
+            p["meta"][slot] = meta
+        p["mat"][slot] = vec
+        return meta
+
+    def size(self, key=None):
+        return sum(p["n"] for p in self.parts.values()) if key is None else self.parts.get(key, {"n": 0})["n"]
+
+
+# =============================================================== 3. statistics and economics
+def wilson(x, n, z=1.959964):
+    """95% Wilson score interval for a binomial proportion. Well behaved at x=0 and for small p, unlike the normal interval."""
+    if n == 0:
+        return (0.0, 1.0)
+    p = x / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return max(0.0, c - h), min(1.0, c + h)
+
+
+def cost_per_request(hit_rate, wrong_rate, c_llm, c_emb, c_bad):
+    """Every request pays the embedding/lookup; misses pay the LLM; wrong answers pay c_bad (escalation, refund, trust)."""
+    return c_emb + (1 - hit_rate) * c_llm + wrong_rate * c_bad
+
+
+def breakeven_bad_cost(hit_rate, wrong_rate, c_llm, c_emb):
+    """Largest c_bad at which the cache is still no worse than no cache: c_llm = cost_per_request(...)."""
+    return (hit_rate * c_llm - c_emb) / wrong_rate if wrong_rate > 0 else math.inf
+
+
+# =============================================================== 4. experiments
+def run_stream(world, intents, vecs, threshold, ttl=math.inf, key_fn=None, answer_fn=None, now_fn=None, versions=None):
+    """Replay a stream. Miss -> 'call the model' (the correct answer for that intent) and insert. Hit -> serve the cached
+    answer. Returns counts and per-request details."""
+    cache = SemanticCache(world.dim, threshold, ttl)
+    n = len(intents)
+    hits = false_hits = stale = 0
+    for i in range(n):
+        now = now_fn(i) if now_fn else float(i)
+        key = key_fn(i) if key_fn else "default"
+        truth = answer_fn(i) if answer_fn else int(intents[i])
+        entry, sim = cache.lookup(key, vecs[i], now)
+        if entry is not None:
+            hits += 1
+            if entry["answer"] != truth:
+                false_hits += 1
+        else:
+            cache.insert(key, vecs[i], truth, now)
+    return dict(n=n, hits=hits, false_hits=false_hits)
+
+
+def cosine_table(world, n_pairs=20000):
+    rng = np.random.default_rng(99)
+    a = rng.integers(0, world.n_intents, n_pairs)
+    same = (world.paraphrase(a) * world.paraphrase(a)).sum(1)
+    sib_b = (a // world.M) * world.M + (a % world.M + rng.integers(1, world.M, n_pairs)) % world.M
+    sib = (world.paraphrase(a) * world.paraphrase(sib_b)).sum(1)
+    other_b = (a + world.M * rng.integers(1, world.F, n_pairs)) % world.n_intents
+    other = (world.paraphrase(a) * world.paraphrase(other_b)).sum(1)
+    return same, sib, other
+
+
+def threshold_sweep(world, taus, n=4000, seeds=(1, 2, 3)):
+    out = {}
+    for tau in taus:
+        h = f = t = 0
+        for s in seeds:
+            w = World(seed=s, s_para=world.s_para)
+            intents, vecs = w.stream(n)
+            r = run_stream(w, intents, vecs, tau)
+            h += r["hits"]; f += r["false_hits"]; t += r["n"]
+        out[tau] = dict(n=t, hits=h, false_hits=f)
+    return out
+
+
+def selftests():
+    res = []
+
+    def check(name, cond):
+        res.append(bool(cond))
+        print(f"  [{'PASS' if cond else 'FAIL'}] {name}")
+
+    w = World(seed=0)
+    same, sib, other = cosine_table(w, 8000)
+    check(f"world sanity: mean cosine same-intent ({same.mean():.3f}) > sibling ({sib.mean():.3f}) > unrelated ({other.mean():.3f})",
+          same.mean() > sib.mean() > other.mean())
+    check("all synthetic vectors have unit norm", np.allclose(np.linalg.norm(w.paraphrase(np.arange(50)), axis=1), 1.0))
+
+    # exact duplicate hits at (almost) threshold 1
+    c = SemanticCache(w.dim, 0.999999)
+    v = w.paraphrase([3])[0]
+    c.insert("t", v, "ans")
+    e, s = c.lookup("t", v)
+    check("an exact repeat of a stored vector hits at threshold 0.999999 with similarity 1", e is not None and abs(s - 1.0) < 1e-9)
+
+    # partition isolation (property test over random operations)
+    rng = np.random.default_rng(5)
+    c = SemanticCache(w.dim, 0.5)
+    ok = True
+    for step in range(600):
+        key = f"tenant{rng.integers(0, 3)}"
+        vec = w.paraphrase([int(rng.integers(0, w.n_intents))])[0]
+        if rng.random() < 0.5:
+            c.insert(key, vec, ("owner", key))
+        else:
+            e, _ = c.lookup(key, vec)
+            ok &= (e is None or e["answer"] == ("owner", key))
+    check("partition isolation: in 600 random operations no lookup ever returns another partition's entry", ok)
+
+    # TTL, strict boundary
+    c = SemanticCache(w.dim, 0.9, ttl=100.0)
+    c.insert("k", v, "a", now=0.0)
+    check("TTL: valid at t=99.9, expired at exactly t=100 (strict) and after",
+          c.lookup("k", v, 99.9)[0] is not None and c.lookup("k", v, 100.0)[0] is None and c.lookup("k", v, 500.0)[0] is None)
+
+    # LRU eviction
+    c = SemanticCache(w.dim, 0.99, max_entries=3)
+    vs = w.paraphrase([0, 10, 20, 30])
+    for i in range(3):
+        c.insert("k", vs[i], i, now=float(i))
+    c.lookup("k", vs[0], now=10.0)                                  # touch entry 0 so entry 1 is now the LRU
+    c.insert("k", vs[3], 3, now=11.0)
+    kept = {m["answer"] for m in c.parts["k"]["meta"]}
+    check("LRU: capacity 3, after touching entry 0 the least recently used (entry 1) is evicted", kept == {0, 2, 3})
+
+    # determinism
+    r1 = run_stream(*(lambda ww: (ww, *ww.stream(1500)))(World(seed=4)), 0.95)
+    r2 = run_stream(*(lambda ww: (ww, *ww.stream(1500)))(World(seed=4)), 0.95)
+    check("replaying the same seeded stream gives identical counts", r1 == r2)
+
+    # monotonicity in the threshold
+    taus = (0.80, 0.88, 0.92, 0.95, 0.97, 0.99)
+    sw = threshold_sweep(w, taus, n=2500, seeds=(1, 2))
+    hr = [sw[t]["hits"] / sw[t]["n"] for t in taus]
+    check(f"hit rate is nonincreasing in the threshold {[round(x, 2) for x in hr]}", all(a >= b - 1e-9 for a, b in zip(hr, hr[1:])))
+    fr = {t: sw[t]["false_hits"] / max(1, sw[t]["hits"]) for t in taus}
+    check(f"false-hit rate at threshold 0.99 ({fr[0.99]:.3f}) is below that at 0.80 ({fr[0.80]:.3f})", fr[0.99] < fr[0.80])
+
+    # Wilson interval
+    lo, hi = wilson(0, 200)
+    check(f"Wilson upper bound for 0 events in 200 trials is {hi:.4f} (about 3/n = 0.015 to 0.019)", 0.018 < hi < 0.0195 and lo == 0.0)
+    rng = np.random.default_rng(1)
+    cover = 0
+    for _ in range(2000):
+        x = int(rng.binomial(200, 0.02))
+        lo, hi = wilson(x, 200)
+        cover += lo <= 0.02 <= hi
+    check(f"Wilson 95% interval covers the true rate 0.02 in {cover / 2000:.3f} of 2000 simulated experiments (want 0.93 to 0.99)",
+          0.93 <= cover / 2000 <= 0.99)
+
+    # economics: hand computation
+    cpr = cost_per_request(0.40, 0.01, c_llm=0.004, c_emb=0.00002, c_bad=0.10)
+    check(f"cost per request by hand: 0.00002 + 0.6*0.004 + 0.01*0.10 = {0.00002 + 0.0024 + 0.001:.5f}; function gives {cpr:.5f}",
+          abs(cpr - 0.00342) < 1e-12)
+    be = breakeven_bad_cost(0.40, 0.01, 0.004, 0.00002)
+    check(f"break-even bad-answer cost = (0.40*0.004 - 0.00002)/0.01 = {be:.4f}, and at that cost the cache equals no cache",
+          abs(cost_per_request(0.40, 0.01, 0.004, 0.00002, be) - 0.004) < 1e-12)
+    return all(res)
+
+
+def experiments():
+    w = World(seed=0)
+    print("\n== 1. Cosine similarity of query pairs in the synthetic world (NOT a real embedding model) ==")
+    same, sib, other = cosine_table(w)
+    q = lambda a, p: np.percentile(a, p)
+    print(f"  {'pair type':28s} {'mean':>6s} {'p1':>6s} {'p5':>6s} {'p50':>6s} {'p95':>6s} {'p99':>6s}")
+    for name, a in (("same intent (paraphrase)", same), ("sibling intent (hard negative)", sib), ("unrelated", other)):
+        print(f"  {name:28s} {a.mean():6.3f} {q(a,1):6.3f} {q(a,5):6.3f} {q(a,50):6.3f} {q(a,95):6.3f} {q(a,99):6.3f}")
+    print("\n  threshold   recall of paraphrases   sibling false-match rate")
+    for tau in (0.85, 0.90, 0.93, 0.95, 0.97, 0.98, 0.99):
+        print(f"  {tau:9.2f}   {np.mean(same >= tau):21.3f}   {np.mean(sib >= tau):24.3f}")
+
+    print("\n== 2. Streaming cache: hit rate and false hits versus threshold (3 seeds x 4000 queries, Zipf 1.0, 10% exact repeats) ==")
+    taus = (0.85, 0.90, 0.93, 0.95, 0.97, 0.98, 0.99, 0.999)
+    sw = threshold_sweep(w, taus)
+    print(f"  {'tau':>6s} {'hit rate':>9s} {'false/hit':>10s} {'95% CI (Wilson)':>18s} {'wrong/request':>14s}")
+    for t in taus:
+        r = sw[t]; fr = r["false_hits"] / max(1, r["hits"]); lo, hi = wilson(r["false_hits"], r["hits"])
+        print(f"  {t:6.3f} {r['hits']/r['n']:9.3f} {fr:10.4f} [{lo:7.4f},{hi:7.4f}] {r['false_hits']/r['n']:14.4f}")
+
+    print("\n== 3. Economics (ASSUMED costs): c_llm=$0.004, c_emb=$0.00002 per request; sweep the cost of a wrong answer ==")
+    c_llm, c_emb = 0.004, 0.00002
+    print(f"  {'tau':>6s}" + "".join(f"  c_bad=${b:<5g}" for b in (0.01, 0.05, 0.25, 1.0)) + "   break-even c_bad")
+    best = {}
+    for b in (0.01, 0.05, 0.25, 1.0):
+        best[b] = max(taus, key=lambda t: c_llm - cost_per_request(sw[t]["hits"] / sw[t]["n"], sw[t]["false_hits"] / sw[t]["n"], c_llm, c_emb, b))
+    for t in taus:
+        r = sw[t]; h, wr = r["hits"] / r["n"], r["false_hits"] / r["n"]
+        cells = "".join(f"  {1e3 * (c_llm - cost_per_request(h, wr, c_llm, c_emb, b)):9.3f}" for b in (0.01, 0.05, 0.25, 1.0))
+        be = breakeven_bad_cost(h, wr, c_llm, c_emb)
+        print(f"  {t:6.3f}{cells}   {('inf' if be == math.inf else f'{be:8.3f}'):>8s}")
+    print("  (cells: net saving in milli-dollars per request versus no cache; negative = the cache costs money)")
+    print("  best threshold by c_bad: " + ", ".join(f"${b}: {best[b]}" for b in best))
+
+    print("\n== 4. Why '98%' is meaningless without the model: the same threshold on two embedding models ==")
+    for name, sp in (("model A (tight paraphrases, s_para=0.20)", 0.20), ("model B (noisier paraphrases, s_para=0.35)", 0.35)):
+        ww = World(seed=0, s_para=sp)
+        rs = threshold_sweep(ww, (0.95, 0.98), n=3000)
+        for t in (0.95, 0.98):
+            r = rs[t]
+            print(f"  {name:46s} tau={t}: hit rate {r['hits']/r['n']:.3f}  false/hit {r['false_hits']/max(1,r['hits']):.4f}")
+
+    print("\n== 5. Cross-tenant leak: same questions, tenant-specific answers; cache keyed with and without the tenant ==")
+    w5 = World(seed=11)
+    n = 4000
+    intents, vecs = w5.stream(n)
+    tenant = np.random.default_rng(3).integers(0, 2, n)
+    for label, keyfn in (("one shared partition", lambda i: "all"), ("partition per tenant", lambda i: f"t{tenant[i]}")):
+        r = run_stream(w5, intents, vecs, 0.95, key_fn=keyfn, answer_fn=lambda i: (int(tenant[i]), int(intents[i])))
+        print(f"  {label:22s}: hits {r['hits']:5d}  answers belonging to the wrong tenant {r['false_hits']:5d} ({r['false_hits']/max(1,r['hits']):.3f} of hits)")
+
+    print("\n== 6. Staleness: 25% of answers change at t=2000 (1 request/second); stale serves after the change, by TTL ==")
+    w6 = World(seed=21)
+    n = 4000
+    intents, vecs = w6.stream(n, dup_frac=0.0)
+    changed = np.random.default_rng(8).random(w6.n_intents) < 0.25
+    version = lambda i: 1 if (i >= 2000 and changed[intents[i]]) else 0
+    for ttl in (math.inf, 3600.0, 600.0, 120.0):
+        cache = SemanticCache(w6.dim, 0.97, ttl)
+        hits_after = stale_after = hits = 0
+        for i in range(n):
+            e, _ = cache.lookup("k", vecs[i], float(i))
+            truth = (int(intents[i]), version(i))
+            if e is not None:
+                hits += 1
+                if i >= 2000:
+                    hits_after += 1
+                    stale_after += e["answer"] != truth
+            else:
+                cache.insert("k", vecs[i], truth, float(i))
+        print(f"  ttl={'inf' if ttl == math.inf else int(ttl):>5}: hit rate {hits / n:.3f}   after the change: {stale_after:4d} stale of {hits_after:4d} hits ({stale_after / max(1, hits_after):.3f})")
+
+
+def calibrate(sims, same, taus, max_false_hit=0.01):
+    """Pick the LOWEST threshold whose Wilson UPPER bound on the false-match rate among DIFFERENT-intent pairs is
+    <= max_false_hit. sims: cosine per labelled pair; same: bool per pair (True = same intent / reusable answer).
+    Returns (chosen_tau or None, table rows (tau, recall, false_x, false_n, upper))."""
+    sims, same = np.asarray(sims), np.asarray(same, bool)
+    diff = sims[~same]
+    rows, chosen = [], None
+    for t in sorted(taus):
+        x = int((diff >= t).sum())
+        up = wilson(x, len(diff))[1]
+        rows.append((t, float((sims[same] >= t).mean()), x, len(diff), up))
+        if chosen is None and up <= max_false_hit:
+            chosen = t
+    return chosen, rows
+
+
+def calibrate_cli(path, model_name):
+    """UNTESTED against a real model. pairs.jsonl lines: {"a": "...", "b": "...", "same": true|false}"""
+    import json
+    from sentence_transformers import SentenceTransformer          # pip install sentence-transformers
+    model = SentenceTransformer(model_name)
+    pairs = [json.loads(l) for l in open(path)]
+    ea = model.encode([p["a"] for p in pairs], normalize_embeddings=True)
+    eb = model.encode([p["b"] for p in pairs], normalize_embeddings=True)
+    sims = (ea * eb).sum(1)
+    chosen, rows = calibrate(sims, [p["same"] for p in pairs], [round(0.80 + 0.01 * i, 2) for i in range(20)])
+    for t, rec, x, n, up in rows:
+        print(f"tau={t:.2f} recall={rec:.3f} false_matches={x}/{n} upper95={up:.4f}")
+    print("chosen threshold:", chosen)
+
+
+def calib_selftest():
+    w = World(seed=0)
+    rng = np.random.default_rng(2)
+    a = rng.integers(0, w.n_intents, 3000)
+    sa = w.paraphrase(a)
+    same_sims = (sa * w.paraphrase(a)).sum(1)
+    b = (a // w.M) * w.M + (a % w.M + rng.integers(1, w.M, 3000)) % w.M
+    sib_sims = (sa * w.paraphrase(b)).sum(1)
+    sims = np.concatenate([same_sims, sib_sims])
+    lab = np.concatenate([np.ones(3000, bool), np.zeros(3000, bool)])
+    chosen, rows = calibrate(sims, lab, [0.90, 0.92, 0.93, 0.94, 0.95, 0.96])
+    ok = chosen is not None and all(r[4] > 0.01 for r in rows if r[0] < chosen) and rows[[r[0] for r in rows].index(chosen)][4] <= 0.01
+    print(f"  [{'PASS' if ok else 'FAIL'}] calibrate() picks tau={chosen}: lowest threshold with Wilson upper bound <= 1% on 3000 sibling pairs")
+    return ok
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "calibrate":
+        calibrate_cli(sys.argv[2], sys.argv[3]); sys.exit(0)
+    t0 = time.time()
+    print("self-tests:")
+    ok = selftests()
+    ok = calib_selftest() and ok
+    if "--selftest" not in sys.argv:
+        experiments()
+    print(f"\n{'ALL PASS' if ok else 'FAILURES'}   ({time.time() - t0:.0f} s)")
+    sys.exit(0 if ok else 1)

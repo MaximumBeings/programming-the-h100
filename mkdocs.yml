@@ -176,6 +176,8 @@ nav:
       - 36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM: 36-benchmark-teardown.md
       - 37. Speculative Decoding at 70B — Multi-GPU Cost Model: 37-speculative-decoding-70b.md
 
+  - Part XIII — Hardware-Agnostic Inference Systems:
+      - 38. Semantic Cache — Thresholds, False Hits, Economics: 38-semantic-cache.md
   - Blackwell Appendix:
       - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md
       - Native FP4 — NVFP4 and MXFP4 Formats and Emulation: appendix-blackwell-fp4.md
