@@ -167,6 +167,11 @@ nav:
       - 30. Attention from Layouts to Online Softmax: 30-cutlass-attention-foundations.md
       - 31. Hopper CUTLASS FMHA — Build, Trace and Validate: 31-cutlass-hopper-fmha.md
 
+  - Part XII — Inference Systems on Hopper:
+      - Overview and the Twelve Projects: inference-systems-overview.md
+      - 32. Inference Engine Anatomy and the Measurement Harness: 32-inference-engine-and-harness.md
+      - 33. MoE Expert Parallelism — Sharding, All-to-All and Load Balance: 33-moe-expert-parallel.md
+
   - Blackwell Appendix:
       - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md
 
