@@ -15,8 +15,8 @@ The project list comes from a public LinkedIn post by Ravi A Samy listing twelve
 | # | Project | Where |
 |---|---|---|
 | 1 | Custom Triton kernel optimizer | Triton from First Principles, Part 8 |
-| 2 | Disaggregated prefill/decode cluster | Part XII (planned) |
-| 3 | Hierarchical KV-cache offloader | Part XII (planned) |
+| 2 | Disaggregated prefill/decode cluster | [Chapter 35](35-disaggregated-prefill-decode.md) |
+| 3 | Hierarchical KV-cache offloader | [Chapter 34](34-kv-cache-offloading.md) |
 | 4 | Grammar-constrained decoding engine | Triton from First Principles, Part 8 |
 | 5 | MoE expert-parallel router | [Chapter 33](33-moe-expert-parallel.md) |
 | 6 | FP4/INT4 quantization and calibration pipeline | Triton from First Principles, Part 8; native FP4 in the Blackwell appendix (planned) |
@@ -25,7 +25,7 @@ The project list comes from a public LinkedIn post by Ravi A Samy listing twelve
 | 9 | Semantic AI gateway and cache | Part XIII (planned) |
 | 10 | Multi-model complexity router | Part XIII (planned) |
 | 11 | WebGPU / MLX edge fallback | Part XIII (planned) |
-| 12 | Public inference benchmark teardown | Part XII (planned) |
+| 12 | Public inference benchmark teardown | [Chapter 36](36-benchmark-teardown.md) |
 
 The Triton book is at <https://maximumbeings.github.io/triton-from-first-principles/>.
 

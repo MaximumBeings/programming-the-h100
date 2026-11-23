@@ -171,6 +171,9 @@ nav:
       - Overview and the Twelve Projects: inference-systems-overview.md
       - 32. Inference Engine Anatomy and the Measurement Harness: 32-inference-engine-and-harness.md
       - 33. MoE Expert Parallelism — Sharding, All-to-All and Load Balance: 33-moe-expert-parallel.md
+      - 34. Hierarchical KV-Cache Offloading: 34-kv-cache-offloading.md
+      - 35. Disaggregated Prefill/Decode over RDMA: 35-disaggregated-prefill-decode.md
+      - 36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM: 36-benchmark-teardown.md
 
   - Blackwell Appendix:
       - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md
