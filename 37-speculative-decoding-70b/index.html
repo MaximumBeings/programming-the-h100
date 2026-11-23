@@ -1,0 +1,3685 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/37-speculative-decoding-70b/">
+      
+      
+        <link rel="prev" href="../36-benchmark-teardown/">
+      
+      
+        <link rel="next" href="../appendix-blackwell-b200/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>37. Speculative Decoding at 70B — Multi-GPU Cost Model - Programming the H100: CUDA, CuTe, and CUTLASS from First Principles</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/image-viewer.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-37-speculative-decoding-at-70b-multi-gpu-target-cost-model-and-measured-speedup" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-header__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              37. Speculative Decoding at 70B — Multi-GPU Cost Model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-nav__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../review-fixes-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 Review Corrections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 H100 Revalidation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../revalidation-2026-11-18/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cutlass-workshop-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    H100 CuTe/CUTLASS Workshop Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eight-gpu-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eight-A100 Training Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    B200 Compatibility Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — Introductory CuTe
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — Introductory CuTe
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cute-strides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Strides, Storage and Memory Addresses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cute-layout-algebra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hierarchical Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../18-cute-tensors-tiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    18. Tensors, Slicing & Predication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../19-cta-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    19. CTA and Byte-Address Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_18" >
+        
+          
+          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_18">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20-tiled-copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20. Thread Ownership & Tiled Copy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21-mma-atoms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    21. MMA Atoms & Register Fragments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../22-shared-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    22. Shared Layouts, Banks & Swizzles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../23-gemm-construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    23. Build a Complete Tiled GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../24-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    24. CUTLASS Collective-Builder GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../25-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    25. Hopper Pipelines & Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../26-epilogue-fusion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    26. Epilogue Fusion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../27-precision-block-scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    27. Precision & Block Scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../28-benchmarking-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    28. Benchmarking & Framework Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../29-workbook-capstone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    29. Worked Labs & Capstone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30-cutlass-attention-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XII — Inference Systems on Hopper
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XII — Inference Systems on Hopper
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-systems-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview and the Twelve Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../32-inference-engine-and-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    32. Inference Engine Anatomy and the Measurement Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../33-moe-expert-parallel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    33. MoE Expert Parallelism — Sharding, All-to-All and Load Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../34-kv-cache-offloading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    34. Hierarchical KV-Cache Offloading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../35-disaggregated-prefill-decode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    35. Disaggregated Prefill/Decode over RDMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../36-benchmark-teardown/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    37. Speculative Decoding at 70B — Multi-GPU Cost Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    37. Speculative Decoding at 70B — Multi-GPU Cost Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#371-why-speculation-helps-and-exactly-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.1 Why speculation helps, and exactly when
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#372-the-cost-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.2 The cost model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="37.2 The cost model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-compute-crossover-is-148-tokens-not-295" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The compute crossover is 148 tokens, not 295
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#373-memory-decides-the-feasible-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.3 Memory decides the feasible batch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#374-verified-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.4 Verified properties
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#375-predicted-speedups-assumptions-not-measurements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.5 Predicted speedups (assumptions, not measurements)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="37.5 Predicted speedups (assumptions, not measurements)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-3751-one-low-batch-cell-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example 37.5.1: one low-batch cell by hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-3752-one-high-batch-cell-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example 37.5.2: one high-batch cell by hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#376-multi-gpu-placement-of-the-draft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.6 Multi-GPU placement of the draft
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#377-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.7 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="37.7 Failure modes and edge cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-synthetic-alpha-experiment-and-why-not-to-over-read-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The synthetic alpha experiment, and why not to over-read it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#378-measuring-it-protocol-on-real-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.8 Measuring it: protocol on real hardware
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="37.8 Measuring it: protocol on real hardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-you-can-compare-against" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you can compare against
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#379-runbook-untested-on-h100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.9 Runbook (untested on H100)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3710-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.10 Exercises
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3711-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.11 Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chapter-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chapter Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_22" >
+        
+          
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blackwell Appendix
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_22">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Blackwell Appendix
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native B200 — UMMA, GEMM and Attention
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#371-why-speculation-helps-and-exactly-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.1 Why speculation helps, and exactly when
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#372-the-cost-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.2 The cost model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="37.2 The cost model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-compute-crossover-is-148-tokens-not-295" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The compute crossover is 148 tokens, not 295
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#373-memory-decides-the-feasible-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.3 Memory decides the feasible batch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#374-verified-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.4 Verified properties
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#375-predicted-speedups-assumptions-not-measurements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.5 Predicted speedups (assumptions, not measurements)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="37.5 Predicted speedups (assumptions, not measurements)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-3751-one-low-batch-cell-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example 37.5.1: one low-batch cell by hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-3752-one-high-batch-cell-by-hand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example 37.5.2: one high-batch cell by hand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#376-multi-gpu-placement-of-the-draft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.6 Multi-GPU placement of the draft
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#377-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.7 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="37.7 Failure modes and edge cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-synthetic-alpha-experiment-and-why-not-to-over-read-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The synthetic alpha experiment, and why not to over-read it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#378-measuring-it-protocol-on-real-hardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.8 Measuring it: protocol on real hardware
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="37.8 Measuring it: protocol on real hardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-you-can-compare-against" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you can compare against
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#379-runbook-untested-on-h100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.9 Runbook (untested on H100)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3710-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.10 Exercises
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3711-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        37.11 Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chapter-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chapter Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/37-speculative-decoding-70b.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="chapter-37-speculative-decoding-at-70b-multi-gpu-target-cost-model-and-measured-speedup">Chapter 37: Speculative Decoding at 70B: Multi-GPU Target, Cost Model and Measured Speedup<a class="headerlink" href="#chapter-37-speculative-decoding-at-70b-multi-gpu-target-cost-model-and-measured-speedup" title="Permanent link">&para;</a></h1>
+<div class="admonition abstract">
+<p class="admonition-title">Goal and prerequisites</p>
+<p>Predict, before renting any GPUs, whether speculative decoding will speed up a 70B model on 2 x H100, which draft and which depth K to use, and at what batch the benefit shrinks. Then measure it with the Chapter 36 harness. Read <a href="../32-inference-engine-and-harness/">Chapter 32</a> (decode floor) and <a href="../36-benchmark-teardown/">Chapter 36</a> (measurement). The statistics of rejection sampling are derived in the Triton book's speculative decoding chapter; here the focus is the multi-GPU system cost, including the KV cache that decides how large a batch fits at all.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Evidence level: read this first</p>
+<ul>
+<li><strong>Verified here (CPU):</strong> the cost model, the expected-tokens formulas (the closed form against a simulation of the accept/reject chain), 19 property tests, and every table below (they are the program's output).</li>
+<li><strong>Assumed:</strong> <code>mfu = 0.5</code>, 1 ms fixed overhead per step, 12 microseconds per tensor-parallel all-reduce, 90 percent memory utilization, 2 GB reserve per GPU, the model shapes, and every acceptance rate alpha in the tables. <strong>No acceptance rate in this chapter was measured on a real model pair</strong>, and the draft models are shape-only stand-ins. Every speedup is a model prediction, not a benchmark.</li>
+<li><strong>Untested on H100:</strong> the launch commands in Section 37.9. Flag names change between releases; check <code>--help</code> for your version.</li>
+</ul>
+</div>
+<h2 id="371-why-speculation-helps-and-exactly-when">37.1 Why speculation helps, and exactly when<a class="headerlink" href="#371-why-speculation-helps-and-exactly-when" title="Permanent link">&para;</a></h2>
+<p>Decode of a large model is limited by reading memory, not by arithmetic. For 70B parameters in BF16 on 2 GPUs (tensor parallel 2), each GPU holds 70 GB and one step takes at least <code>70e9 / 3.35e12 = 20.9 ms</code>. The step reads the same weights whether it processes one token or a hundred, until the arithmetic catches up with the memory traffic.</p>
+<p>Speculative decoding exploits that slack. A small <strong>draft</strong> proposes K tokens cheaply; the large <strong>target</strong> checks all K (plus one more position) in a <strong>single</strong> pass. Rejection sampling accepts a prefix of the proposals and always yields one extra token, and the output distribution is exactly the target's. If the pass costs little more than a one-token pass, several tokens are emitted for roughly the price of one.</p>
+<p>The benefit depends on four quantities:</p>
+<ol>
+<li><strong>alpha</strong>, the per-token acceptance probability (how well the draft imitates the target).</li>
+<li><strong>The draft's cost</strong> relative to the target step, including its own KV cache reads.</li>
+<li><strong>The slack in the target step:</strong> the verify pass processes <code>batch x (K+1)</code> tokens, and once that count exceeds the compute-bound threshold, extra tokens are no longer free.</li>
+<li><strong>Memory:</strong> the weights, the draft and the KV cache all share each GPU, which limits the batch before the compute threshold is reached (Section 37.3).</li>
+</ol>
+<p>The vLLM documentation makes the qualitative point that speculation reduces inter-token latency for memory-bound workloads at low to medium request rates.</p>
+<h2 id="372-the-cost-model">37.2 The cost model<a class="headerlink" href="#372-the-cost-model" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">step_time</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">tokens_per_seq</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mfu</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">overhead</span><span class="o">=</span><span class="mf">1.0e-3</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">mem</span>  <span class="o">=</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">weights_per_gpu</span><span class="p">()</span> <span class="o">+</span> <span class="n">batch</span> <span class="o">*</span> <span class="n">ctx</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">kv_per_gpu_token</span><span class="p">())</span> <span class="o">/</span> <span class="n">HBM_BW</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">comp</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">params</span> <span class="o">*</span> <span class="n">batch</span> <span class="o">*</span> <span class="n">tokens_per_seq</span> <span class="o">/</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">gpus</span> <span class="o">*</span> <span class="n">m</span><span class="o">.</span><span class="n">peak</span> <span class="o">*</span> <span class="n">mfu</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">mem</span><span class="p">,</span> <span class="n">comp</span><span class="p">)</span> <span class="o">+</span> <span class="n">overhead</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">comm_s</span><span class="p">()</span>
+</span></code></pre></div>
+<p>One forward costs the larger of the memory time (weights <strong>plus every sequence's KV cache</strong>, read once per step) and the arithmetic time, plus a fixed overhead and tensor-parallel communication. This is a roofline model: coarse, but it captures the crossover that decides everything. Components:</p>
+<ul>
+<li><strong>KV bytes per token</strong> for a Llama-3-70B shape (80 layers, 8 KV heads, head dimension 128, 2-byte values): <code>2 x 80 x 8 x 128 x 2 = 327,680</code> bytes, which is <strong>163,840 bytes per GPU</strong> at TP2 because the KV heads are sharded. At 2,048 tokens of context one sequence holds 0.34 GB per GPU.</li>
+<li><strong>Tensor-parallel communication:</strong> two all-reduces per layer, 160 per step, at an assumed 12 microseconds each: <strong>1.92 ms</strong>. That is about 9 percent of the 20.9 ms weight-read floor, so it is not negligible; measure it with <code>nccl-tests</code>.</li>
+<li><strong>Compute:</strong> <code>2 x params</code> FLOPs per token, at an assumed 50 percent of peak (989 TFLOP/s BF16, 1,979 TFLOP/s FP8, per GPU).</li>
+</ul>
+<p>Expected tokens per verify pass with per-position acceptance alpha and K proposals:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>E[tokens] = (1 - alpha^(K+1)) / (1 - alpha)                       (i.i.d. alpha)
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>E[tokens] = 1 + sum_i  prod_{j&lt;=i} alpha_j                        (position-dependent alpha_j)
+</span></code></pre></div>
+<p>One speculation cycle costs K sequential draft steps plus one verify pass of K+1 tokens per sequence, and <code>speedup = E x base_step / cycle</code>.</p>
+<h3 id="the-compute-crossover-is-148-tokens-not-295">The compute crossover is 148 tokens, not 295<a class="headerlink" href="#the-compute-crossover-is-148-tokens-not-295" title="Permanent link">&para;</a></h3>
+<p>The arithmetic time per token for 70B on 2 GPUs at 50 percent MFU is <code>140e9 / (2 x 989e12 x 0.5) = 0.1416 ms</code>. The weight-read time is 20.9 ms. They are equal at <code>20.9 / 0.1416 = 147.6</code> tokens in flight. (At 100 percent MFU the figure would be about 295; the model assumes half of peak.) KV traffic raises the memory time and pushes the crossover up; at FP8, batch 96, 2k context it is about 284 tokens. A test checks the 147.6 figure.</p>
+<h2 id="373-memory-decides-the-feasible-batch">37.3 Memory decides the feasible batch<a class="headerlink" href="#373-memory-decides-the-feasible-batch" title="Permanent link">&para;</a></h2>
+<p>Before any speed comparison, ask what fits. Per GPU, with 90 percent utilization of 80 GiB (77.3 GB) and a 2 GB reserve:</p>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th>Weights per GPU</th>
+<th>Left for KV</th>
+<th>KV capacity per GPU (tokens)</th>
+<th>Max batch at 2k context</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>70B BF16, TP2, 1B draft on GPU0</td>
+<td>70 GB + 2.4 GB</td>
+<td>2.9 GB</td>
+<td>17,758</td>
+<td>8 (17 at 1k context)</td>
+</tr>
+<tr>
+<td>70B BF16, TP2, <strong>8B draft on GPU0</strong></td>
+<td>70 GB + 16 GB</td>
+<td><strong>negative</strong></td>
+<td>none</td>
+<td><strong>does not fit</strong></td>
+</tr>
+<tr>
+<td>70B FP8, TP2, 1B draft on GPU0</td>
+<td>35 GB + 2.4 GB</td>
+<td>37.9 GB</td>
+<td>231,381</td>
+<td>112</td>
+</tr>
+<tr>
+<td>70B FP8, TP2, 8B draft on GPU0</td>
+<td>35 GB + 16 GB</td>
+<td>24.3 GB</td>
+<td>148,373</td>
+<td>72</td>
+</tr>
+<tr>
+<td>70B FP8, TP2, EAGLE-style head</td>
+<td>35 GB + 1.8 GB</td>
+<td>38.5 GB</td>
+<td>235,043</td>
+<td>114</td>
+</tr>
+</tbody>
+</table>
+<p>Two consequences:</p>
+<ol>
+<li><strong>A BF16 70B model on 2 x H100 is KV-limited to a handful of sequences.</strong> At 2k context only 8 sequences fit beside the 1B draft; the roofline's compute-bound regime (about 148 tokens in flight) is reached only by raising K, not by batch. A BF16 8B draft cannot share a GPU with the BF16 target at all (70 + 16 = 86 GB exceeds the 77 GB budget); it needs a third GPU. The tables therefore use the 1B draft for BF16 and show 8B only for FP8.</li>
+<li><strong>FP8 weights change the picture.</strong> Halving the weights frees about 35 GB per GPU for KV, so 70 to 110 sequences at 2k context fit, and the batch dimension becomes meaningful. FP8 also halves the weight-read floor to 10.5 ms.</li>
+</ol>
+<p>The draft's own KV cache is modelled too (1B Llama-3.2-shaped: 32 KB per token; 8B: 128 KB per token) and its reads add to every draft step; that is why large drafts get expensive at high batch. The draft's KV capacity is not subtracted from the budget (a small error for the 1B draft, larger for the 8B draft).</p>
+<h2 id="374-verified-properties">37.4 Verified properties<a class="headerlink" href="#374-verified-properties" title="Permanent link">&para;</a></h2>
+<p>The file <code>ch37_spec_decode_70b.py</code> (<a href="../examples/inference-systems/ch37_spec_decode_70b.py">download</a>) checks 19 properties; the notable ones:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>  [PASS] 70B BF16 TP2 weights-only decode floor = 20.9 ms
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  [PASS] KV bytes/token for a Llama-3-70B shape = 327,680 total, 163,840 per GPU at TP2
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  [PASS] 80 layers x 2 all-reduces x 12 us = 1.92 ms TP communication
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  [PASS] compute/memory crossover with no KV is 147.6 tokens (NOT 295: MFU 0.5 halves it)
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  [PASS] BF16 TP2 + 8B draft colocated does not fit (70 GB + 16 GB &gt; 77 GB budget)
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  [PASS] FP8 TP2 + 8B draft colocated fits; max batch at 2k context equals the hand computation (72)
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  [PASS] positional formula equals the i.i.d. formula for constant alpha
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  [PASS] positional formula matches simulation for decaying alpha (3.578)
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  [PASS] K=0 gives speedup exactly 1.0
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  [PASS] speedup strictly increases with alpha
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  [PASS] best K nondecreasing in alpha ([2, 3, 5, 11])
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  [PASS] FP8 TP2, ctx 256, K=4: speedup nonincreasing in batch ([2.21, 2.16, 1.44, 0.89, 0.69, 0.66])
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>  [PASS] a draft as expensive as the target loses to plain decoding
+</span></code></pre></div>
+<p>The accept/reject simulation (200,000 cycles for each of 16 alpha and K pairs) is a <strong>sanity check of the closed form</strong>, not independent evidence of the model: it confirms the algebra, not the physics. The nonincreasing-in-batch test uses a short context (256) where the batch can grow past the crossover, and shows speculation falling below 1.0 (0.89x at 128 sequences, 0.66x at 512) once the verify pass is compute-bound. With the realistic 2k context that regime is not reachable by batch alone, because the KV cache runs out first.</p>
+<h2 id="375-predicted-speedups-assumptions-not-measurements">37.5 Predicted speedups (assumptions, not measurements)<a class="headerlink" href="#375-predicted-speedups-assumptions-not-measurements" title="Permanent link">&para;</a></h2>
+<p>Best K searched over 1 to 12 in each cell. "n/a (KV)" marks batches that do not fit in memory.</p>
+<p><strong>A. 70B BF16, TP2, 1B draft on GPU0, context 1,024.</strong> Base step 23.9 ms at B=1 (20.9 weights + 1.0 overhead + 1.9 comm + KV), 24.6 ms at B=16.</p>
+<table>
+<thead>
+<tr>
+<th>alpha</th>
+<th>B=1</th>
+<th>B=4</th>
+<th>B=8</th>
+<th>B=16</th>
+<th>B=24</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.5</td>
+<td>1.54x (K=3)</td>
+<td>1.54x (K=3)</td>
+<td>1.53x (K=3)</td>
+<td>1.53x (K=3)</td>
+<td>n/a (KV)</td>
+</tr>
+<tr>
+<td>0.7</td>
+<td>2.16x (K=5)</td>
+<td>2.15x (K=5)</td>
+<td>2.15x (K=5)</td>
+<td>2.13x (K=5)</td>
+<td>n/a (KV)</td>
+</tr>
+<tr>
+<td>0.8</td>
+<td>2.76x (K=7)</td>
+<td>2.75x (K=7)</td>
+<td>2.74x (K=7)</td>
+<td>2.71x (K=7)</td>
+<td>n/a (KV)</td>
+</tr>
+<tr>
+<td>0.9</td>
+<td>4.00x (K=11)</td>
+<td>3.98x (K=11)</td>
+<td>3.95x (K=11)</td>
+<td>3.81x (K=8)</td>
+<td>n/a (KV)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>B1. 70B FP8, TP2, 1B draft, context 2,048 (max batch 112).</strong> Base step 13.5 ms at B=1, 23.0 ms at B=96.</p>
+<table>
+<thead>
+<tr>
+<th>alpha</th>
+<th>B=1</th>
+<th>B=8</th>
+<th>B=32</th>
+<th>B=64</th>
+<th>B=96</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.5</td>
+<td>1.39x (K=2)</td>
+<td>1.38x (K=2)</td>
+<td>1.36x (K=2)</td>
+<td>1.34x (K=2)</td>
+<td>1.32x (K=2)</td>
+</tr>
+<tr>
+<td>0.7</td>
+<td>1.83x (K=4)</td>
+<td>1.81x (K=4)</td>
+<td>1.78x (K=3)</td>
+<td>1.68x (K=2)</td>
+<td>1.65x (K=2)</td>
+</tr>
+<tr>
+<td>0.8</td>
+<td>2.24x (K=5)</td>
+<td>2.22x (K=5)</td>
+<td>2.16x (K=5)</td>
+<td>1.94x (K=3)</td>
+<td>1.83x (K=2)</td>
+</tr>
+<tr>
+<td>0.9</td>
+<td>3.02x (K=8)</td>
+<td>2.97x (K=8)</td>
+<td>2.74x (K=5)</td>
+<td>2.27x (K=3)</td>
+<td>2.04x (K=2)</td>
+</tr>
+</tbody>
+</table>
+<p>Ridge (tokens in flight at which compute equals memory): 149, 159, 193, 238, 284 for B = 1, 8, 32, 64, 96.</p>
+<p><strong>B2. Same, 8B draft (max batch 72).</strong></p>
+<table>
+<thead>
+<tr>
+<th>alpha</th>
+<th>B=1</th>
+<th>B=8</th>
+<th>B=32</th>
+<th>B=64</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.5</td>
+<td>1.05x (K=1)</td>
+<td>1.03x (K=1)</td>
+<td>1.00x (K=1)</td>
+<td>0.97x (K=1)</td>
+</tr>
+<tr>
+<td>0.7</td>
+<td>1.18x (K=1)</td>
+<td>1.17x (K=1)</td>
+<td>1.13x (K=1)</td>
+<td>1.10x (K=1)</td>
+</tr>
+<tr>
+<td>0.8</td>
+<td>1.31x (K=2)</td>
+<td>1.28x (K=2)</td>
+<td>1.22x (K=2)</td>
+<td>1.16x (K=2)</td>
+</tr>
+<tr>
+<td>0.9</td>
+<td>1.49x (K=4)</td>
+<td>1.46x (K=3)</td>
+<td>1.37x (K=3)</td>
+<td>1.29x (K=2)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>B3. Same, EAGLE-style head (one decoder layer's worth of parameters, reusing target features; max batch 114).</strong></p>
+<table>
+<thead>
+<tr>
+<th>alpha</th>
+<th>B=1</th>
+<th>B=8</th>
+<th>B=32</th>
+<th>B=64</th>
+<th>B=96</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.5</td>
+<td>1.42x (K=2)</td>
+<td>1.43x (K=2)</td>
+<td>1.46x (K=2)</td>
+<td>1.49x (K=2)</td>
+<td>1.50x (K=2)</td>
+</tr>
+<tr>
+<td>0.7</td>
+<td>1.90x (K=4)</td>
+<td>1.93x (K=4)</td>
+<td>1.99x (K=4)</td>
+<td>1.92x (K=3)</td>
+<td>1.87x (K=2)</td>
+</tr>
+<tr>
+<td>0.8</td>
+<td>2.35x (K=5)</td>
+<td>2.38x (K=6)</td>
+<td>2.48x (K=5)</td>
+<td>2.24x (K=3)</td>
+<td>2.09x (K=2)</td>
+</tr>
+<tr>
+<td>0.9</td>
+<td>3.21x (K=9)</td>
+<td>3.27x (K=9)</td>
+<td>3.15x (K=5)</td>
+<td>2.60x (K=3)</td>
+<td>2.32x (K=2)</td>
+</tr>
+</tbody>
+</table>
+<p>What the tables say, and what they do not:</p>
+<ol>
+<li><strong>BF16 at 2 x H100 gives large predicted gains for a tiny batch</strong> (1.5x to 4x), because the step is a pure weight read and an independent small draft is cheap. But only 8 to 17 sequences fit, so this is a latency configuration, not a throughput one.</li>
+<li><strong>At FP8 the predicted gains are smaller</strong> (1.4x to 3.0x at B=1 for the 1B draft), because the base step is already 13.5 ms and the draft's fixed overhead is a larger fraction of it. They shrink with batch (2.24x at B=1 to 1.83x at B=96 for alpha 0.8) as the verify pass approaches and passes the ridge; none falls below 1.0 within the feasible batch for the 1B draft.</li>
+<li><strong>The 8B draft is a poor trade at FP8</strong>: 1.05x to 1.49x, falling to 0.97x at 64 sequences with alpha 0.5. Its weights and KV reads cost several milliseconds per draft step.</li>
+<li><strong>The EAGLE-style row beats the 1B draft at high batch</strong> (2.09x against 1.83x at B=96, alpha 0.8) because its one-layer KV cache is tiny. <strong>But the alpha rows are the same for every draft, which is unfair to EAGLE:</strong> published head-based drafts usually reach higher acceptance than an independent small model, and that difference would widen the gap further. The table shows the cost side only; the acceptance side must be measured.</li>
+<li><strong>The best K moves with alpha and with the draft</strong>: deeper for a cheap draft and a high alpha. The K=11 cells in Table A sit on a flat curve (K=10 to 12 differ by under 0.5 percent) and real alpha usually decays with position (Section 37.7), so treat them as "deep", not as a precise optimum.</li>
+<li><strong>Everything depends on alpha, which is not in this chapter's data.</strong> The tables show sensitivity; they do not tell you which row applies to your model pair and prompts. Measure it (Section 37.8).</li>
+</ol>
+<h3 id="worked-example-3751-one-low-batch-cell-by-hand">Worked Example 37.5.1: one low-batch cell by hand<a class="headerlink" href="#worked-example-3751-one-low-batch-cell-by-hand" title="Permanent link">&para;</a></h3>
+<p>Table A: 70B BF16, 1B draft, alpha 0.8, K=7, B=1, context 1,024.</p>
+<ul>
+<li>Expected tokens: <code>(1 - 0.8^8) / 0.2 = (1 - 0.1678) / 0.2 = 4.16</code>.</li>
+<li>Base step: weights 20.90 ms, KV <code>1 x 1024 x 163,840 = 0.17 GB</code> -&gt; 0.05 ms, overhead 1.00, comm 1.92: <strong>23.87 ms</strong>.</li>
+<li>Draft step: 1B weights 2.4 GB plus KV <code>1024 x 32,768 = 0.03 GB</code>, memory time 0.73 ms, plus 1.00 overhead (no comm, one GPU): 1.73 ms. Seven steps: 12.1 ms.</li>
+<li>Verify: 8 tokens in flight, still memory-bound: 23.87 ms.</li>
+<li>Cycle: 36.0 ms. Speedup: <code>4.16 x 23.87 / 36.0 = 2.76</code>. Matches the table.</li>
+</ul>
+<p>The fixed overhead (1.0 ms) is larger than the draft's weight-read time (0.7 ms), so cutting launch and scheduling overhead matters more for a tiny draft than shrinking it further.</p>
+<h3 id="worked-example-3752-one-high-batch-cell-by-hand">Worked Example 37.5.2: one high-batch cell by hand<a class="headerlink" href="#worked-example-3752-one-high-batch-cell-by-hand" title="Permanent link">&para;</a></h3>
+<p>Table B1: 70B FP8, 1B draft, alpha 0.8, K=2, B=96, context 2,048.</p>
+<ul>
+<li>Expected tokens: <code>(1 - 0.8^3) / 0.2 = 2.44</code>.</li>
+<li>Base step: weights 35 GB, KV <code>96 x 2048 x 163,840 = 32.2 GB</code>, memory <code>(35 + 32.2) / 3350 = 20.06 ms</code>; compute for 96 tokens <code>2 x 70e9 x 96 / (2 x 1979e12 x 0.5) = 6.8 ms</code>. Memory dominates. Add 1.0 overhead and 1.92 comm: <strong>22.98 ms</strong>.</li>
+<li>Verify, 288 tokens in flight: compute <code>20.4 ms</code> now exceeds memory <code>20.06 ms</code>, so the step is just compute-bound: 20.4 + 2.92 = <strong>23.29 ms</strong>. (Three times the tokens cost only 1.3 percent more time; that is the slack speculation uses.)</li>
+<li>Draft step: weights 2.4 GB plus KV <code>96 x 2048 x 32,768 = 6.4 GB</code>, memory time 2.64 ms, plus 1.0 overhead: 3.64 ms. Two steps: 7.28 ms.</li>
+<li>Cycle: 30.57 ms. Speedup: <code>2.44 x 22.98 / 30.57 = 1.83</code>. Matches the table.</li>
+</ul>
+<p>At this batch the <strong>draft's KV traffic (6.4 GB per step) is 2.7 times its weights (2.4 GB)</strong>, which is why drafts with large KV caches fall behind at high batch.</p>
+<h2 id="376-multi-gpu-placement-of-the-draft">37.6 Multi-GPU placement of the draft<a class="headerlink" href="#376-multi-gpu-placement-of-the-draft" title="Permanent link">&para;</a></h2>
+<p>The target occupies 2 GPUs with tensor parallelism. The draft must run somewhere, and the choice changes the cost and the memory:</p>
+<table>
+<thead>
+<tr>
+<th>Placement</th>
+<th>Effect</th>
+<th>When it fits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Draft on one target GPU, no TP (<code>draft_tensor_parallel_size = 1</code> in vLLM)</td>
+<td>One GPU computes the draft while the other idles; proposals must reach the other rank (small broadcast); <strong>KV capacity becomes uneven</strong> because GPU0 holds the draft weights, so the worst GPU sets the batch limit (the model charges this)</td>
+<td>Small drafts such as 1B or an EAGLE-style head</td>
+</tr>
+<tr>
+<td>Draft sharded with the same TP</td>
+<td>Draft weights per GPU halve, but a per-layer all-reduce is added; for a small draft the communication exceeds the arithmetic</td>
+<td>Large drafts (8B and up) when memory forces it</td>
+</tr>
+<tr>
+<td>Draft on a separate GPU</td>
+<td>No memory contention, one more GPU, a transfer of proposals each cycle</td>
+<td>BF16 targets that cannot colocate an 8B draft</td>
+</tr>
+<tr>
+<td>Draft heads on the target (EAGLE, MTP, Medusa style)</td>
+<td>Very cheap: reuse target hidden states; needs a trained head</td>
+<td>When one exists for your model</td>
+</tr>
+</tbody>
+</table>
+<p>The model prices only the first row: the draft is a single-GPU model on GPU0, and the proposal transfer is not charged (add a <code>comm</code> term from your interconnect measurements). The target's tensor-parallel communication is charged as 1.92 ms per step, an assumed value.</p>
+<h2 id="377-failure-modes-and-edge-cases">37.7 Failure modes and edge cases<a class="headerlink" href="#377-failure-modes-and-edge-cases" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Effect</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>alpha varies with position</td>
+<td>The i.i.d. formula is wrong in either direction: with the first-position rate it overstates (4.69 vs 3.58 in Solution 4), with the mean rate it understates (2.94 vs 3.58)</td>
+<td>Measure acceptance per position and use <code>E = 1 + sum_i prod_{j&lt;=i} alpha_j</code></td>
+</tr>
+<tr>
+<td>High temperature or creative text</td>
+<td>Draft and target distributions overlap less (direction depends on the models)</td>
+<td>Tune K per workload; consider n-gram or suffix methods for repetitive content</td>
+</tr>
+<tr>
+<td>KV cache nearly full</td>
+<td>Large batches do not fit; evictions and recompute dominate</td>
+<td>Compute the feasible batch (Section 37.3) before tuning K</td>
+</tr>
+<tr>
+<td>Batch grows past the ridge</td>
+<td>Verify turns compute-bound and speculation slows everything (0.89x at 128 sequences, short context)</td>
+<td>Dynamic speculation depth, or disable above a measured batch threshold</td>
+</tr>
+<tr>
+<td>Draft and target tokenizers differ</td>
+<td>Proposals cannot be verified</td>
+<td>Use a draft from the same family and tokenizer</td>
+</tr>
+<tr>
+<td>Draft too large or too slow</td>
+<td>Cycle cost exceeds the savings</td>
+<td>Compare draft step time with target step time first</td>
+</tr>
+<tr>
+<td>Different sampling params between phases</td>
+<td>Violates the rejection-sampling guarantee</td>
+<td>Apply identical temperature, top-p and top-k to both distributions</td>
+</tr>
+<tr>
+<td>Prefix caching or other features interact</td>
+<td>Support varies by engine and release; the SGLang docs list limitations for some modes</td>
+<td>Check the release notes for your version</td>
+</tr>
+<tr>
+<td>Acceptance measured on one dataset, served on another</td>
+<td>Surprise slowdown</td>
+<td>Measure on the production distribution</td>
+</tr>
+<tr>
+<td>Tensor-parallel communication larger than assumed</td>
+<td>Base step and verify both grow by the same fixed amount, lowering the relative gain</td>
+<td>Measure the all-reduce latency and update <code>AR_LATENCY</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-synthetic-alpha-experiment-and-why-not-to-over-read-it">The synthetic alpha experiment, and why not to over-read it<a class="headerlink" href="#the-synthetic-alpha-experiment-and-why-not-to-over-read-it" title="Permanent link">&para;</a></h3>
+<p>The file also computes alpha from distributions: <code>alpha = sum_x min(p(x), q(x))</code>, the overlap of target <code>p</code> and draft <code>q</code>. With draft logits equal to target logits plus Gaussian noise of standard deviation 0.8, over 400 random 50-token distributions:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>  T=0.2 : alpha=0.708     T=0.5 : alpha=0.726     T=1.0 : alpha=0.782     T=1.5 : alpha=0.818
+</span></code></pre></div>
+<p>Alpha <strong>rises</strong> with temperature here because a higher temperature flattens both distributions and shrinks the effect of the logit noise. That is a property of this synthetic noise model, not of real models. The experiment's value is that it shows the correct definition of alpha and a way to compute it from logged distributions. Do not quote its numbers.</p>
+<h2 id="378-measuring-it-protocol-on-real-hardware">37.8 Measuring it: protocol on real hardware<a class="headerlink" href="#378-measuring-it-protocol-on-real-hardware" title="Permanent link">&para;</a></h2>
+<p>Use <a href="../36-benchmark-teardown/">Chapter 36</a>'s open-loop client and manifest. Add the speculation-specific steps:</p>
+<ol>
+<li><strong>Baseline first.</strong> Run the target alone, no speculation, same engine, same flags, at the same offered rates.</li>
+<li><strong>Measure alpha per position.</strong> Most engines expose acceptance or accepted-length metrics (vLLM logs speculative decoding statistics and exposes <code>vllm:spec_decode_*</code> metrics in recent versions; SGLang exposes <code>sglang:spec_*</code> metrics). List the metric names from your server's <code>/metrics</code> endpoint and record mean accepted length and per-position acceptance on <strong>your</strong> prompts.</li>
+<li><strong>Sweep K</strong> (for example 1, 2, 3, 5, 8) at low and high offered load. Plot speedup against K for each load.</li>
+<li><strong>Sweep load</strong> to find where speculation stops helping on your hardware. Compare it with the model's prediction; a different crossover tells you the real MFU, overhead and communication cost.</li>
+<li><strong>Check output equivalence.</strong> At temperature 0, outputs with and without speculation should match token for token on the vast majority of prompts; small differences can come from numerical non-determinism in batched kernels. At temperature above 0, compare distributions statistically (the total variation test in the Triton book's speculative chapter), not strings.</li>
+<li><strong>Report the SLO view.</strong> Speculation helps TPOT at low load and can hurt TTFT slightly (extra prefill for the draft) and tail latency at high load. Report p99 TTFT, p99 TPOT and goodput, not only mean speed.</li>
+<li><strong>Calibrate the model.</strong> Fit <code>mfu</code>, <code>overhead</code> and <code>AR_LATENCY</code> so the model matches your measured base step times, then compare predicted and measured speedup. The gap is what your engine's real behavior adds.</li>
+</ol>
+<h3 id="what-you-can-compare-against">What you can compare against<a class="headerlink" href="#what-you-can-compare-against" title="Permanent link">&para;</a></h3>
+<p>The SGLang documentation publishes a single-H100 comparison on a smaller model: roughly 158 tokens per second without speculation, 244 with EAGLE-2 and 373 with EAGLE-3. These are vendor figures on one model and one GPU, useful as an order of magnitude (1.5x to 2.4x with trained draft heads), and say nothing about 70B on two GPUs.</p>
+<h2 id="379-runbook-untested-on-h100">37.9 Runbook (untested on H100)<a class="headerlink" href="#379-runbook-untested-on-h100" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">UNTESTED ON H100</p>
+<p>Commands follow the vLLM and SGLang documentation for the versions visible when this chapter was written. Verify every flag with <code>--help</code> for your exact version, and confirm that your release supports <code>method: draft_model</code> and <code>draft_tensor_parallel_size</code>; the older separate speculative flags are deprecated in vLLM.</p>
+</div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># --- vLLM: separate draft model, target on 2 GPUs, draft on 1 ---</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>vllm<span class="w"> </span>serve<span class="w"> </span>&lt;70B-model&gt;<span class="w"> </span>--tensor-parallel-size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--speculative-config<span class="w"> </span><span class="s1">'{"method":"draft_model","model":"&lt;small-draft-model&gt;",</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="s1">                         "num_speculative_tokens":5,"draft_tensor_parallel_size":1}'</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># --- vLLM: no draft model (lookup based), cheap to try first ---</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>vllm<span class="w"> </span>serve<span class="w"> </span>&lt;70B-model&gt;<span class="w"> </span>--tensor-parallel-size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>--speculative-config<span class="w"> </span><span class="s1">'{"method":"ngram","num_speculative_tokens":5,"prompt_lookup_max":4}'</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># --- SGLang: EAGLE-3 draft head ---</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>python<span class="w"> </span>-m<span class="w"> </span>sglang.launch_server<span class="w"> </span>--model-path<span class="w"> </span>&lt;70B-model&gt;<span class="w"> </span>--tp-size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span>--speculative-algorithm<span class="w"> </span>EAGLE3<span class="w"> </span>--speculative-draft-model-path<span class="w"> </span>&lt;eagle3-draft&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span>--speculative-num-steps<span class="w"> </span><span class="m">3</span><span class="w"> </span>--speculative-eagle-topk<span class="w"> </span><span class="m">1</span><span class="w"> </span>--speculative-num-draft-tokens<span class="w"> </span><span class="m">4</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="c1"># --- list the speculative metrics each server exposes ---</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://127.0.0.1:8000/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>spec<span class="w">      </span><span class="c1"># vLLM</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://127.0.0.1:30000/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>spec<span class="w">     </span><span class="c1"># SGLang (needs --enable-metrics)</span>
+</span></code></pre></div>
+<p>vLLM takes all speculative settings through one <code>--speculative-config</code> JSON; SGLang's tree parameters (<code>num-steps</code>, <code>eagle-topk</code>, <code>num-draft-tokens</code>) interact and should be tuned together with <code>--cuda-graph-max-bs</code> and memory settings. Always run the baseline with the same flags minus the speculative ones, and check the KV capacity each engine reports at startup against Section 37.3.</p>
+<h2 id="3710-exercises">37.10 Exercises<a class="headerlink" href="#3710-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Compute by hand Table A's cell for alpha 0.7, K=5, B=1 (BF16, 1B draft, context 1,024). Report expected tokens, draft step, verify step, cycle and speedup.</li>
+<li>For the same configuration at alpha 0.9, find where the speedup peaks over K and describe the curve's shape.</li>
+<li>Why does Table B1 never show a speedup below 1.0, while the short-context test in Section 37.4 does?</li>
+<li>The per-position acceptance is 0.9, 0.8, 0.7, 0.6, 0.5. Compute the expected tokens per pass, then compare it with the i.i.d. formula using (a) the first-position rate and (b) the mean rate, K=5.</li>
+<li>A draft step costs 0.73 ms of memory time plus 1.0 ms overhead. Which saves more: halving the draft's weights, or halving the overhead?</li>
+<li>Your measured BF16 baseline step at B=1 is 25.5 ms, not 23.9. Give two explanations and how you would tell them apart.</li>
+<li>Show that the BF16 70B target with an 8B draft cannot run on 2 GPUs, and give two ways to make it feasible with their costs.</li>
+<li>Design the experiment that decides whether to disable speculation above a batch threshold.</li>
+<li>Extend the model so the draft's KV cache is subtracted from the GPU's KV budget, and recompute the max batch for the FP8 + 8B configuration.</li>
+</ol>
+<h2 id="3711-solutions">37.11 Solutions<a class="headerlink" href="#3711-solutions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Expected tokens <code>(1 - 0.7^6)/0.3 = 2.94</code>. Base step 23.87 ms (Example 37.5.1). Draft step 1.73 ms, five steps 8.63 ms. Verify (6 tokens, memory-bound): 23.87 ms. Cycle 32.5 ms. Speedup <code>2.94 x 23.87 / 32.5 = 2.16</code>, matching the table.</li>
+<li>The speedup at alpha 0.9 is 3.64x at K=6, 3.88x at K=8, 3.98x at K=10, <strong>4.00x at K=11</strong>, 3.99x at K=12, 3.95x at K=14 and 3.86x at K=16. The curve is flat from K=10 to 12 (under 0.5 percent) and falls slowly after, because each extra draft step costs a fixed 1.7 ms while the marginal expected tokens shrink as <code>0.9^K</code>.</li>
+<li>In Table B1 the feasible batch (at most 112 sequences at 2k context) keeps the verify pass near the ridge but the KV traffic keeps the base step memory-bound, so verification stays cheap. The short-context test uses context 256, where the KV cache is small enough for batches of 128 to 512 to fit, and there verify is deep in the compute-bound region.</li>
+<li>Positional: <code>1 + 0.9 + 0.72 + 0.504 + 0.3024 + 0.1512 = 3.58</code>. i.i.d. with the first-position rate 0.9: <code>(1 - 0.9^6)/0.1 = 4.69</code> (overstates by 31 percent). i.i.d. with the mean rate 0.7: <code>(1 - 0.7^6)/0.3 = 2.94</code> (understates by 18 percent). Neither shortcut is right; use measured positional rates.</li>
+<li>Halving the overhead saves 0.5 ms per draft step; halving the draft's weights saves <code>1.2 GB / 3.35 TB/s = 0.36 ms</code>. The overhead is the better target, and it also applies to every draft size.</li>
+<li>Candidate causes: lower achievable memory bandwidth than the 3.35 TB/s peak (real kernels reach perhaps 70 to 90 percent, which alone would put the weight read near 23 to 30 ms), or a larger tensor-parallel communication cost than 1.92 ms. Tell them apart by timing a pure weight-read kernel for effective bandwidth, and by profiling the step for all-reduce time.</li>
+<li>BF16 weights are 140 GB across 2 GPUs, 70 GB each; adding 16 GB of 8B draft gives 86 GB, more than the 77.3 GB budget (and more than the 80 GiB card). Options: (a) run the draft on a third GPU: the model gives 1.47x, 1.71x and 2.12x at B=1, context 1,024, for alpha 0.7, 0.8 and 0.9 (best K 2, 3 and 6, proposal transfer not charged), against 2.16x, 2.76x and 4.00x for a 1B draft on GPU0, for a 50 percent increase in hardware; (b) quantize the target to FP8, which frees 35 GB per GPU (the cost is a quality evaluation and a change of baseline).</li>
+<li>Run the baseline and speculative configurations across offered rates, record the batch actually in flight (from the engine's metrics), find the rate at which speculative p99 TPOT crosses the baseline, set the threshold below it with margin, and verify with a ramp test that goodput does not drop at the switch point.</li>
+<li>Subtract <code>draft.kv_per_token x ctx x max_batch</code> from the budget, solving for the batch. For the 8B draft, 128 KB per token adds 0.27 GB per 2,048-token sequence on the draft's GPU, against 0.34 GB per sequence per GPU for the target, so the draft's KV nearly halves the feasible batch: the FP8 + 8B maximum falls from 72 to roughly 40. Compute it with the code: the point is that the draft's KV, ignored in the tables, matters for the 8B draft.</li>
+</ol>
+<h2 id="chapter-summary">Chapter Summary<a class="headerlink" href="#chapter-summary" title="Permanent link">&para;</a></h2>
+<p>For a memory-bound 70B model on 2 H100s the decode floor is 20.9 ms per token, about 24 ms with overhead, tensor-parallel communication and KV reads, and a verify pass over K+1 tokens costs almost the same until about 148 tokens are in flight. Speculative decoding converts that slack into speed: expected tokens per pass is <code>(1 - alpha^(K+1))/(1 - alpha)</code> for constant alpha, or <code>1 + sum prod alpha_j</code> when acceptance varies with position, and a cycle costs K draft steps plus one verify. Memory comes first: BF16 weights leave room for only 8 to 17 sequences at 1 to 2k context, an 8B BF16 draft does not fit beside the target at all, and FP8 weights open the batch to roughly 70 to 110 sequences. The cost model predicts 1.5x to 4x at BF16 with a tiny batch and 1.3x to 3x at FP8, shrinking with batch as the verify pass approaches the compute ridge, with a short-context case dropping below 1.0 once verify is compute-bound. These are predictions under assumed MFU, overhead, communication and acceptance rates, and have not been measured on hardware. The acceptance rate is the dominant unknown and must be measured per position on production prompts. The sound deployment pattern is to compute the feasible batch, measure a baseline, sweep K and load with the open-loop harness, calibrate the model, and shorten K or disable speculation above the batch where it stops helping.</p>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>vLLM speculative decoding documentation: <a href="https://docs.vllm.ai/en/latest/features/speculative_decoding/index.html">https://docs.vllm.ai/en/latest/features/speculative_decoding/index.html</a></li>
+<li>vLLM draft model guide: <a href="https://docs.vllm.ai/en/v0.17.1/features/speculative_decoding/draft_model/">https://docs.vllm.ai/en/v0.17.1/features/speculative_decoding/draft_model/</a></li>
+<li>SGLang speculative decoding documentation: <a href="https://docs.sglang.io/docs/advanced_features/speculative_decoding">https://docs.sglang.io/docs/advanced_features/speculative_decoding</a></li>
+<li>SGLang adaptive speculative decoding: <a href="https://sgl-project.github.io/advanced_features/adaptive_speculative_decoding.html">https://sgl-project.github.io/advanced_features/adaptive_speculative_decoding.html</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../36-benchmark-teardown/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../appendix-blackwell-b200/" class="md-footer__link md-footer__link--next" aria-label="Next: Native B200 — UMMA, GEMM and Attention">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Native B200 — UMMA, GEMM and Attention
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/image-viewer.js"></script>
+      
+    
+  </body>
+</html>

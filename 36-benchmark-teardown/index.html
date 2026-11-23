@@ -1,0 +1,4014 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/36-benchmark-teardown/">
+      
+      
+        <link rel="prev" href="../35-disaggregated-prefill-decode/">
+      
+      
+        <link rel="next" href="../37-speculative-decoding-70b/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM - Programming the H100: CUDA, CuTe, and CUTLASS from First Principles</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/image-viewer.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-36-public-benchmark-teardown-vllm-sglang-and-tensorrt-llm" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-header__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-nav__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../review-fixes-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 Review Corrections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 H100 Revalidation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../revalidation-2026-11-18/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cutlass-workshop-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    H100 CuTe/CUTLASS Workshop Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eight-gpu-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eight-A100 Training Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    B200 Compatibility Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — Introductory CuTe
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — Introductory CuTe
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cute-strides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Strides, Storage and Memory Addresses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cute-layout-algebra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hierarchical Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../18-cute-tensors-tiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    18. Tensors, Slicing & Predication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../19-cta-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    19. CTA and Byte-Address Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_18" >
+        
+          
+          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_18">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20-tiled-copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20. Thread Ownership & Tiled Copy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21-mma-atoms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    21. MMA Atoms & Register Fragments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../22-shared-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    22. Shared Layouts, Banks & Swizzles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../23-gemm-construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    23. Build a Complete Tiled GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../24-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    24. CUTLASS Collective-Builder GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../25-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    25. Hopper Pipelines & Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../26-epilogue-fusion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    26. Epilogue Fusion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../27-precision-block-scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    27. Precision & Block Scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../28-benchmarking-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    28. Benchmarking & Framework Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../29-workbook-capstone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    29. Worked Labs & Capstone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30-cutlass-attention-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_21" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XII — Inference Systems on Hopper
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XII — Inference Systems on Hopper
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-systems-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview and the Twelve Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../32-inference-engine-and-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    32. Inference Engine Anatomy and the Measurement Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../33-moe-expert-parallel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    33. MoE Expert Parallelism — Sharding, All-to-All and Load Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../34-kv-cache-offloading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    34. Hierarchical KV-Cache Offloading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../35-disaggregated-prefill-decode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    35. Disaggregated Prefill/Decode over RDMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#361-why-most-published-benchmarks-cannot-be-trusted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.1 Why most published benchmarks cannot be trusted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#362-what-each-engine-ships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.2 What each engine ships
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#363-experimental-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.3 Experimental design
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#364-the-client-piece-by-piece" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.4 The client, piece by piece
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="36.4 The client, piece by piece">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#streaming-parser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming parser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-loop-arrivals-and-intended-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open-loop arrivals and intended time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-request-and-what-counts-as-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The request, and what counts as success
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-it-against-a-real-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running it against a real server
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#365-coordinated-omission-demonstrated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.5 Coordinated omission, demonstrated
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="36.5 Coordinated omission, demonstrated">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-3651-below-and-above-capacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example 36.5.1: below and above capacity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-3652-a-stalled-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example 36.5.2: a stalled client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#366-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.6 Statistics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="36.6 Statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#warm-up-per-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Warm-up, per run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#percentiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Percentiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bootstrap-confidence-intervals-and-where-they-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bootstrap confidence intervals, and where they fail
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparing-two-engines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparing two engines
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#367-pareto-frontiers-knees-and-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.7 Pareto frontiers, knees and cost
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#368-a-mock-teardown-end-to-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.8 A mock teardown, end to end
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#369-runbook-for-real-h100s-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.9 Runbook for real H100s (untested)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="36.9 Runbook for real H100s (untested)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-capture-and-fix-the-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Capture and fix the environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-launch-one-engine-at-a-time-same-model-same-gpus-prefix-caching-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Launch one engine at a time, same model, same GPUs, prefix caching off
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-point-the-one-client-at-each-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Point the one client at each server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-cross-check-with-the-vendor-clients-on-the-same-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Cross-check with the vendor clients on the same server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-sweep-and-decide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Sweep and decide
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3610-report-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.10 Report template
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3611-failure-mode-catalogue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.11 Failure-mode catalogue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chapter-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chapter Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#self-check-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-Check Questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worked-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coding-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coding Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coding Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solution-sketches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution sketches
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../37-speculative-decoding-70b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    37. Speculative Decoding at 70B — Multi-GPU Cost Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_22" >
+        
+          
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blackwell Appendix
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_22">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Blackwell Appendix
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native B200 — UMMA, GEMM and Attention
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#361-why-most-published-benchmarks-cannot-be-trusted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.1 Why most published benchmarks cannot be trusted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#362-what-each-engine-ships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.2 What each engine ships
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#363-experimental-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.3 Experimental design
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#364-the-client-piece-by-piece" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.4 The client, piece by piece
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="36.4 The client, piece by piece">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#streaming-parser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming parser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-loop-arrivals-and-intended-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open-loop arrivals and intended time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-request-and-what-counts-as-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The request, and what counts as success
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-it-against-a-real-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running it against a real server
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#365-coordinated-omission-demonstrated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.5 Coordinated omission, demonstrated
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="36.5 Coordinated omission, demonstrated">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-3651-below-and-above-capacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example 36.5.1: below and above capacity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worked-example-3652-a-stalled-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Example 36.5.2: a stalled client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#366-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.6 Statistics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="36.6 Statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#warm-up-per-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Warm-up, per run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#percentiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Percentiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bootstrap-confidence-intervals-and-where-they-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bootstrap confidence intervals, and where they fail
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparing-two-engines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparing two engines
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#367-pareto-frontiers-knees-and-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.7 Pareto frontiers, knees and cost
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#368-a-mock-teardown-end-to-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.8 A mock teardown, end to end
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#369-runbook-for-real-h100s-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.9 Runbook for real H100s (untested)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="36.9 Runbook for real H100s (untested)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-capture-and-fix-the-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Capture and fix the environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-launch-one-engine-at-a-time-same-model-same-gpus-prefix-caching-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Launch one engine at a time, same model, same GPUs, prefix caching off
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-point-the-one-client-at-each-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Point the one client at each server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-cross-check-with-the-vendor-clients-on-the-same-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Cross-check with the vendor clients on the same server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-sweep-and-decide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Sweep and decide
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3610-report-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.10 Report template
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3611-failure-mode-catalogue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        36.11 Failure-mode catalogue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chapter-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chapter Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#self-check-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-Check Questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#worked-solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coding-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coding Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coding Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solution-sketches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution sketches
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/36-benchmark-teardown.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="chapter-36-public-benchmark-teardown-vllm-sglang-and-tensorrt-llm">Chapter 36: Public Benchmark Teardown: vLLM, SGLang and TensorRT-LLM<a class="headerlink" href="#chapter-36-public-benchmark-teardown-vllm-sglang-and-tensorrt-llm" title="Permanent link">&para;</a></h1>
+<div class="admonition abstract">
+<p class="admonition-title">Goal and prerequisites</p>
+<p>Build a benchmark you could defend in public. You will get a load generator and statistics library that avoid the classic measurement errors, a test suite that proves they do, and a runbook for pointing the same client at vLLM, SGLang and TensorRT-LLM on real H100s. Read <a href="../32-inference-engine-and-harness/">Chapter 32</a> (metrics and the simulated engine) first; this chapter replaces its simulator with a real network client.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Evidence level: read this first</p>
+<ul>
+<li><strong>Verified here (CPU):</strong> the client, the streaming parsers, the percentile and bootstrap code, the Pareto and knee logic, the run manifest, and a mock three-engine study. 22 self-tests pass (14 pure, 8 against mock servers on localhost), plus 5 qualitative checks on the demonstrations.</li>
+<li><strong>Invented:</strong> the three "engines" in the mock study are made-up servers with made-up parameters. <strong>No number in this chapter is a vLLM, SGLang or TensorRT-LLM result.</strong></li>
+<li><strong>Timing output varies:</strong> the mock servers run on wall-clock <code>asyncio</code> timing, so every latency number printed below is a <em>sample from one execution</em>. Another execution gives different numbers, and borderline verdicts can flip (Section 36.8 shows one that did). The tests therefore assert qualitative relations, never exact values.</li>
+<li><strong>Untested on H100:</strong> every launch command in Section 36.9 and the real teardown itself. Flags change between versions; confirm each against <code>--help</code> for the exact version you run. The client has been exercised only against the mock server, never against a real engine.</li>
+</ul>
+</div>
+<h2 id="361-why-most-published-benchmarks-cannot-be-trusted">36.1 Why most published benchmarks cannot be trusted<a class="headerlink" href="#361-why-most-published-benchmarks-cannot-be-trusted" title="Permanent link">&para;</a></h2>
+<p>A comparison of serving engines fails in predictable ways. Every item below has produced a headline number that did not reproduce.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Error</th>
+<th>What it does to the result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Different precision or parallelism per engine (FP8 against BF16, TP=2 against TP=1)</td>
+<td>Compares configurations, not engines</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Different features on (prefix caching, speculative decoding, chunked prefill, CUDA graphs)</td>
+<td>Credits an engine for a feature, or penalizes it for one</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Closed-loop load ("N users, each waits for the last reply")</td>
+<td>The client slows down when the server does, hiding queueing (coordinated omission, Section 36.5)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>All requests sent at time zero</td>
+<td>Measures a burst drain, not steady-state serving</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Latency measured from when the client got around to sending</td>
+<td>A stalled client erases its own delay</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Failed or timed-out requests dropped from the statistics</td>
+<td>Overstates throughput and goodput</td>
+</tr>
+<tr>
+<td>7</td>
+<td>One run, no warm-up exclusion, no spread</td>
+<td>Reports noise as a difference</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Averages instead of percentiles, or throughput without latency</td>
+<td>Hides the tail users experience</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Different clients, tokenizers or prompt counts per engine</td>
+<td>Measures the benchmark tools</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Output length decided by the model (different stopping per engine)</td>
+<td>Different amounts of work per request</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Unlabelled hardware state (clocks, driver, versions)</td>
+<td>Not reproducible by anyone, including you next month</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Only the winning workload shown</td>
+<td>Selection bias</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Prefix caching left on for one engine and off for another, with repeated prompts</td>
+<td>Measures cache hits, not the engine</td>
+</tr>
+</tbody>
+</table>
+<p>The rest of the chapter is a defence against this list.</p>
+<h2 id="362-what-each-engine-ships">36.2 What each engine ships<a class="headerlink" href="#362-what-each-engine-ships" title="Permanent link">&para;</a></h2>
+<p>All three engines expose an OpenAI-compatible HTTP server and ship their own benchmark client. That is both a convenience and a trap, because each client has its own defaults.</p>
+<table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Server</th>
+<th>Vendor benchmark client</th>
+<th>Notes from the documentation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>vLLM</td>
+<td><code>vllm serve</code></td>
+<td><code>vllm bench serve</code></td>
+<td><code>--request-rate</code> with Poisson arrivals by default; <code>inf</code> sends everything at time zero; <code>--burstiness</code> switches to a gamma process; <code>--max-concurrency</code> caps in-flight requests; <code>--metadata</code> and <code>--save-detailed</code> record context and per-request data; goodput follows the DistServe paper's definition</td>
+</tr>
+<tr>
+<td>SGLang</td>
+<td><code>python -m sglang.launch_server</code></td>
+<td><code>python3 -m sglang.bench_serving</code></td>
+<td>Reports TTFT, TPOT and inter-token latency; its documentation says to start each server on the same hardware and precision and <strong>run one at a time</strong>; <code>bench_one_batch_server</code> sends a single batch and is explicitly not steady-state</td>
+</tr>
+<tr>
+<td>TensorRT-LLM</td>
+<td><code>trtllm-serve</code></td>
+<td><code>tensorrt_llm.serve.scripts.benchmark_serving</code> and <code>trtllm-bench</code></td>
+<td>Serving is configured with flags and a YAML file; the project's methodology is launch with <code>trtllm-serve</code>, then run the benchmark script</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Design decision:</strong> use <strong>one</strong> client for all three engines, written once, against the OpenAI-compatible endpoint. Use each vendor's client only as a cross-check, with the same model, prompt lengths, output lengths and request rate: on the same server the numbers should agree within noise. If they do not, find out why before publishing anything.</p>
+<h2 id="363-experimental-design">36.3 Experimental design<a class="headerlink" href="#363-experimental-design" title="Permanent link">&para;</a></h2>
+<p>Decide these before running anything, and write them in the report.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Rule</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model and revision</td>
+<td>Identical weights, identical checkpoint revision</td>
+<td></td>
+</tr>
+<tr>
+<td>Precision</td>
+<td>Same weight and KV-cache dtype, or report each engine's best supported option as a separate, labelled row</td>
+<td>An FP8 engine against a BF16 engine is two experiments</td>
+</tr>
+<tr>
+<td>Parallelism</td>
+<td>Same GPU count and tensor-parallel degree</td>
+<td></td>
+</tr>
+<tr>
+<td>Batch and scheduling limits</td>
+<td>Equalize the maximum sequences and batched tokens where the engines expose them; otherwise report the values</td>
+<td>Dominant drivers of the throughput and latency trade-off</td>
+</tr>
+<tr>
+<td>Features</td>
+<td>Prefix caching, speculative decoding, chunked prefill: all explicit, all reported. For a fair engine comparison on random prompts, disable prefix caching on every engine</td>
+<td>Section 36.1 item 13</td>
+</tr>
+<tr>
+<td>Output length</td>
+<td>Force a fixed output length per request (<code>ignore_eos</code>), drawn from a stated distribution</td>
+<td>Equal work per request. The client marks a request <strong>failed</strong> if the output length differs, so an engine that ignores the flag shows up as failures, not as a silent speed-up</td>
+</tr>
+<tr>
+<td>Prompts</td>
+<td>Fixed seed, same prompt set, length counted with one tokenizer</td>
+<td></td>
+</tr>
+<tr>
+<td>Sampling</td>
+<td>Same temperature, top-p and seed settings</td>
+<td></td>
+</tr>
+<tr>
+<td>Load</td>
+<td>Open-loop Poisson arrivals at several rates, spanning idle to overloaded</td>
+<td>Section 36.5</td>
+</tr>
+<tr>
+<td>Duration</td>
+<td>At least 1,000 requests per point after warm-up for p99 claims (Section 36.6)</td>
+<td>Percentiles need samples</td>
+</tr>
+<tr>
+<td>Repeats</td>
+<td>At least three, restarting the server each time</td>
+<td>Run-to-run variation</td>
+</tr>
+<tr>
+<td>Hardware state</td>
+<td>Record GPU model, driver, CUDA version, clocks, power cap, persistence mode</td>
+<td>Reproducibility</td>
+</tr>
+<tr>
+<td>Isolation</td>
+<td>Server and client in separate processes (ideally separate hosts or cores); one engine on the machine at a time</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="364-the-client-piece-by-piece">36.4 The client, piece by piece<a class="headerlink" href="#364-the-client-piece-by-piece" title="Permanent link">&para;</a></h2>
+<p>The full file is <code>ch36_benchmark_teardown.py</code> (<a href="../examples/inference-systems/ch36_benchmark_teardown.py">download</a>). It uses only the Python standard library and speaks plain HTTP, so for an HTTPS endpoint put a local TLS-terminating proxy in front.</p>
+<h3 id="streaming-parser">Streaming parser<a class="headerlink" href="#streaming-parser" title="Permanent link">&para;</a></h3>
+<p>Servers stream tokens as Server-Sent Events, usually inside HTTP chunked encoding. The two layers can split an event anywhere, so the parser must not assume event boundaries line up with network reads, and it must cope with <code>\n</code>, <code>\r\n</code> and a <code>\r\n</code> pair cut between two reads. The parser accumulates bytes, normalizes line endings (holding back a trailing <code>\r</code>), and emits only events whose terminating blank line has arrived, joining multi-line <code>data:</code> fields with a newline as the specification says:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">feed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">):</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buf</span> <span class="o">+</span> <span class="n">chunk</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">hold</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">""</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">b</span><span class="s2">"</span><span class="se">\r</span><span class="s2">"</span><span class="p">):</span>          <span class="c1"># may be the first half of CRLF: keep it for the next feed</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">data</span><span class="p">,</span> <span class="n">hold</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\r</span><span class="s2">"</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">b</span><span class="s2">"</span><span class="se">\r\n</span><span class="s2">"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">b</span><span class="s2">"</span><span class="se">\r</span><span class="s2">"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="o">...</span>                                <span class="c1"># split on blank lines, collect data: fields</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">buf</span> <span class="o">=</span> <span class="n">data</span> <span class="o">+</span> <span class="n">hold</span>
+</span></code></pre></div>
+<p>Tests: four different streams (mixed LF and CRLF, <strong>CRLF only</strong>, multi-line data, and a stream ending in a partial event) are each cut at 200 random places, and every cutting must give the same events as the uncut stream. A trailing partial event is never emitted; the client then sees no <code>[DONE]</code> and counts the request as failed.</p>
+<h3 id="open-loop-arrivals-and-intended-time">Open-loop arrivals and intended time<a class="headerlink" href="#open-loop-arrivals-and-intended-time" title="Permanent link">&para;</a></h3>
+<p>Arrival times are drawn in advance from a Poisson process (exponential gaps). Each request records when the schedule said to send it (<code>intended</code>) and when it was actually sent (<code>sent</code>). Latency is measured from <code>intended</code>, so if the client itself stalls (garbage collection, a busy event loop, a slow DNS lookup) the delay is charged to the request rather than hidden.</p>
+<h3 id="the-request-and-what-counts-as-success">The request, and what counts as success<a class="headerlink" href="#the-request-and-what-counts-as-success" title="Permanent link">&para;</a></h3>
+<p>The payload is a real OpenAI-style streaming completion request: model name, a prompt of the requested length, <code>max_tokens</code>, temperature 0, <code>stream: true</code>, <code>stream_options: {"include_usage": true}</code> and, by default, <code>ignore_eos: true</code> (accepted by vLLM and SGLang; confirm for your engine, or pass <code>--no-ignore-eos</code>).</p>
+<p>A request is successful only if the stream ended with the terminal <code>[DONE]</code> event <strong>and</strong> the token count equals the requested output length. The token count is the server's own <code>usage.completion_tokens</code> when it is reported, because real engines sometimes merge several tokens into one event or send empty deltas; the number of content events is kept separately (<code>nevents</code>) and used only as a fallback. HTTP errors, timeouts, truncated streams and wrong lengths are all failures, recorded with a reason. Failures stay in the denominator of every rate and attainment figure.</p>
+<p>Timestamps: <code>first</code> is the arrival time of the first content event, <code>end</code> the arrival time of the last event, <code>itl</code> the gaps between content events. TTFT is <code>first - intended</code>, TPOT is <code>(end - first) / (ntok - 1)</code>, end-to-end latency is <code>end - intended</code>. If an engine merges tokens into events, ITL is per event, not per token; TPOT is unaffected.</p>
+<h3 id="running-it-against-a-real-server">Running it against a real server<a class="headerlink" href="#running-it-against-a-real-server" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>/full/path/ch36_benchmark_teardown.py<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span>--url<span class="w"> </span>http://127.0.0.1:8000/v1/completions<span class="w"> </span>--model<span class="w"> </span>&lt;served-model-name&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span>--rate<span class="w"> </span><span class="m">10</span><span class="w"> </span>--n<span class="w"> </span><span class="m">1200</span><span class="w"> </span>--warmup<span class="w"> </span><span class="m">100</span><span class="w"> </span>--seed<span class="w"> </span><span class="m">1</span><span class="w"> </span>--n-in<span class="w"> </span><span class="m">512</span><span class="w"> </span>--n-out<span class="w"> </span><span class="m">128</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span>--slo-ttft<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>--slo-tpot<span class="w"> </span><span class="m">0</span>.05<span class="w"> </span>--usd-per-gpu-hour<span class="w"> </span>&lt;your-price&gt;<span class="w"> </span>--gpus<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span>--out<span class="w"> </span>/full/path/results/engine-a_rate10_run1.jsonl
+</span></code></pre></div>
+<p>It prints the summary, a count of failure reasons, a run manifest, and writes every per-request record to the JSONL file so any number can be recomputed. Prompts are built from the word "hello" repeated, so token counts are approximate on the input side; read the true prompt length from the server's usage field if you need it. (Unique random prompts are better when measuring prefix caching; extend <code>make_payload</code> for that.)</p>
+<h2 id="365-coordinated-omission-demonstrated">36.5 Coordinated omission, demonstrated<a class="headerlink" href="#365-coordinated-omission-demonstrated" title="Permanent link">&para;</a></h2>
+<p>A closed-loop client with N workers sends a new request only when a reply comes back, so when the server slows down the client sends less. The queue never builds as it would for independent users, and measured latency stays modest. An open-loop client keeps the arrival schedule, so the queue builds as it would in production.</p>
+<p>The mock server has 4 slots and takes about 0.43 s per request, so its capacity is <strong>about 9 requests per second</strong>. The demonstration therefore runs in three regimes.</p>
+<h3 id="worked-example-3651-below-and-above-capacity">Worked Example 36.5.1: below and above capacity<a class="headerlink" href="#worked-example-3651-below-and-above-capacity" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>  open-loop, Poisson arrivals, capacity of the mock server about 9 req/s:
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    below capacity (5 req/s)  : ttft_p99 =    415.2 ms   e2e_p99 =   1314.6 ms   (n=87)
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    2x overload, short run    : ttft_p99 =   2349.0 ms   e2e_p99 =   2645.3 ms   (n=37)
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    2x overload, long run     : ttft_p99 =  10059.7 ms   e2e_p99 =  10359.3 ms   (n=157)
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  closed-loop, 4 workers      : ttft_p99 =     42.4 ms   e2e_p99 =   1074.2 ms   (n=87)
+</span></code></pre></div>
+<p>(Sample output; yours will differ.) Read it in three steps:</p>
+<ol>
+<li><strong>Below capacity</strong> the open-loop p99 TTFT is 415 ms, because Poisson arrivals still cluster and a burst waits for a slot. The closed-loop client shows 42 ms. The gap (roughly tenfold here) is real, and it is the honest price of random arrivals; it is also bounded, unlike the overload case below.</li>
+<li><strong>Above capacity there is no steady state.</strong> Doubling the run length from 37 to 157 requests quadruples the p99 TTFT (2.3 s to 10 s). The right statement is not "p99 is 10 s at 18 req/s" but "the system is unstable at 18 req/s: latency grows without bound for as long as the load lasts". A benchmark point beyond the knee is a statement about how long you ran, not about the engine.</li>
+<li><strong>The closed-loop client reports 42 ms for the same server</strong>, because it never offers more than 4 requests at a time. It answers a different question (how fast is it for 4 users who always wait?) and cannot reveal overload.</li>
+</ol>
+<h3 id="worked-example-3652-a-stalled-client">Worked Example 36.5.2: a stalled client<a class="headerlink" href="#worked-example-3652-a-stalled-client" title="Permanent link">&para;</a></h3>
+<p>The client blocks its own event loop for 0.6 s while 100 requests are being issued at 40 per second. About 24 requests should have been sent during the stall; they go out late, immediately afterwards.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>  0.6 s client stall at request 40 (of 100, 40 req/s offered):
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    share with TTFT &gt; 300 ms measured from SEND time     =  3.2%
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    share with TTFT &gt; 300 ms measured from INTENDED time = 12.6%
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    mean TTFT: from send   36.7 ms   from intended   92.6 ms
+</span></code></pre></div>
+<p>Measured from the send time, the late requests look healthy and the client's own stall vanishes from the data. Measured from the intended time, the stall is counted, as a user who clicked at the scheduled moment would have experienced it. This is also why a benchmark client must be lightweight and isolated: a stalled client is charged to the server under test.</p>
+<p>The exact percentages depend on timing; the self-checks assert only that the open-loop p99 below capacity stays within 30 times the closed-loop figure, that the intended-time share and mean exceed the send-time ones, that the overloaded open-loop p99 is at least 5 times the closed-loop figure, and that it grows with run length.</p>
+<h2 id="366-statistics">36.6 Statistics<a class="headerlink" href="#366-statistics" title="Permanent link">&para;</a></h2>
+<h3 id="warm-up-per-run">Warm-up, per run<a class="headerlink" href="#warm-up-per-run" title="Permanent link">&para;</a></h3>
+<p>The first requests hit cold caches, compile kernels or capture CUDA graphs. Discard them <strong>by arrival order</strong>, a fixed count chosen in advance, <strong>from each run separately</strong>, and report the number discarded. An earlier version of this harness pooled the runs first and then dropped the earliest requests overall, which removed all warm-up from the first run and none from the second. A self-test now builds two runs 1,000 s apart and checks that 10 are dropped from each. Throughput is computed over the <strong>sum of the per-run windows</strong>, so the idle gap between runs does not dilute tokens per second or inflate cost per token; a second self-test uses the same two runs to check that.</p>
+<h3 id="percentiles">Percentiles<a class="headerlink" href="#percentiles" title="Permanent link">&para;</a></h3>
+<p>Use linear interpolation between order statistics (the default of common numerical libraries). The self-test compares the implementation with NumPy for p50 and p99. Report p50, p99 and, where the sample allows, p99.9, and report the sample size next to every percentile, because the p99 of 50 requests is a single observation.</p>
+<h3 id="bootstrap-confidence-intervals-and-where-they-fail">Bootstrap confidence intervals, and where they fail<a class="headerlink" href="#bootstrap-confidence-intervals-and-where-they-fail" title="Permanent link">&para;</a></h3>
+<p>Resample the per-request values with replacement many times, compute the statistic each time, and take the 2.5th and 97.5th percentiles. The self-test measures how often the 95 percent interval contains the true value, on lognormal data with a known answer:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>bootstrap coverage of true value (nominal 0.95): median n=120 -&gt; 0.92; p99 n=160 -&gt; 0.77; p99 n=1000 -&gt; 0.85
+</span></code></pre></div>
+<ul>
+<li><strong>Median:</strong> close to nominal at 120 samples.</li>
+<li><strong>p99:</strong> poor. At 160 requests the "95 percent" interval contains the truth only about 77 percent of the time, and at 1,000 requests about 85 percent. A resample can never exceed the sample maximum, so the interval is too narrow exactly where the tail is thin.</li>
+</ul>
+<p>The consequence is a rule: <strong>treat a p99 interval as a lower bound on the uncertainty, not an exact statement.</strong> Use at least 1,000 requests per point for p99 claims, repeat the run at least three times, and look at the per-run p99 values printed beside the interval. In the first version of the mock study, engine C at 15 req/s had a run whose p99 (70 ms) lay outside its own interval [87, 200]: that was this effect, visible in the table.</p>
+<h3 id="comparing-two-engines">Comparing two engines<a class="headerlink" href="#comparing-two-engines" title="Permanent link">&para;</a></h3>
+<p>To ask "does A differ from B?", bootstrap the <strong>difference</strong> of the statistic. If the interval excludes zero the difference exceeds resampling noise for this workload; if it includes zero the data cannot separate them. Because the interval is optimistic for p99, require the difference to be consistent across the repeated runs before claiming it.</p>
+<h2 id="367-pareto-frontiers-knees-and-cost">36.7 Pareto frontiers, knees and cost<a class="headerlink" href="#367-pareto-frontiers-knees-and-cost" title="Permanent link">&para;</a></h2>
+<p>One number cannot rank engines: they trade latency, throughput and cost, and the trade changes with load.</p>
+<ul>
+<li><strong>Pareto frontier:</strong> a point is dominated if another is no worse on every axis and better on at least one. The implementation is tested on 200 random points: every kept point is non-dominated, and every dropped point is dominated.</li>
+<li><strong>Feasibility first:</strong> only points that meet the SLO belong on the frontier. A cheap point at which half the requests miss their latency target is a failure, not a competitor.</li>
+<li><strong>Knee:</strong> the highest offered rate at which SLO attainment stays at or above a threshold (here 99 percent, with failures counted as misses). Capacity planning uses the knee, not peak throughput.</li>
+<li><strong>Cost:</strong> <code>usd_per_gpu_hour x GPUs x wall_hours / million_output_tokens</code>, over the sum of run windows. State the price and where it comes from. Below the knee, cost per token mostly reflects idle capacity (the same GPUs serve fewer tokens), so it falls as load rises until the knee; comparing cost at unequal utilization compares loads, not engines.</li>
+</ul>
+<h2 id="368-a-mock-teardown-end-to-end">36.8 A mock teardown, end to end<a class="headerlink" href="#368-a-mock-teardown-end-to-end" title="Permanent link">&para;</a></h2>
+<p>Three <strong>invented</strong> engines (different per-token latency, concurrency capacity and GPU count) are driven at 15, 35 and 70 requests per second, three repeats of 150 requests each (450 per point, 420 after warm-up). The table is a <strong>sample from one execution</strong>.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>  engine     rate     n  ttft_p99(ms)  [95% CI]            tpot_p99(ms)  tok/s  fail  attain  $/Mtok  per-run p99 (ms)
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  engine-A    15   420         40.2  [  36.3,   45.6]          6.1    681     0    1.00    3.26  38 / 41 / 38
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  engine-A    35   420         83.0  [  65.2,  120.8]          7.1   1571     0    1.00    1.41  56 / 79 / 117
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  engine-A    70   420       1257.5  [1216.7, 1312.2]          7.3   1979     0    0.45    1.12  1071 / 1226 / 1294
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  engine-B    15   420         40.3  [  36.1,   44.4]          7.2    686     0    1.00    3.24  39 / 41 / 38
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  engine-B    35   420         38.9  [  36.1,   45.1]         12.5   1555     0    1.00    1.43  36 / 43 / 37
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>  engine-B    70   420       1242.9  [1165.0, 1301.1]         15.0   1871     0    0.52    1.19  1074 / 1170 / 1300
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>  engine-C    15   420        151.0  [ 119.9,  183.9]          6.5    676     0    1.00    1.64  142 / 157 / 117
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>  engine-C    35   420       2206.9  [2155.4, 2281.7]          6.6   1111     0    0.21    1.00  1671 / 2065 / 2272
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>  engine-C    70   420       4120.4  [4006.7, 4210.4]          6.6   1104     0    0.10    1.01  4056 / 3979 / 4209
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>  knee: engine-A 35 req/s, engine-B 35 req/s, engine-C 15 req/s
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>  p99 TTFT difference A-B at 35 req/s: 95% CI [25.2, 82.1] ms -&gt; engines differ beyond resampling noise
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>  SLO-feasible Pareto-optimal (cost, p99 TTFT, throughput): engine-A@35, engine-B@35
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>  excluded as infeasible (SLO attainment &lt; 99%): engine-A@70, engine-B@70, engine-C@35, engine-C@70
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>  note: the lowest $/Mtok anywhere is engine-C@35 (1.00); it is NOT SLO-feasible
+</span></code></pre></div>
+<p>How to read it, and what each line teaches:</p>
+<ol>
+<li><strong>The A-versus-B comparison is fragile.</strong> Here the interval excludes zero, but look at the per-run p99 for engine A at 35 req/s: 56, 79 and 117 ms. One run in three is twice another. An earlier version of this study used 90 requests per run and two runs; its interval for the same comparison included zero in one execution and excluded it in another. The honest summary is "B is probably better at 35 req/s in the tail, by tens of milliseconds, and the claim needs more repeats and requests". Do not pick the favourable execution.</li>
+<li><strong>The cheapest point is not a valid choice.</strong> Engine C at 35 req/s has the lowest cost per million tokens in the table (1.00), yet only 21 percent of its requests meet the SLO. The program prints this explicitly: the cheapest point anywhere is not SLO-feasible. Engine A at 70 req/s (1.12) is also cheaper than anything feasible and also infeasible (45 percent attainment).</li>
+<li><strong>Different knees.</strong> A and B sustain 35 req/s within SLO; C only 15. Engine C's saturation also shows in its throughput: it stops at about 1,100 tokens per second whatever the offered load.</li>
+<li><strong>Failures are zero here</strong> because the mock servers inject none. The socket self-tests show the other path: with 30 percent injected 503 errors, 15 of 60 requests fail and attainment drops to 0.75.</li>
+<li><strong>Tail intervals are optimistic.</strong> Section 36.6 measured p99 interval coverage below 90 percent even at 1,000 requests; the intervals above come from 420 requests.</li>
+</ol>
+<p>The mock engines were built to produce these shapes. Real engines will produce different ones, and some of the differences will be configuration, not engine quality.</p>
+<h2 id="369-runbook-for-real-h100s-untested">36.9 Runbook for real H100s (untested)<a class="headerlink" href="#369-runbook-for-real-h100s-untested" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">UNTESTED ON H100</p>
+<p>None of this was executed. Flags below follow each project's documentation at the time of writing but change between releases; run <code>--help</code> for your version and record the version in the report. The client in this chapter has only been run against the mock server.</p>
+</div>
+<h3 id="1-capture-and-fix-the-environment">1. Capture and fix the environment<a class="headerlink" href="#1-capture-and-fix-the-environment" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>/full/path/env
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>nvidia-smi<span class="w"> </span>-q<span class="w"> </span>&gt;<span class="w"> </span>/full/path/env/nvidia-smi-full.txt
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>nvidia-smi<span class="w"> </span>--query-gpu<span class="o">=</span>name,driver_version,clocks.sm,clocks.mem,persistence_mode,power.limit<span class="w"> </span>--format<span class="o">=</span>csv<span class="w"> </span>&gt;<span class="w"> </span>/full/path/env/gpu.csv
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>sudo<span class="w"> </span>nvidia-smi<span class="w"> </span>-pm<span class="w"> </span><span class="m">1</span><span class="w">                       </span><span class="c1"># persistence mode, so the driver stays loaded between runs</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>sudo<span class="w"> </span>nvidia-smi<span class="w"> </span>-lgc<span class="w"> </span>&lt;min_mhz&gt;,&lt;max_mhz&gt;<span class="w">    </span><span class="c1"># optional: lock SM clocks; choose values for your card, or just record them</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>pip<span class="w"> </span>freeze<span class="w"> </span>&gt;<span class="w"> </span>/full/path/env/pip-freeze.txt<span class="w">  </span><span class="c1"># inside each engine's container or venv</span>
+</span></code></pre></div>
+<p>Pin each engine by container image tag or exact package version. Record whether other processes share the GPU. During runs, sample <code>nvidia-smi --query-gpu=clocks_throttle_reasons.active,temperature.gpu,power.draw --format=csv -l 1</code> (the field name is <code>clocks_event_reasons.active</code> on newer drivers) so thermal or power throttling shows up in the data.</p>
+<h3 id="2-launch-one-engine-at-a-time-same-model-same-gpus-prefix-caching-off">2. Launch one engine at a time, same model, same GPUs, prefix caching off<a class="headerlink" href="#2-launch-one-engine-at-a-time-same-model-same-gpus-prefix-caching-off" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># vLLM  (check: vllm serve --help)</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>vllm<span class="w"> </span>serve<span class="w"> </span>&lt;model&gt;<span class="w"> </span>--tensor-parallel-size<span class="w"> </span><span class="m">2</span><span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--no-enable-prefix-caching<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span>--max-num-seqs<span class="w"> </span>&lt;N&gt;<span class="w"> </span>--max-num-batched-tokens<span class="w"> </span>&lt;N&gt;<span class="w"> </span>--max-model-len<span class="w"> </span>&lt;N&gt;
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># SGLang  (check: python -m sglang.launch_server --help)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>python<span class="w"> </span>-m<span class="w"> </span>sglang.launch_server<span class="w"> </span>--model-path<span class="w"> </span>&lt;model&gt;<span class="w"> </span>--tp-size<span class="w"> </span><span class="m">2</span><span class="w"> </span>--port<span class="w"> </span><span class="m">30000</span><span class="w"> </span>--disable-radix-cache<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span>--max-running-requests<span class="w"> </span>&lt;N&gt;<span class="w"> </span>--max-total-tokens<span class="w"> </span>&lt;N&gt;
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># TensorRT-LLM  (check: trtllm-serve --help). Engine settings go in a YAML file; the flag that passes it</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1"># is --config in recent releases and --extra_llm_api_options in older ones.</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>trtllm-serve<span class="w"> </span>&lt;model&gt;<span class="w"> </span>--tp_size<span class="w"> </span><span class="m">2</span><span class="w"> </span>--max_batch_size<span class="w"> </span>&lt;N&gt;<span class="w"> </span>--max_num_tokens<span class="w"> </span>&lt;N&gt;<span class="w"> </span>--max_seq_len<span class="w"> </span>&lt;N&gt;<span class="w"> </span>--config<span class="w"> </span>engine.yml
+</span></code></pre></div>
+<p>Equalize the scheduling limits where each engine exposes them (the placeholders above) and write the values in the report. Record any KV-cache dtype and quantization option explicitly. If an engine cannot disable prefix caching, use unique random prompts per request and say so.</p>
+<h3 id="3-point-the-one-client-at-each-server">3. Point the one client at each server<a class="headerlink" href="#3-point-the-one-client-at-each-server" title="Permanent link">&para;</a></h3>
+<p>Run the Section 36.4 command against each server with the same seed, prompt and output lengths, and rates. Restart the server between repeats. Name the JSONL files by engine, rate and run so a script can aggregate them.</p>
+<h3 id="4-cross-check-with-the-vendor-clients-on-the-same-server">4. Cross-check with the vendor clients on the same server<a class="headerlink" href="#4-cross-check-with-the-vendor-clients-on-the-same-server" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>vllm<span class="w"> </span>bench<span class="w"> </span>serve<span class="w"> </span>--backend<span class="w"> </span>vllm<span class="w"> </span>--base-url<span class="w"> </span>http://127.0.0.1:8000<span class="w"> </span>--model<span class="w"> </span>&lt;model&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span>--dataset-name<span class="w"> </span>random<span class="w"> </span>--random-input-len<span class="w"> </span><span class="m">512</span><span class="w"> </span>--random-output-len<span class="w"> </span><span class="m">128</span><span class="w"> </span>--ignore-eos<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span>--num-prompts<span class="w"> </span><span class="m">1200</span><span class="w"> </span>--request-rate<span class="w"> </span><span class="m">10</span><span class="w"> </span>--seed<span class="w"> </span><span class="m">1</span><span class="w"> </span>--metadata<span class="w"> </span><span class="nv">engine</span><span class="o">=</span>vllm
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>python3<span class="w"> </span>-m<span class="w"> </span>sglang.bench_serving<span class="w"> </span>--backend<span class="w"> </span>sglang<span class="w"> </span>--port<span class="w"> </span><span class="m">30000</span><span class="w"> </span>--model<span class="w"> </span>&lt;model&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span>--dataset-name<span class="w"> </span>random<span class="w"> </span>--random-input-len<span class="w"> </span><span class="m">512</span><span class="w"> </span>--random-output-len<span class="w"> </span><span class="m">128</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span>--num-prompts<span class="w"> </span><span class="m">1200</span><span class="w"> </span>--request-rate<span class="w"> </span><span class="m">10</span>
+</span></code></pre></div>
+<p>Match model, input and output lengths, request rate and seed to the chapter's client, and confirm the exact flag names with <code>--help</code> (the random-dataset and ignore-eos options differ between versions). Do not use <code>--request-rate inf</code> for a steady-state comparison: in vLLM's client that sends every request at time zero, which measures draining a burst. Use <code>--max-concurrency</code> only if you intend a capped, closed-loop-style test, and label it. If the vendor client and this one disagree by more than the run-to-run spread on the same server, resolve that first.</p>
+<h3 id="5-sweep-and-decide">5. Sweep and decide<a class="headerlink" href="#5-sweep-and-decide" title="Permanent link">&para;</a></h3>
+<p>Run at least five offered rates from well below to well above the expected knee, three or more repeats each, then produce the Section 36.8 table and the report below.</p>
+<h2 id="3610-report-template">36.10 Report template<a class="headerlink" href="#3610-report-template" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Question</td>
+<td>One sentence: "Which engine gives the lowest cost per million tokens at p99 TTFT under 500 ms and p99 TPOT under 50 ms for chat-length requests on 2 x H100?"</td>
+</tr>
+<tr>
+<td>Environment</td>
+<td>GPU model and count, driver, CUDA, host CPU, container tags, clocks, power cap, throttle log</td>
+</tr>
+<tr>
+<td>Engines and configs</td>
+<td>Exact launch commands, scheduling limits, precision, features on and off</td>
+</tr>
+<tr>
+<td>Workload</td>
+<td>Arrival process and rates, prompt and output length distributions with seed, number of requests per point and warm-up discarded per run</td>
+</tr>
+<tr>
+<td>Results</td>
+<td>Per engine and rate: TTFT and TPOT p50 and p99 with intervals and sample sizes, throughput, failures by reason, SLO attainment, cost per million tokens, per-run spread</td>
+</tr>
+<tr>
+<td>Frontier</td>
+<td>SLO-feasible Pareto set and the knee per engine</td>
+</tr>
+<tr>
+<td>Where each engine loses</td>
+<td>At least one workload or rate where each engine is worst, and why</td>
+</tr>
+<tr>
+<td>Threats to validity</td>
+<td>Items from Section 36.1 you could not control</td>
+</tr>
+<tr>
+<td>Reproduction</td>
+<td>Repository with scripts, raw per-request JSONL, manifest and a single command</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3611-failure-mode-catalogue">36.11 Failure-mode catalogue<a class="headerlink" href="#3611-failure-mode-catalogue" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Throughput far below the vendor's published figure</td>
+<td>Different workload (shorter outputs, higher concurrency), batch limits, or a closed-loop client</td>
+<td>Run the vendor's client on the same server with matched flags</td>
+</tr>
+<tr>
+<td>p99 TTFT swings between runs</td>
+<td>Too few requests, noisy host, thermal or power throttling</td>
+<td>Increase requests, record clocks and throttle reasons, repeat</td>
+</tr>
+<tr>
+<td>Many requests fail with "wrong-length stream"</td>
+<td>Engine ignores <code>ignore_eos</code>, or the usage field is absent so merged events are miscounted</td>
+<td>Inspect the JSONL <code>err</code> and <code>nevents</code> fields; try <code>--no-ignore-eos</code> and compare; check that the server returns usage in streaming mode</td>
+</tr>
+<tr>
+<td>Zero failures at every load</td>
+<td>Failures swallowed</td>
+<td>Inject errors (mock) or overload deliberately and confirm they are counted</td>
+</tr>
+<tr>
+<td>Latency improves at high load</td>
+<td>Closed-loop client</td>
+<td>Switch to open-loop</td>
+</tr>
+<tr>
+<td>Latency grows with run length</td>
+<td>The point is above the knee</td>
+<td>Report it as unstable, not as a p99</td>
+</tr>
+<tr>
+<td>Events never parse</td>
+<td>Server sends a different framing (for example CRLF) or non-JSON events</td>
+<td>The parser handles CR and LF; check <code>err == "unparseable event"</code> and look at the raw bytes</td>
+</tr>
+<tr>
+<td>Engines differ only in the tail</td>
+<td>Scheduling policy differences</td>
+<td>Compare TPOT distributions and queueing</td>
+</tr>
+<tr>
+<td>One engine uses much less memory and "wins"</td>
+<td>Smaller KV cache, so a lower concurrency ceiling</td>
+<td>Compare maximum concurrent sequences</td>
+</tr>
+<tr>
+<td>Results change after a driver update</td>
+<td>Environment drift</td>
+<td>Re-run, and keep the manifest with the data</td>
+</tr>
+<tr>
+<td>Suspiciously good latency on repeated prompts</td>
+<td>Prefix cache hits</td>
+<td>Disable prefix caching or use unique prompts</td>
+</tr>
+</tbody>
+</table>
+<h2 id="chapter-summary">Chapter Summary<a class="headerlink" href="#chapter-summary" title="Permanent link">&para;</a></h2>
+<p>A defensible serving benchmark controls precision, parallelism, features, scheduling limits, output length and hardware state, and then uses one open-loop client for every engine. Open-loop arrivals with latency measured from the intended send time avoid coordinated omission: a mock server below capacity shows a bounded gap between open-loop and closed-loop clients (about tenfold in the sample run), above capacity it has no steady state at all (p99 grows with run length), and a 0.6 s client stall is visible only when measured from intended time. Success means a finished stream with the server-reported token count equal to the request, and failures stay in every denominator. Warm-up is discarded per run and throughput is computed over the sum of run windows. Percentile bootstrap intervals are reliable for medians but under-cover p99 (about 77 percent at 160 requests and 85 percent at 1,000 against a nominal 95), so p99 claims need at least 1,000 requests, repeats and agreement between runs; in the mock study the comparison of two engines sat near the noise floor and flipped between executions at small sample sizes. Engines are ranked by an SLO-feasible Pareto frontier and by the knee where attainment drops below 99 percent, never by cost per token or peak throughput alone: the cheapest point in the mock table failed its SLO. The harness is verified on CPU against mock servers; the three real engines still need to be measured on H100s following the runbook.</p>
+<h2 id="self-check-questions">Self-Check Questions<a class="headerlink" href="#self-check-questions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Why does a closed-loop load generator understate latency on an overloaded server?</li>
+<li>Why is latency measured from the intended send time and not the actual one?</li>
+<li>Why must failed requests remain in the denominator of SLO attainment?</li>
+<li>In Worked Example 36.8, engine C at 35 req/s has the lowest cost per million tokens. Why is it not a candidate, and what else in the table is cheaper than every feasible point?</li>
+<li>An open-loop run at 18 req/s on a server with 9 req/s capacity reports p99 TTFT of 10 s after 157 requests and 2.3 s after 37. What should the report say?</li>
+<li>Why must each engine be run alone on the machine?</li>
+<li>Why does <code>--request-rate inf</code> not measure steady-state serving?</li>
+<li>List three configuration differences that would make an engine comparison invalid even with a perfect load generator.</li>
+<li>Why does the client use the server's <code>usage.completion_tokens</code> and not the number of streamed events?</li>
+</ol>
+<h2 id="worked-solutions">Worked Solutions<a class="headerlink" href="#worked-solutions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>The client sends a new request only after a reply returns, so when the server slows down the client sends less, the queue never builds as it would for independent users, and measured latency stays low.</li>
+<li>If the client stalls, requests that should have been sent are sent late. Measuring from the actual send time makes them look fast and hides the stall; measuring from the intended time charges the delay, as a real user would experience it.</li>
+<li>Dropping failures lets an overloaded server look better by removing its worst outcomes. Counting them as misses makes attainment reflect what users received.</li>
+<li>Only 21 percent of its requests meet the SLO, so it is far past its knee. Engine A at 70 req/s (cost 1.12) is also cheaper than every feasible point (the cheapest feasible is 1.41 at engine A, 35 req/s) and also infeasible (45 percent attainment). Cheap points above the knee are cheap because the GPUs are saturated, which is the cause of the latency failure.</li>
+<li>It should say the system is unstable at that load: latency grows with the length of the run, so no p99 is meaningful, and capacity is below 18 req/s. Report the knee from rates below capacity instead.</li>
+<li>Engines compete for GPU memory, clocks, PCIe and CPU, so a second engine running changes the first's results and the comparison measures interference.</li>
+<li>Every request is issued at time zero, so the server faces a one-time burst and then drains it; there is no steady arrival process and the latency reflects queue position, not service under load.</li>
+<li>Examples: different precision or KV-cache dtype, different tensor-parallel degree, prefix caching on for one engine and off for another, speculative decoding on for one, different maximum batch or token limits, different output lengths because one engine stops early.</li>
+<li>Real engines can send several tokens in one event or send empty deltas, so event counts under- or over-count tokens and would mark successful requests as failures. The server's own count is the work it reports having done; the event count is kept only as a fallback.</li>
+</ol>
+<h2 id="coding-exercises">Coding Exercises<a class="headerlink" href="#coding-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Run-level bootstrap.</strong> Write <code>run_bootstrap_ci(runs, stat, B)</code> that resamples whole runs (with replacement) and then requests within each chosen run, and compare its coverage of the true p99 with the plain bootstrap in the self-test. Expect it to be wider; with only three runs it is a poor estimate itself, which is why more repeats are the real remedy.</li>
+<li><strong>Prefix-cache probe.</strong> Extend <code>make_payload</code> to send either unique random prompts or a fixed prompt, and write a test with a mock server that responds faster for repeated prompts, showing that the fixed-prompt run reports lower TTFT than the unique-prompt run on an identical engine.</li>
+<li><strong>Closed-loop with a think-time.</strong> Add a <code>think_s</code> parameter to <code>run_closed_loop</code> and show that with a long think time the closed-loop client approaches open-loop behaviour at low load, and explain why it still cannot reveal overload.</li>
+</ol>
+<h3 id="solution-sketches">Solution sketches<a class="headerlink" href="#solution-sketches" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Build <code>runs</code> as lists of per-request values; for each of B iterations draw <code>len(runs)</code> run indices with replacement, then for each chosen run draw its requests with replacement, concatenate, and apply the statistic. Run the coverage experiment with 5 simulated runs of 200 requests each.</li>
+<li>The mock handler uses <code>hash(prompt)</code> in a set to decide whether to apply a cache discount to the prefill time; the test sends 40 identical prompts and 40 unique ones and asserts the p50 TTFT difference exceeds the discount minus noise.</li>
+<li>After each reply the worker does <code>await asyncio.sleep(think_s)</code> before its next request. As <code>think_s</code> grows, offered load per worker falls and queues vanish, so latency looks like the open-loop result at low load; at overload the workers still wait for replies, so the offered load stays capped at the number of workers divided by the (growing) response time.</li>
+</ol>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>vLLM <code>bench serve</code> command reference: <a href="https://docs.vllm.ai/cli/bench/serve.html">https://docs.vllm.ai/cli/bench/serve.html</a></li>
+<li>SGLang bench serving guide: <a href="https://docs.sglang.io/docs/developer_guide/bench_serving.md">https://docs.sglang.io/docs/developer_guide/bench_serving.md</a></li>
+<li>SGLang benchmark and profiling guide: <a href="https://docs.sglang.io/docs/developer_guide/benchmark_and_profiling">https://docs.sglang.io/docs/developer_guide/benchmark_and_profiling</a></li>
+<li>TensorRT-LLM, running benchmarks with <code>trtllm-serve</code>: <a href="https://nvidia.github.io/TensorRT-LLM/1.3.0rc29/commands/trtllm-serve/run-benchmark-with-trtllm-serve.html">https://nvidia.github.io/TensorRT-LLM/1.3.0rc29/commands/trtllm-serve/run-benchmark-with-trtllm-serve.html</a></li>
+<li>NVIDIA developer blog, LLM inference benchmarking with TensorRT-LLM (<code>trtllm-bench</code>): <a href="https://developer.nvidia.com/blog/llm-inference-benchmarking-performance-tuning-with-tensorrt-llm">https://developer.nvidia.com/blog/llm-inference-benchmarking-performance-tuning-with-tensorrt-llm</a></li>
+<li>DistServe (goodput definition): <a href="https://arxiv.org/pdf/2401.09670">https://arxiv.org/pdf/2401.09670</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../35-disaggregated-prefill-decode/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 35. Disaggregated Prefill/Decode over RDMA">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                35. Disaggregated Prefill/Decode over RDMA
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../37-speculative-decoding-70b/" class="md-footer__link md-footer__link--next" aria-label="Next: 37. Speculative Decoding at 70B — Multi-GPU Cost Model">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                37. Speculative Decoding at 70B — Multi-GPU Cost Model
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/image-viewer.js"></script>
+      
+    
+  </body>
+</html>
