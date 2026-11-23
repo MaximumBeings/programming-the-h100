@@ -116,6 +116,41 @@ def wilson(x, n, z=1.959964):
     return max(0.0, c - h), min(1.0, c + h)
 
 
+def wilson_exact_coverage(n, p, z=1.959964):
+    """EXACT coverage of the Wilson interval for Binomial(n, p): sum the pmf over every x whose interval contains p."""
+    cov = 0.0
+    for x in range(n + 1):
+        lo, hi = wilson(x, n, z)
+        if lo <= p <= hi:
+            cov += math.comb(n, x) * p ** x * (1 - p) ** (n - x)
+    return cov
+
+
+def cluster_bootstrap_ratio(num, den, B=2000, seed=0):
+    """95% percentile bootstrap CI for sum(num)/sum(den) resampling CLUSTERS (here: cache entries), because the
+    false hits of one bad entry are not independent events. Returns None if there are no events at all."""
+    num, den = np.asarray(num, float), np.asarray(den, float)
+    if num.sum() == 0:
+        return None
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, len(num), (B, len(num)))
+    r = num[idx].sum(1) / np.maximum(den[idx].sum(1), 1)
+    return float(np.percentile(r, 2.5)), float(np.percentile(r, 97.5))
+
+
+def exact_match_stream(vecs):
+    """Baseline: a hash (exact-match) cache. Hit iff the identical vector was seen before. Zero false hits by construction
+    (identical vector = identical intent here). This, not 'no cache', is what a semantic cache must beat."""
+    seen, hits = set(), 0
+    for v in vecs:
+        k = v.tobytes()
+        if k in seen:
+            hits += 1
+        else:
+            seen.add(k)
+    return hits / len(vecs)
+
+
 def cost_per_request(hit_rate, wrong_rate, c_llm, c_emb, c_bad):
     """Every request pays the embedding/lookup; misses pay the LLM; wrong answers pay c_bad (escalation, refund, trust)."""
     return c_emb + (1 - hit_rate) * c_llm + wrong_rate * c_bad
@@ -133,6 +168,7 @@ def run_stream(world, intents, vecs, threshold, ttl=math.inf, key_fn=None, answe
     cache = SemanticCache(world.dim, threshold, ttl)
     n = len(intents)
     hits = false_hits = stale = 0
+    entries = []                                                   # every inserted entry; hits are CLUSTERED on entries
     for i in range(n):
         now = now_fn(i) if now_fn else float(i)
         key = key_fn(i) if key_fn else "default"
@@ -140,11 +176,14 @@ def run_stream(world, intents, vecs, threshold, ttl=math.inf, key_fn=None, answe
         entry, sim = cache.lookup(key, vecs[i], now)
         if entry is not None:
             hits += 1
+            entry["served"] = entry.get("served", 0) + 1
             if entry["answer"] != truth:
                 false_hits += 1
+                entry["bad"] = entry.get("bad", 0) + 1
         else:
-            cache.insert(key, vecs[i], truth, now)
-    return dict(n=n, hits=hits, false_hits=false_hits)
+            entries.append(cache.insert(key, vecs[i], truth, now))
+    served = np.array([e.get("served", 0) for e in entries]); bad = np.array([e.get("bad", 0) for e in entries])
+    return dict(n=n, hits=hits, false_hits=false_hits, served=served, bad=bad)
 
 
 def cosine_table(world, n_pairs=20000):
@@ -162,12 +201,14 @@ def threshold_sweep(world, taus, n=4000, seeds=(1, 2, 3)):
     out = {}
     for tau in taus:
         h = f = t = 0
+        sv, bd = [], []
         for s in seeds:
             w = World(seed=s, s_para=world.s_para)
             intents, vecs = w.stream(n)
             r = run_stream(w, intents, vecs, tau)
             h += r["hits"]; f += r["false_hits"]; t += r["n"]
-        out[tau] = dict(n=t, hits=h, false_hits=f)
+            sv.append(r["served"]); bd.append(r["bad"])
+        out[tau] = dict(n=t, hits=h, false_hits=f, served=np.concatenate(sv), bad=np.concatenate(bd))
     return out
 
 
@@ -194,7 +235,7 @@ def selftests():
     # partition isolation (property test over random operations)
     rng = np.random.default_rng(5)
     c = SemanticCache(w.dim, 0.5)
-    ok = True
+    ok, nhit = True, 0
     for step in range(600):
         key = f"tenant{rng.integers(0, 3)}"
         vec = w.paraphrase([int(rng.integers(0, w.n_intents))])[0]
@@ -202,8 +243,9 @@ def selftests():
             c.insert(key, vec, ("owner", key))
         else:
             e, _ = c.lookup(key, vec)
+            nhit += e is not None
             ok &= (e is None or e["answer"] == ("owner", key))
-    check("partition isolation: in 600 random operations no lookup ever returns another partition's entry", ok)
+    check(f"partition isolation: in 600 random operations ({nhit} of them hits, so the test exercises hits) no lookup returns another partition's entry. By construction of the dict keying; this guards regressions", ok and nhit > 0)
 
     # TTL, strict boundary
     c = SemanticCache(w.dim, 0.9, ttl=100.0)
@@ -224,27 +266,31 @@ def selftests():
     # determinism
     r1 = run_stream(*(lambda ww: (ww, *ww.stream(1500)))(World(seed=4)), 0.95)
     r2 = run_stream(*(lambda ww: (ww, *ww.stream(1500)))(World(seed=4)), 0.95)
-    check("replaying the same seeded stream gives identical counts", r1 == r2)
+    check("replaying the same seeded stream gives identical counts and per-entry tallies",
+          (r1["n"], r1["hits"], r1["false_hits"]) == (r2["n"], r2["hits"], r2["false_hits"]) and np.array_equal(r1["served"], r2["served"]) and np.array_equal(r1["bad"], r2["bad"]))
 
     # monotonicity in the threshold
     taus = (0.80, 0.88, 0.92, 0.95, 0.97, 0.99)
     sw = threshold_sweep(w, taus, n=2500, seeds=(1, 2))
     hr = [sw[t]["hits"] / sw[t]["n"] for t in taus]
-    check(f"hit rate is nonincreasing in the threshold {[round(x, 2) for x in hr]}", all(a >= b - 1e-9 for a, b in zip(hr, hr[1:])))
+    check(f"EMPIRICAL (not a theorem for a streaming cache: a higher threshold means more inserts, which can mean more later hits): hit rate is nonincreasing over this threshold grid {[round(x, 2) for x in hr]}", all(a >= b - 1e-9 for a, b in zip(hr, hr[1:])))
     fr = {t: sw[t]["false_hits"] / max(1, sw[t]["hits"]) for t in taus}
     check(f"false-hit rate at threshold 0.99 ({fr[0.99]:.3f}) is below that at 0.80 ({fr[0.80]:.3f})", fr[0.99] < fr[0.80])
 
     # Wilson interval
     lo, hi = wilson(0, 200)
     check(f"Wilson upper bound for 0 events in 200 trials is {hi:.4f} (about 3/n = 0.015 to 0.019)", 0.018 < hi < 0.0195 and lo == 0.0)
-    rng = np.random.default_rng(1)
-    cover = 0
-    for _ in range(2000):
-        x = int(rng.binomial(200, 0.02))
-        lo, hi = wilson(x, 200)
-        cover += lo <= 0.02 <= hi
-    check(f"Wilson 95% interval covers the true rate 0.02 in {cover / 2000:.3f} of 2000 simulated experiments (want 0.93 to 0.99)",
-          0.93 <= cover / 2000 <= 0.99)
+    cov = wilson_exact_coverage(200, 0.02)
+    check(f"Wilson 95% interval, EXACT coverage at n=200, p=0.02 (binomial sum, no simulation): {cov:.4f}; asserted in [0.92, 0.98] (Wilson coverage oscillates with n and p)",
+          0.92 <= cov <= 0.98)
+    check("cluster bootstrap: with 5 entries carrying all 40 false hits of 100 hits the interval is wide, and with no events it returns None",
+          cluster_bootstrap_ratio(np.array([8, 8, 8, 8, 8, 0, 0, 0, 0, 0]), np.array([10] * 10)) is not None
+          and cluster_bootstrap_ratio(np.zeros(10), np.ones(10)) is None)
+    lo, hi = cluster_bootstrap_ratio(np.array([8, 8, 8, 8, 8, 0, 0, 0, 0, 0]), np.array([10] * 10))
+    check(f"... and it is wider than the naive Wilson interval on the same 40/100: cluster [{lo:.2f},{hi:.2f}] vs Wilson [{wilson(40, 100)[0]:.2f},{wilson(40, 100)[1]:.2f}]",
+          (hi - lo) > (wilson(40, 100)[1] - wilson(40, 100)[0]))
+    ex = exact_match_stream(np.vstack([v[None], v[None], w.paraphrase([5]), v[None]]))
+    check(f"exact-match baseline: 4 queries (v, v, new, v) -> hit rate {ex:.2f} (= 2/4: the 2nd and 4th are repeats; the 3rd is new)", abs(ex - 0.5) < 1e-12)
 
     # economics: hand computation
     cpr = cost_per_request(0.40, 0.01, c_llm=0.004, c_emb=0.00002, c_bad=0.10)
@@ -271,10 +317,21 @@ def experiments():
     print("\n== 2. Streaming cache: hit rate and false hits versus threshold (3 seeds x 4000 queries, Zipf 1.0, 10% exact repeats) ==")
     taus = (0.85, 0.90, 0.93, 0.95, 0.97, 0.98, 0.99, 0.999)
     sw = threshold_sweep(w, taus)
-    print(f"  {'tau':>6s} {'hit rate':>9s} {'false/hit':>10s} {'95% CI (Wilson)':>18s} {'wrong/request':>14s}")
+    print(f"  {'tau':>6s} {'hit rate':>9s} {'false/hit':>10s} {'Wilson (iid, too narrow)':>26s} {'cluster bootstrap':>20s} {'bad entries':>12s} {'wrong/request':>14s}")
     for t in taus:
         r = sw[t]; fr = r["false_hits"] / max(1, r["hits"]); lo, hi = wilson(r["false_hits"], r["hits"])
-        print(f"  {t:6.3f} {r['hits']/r['n']:9.3f} {fr:10.4f} [{lo:7.4f},{hi:7.4f}] {r['false_hits']/r['n']:14.4f}")
+        cb = cluster_bootstrap_ratio(r["bad"], r["served"])
+        cbs = f"[{cb[0]:7.4f},{cb[1]:7.4f}]" if cb else "(0 events)".rjust(17)
+        nserv = int((r["served"] > 0).sum()); nbad = int((r["bad"] > 0).sum())
+        print(f"  {t:6.3f} {r['hits']/r['n']:9.3f} {fr:10.4f} [{lo:7.4f},{hi:7.4f}] {cbs:>20s} {nbad:5d}/{nserv:<6d} {r['false_hits']/r['n']:14.4f}")
+    r95 = sw[0.95]
+    print(f"  at tau=0.95 there were 0 false hits among {int((r95['served'] > 0).sum())} serving entries: Wilson upper bound on the BAD-ENTRY rate = {wilson(0, int((r95['served'] > 0).sum()))[1]:.4f}")
+    r90 = sw[0.90]
+    print(f"  at tau=0.90 the {r90['false_hits']} false hits came from only {int((r90['bad'] > 0).sum())} distinct entries (clustering)")
+
+    xs = [exact_match_stream(World(seed=s_).stream(4000)[1]) for s_ in (1, 2, 3)]
+    exact_hit = float(np.mean(xs))
+    print(f"\n  EXACT-MATCH (hash) cache baseline on the same streams: hit rate {exact_hit:.3f}, zero false hits. At tau >= 0.98 the semantic cache's whole hit rate is this.")
 
     print("\n== 3. Economics (ASSUMED costs): c_llm=$0.004, c_emb=$0.00002 per request; sweep the cost of a wrong answer ==")
     c_llm, c_emb = 0.004, 0.00002
@@ -287,8 +344,16 @@ def experiments():
         cells = "".join(f"  {1e3 * (c_llm - cost_per_request(h, wr, c_llm, c_emb, b)):9.3f}" for b in (0.01, 0.05, 0.25, 1.0))
         be = breakeven_bad_cost(h, wr, c_llm, c_emb)
         print(f"  {t:6.3f}{cells}   {('inf' if be == math.inf else f'{be:8.3f}'):>8s}")
-    print("  (cells: net saving in milli-dollars per request versus no cache; negative = the cache costs money)")
+    print("  (cells: net saving in milli-dollars per request versus NO cache; negative = the cache costs money)")
+    print(f"  Exact-match baseline saves {1e3 * exact_hit * c_llm:.3f} milli-dollars per request at any c_bad (no false hits). The semantic cache's EXTRA saving over it is the cell minus that.")
     print("  best threshold by c_bad: " + ", ".join(f"${b}: {best[b]}" for b in best))
+    h93, w93, h95, w95 = sw[0.93]["hits"] / sw[0.93]["n"], sw[0.93]["false_hits"] / sw[0.93]["n"], sw[0.95]["hits"] / sw[0.95]["n"], sw[0.95]["false_hits"] / sw[0.95]["n"]
+    cross = (h93 - h95) * c_llm / (w93 - w95) if w93 > w95 else math.inf
+    print(f"  crossover c_bad between tau=0.93 and 0.95: {cross:.3f}  (above it 0.95 wins). tau=0.93 has only {sw[0.93]['false_hits']} false hits in {sw[0.93]['n']} requests;")
+    for k in (max(0, sw[0.93]['false_hits'] - 1), sw[0.93]['false_hits'] + 1):
+        wk = k / sw[0.93]["n"]
+        ck = (h93 - h95) * c_llm / (wk - w95) if wk > w95 else math.inf
+        print(f"    with {k} false hits instead the crossover would be {ck:.3f}")
 
     print("\n== 4. Why '98%' is meaningless without the model: the same threshold on two embedding models ==")
     for name, sp in (("model A (tight paraphrases, s_para=0.20)", 0.20), ("model B (noisier paraphrases, s_para=0.35)", 0.35)):
@@ -307,7 +372,7 @@ def experiments():
         r = run_stream(w5, intents, vecs, 0.95, key_fn=keyfn, answer_fn=lambda i: (int(tenant[i]), int(intents[i])))
         print(f"  {label:22s}: hits {r['hits']:5d}  answers belonging to the wrong tenant {r['false_hits']:5d} ({r['false_hits']/max(1,r['hits']):.3f} of hits)")
 
-    print("\n== 6. Staleness: 25% of answers change at t=2000 (1 request/second); stale serves after the change, by TTL ==")
+    print("\n== 6. Staleness: tau=0.97; 25% of answers change at t=2000 (1 request/second, horizon 4000 s, so only 2000 s follow the change; TTL 3600 therefore behaves like infinity) ==")
     w6 = World(seed=21)
     n = 4000
     intents, vecs = w6.stream(n, dup_frac=0.0)
