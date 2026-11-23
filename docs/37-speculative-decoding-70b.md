@@ -2,186 +2,232 @@
 
 !!! abstract "Goal and prerequisites"
 
-    Predict, before renting any GPUs, whether speculative decoding will speed up a 70B model on 2 x H100, which draft and which depth K to use, and at what batch size the benefit disappears. Then measure it with the Chapter 36 harness. Read [Chapter 32](32-inference-engine-and-harness.md) (decode floor) and [Chapter 36](36-benchmark-teardown.md) (measurement). The statistics of rejection sampling are derived in the Triton book's speculative decoding chapter; here the focus is the multi-GPU system cost.
+    Predict, before renting any GPUs, whether speculative decoding will speed up a 70B model on 2 x H100, which draft and which depth K to use, and at what batch the benefit shrinks. Then measure it with the Chapter 36 harness. Read [Chapter 32](32-inference-engine-and-harness.md) (decode floor) and [Chapter 36](36-benchmark-teardown.md) (measurement). The statistics of rejection sampling are derived in the Triton book's speculative decoding chapter; here the focus is the multi-GPU system cost, including the KV cache that decides how large a batch fits at all.
 
 !!! warning "Evidence level: read this first"
 
-    - **Verified here (CPU):** the cost model, the expected-tokens formula (against Monte Carlo), eight property tests, and the tables below.
-    - **Assumed:** `mfu = 0.5`, a 1 ms fixed per-step overhead, and the acceptance rates alpha in the tables. Alpha comes from the draft and the data, and **no acceptance rate in this chapter was measured on a real model pair**. Every speedup figure is a model prediction, not a benchmark.
-    - **Untested on H100:** the launch commands in Section 37.8. Flag names change between releases; check `--help` for your version.
+    - **Verified here (CPU):** the cost model, the expected-tokens formulas (the closed form against a simulation of the accept/reject chain), 19 property tests, and every table below (they are the program's output).
+    - **Assumed:** `mfu = 0.5`, 1 ms fixed overhead per step, 12 microseconds per tensor-parallel all-reduce, 90 percent memory utilization, 2 GB reserve per GPU, the model shapes, and every acceptance rate alpha in the tables. **No acceptance rate in this chapter was measured on a real model pair**, and the draft models are shape-only stand-ins. Every speedup is a model prediction, not a benchmark.
+    - **Untested on H100:** the launch commands in Section 37.9. Flag names change between releases; check `--help` for your version.
 
 ## 37.1 Why speculation helps, and exactly when
 
-Decode of a large model is limited by reading weights from HBM, not by arithmetic. For 70B parameters in BF16 on 2 GPUs (tensor parallel 2), each GPU holds 70 GB and one step takes at least `70e9 / 3.35e12 = 20.9 ms`. The step reads the same weights whether it processes one token or a hundred, until the arithmetic catches up with the memory traffic.
+Decode of a large model is limited by reading memory, not by arithmetic. For 70B parameters in BF16 on 2 GPUs (tensor parallel 2), each GPU holds 70 GB and one step takes at least `70e9 / 3.35e12 = 20.9 ms`. The step reads the same weights whether it processes one token or a hundred, until the arithmetic catches up with the memory traffic.
 
 Speculative decoding exploits that slack. A small **draft** proposes K tokens cheaply; the large **target** checks all K (plus one more position) in a **single** pass. Rejection sampling accepts a prefix of the proposals and always yields one extra token, and the output distribution is exactly the target's. If the pass costs little more than a one-token pass, several tokens are emitted for roughly the price of one.
 
-The benefit depends on three quantities:
+The benefit depends on four quantities:
 
 1. **alpha**, the per-token acceptance probability (how well the draft imitates the target).
-2. **The draft's cost** relative to the target step.
-3. **How much slack the target step has**: the verify pass processes `batch x (K+1)` tokens, and once that count exceeds the compute-bound threshold, verifying extra tokens is no longer free.
+2. **The draft's cost** relative to the target step, including its own KV cache reads.
+3. **The slack in the target step:** the verify pass processes `batch x (K+1)` tokens, and once that count exceeds the compute-bound threshold, extra tokens are no longer free.
+4. **Memory:** the weights, the draft and the KV cache all share each GPU, which limits the batch before the compute threshold is reached (Section 37.3).
 
-The vLLM documentation makes the same qualitative point: speculation reduces inter-token latency for memory-bound workloads at low to medium request rates, which is why it is not a free win at high load.
+The vLLM documentation makes the qualitative point that speculation reduces inter-token latency for memory-bound workloads at low to medium request rates.
 
 ## 37.2 The cost model
 
 ```python
-def step_time(m, tokens, mfu=0.5, overhead=1.0e-3, comm=0.0):
-    mem  = m.weight_bytes_per_gpu() / HBM_BW
-    comp = 2.0 * m.params * tokens / (m.gpus * PEAK_BF16 * mfu)
-    return max(mem, comp) + overhead + comm
+def step_time(m, batch, ctx, tokens_per_seq=1, mfu=0.5, overhead=1.0e-3):
+    mem  = (m.weights_per_gpu() + batch * ctx * m.kv_per_gpu_token()) / HBM_BW
+    comp = 2.0 * m.params * batch * tokens_per_seq / (m.gpus * m.peak * mfu)
+    return max(mem, comp) + overhead + m.comm_s()
 ```
 
-One forward over `tokens` total tokens costs the larger of the weight-read time and the arithmetic time, plus a fixed overhead (kernel launches, sampling, scheduler) and communication. This is a roofline model: coarse, but it captures the crossover that decides everything.
+One forward costs the larger of the memory time (weights **plus every sequence's KV cache**, read once per step) and the arithmetic time, plus a fixed overhead and tensor-parallel communication. This is a roofline model: coarse, but it captures the crossover that decides everything. Components:
 
-Expected tokens per verify pass with per-token acceptance alpha and K proposals:
+- **KV bytes per token** for a Llama-3-70B shape (80 layers, 8 KV heads, head dimension 128, 2-byte values): `2 x 80 x 8 x 128 x 2 = 327,680` bytes, which is **163,840 bytes per GPU** at TP2 because the KV heads are sharded. At 2,048 tokens of context one sequence holds 0.34 GB per GPU.
+- **Tensor-parallel communication:** two all-reduces per layer, 160 per step, at an assumed 12 microseconds each: **1.92 ms**. That is about 9 percent of the 20.9 ms weight-read floor, so it is not negligible; measure it with `nccl-tests`.
+- **Compute:** `2 x params` FLOPs per token, at an assumed 50 percent of peak (989 TFLOP/s BF16, 1,979 TFLOP/s FP8, per GPU).
 
-```
-E[tokens] = (1 - alpha^(K+1)) / (1 - alpha)
-```
-
-One speculation cycle costs K sequential draft steps plus one verify pass of `(K+1)` tokens per sequence:
-
-```python
-def cycle_time(target, draft, K, batch):
-    return K * step_time(draft, batch) + step_time(target, batch * (K + 1))
-
-speedup = expected_tokens(alpha, K) * step_time(target, batch) / cycle_time(...)
-```
-
-### Where the compute threshold lies
-
-With 70B parameters on 2 GPUs, one token costs `2 x 70e9 = 140 GFLOP`. At an assumed 50 percent of the 989 TFLOP/s peak per GPU, the arithmetic time equals the 20.9 ms memory time near 295 tokens in flight. The model's base step times confirm the shape:
-
-| Batch | Base step (ms) |
-|---|---|
-| 1 to 128 | 21.9 |
-| 256 | 37.2 |
-| 512 | 73.5 |
-
-Up to about 128 sequences the step is memory-bound (21.9 ms is the 20.9 ms floor plus 1 ms overhead). Beyond that it turns compute-bound and grows with batch.
-
-## 37.3 Verified properties
-
-The file `ch37_spec_decode_70b.py` ([download](examples/inference-systems/ch37_spec_decode_70b.py)) checks the model against eight properties:
+Expected tokens per verify pass with per-position acceptance alpha and K proposals:
 
 ```
-  [PASS] 70B TP2 decode floor ~20.9 ms (20.90 ms)
-  [PASS] E[tokens] formula matches Monte Carlo (max err 0.0052)
-  [PASS] limits: alpha=0 gives 1, alpha=1 gives K+1
-  [PASS] speedup increases with alpha
-  [PASS] best K nondecreasing in alpha ([1, 1, 2, 5])
-  [PASS] speedup nonincreasing in batch ([1.64, 1.64, 1.57, 0.64, 0.57])
-  [PASS] acceptance(p,p)=1, disjoint=0
-  [PASS] draft as large as target gives speedup < 1
+E[tokens] = (1 - alpha^(K+1)) / (1 - alpha)                       (i.i.d. alpha)
+E[tokens] = 1 + sum_i  prod_{j<=i} alpha_j                        (position-dependent alpha_j)
 ```
 
-The Monte Carlo run simulates the accept-or-reject chain directly (200,000 cycles for each of 16 alpha and K pairs), so the closed form is checked against the process it describes. The last test is the cautionary one: a draft as expensive as the target loses to plain decoding even with a good acceptance rate.
+One speculation cycle costs K sequential draft steps plus one verify pass of K+1 tokens per sequence, and `speedup = E x base_step / cycle`.
 
-## 37.4 Predicted speedup tables (assumptions, not measurements)
+### The compute crossover is 148 tokens, not 295
 
-Best K searched over 1 to 12 at each cell. `mfu = 0.5`, overhead 1 ms, alpha as shown.
+The arithmetic time per token for 70B on 2 GPUs at 50 percent MFU is `140e9 / (2 x 989e12 x 0.5) = 0.1416 ms`. The weight-read time is 20.9 ms. They are equal at `20.9 / 0.1416 = 147.6` tokens in flight. (At 100 percent MFU the figure would be about 295; the model assumes half of peak.) KV traffic raises the memory time and pushes the crossover up; at FP8, batch 96, 2k context it is about 284 tokens. A test checks the 147.6 figure.
 
-**Draft: 8B BF16 on one GPU**
+## 37.3 Memory decides the feasible batch
 
-| alpha | B=1 | B=8 | B=32 | B=128 | B=512 |
+Before any speed comparison, ask what fits. Per GPU, with 90 percent utilization of 80 GiB (77.3 GB) and a 2 GB reserve:
+
+| Configuration | Weights per GPU | Left for KV | KV capacity per GPU (tokens) | Max batch at 2k context |
+|---|---|---|---|---|
+| 70B BF16, TP2, 1B draft on GPU0 | 70 GB + 2.4 GB | 2.9 GB | 17,758 | 8 (17 at 1k context) |
+| 70B BF16, TP2, **8B draft on GPU0** | 70 GB + 16 GB | **negative** | none | **does not fit** |
+| 70B FP8, TP2, 1B draft on GPU0 | 35 GB + 2.4 GB | 37.9 GB | 231,381 | 112 |
+| 70B FP8, TP2, 8B draft on GPU0 | 35 GB + 16 GB | 24.3 GB | 148,373 | 72 |
+| 70B FP8, TP2, EAGLE-style head | 35 GB + 1.8 GB | 38.5 GB | 235,043 | 114 |
+
+Two consequences:
+
+1. **A BF16 70B model on 2 x H100 is KV-limited to a handful of sequences.** At 2k context only 8 sequences fit beside the 1B draft; the roofline's compute-bound regime (about 148 tokens in flight) is reached only by raising K, not by batch. A BF16 8B draft cannot share a GPU with the BF16 target at all (70 + 16 = 86 GB exceeds the 77 GB budget); it needs a third GPU. The tables therefore use the 1B draft for BF16 and show 8B only for FP8.
+2. **FP8 weights change the picture.** Halving the weights frees about 35 GB per GPU for KV, so 70 to 110 sequences at 2k context fit, and the batch dimension becomes meaningful. FP8 also halves the weight-read floor to 10.5 ms.
+
+The draft's own KV cache is modelled too (1B Llama-3.2-shaped: 32 KB per token; 8B: 128 KB per token) and its reads add to every draft step; that is why large drafts get expensive at high batch. The draft's KV capacity is not subtracted from the budget (a small error for the 1B draft, larger for the 8B draft).
+
+## 37.4 Verified properties
+
+The file `ch37_spec_decode_70b.py` ([download](examples/inference-systems/ch37_spec_decode_70b.py)) checks 19 properties; the notable ones:
+
+```
+  [PASS] 70B BF16 TP2 weights-only decode floor = 20.9 ms
+  [PASS] KV bytes/token for a Llama-3-70B shape = 327,680 total, 163,840 per GPU at TP2
+  [PASS] 80 layers x 2 all-reduces x 12 us = 1.92 ms TP communication
+  [PASS] compute/memory crossover with no KV is 147.6 tokens (NOT 295: MFU 0.5 halves it)
+  [PASS] BF16 TP2 + 8B draft colocated does not fit (70 GB + 16 GB > 77 GB budget)
+  [PASS] FP8 TP2 + 8B draft colocated fits; max batch at 2k context equals the hand computation (72)
+  [PASS] positional formula equals the i.i.d. formula for constant alpha
+  [PASS] positional formula matches simulation for decaying alpha (3.578)
+  [PASS] K=0 gives speedup exactly 1.0
+  [PASS] speedup strictly increases with alpha
+  [PASS] best K nondecreasing in alpha ([2, 3, 5, 11])
+  [PASS] FP8 TP2, ctx 256, K=4: speedup nonincreasing in batch ([2.21, 2.16, 1.44, 0.89, 0.69, 0.66])
+  [PASS] a draft as expensive as the target loses to plain decoding
+```
+
+The accept/reject simulation (200,000 cycles for each of 16 alpha and K pairs) is a **sanity check of the closed form**, not independent evidence of the model: it confirms the algebra, not the physics. The nonincreasing-in-batch test uses a short context (256) where the batch can grow past the crossover, and shows speculation falling below 1.0 (0.89x at 128 sequences, 0.66x at 512) once the verify pass is compute-bound. With the realistic 2k context that regime is not reachable by batch alone, because the KV cache runs out first.
+
+## 37.5 Predicted speedups (assumptions, not measurements)
+
+Best K searched over 1 to 12 in each cell. "n/a (KV)" marks batches that do not fit in memory.
+
+**A. 70B BF16, TP2, 1B draft on GPU0, context 1,024.** Base step 23.9 ms at B=1 (20.9 weights + 1.0 overhead + 1.9 comm + KV), 24.6 ms at B=16.
+
+| alpha | B=1 | B=4 | B=8 | B=16 | B=24 |
 |---|---|---|---|---|---|
-| 0.5 | 1.19x (K=1) | 1.19x (K=1) | 1.19x (K=1) | 0.76x (K=1) | 0.67x (K=1) |
-| 0.7 | 1.43x (K=2) | 1.43x (K=2) | 1.43x (K=2) | 0.87x (K=1) | 0.76x (K=1) |
-| 0.8 | 1.65x (K=3) | 1.65x (K=3) | 1.65x (K=3) | 0.92x (K=1) | 0.81x (K=1) |
-| 0.9 | 2.02x (K=5) | 2.02x (K=5) | 1.92x (K=3) | 0.97x (K=1) | 0.85x (K=1) |
+| 0.5 | 1.54x (K=3) | 1.54x (K=3) | 1.53x (K=3) | 1.53x (K=3) | n/a (KV) |
+| 0.7 | 2.16x (K=5) | 2.15x (K=5) | 2.15x (K=5) | 2.13x (K=5) | n/a (KV) |
+| 0.8 | 2.76x (K=7) | 2.75x (K=7) | 2.74x (K=7) | 2.71x (K=7) | n/a (KV) |
+| 0.9 | 4.00x (K=11) | 3.98x (K=11) | 3.95x (K=11) | 3.81x (K=8) | n/a (KV) |
 
-**Draft: 1B BF16 on one GPU**
+**B1. 70B FP8, TP2, 1B draft, context 2,048 (max batch 112).** Base step 13.5 ms at B=1, 23.0 ms at B=96.
 
-| alpha | B=1 | B=8 | B=32 | B=128 | B=512 |
+| alpha | B=1 | B=8 | B=32 | B=64 | B=96 |
 |---|---|---|---|---|---|
-| 0.5 | 1.54x (K=3) | 1.54x (K=3) | 1.54x (K=3) | 0.85x (K=1) | 0.74x (K=1) |
-| 0.7 | 2.16x (K=5) | 2.16x (K=5) | 2.08x (K=3) | 0.96x (K=1) | 0.84x (K=1) |
-| 0.8 | 2.75x (K=7) | 2.75x (K=7) | 2.45x (K=4) | 1.01x (K=1) | 0.89x (K=1) |
-| 0.9 | 3.98x (K=11) | 3.98x (K=11) | 2.99x (K=4) | 1.07x (K=1) | 0.94x (K=1) |
+| 0.5 | 1.39x (K=2) | 1.38x (K=2) | 1.36x (K=2) | 1.34x (K=2) | 1.32x (K=2) |
+| 0.7 | 1.83x (K=4) | 1.81x (K=4) | 1.78x (K=3) | 1.68x (K=2) | 1.65x (K=2) |
+| 0.8 | 2.24x (K=5) | 2.22x (K=5) | 2.16x (K=5) | 1.94x (K=3) | 1.83x (K=2) |
+| 0.9 | 3.02x (K=8) | 2.97x (K=8) | 2.74x (K=5) | 2.27x (K=3) | 2.04x (K=2) |
+
+Ridge (tokens in flight at which compute equals memory): 149, 159, 193, 238, 284 for B = 1, 8, 32, 64, 96.
+
+**B2. Same, 8B draft (max batch 72).**
+
+| alpha | B=1 | B=8 | B=32 | B=64 |
+|---|---|---|---|---|
+| 0.5 | 1.05x (K=1) | 1.03x (K=1) | 1.00x (K=1) | 0.97x (K=1) |
+| 0.7 | 1.18x (K=1) | 1.17x (K=1) | 1.13x (K=1) | 1.10x (K=1) |
+| 0.8 | 1.31x (K=2) | 1.28x (K=2) | 1.22x (K=2) | 1.16x (K=2) |
+| 0.9 | 1.49x (K=4) | 1.46x (K=3) | 1.37x (K=3) | 1.29x (K=2) |
+
+**B3. Same, EAGLE-style head (one decoder layer's worth of parameters, reusing target features; max batch 114).**
+
+| alpha | B=1 | B=8 | B=32 | B=64 | B=96 |
+|---|---|---|---|---|---|
+| 0.5 | 1.42x (K=2) | 1.43x (K=2) | 1.46x (K=2) | 1.49x (K=2) | 1.50x (K=2) |
+| 0.7 | 1.90x (K=4) | 1.93x (K=4) | 1.99x (K=4) | 1.92x (K=3) | 1.87x (K=2) |
+| 0.8 | 2.35x (K=5) | 2.38x (K=6) | 2.48x (K=5) | 2.24x (K=3) | 2.09x (K=2) |
+| 0.9 | 3.21x (K=9) | 3.27x (K=9) | 3.15x (K=5) | 2.60x (K=3) | 2.32x (K=2) |
 
 What the tables say, and what they do not:
 
-1. **Low and medium batch: real gains.** Up to B=32 the model predicts 1.2x to 4.0x depending on alpha and the draft. Gains grow with alpha and with a cheaper draft.
-2. **Large batch: speculation loses.** At B=128 and above almost every cell is below 1.0, because the verify pass of `batch x (K+1)` tokens is already compute-bound and the extra proposals are rejected work. This is why a serving system that runs at high batch should switch speculation off, or pick K per load level.
-3. **The best K moves with alpha and with the draft.** The 8B draft at alpha 0.9 wants K=5; the 1B draft wants K=11. The K=11 optimum sits on a very flat curve (K=10 to 12 differ by under 0.5 percent), so treat it as "deep", not as a precise optimum, and note that real alpha usually **decays with position**, which this i.i.d. model ignores (Section 37.6).
-4. **Everything depends on alpha, which is not in this chapter's data.** The tables show sensitivity; they do not tell you which row applies to your model pair and prompts. Measure it (Section 37.7).
+1. **BF16 at 2 x H100 gives large predicted gains for a tiny batch** (1.5x to 4x), because the step is a pure weight read and an independent small draft is cheap. But only 8 to 17 sequences fit, so this is a latency configuration, not a throughput one.
+2. **At FP8 the predicted gains are smaller** (1.4x to 3.0x at B=1 for the 1B draft), because the base step is already 13.5 ms and the draft's fixed overhead is a larger fraction of it. They shrink with batch (2.24x at B=1 to 1.83x at B=96 for alpha 0.8) as the verify pass approaches and passes the ridge; none falls below 1.0 within the feasible batch for the 1B draft.
+3. **The 8B draft is a poor trade at FP8**: 1.05x to 1.49x, falling to 0.97x at 64 sequences with alpha 0.5. Its weights and KV reads cost several milliseconds per draft step.
+4. **The EAGLE-style row beats the 1B draft at high batch** (2.09x against 1.83x at B=96, alpha 0.8) because its one-layer KV cache is tiny. **But the alpha rows are the same for every draft, which is unfair to EAGLE:** published head-based drafts usually reach higher acceptance than an independent small model, and that difference would widen the gap further. The table shows the cost side only; the acceptance side must be measured.
+5. **The best K moves with alpha and with the draft**: deeper for a cheap draft and a high alpha. The K=11 cells in Table A sit on a flat curve (K=10 to 12 differ by under 0.5 percent) and real alpha usually decays with position (Section 37.7), so treat them as "deep", not as a precise optimum.
+6. **Everything depends on alpha, which is not in this chapter's data.** The tables show sensitivity; they do not tell you which row applies to your model pair and prompts. Measure it (Section 37.8).
 
-### Worked Example 37.4.1: one cell by hand
+### Worked Example 37.5.1: one low-batch cell by hand
 
-70B target, 1B draft, alpha 0.8, K=7, batch 1.
+Table A: 70B BF16, 1B draft, alpha 0.8, K=7, B=1, context 1,024.
 
 - Expected tokens: `(1 - 0.8^8) / 0.2 = (1 - 0.1678) / 0.2 = 4.16`.
-- Draft step: weights `1e9 x 2 = 2 GB` on one GPU, `2e9 / 3.35e12 = 0.60 ms`, plus 1 ms overhead = 1.60 ms. Seven of them: 11.2 ms.
-- Verify: 8 tokens in flight, memory-bound, 21.9 ms.
-- Cycle: 33.1 ms. Base step: 21.9 ms.
-- Speedup: `4.16 x 21.9 / 33.1 = 2.75`. This matches the table.
+- Base step: weights 20.90 ms, KV `1 x 1024 x 163,840 = 0.17 GB` -> 0.05 ms, overhead 1.00, comm 1.92: **23.87 ms**.
+- Draft step: 1B weights 2.4 GB plus KV `1024 x 32,768 = 0.03 GB`, memory time 0.73 ms, plus 1.00 overhead (no comm, one GPU): 1.73 ms. Seven steps: 12.1 ms.
+- Verify: 8 tokens in flight, still memory-bound: 23.87 ms.
+- Cycle: 36.0 ms. Speedup: `4.16 x 23.87 / 36.0 = 2.76`. Matches the table.
 
-Notice that the **fixed overhead dominates the draft cost**: 1 ms of overhead is larger than the 0.6 ms of weight reading. Cutting launch and scheduling overhead (CUDA graphs, fused sampling) matters more for a tiny draft than shrinking it further.
+The fixed overhead (1.0 ms) is larger than the draft's weight-read time (0.7 ms), so cutting launch and scheduling overhead matters more for a tiny draft than shrinking it further.
 
-## 37.5 Multi-GPU placement of the draft
+### Worked Example 37.5.2: one high-batch cell by hand
 
-The target occupies 2 GPUs with tensor parallelism. The draft must run somewhere, and the choice changes the cost:
+Table B1: 70B FP8, 1B draft, alpha 0.8, K=2, B=96, context 2,048.
 
-| Placement | Draft step cost | Costs | When it fits |
-|---|---|---|---|
-| Replicated on each target GPU, same TP | Draft weights are sharded and an all-reduce per layer is added; for a small model the communication can exceed the arithmetic | Little extra memory | Large draft (8B and up) |
-| Draft on one target GPU, no TP (`draft_tensor_parallel_size = 1` in vLLM) | One GPU computes while the other idles; the proposals must reach the other rank | Idle GPU during drafting | Small drafts such as 1B |
-| Draft on a separate GPU | No contention with target memory | One more GPU | Memory-limited targets |
-| Draft heads on the target (EAGLE, MTP, Medusa style) | Very cheap: reuse target hidden states | Training or a published head is required | When one exists for your model |
+- Expected tokens: `(1 - 0.8^3) / 0.2 = 2.44`.
+- Base step: weights 35 GB, KV `96 x 2048 x 163,840 = 32.2 GB`, memory `(35 + 32.2) / 3350 = 20.06 ms`; compute for 96 tokens `2 x 70e9 x 96 / (2 x 1979e12 x 0.5) = 6.8 ms`. Memory dominates. Add 1.0 overhead and 1.92 comm: **22.98 ms**.
+- Verify, 288 tokens in flight: compute `20.4 ms` now exceeds memory `20.06 ms`, so the step is just compute-bound: 20.4 + 2.92 = **23.29 ms**. (Three times the tokens cost only 1.3 percent more time; that is the slack speculation uses.)
+- Draft step: weights 2.4 GB plus KV `96 x 2048 x 32,768 = 6.4 GB`, memory time 2.64 ms, plus 1.0 overhead: 3.64 ms. Two steps: 7.28 ms.
+- Cycle: 30.57 ms. Speedup: `2.44 x 22.98 / 30.57 = 1.83`. Matches the table.
 
-The model in this chapter treats the draft as a single-GPU model (the 8B and 1B rows). It does not model the communication of sharing proposals between ranks; add a `comm` term from your interconnect measurements.
+At this batch the **draft's KV traffic (6.4 GB per step) is 2.7 times its weights (2.4 GB)**, which is why drafts with large KV caches fall behind at high batch.
 
-Memory check for the target at TP=2: weights 70 GB per GPU leave about 10 GB per GPU for KV cache at an 80 GB card, before activations and the draft. A 1B BF16 draft is 2 GB; an 8B draft is 16 GB, which may not fit beside the target on the same GPU at long contexts. Check this before choosing a draft.
+## 37.6 Multi-GPU placement of the draft
 
-## 37.6 Failure modes and edge cases
+The target occupies 2 GPUs with tensor parallelism. The draft must run somewhere, and the choice changes the cost and the memory:
+
+| Placement | Effect | When it fits |
+|---|---|---|
+| Draft on one target GPU, no TP (`draft_tensor_parallel_size = 1` in vLLM) | One GPU computes the draft while the other idles; proposals must reach the other rank (small broadcast); **KV capacity becomes uneven** because GPU0 holds the draft weights, so the worst GPU sets the batch limit (the model charges this) | Small drafts such as 1B or an EAGLE-style head |
+| Draft sharded with the same TP | Draft weights per GPU halve, but a per-layer all-reduce is added; for a small draft the communication exceeds the arithmetic | Large drafts (8B and up) when memory forces it |
+| Draft on a separate GPU | No memory contention, one more GPU, a transfer of proposals each cycle | BF16 targets that cannot colocate an 8B draft |
+| Draft heads on the target (EAGLE, MTP, Medusa style) | Very cheap: reuse target hidden states; needs a trained head | When one exists for your model |
+
+The model prices only the first row: the draft is a single-GPU model on GPU0, and the proposal transfer is not charged (add a `comm` term from your interconnect measurements). The target's tensor-parallel communication is charged as 1.92 ms per step, an assumed value.
+
+## 37.7 Failure modes and edge cases
 
 | Situation | Effect | Mitigation |
 |---|---|---|
-| alpha drops with position (later proposals diverge more) | Real expected tokens are below the i.i.d. formula; best K is smaller | Measure acceptance per position and use `E = 1 + sum_i prod_{j<=i} a_j` |
-| High temperature or creative text | Draft and target distributions overlap less | Tune K per workload; consider n-gram or suffix methods for repetitive content |
-| Batch grows at peak traffic | Verify turns compute-bound and speculation slows everything | Dynamic speculation depth, or disable above a batch threshold |
+| alpha varies with position | The i.i.d. formula is wrong in either direction: with the first-position rate it overstates (4.69 vs 3.58 in Solution 4), with the mean rate it understates (2.94 vs 3.58) | Measure acceptance per position and use `E = 1 + sum_i prod_{j<=i} alpha_j` |
+| High temperature or creative text | Draft and target distributions overlap less (direction depends on the models) | Tune K per workload; consider n-gram or suffix methods for repetitive content |
+| KV cache nearly full | Large batches do not fit; evictions and recompute dominate | Compute the feasible batch (Section 37.3) before tuning K |
+| Batch grows past the ridge | Verify turns compute-bound and speculation slows everything (0.89x at 128 sequences, short context) | Dynamic speculation depth, or disable above a measured batch threshold |
 | Draft and target tokenizers differ | Proposals cannot be verified | Use a draft from the same family and tokenizer |
-| Draft too large or too slow | Cycle cost exceeds the savings (Test 8) | Compare draft step time with target step time before anything else |
+| Draft too large or too slow | Cycle cost exceeds the savings | Compare draft step time with target step time first |
 | Different sampling params between phases | Violates the rejection-sampling guarantee | Apply identical temperature, top-p and top-k to both distributions |
 | Prefix caching or other features interact | Support varies by engine and release; the SGLang docs list limitations for some modes | Check the release notes for your version |
 | Acceptance measured on one dataset, served on another | Surprise slowdown | Measure on the production distribution |
+| Tensor-parallel communication larger than assumed | Base step and verify both grow by the same fixed amount, lowering the relative gain | Measure the all-reduce latency and update `AR_LATENCY` |
 
 ### The synthetic alpha experiment, and why not to over-read it
 
 The file also computes alpha from distributions: `alpha = sum_x min(p(x), q(x))`, the overlap of target `p` and draft `q`. With draft logits equal to target logits plus Gaussian noise of standard deviation 0.8, over 400 random 50-token distributions:
 
 ```
-  T=0.2 : alpha=0.708
-  T=0.5 : alpha=0.726
-  T=1.0 : alpha=0.782
-  T=1.5 : alpha=0.818
+  T=0.2 : alpha=0.708     T=0.5 : alpha=0.726     T=1.0 : alpha=0.782     T=1.5 : alpha=0.818
 ```
 
-Alpha **rises** with temperature here because a higher temperature flattens both distributions and shrinks the effect of the logit noise. That is a property of this synthetic noise model, not a statement about real models; with real drafts that disagree on the preferred token, the trend can go the other way. The experiment's value is that it shows the correct definition of alpha and a way to compute it from logged distributions. Do not quote its numbers.
+Alpha **rises** with temperature here because a higher temperature flattens both distributions and shrinks the effect of the logit noise. That is a property of this synthetic noise model, not of real models. The experiment's value is that it shows the correct definition of alpha and a way to compute it from logged distributions. Do not quote its numbers.
 
-## 37.7 Measuring it: protocol on real hardware
+## 37.8 Measuring it: protocol on real hardware
 
 Use [Chapter 36](36-benchmark-teardown.md)'s open-loop client and manifest. Add the speculation-specific steps:
 
 1. **Baseline first.** Run the target alone, no speculation, same engine, same flags, at the same offered rates.
-2. **Measure alpha per position.** Most engines expose acceptance or accepted-length metrics (SGLang exposes `sglang:spec_*` metrics; vLLM logs speculative decoding metrics). Record mean accepted length and per-position acceptance on **your** prompts.
+2. **Measure alpha per position.** Most engines expose acceptance or accepted-length metrics (vLLM logs speculative decoding statistics and exposes `vllm:spec_decode_*` metrics in recent versions; SGLang exposes `sglang:spec_*` metrics). List the metric names from your server's `/metrics` endpoint and record mean accepted length and per-position acceptance on **your** prompts.
 3. **Sweep K** (for example 1, 2, 3, 5, 8) at low and high offered load. Plot speedup against K for each load.
-4. **Sweep load** to find the batch size at which speculation stops helping on your hardware. Compare it with the model's prediction near batch 128; a different crossover tells you the real MFU and overhead.
-5. **Check output equivalence.** At temperature 0, outputs with and without speculation should match token for token on the vast majority of prompts; small differences can come from numerical non-determinism in batched kernels. At temperature above 0, compare distributions statistically (for example the total variation test in the Triton book's speculative chapter), not strings.
+4. **Sweep load** to find where speculation stops helping on your hardware. Compare it with the model's prediction; a different crossover tells you the real MFU, overhead and communication cost.
+5. **Check output equivalence.** At temperature 0, outputs with and without speculation should match token for token on the vast majority of prompts; small differences can come from numerical non-determinism in batched kernels. At temperature above 0, compare distributions statistically (the total variation test in the Triton book's speculative chapter), not strings.
 6. **Report the SLO view.** Speculation helps TPOT at low load and can hurt TTFT slightly (extra prefill for the draft) and tail latency at high load. Report p99 TTFT, p99 TPOT and goodput, not only mean speed.
-7. **Calibrate the model.** Fit `mfu` and `overhead` so the model matches your measured base step times, then compare predicted and measured speedup. The gap is what your engine's real behavior adds.
+7. **Calibrate the model.** Fit `mfu`, `overhead` and `AR_LATENCY` so the model matches your measured base step times, then compare predicted and measured speedup. The gap is what your engine's real behavior adds.
 
 ### What you can compare against
 
 The SGLang documentation publishes a single-H100 comparison on a smaller model: roughly 158 tokens per second without speculation, 244 with EAGLE-2 and 373 with EAGLE-3. These are vendor figures on one model and one GPU, useful as an order of magnitude (1.5x to 2.4x with trained draft heads), and say nothing about 70B on two GPUs.
 
-## 37.8 Runbook (untested on H100)
+## 37.9 Runbook (untested on H100)
 
 !!! warning "UNTESTED ON H100"
 
-    Commands follow the vLLM and SGLang documentation for the versions visible when this chapter was written. Verify every flag with `--help` for your exact version.
+    Commands follow the vLLM and SGLang documentation for the versions visible when this chapter was written. Verify every flag with `--help` for your exact version, and confirm that your release supports `method: draft_model` and `draft_tensor_parallel_size`; the older separate speculative flags are deprecated in vLLM.
 
 ```bash
 # --- vLLM: separate draft model, target on 2 GPUs, draft on 1 ---
@@ -197,33 +243,41 @@ vllm serve <70B-model> --tensor-parallel-size 2 \
 python -m sglang.launch_server --model-path <70B-model> --tp-size 2 \
   --speculative-algorithm EAGLE3 --speculative-draft-model-path <eagle3-draft> \
   --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4
+
+# --- list the speculative metrics each server exposes ---
+curl -s http://127.0.0.1:8000/metrics | grep -i spec      # vLLM
+curl -s http://127.0.0.1:30000/metrics | grep -i spec     # SGLang (needs --enable-metrics)
 ```
 
-Notes from the documentation: vLLM takes all speculative settings through one `--speculative-config` JSON and has deprecated the older separate flags; its `draft_tensor_parallel_size` key sets the draft's parallelism; SGLang's tree parameters (`num-steps`, `eagle-topk`, `num-draft-tokens`) interact and should be tuned together with `--cuda-graph-max-bs` and memory settings. Always run the baseline with the same flags minus the speculative ones.
+vLLM takes all speculative settings through one `--speculative-config` JSON; SGLang's tree parameters (`num-steps`, `eagle-topk`, `num-draft-tokens`) interact and should be tuned together with `--cuda-graph-max-bs` and memory settings. Always run the baseline with the same flags minus the speculative ones, and check the KV capacity each engine reports at startup against Section 37.3.
 
-## 37.9 Exercises
+## 37.10 Exercises
 
-1. Using the formulas, compute the predicted speedup for the 8B draft at alpha 0.7, K=2, batch 1. Compare with the table.
-2. For the 1B draft at alpha 0.9, find the K at which the speedup stops improving, and explain what limits it.
-3. Why does the speedup at batch 512 fall below 1.0 for every alpha in the tables, even alpha 0.9?
-4. The per-position acceptance is 0.9, 0.8, 0.7, 0.6, 0.5 for positions 1 to 5. Compute expected tokens per pass and compare with the i.i.d. formula using alpha equal to the mean.
-5. A draft step costs 0.6 ms of weight reading plus 1 ms overhead. Which is the better engineering investment: halving the draft's weights, or halving the overhead?
-6. Your measured baseline step is 25 ms, not 21.9. List two explanations and how you would tell them apart.
-7. Design the experiment that decides whether to turn speculation off above a batch threshold.
+1. Compute by hand Table A's cell for alpha 0.7, K=5, B=1 (BF16, 1B draft, context 1,024). Report expected tokens, draft step, verify step, cycle and speedup.
+2. For the same configuration at alpha 0.9, find where the speedup peaks over K and describe the curve's shape.
+3. Why does Table B1 never show a speedup below 1.0, while the short-context test in Section 37.4 does?
+4. The per-position acceptance is 0.9, 0.8, 0.7, 0.6, 0.5. Compute the expected tokens per pass, then compare it with the i.i.d. formula using (a) the first-position rate and (b) the mean rate, K=5.
+5. A draft step costs 0.73 ms of memory time plus 1.0 ms overhead. Which saves more: halving the draft's weights, or halving the overhead?
+6. Your measured BF16 baseline step at B=1 is 25.5 ms, not 23.9. Give two explanations and how you would tell them apart.
+7. Show that the BF16 70B target with an 8B draft cannot run on 2 GPUs, and give two ways to make it feasible with their costs.
+8. Design the experiment that decides whether to disable speculation above a batch threshold.
+9. Extend the model so the draft's KV cache is subtracted from the GPU's KV budget, and recompute the max batch for the FP8 + 8B configuration.
 
-## 37.10 Solutions
+## 37.11 Solutions
 
-1. Expected tokens `(1 - 0.7^3)/0.3 = 2.19`. Draft: 8B on one GPU, `16e9/3.35e12 = 4.78 ms` plus 1 ms = 5.78 ms; two steps 11.6 ms. Verify 21.9 ms. Cycle 33.5 ms. Speedup `2.19 x 21.9 / 33.5 = 1.43`, matching the table.
-2. The curve peaks at K=11 and is flat around it: 3.87x at K=8, 3.97x at K=10, 3.98x at K=11, 3.98x at K=12, then falling (3.85x at K=16, 3.62x at K=20). Each extra draft step costs a fixed 1.6 ms, while the extra expected tokens shrink as `0.9^K`, so the gain per step eventually falls below the cost. In real models alpha decays with position and the true optimum is smaller.
-3. At 512 sequences the verify pass processes `512 x (K+1)` tokens, deep in the compute-bound region where cost grows linearly with tokens. Proposals that are rejected cost real compute, and the base step itself is already 73.5 ms with no free slack left.
-4. Expected tokens `= 1 + 0.9 + 0.9x0.8 + 0.9x0.8x0.7 + ... = 1 + 0.9 + 0.72 + 0.504 + 0.3024 + 0.1512 = 3.58`. The mean alpha is 0.7; the i.i.d. formula with K=5 gives `(1 - 0.7^6)/0.3 = 2.94`. The i.i.d. formula underestimates here because the early positions are higher than the mean; the converse holds when early acceptance is lower. Always use measured per-position values.
-5. The overhead. Weight reading is 0.6 ms and overhead is 1 ms, so halving overhead saves 0.5 ms per draft step against 0.3 ms for halving the weights, and the overhead also applies to larger drafts. Both matter less than raising alpha.
-6. Candidate causes: lower achievable memory bandwidth than the 3.35 TB/s peak (real kernels reach perhaps 70 to 90 percent), or larger overhead and communication (tensor-parallel all-reduce). Tell them apart by measuring effective bandwidth of a pure weight-read kernel, and by profiling the step for all-reduce time.
-7. Run the baseline and speculative configurations across offered rates and record the batch actually in flight; find the rate at which speculative p99 TPOT crosses the baseline; set the threshold below it with margin; verify with a ramp test that goodput does not drop at the switch point.
+1. Expected tokens `(1 - 0.7^6)/0.3 = 2.94`. Base step 23.87 ms (Example 37.5.1). Draft step 1.73 ms, five steps 8.63 ms. Verify (6 tokens, memory-bound): 23.87 ms. Cycle 32.5 ms. Speedup `2.94 x 23.87 / 32.5 = 2.16`, matching the table.
+2. The speedup at alpha 0.9 is 3.64x at K=6, 3.88x at K=8, 3.98x at K=10, **4.00x at K=11**, 3.99x at K=12, 3.95x at K=14 and 3.86x at K=16. The curve is flat from K=10 to 12 (under 0.5 percent) and falls slowly after, because each extra draft step costs a fixed 1.7 ms while the marginal expected tokens shrink as `0.9^K`.
+3. In Table B1 the feasible batch (at most 112 sequences at 2k context) keeps the verify pass near the ridge but the KV traffic keeps the base step memory-bound, so verification stays cheap. The short-context test uses context 256, where the KV cache is small enough for batches of 128 to 512 to fit, and there verify is deep in the compute-bound region.
+4. Positional: `1 + 0.9 + 0.72 + 0.504 + 0.3024 + 0.1512 = 3.58`. i.i.d. with the first-position rate 0.9: `(1 - 0.9^6)/0.1 = 4.69` (overstates by 31 percent). i.i.d. with the mean rate 0.7: `(1 - 0.7^6)/0.3 = 2.94` (understates by 18 percent). Neither shortcut is right; use measured positional rates.
+5. Halving the overhead saves 0.5 ms per draft step; halving the draft's weights saves `1.2 GB / 3.35 TB/s = 0.36 ms`. The overhead is the better target, and it also applies to every draft size.
+6. Candidate causes: lower achievable memory bandwidth than the 3.35 TB/s peak (real kernels reach perhaps 70 to 90 percent, which alone would put the weight read near 23 to 30 ms), or a larger tensor-parallel communication cost than 1.92 ms. Tell them apart by timing a pure weight-read kernel for effective bandwidth, and by profiling the step for all-reduce time.
+7. BF16 weights are 140 GB across 2 GPUs, 70 GB each; adding 16 GB of 8B draft gives 86 GB, more than the 77.3 GB budget (and more than the 80 GiB card). Options: (a) run the draft on a third GPU: the model gives 1.47x, 1.71x and 2.12x at B=1, context 1,024, for alpha 0.7, 0.8 and 0.9 (best K 2, 3 and 6, proposal transfer not charged), against 2.16x, 2.76x and 4.00x for a 1B draft on GPU0, for a 50 percent increase in hardware; (b) quantize the target to FP8, which frees 35 GB per GPU (the cost is a quality evaluation and a change of baseline).
+8. Run the baseline and speculative configurations across offered rates, record the batch actually in flight (from the engine's metrics), find the rate at which speculative p99 TPOT crosses the baseline, set the threshold below it with margin, and verify with a ramp test that goodput does not drop at the switch point.
+9. Subtract `draft.kv_per_token x ctx x max_batch` from the budget, solving for the batch. For the 8B draft, 128 KB per token adds 0.27 GB per 2,048-token sequence on the draft's GPU, against 0.34 GB per sequence per GPU for the target, so the draft's KV nearly halves the feasible batch: the FP8 + 8B maximum falls from 72 to roughly 40. Compute it with the code: the point is that the draft's KV, ignored in the tables, matters for the 8B draft.
 
 ## Chapter Summary
 
-For a memory-bound 70B model on 2 H100s the decode floor is 20.9 ms per token, and a verify pass over K+1 tokens costs almost the same until about 128 sequences are in flight. Speculative decoding converts that slack into speed: expected tokens per pass is `(1 - alpha^(K+1))/(1 - alpha)`, a cycle costs K draft steps plus one verify, and the cost model predicts roughly 1.2x to 4x at low batch, depending on acceptance and draft cost, and slowdowns at high batch where the verify pass is compute-bound. The acceptance rate is the dominant unknown and must be measured per position on production prompts; the model's numbers are predictions under assumed MFU and overhead and have not been measured on hardware. Fixed overhead, not weight size, dominates a tiny draft's cost; the draft's placement across GPUs adds communication and memory constraints; and the sound deployment pattern is to measure a baseline, sweep K and load with the open-loop harness, and switch speculation off or shorten K above the batch where it stops helping.
+For a memory-bound 70B model on 2 H100s the decode floor is 20.9 ms per token, about 24 ms with overhead, tensor-parallel communication and KV reads, and a verify pass over K+1 tokens costs almost the same until about 148 tokens are in flight. Speculative decoding converts that slack into speed: expected tokens per pass is `(1 - alpha^(K+1))/(1 - alpha)` for constant alpha, or `1 + sum prod alpha_j` when acceptance varies with position, and a cycle costs K draft steps plus one verify. Memory comes first: BF16 weights leave room for only 8 to 17 sequences at 1 to 2k context, an 8B BF16 draft does not fit beside the target at all, and FP8 weights open the batch to roughly 70 to 110 sequences. The cost model predicts 1.5x to 4x at BF16 with a tiny batch and 1.3x to 3x at FP8, shrinking with batch as the verify pass approaches the compute ridge, with a short-context case dropping below 1.0 once verify is compute-bound. These are predictions under assumed MFU, overhead, communication and acceptance rates, and have not been measured on hardware. The acceptance rate is the dominant unknown and must be measured per position on production prompts. The sound deployment pattern is to compute the feasible batch, measure a baseline, sweep K and load with the open-loop harness, calibrate the model, and shorten K or disable speculation above the batch where it stops helping.
 
 ## Sources
 

@@ -1,13 +1,16 @@
 """Chapter 36: a rigorous serving-benchmark harness, tested against mock OpenAI-compatible streaming servers.
 
-Run:   python3 ch36_benchmark_teardown.py            # self-tests + a mock three-engine teardown (~1-2 min, CPU)
-       python3 ch36_benchmark_teardown.py --selftest # self-tests only
+Run:   python3 ch36_benchmark_teardown.py            # self-tests + demos + mock three-engine teardown (a few minutes, CPU)
+       python3 ch36_benchmark_teardown.py --selftest # self-tests only (about 20 s)
+       python3 ch36_benchmark_teardown.py run --url http://127.0.0.1:8000/v1/completions --model NAME \
+               --rate 10 --n 600 --warmup 50 --seed 1 --out run.jsonl     # drive a REAL OpenAI-compatible server
 
 What is real here: the client (open-loop Poisson load, intended-time latency, streaming timestamps, failure
 accounting), the statistics (percentiles, bootstrap CIs), the Pareto/knee logic, the SSE and chunked parsers, and
 the run manifest. What is NOT real: the three "engines" are mock servers with invented parameters. No vLLM, SGLang
 or TensorRT-LLM result is produced or implied by this file.
 """
+import argparse
 import asyncio
 import hashlib
 import json
@@ -18,27 +21,41 @@ import shutil
 import subprocess
 import sys
 import time
+from urllib.parse import urlsplit
 from dataclasses import dataclass, field, asdict
 
 
 # =============================================================== 1. streaming parsers
 class SSEParser:
-    """Incremental Server-Sent-Events parser. Feed arbitrary byte chunks; get complete 'data:' payloads back."""
+    """Incremental Server-Sent-Events parser. Feed arbitrary byte chunks; get complete event payloads back.
+
+    Handles LF, CRLF and lone-CR line endings (including a CR/LF pair split across two chunks), ignores comment
+    lines, and joins multi-line 'data:' fields with '\n' as the SSE spec says. An event is complete only when its
+    terminating blank line has arrived; a trailing partial event is never emitted (the client then sees no [DONE]
+    and counts the request as failed)."""
     def __init__(self):
         self.buf = b""
 
     def feed(self, chunk: bytes):
-        self.buf += chunk
+        data = self.buf + chunk
+        hold = b""
+        if data.endswith(b"\r"):                       # may be the first half of CRLF: keep it for the next feed
+            data, hold = data[:-1], b"\r"
+        data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         out = []
         while True:
-            i = self.buf.find(b"\n\n")
+            i = data.find(b"\n\n")
             if i < 0:
                 break
-            event, self.buf = self.buf[:i], self.buf[i + 2:]
+            event, data = data[:i], data[i + 2:]
+            fields = []
             for line in event.split(b"\n"):
-                line = line.rstrip(b"\r")
                 if line.startswith(b"data:"):
-                    out.append(line[5:].strip().decode())
+                    v = line[5:]
+                    fields.append((v[1:] if v.startswith(b" ") else v).decode())
+            if fields:
+                out.append("\n".join(fields))
+        self.buf = data + hold
         return out
 
 
@@ -75,6 +92,8 @@ class EngineProfile:
     error_rate: float = 0.0
     gpus: int = 1
     chunked: bool = True
+    merge: int = 1             # tokens per SSE event (real engines sometimes batch several)
+    truncate_prob: float = 0.0 # probability the stream is cut short without [DONE]
 
 
 class MockEngine:
@@ -108,7 +127,8 @@ class MockEngine:
                 if line.lower().startswith(b"content-length:"):
                     clen = int(line.split(b":")[1])
             body = json.loads(await reader.readexactly(clen))
-            n_out, n_in = int(body["max_tokens"]), int(body.get("prompt_tokens", 128))
+            n_out = int(body["max_tokens"])
+            n_in = len(body["prompt"].split()) if "prompt" in body else int(body.get("prompt_tokens", 128))
             if self.rng.random() < self.p.error_rate:
                 writer.write(b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\n\r\n")
                 await writer.drain()
@@ -117,17 +137,24 @@ class MockEngine:
             hdr += b"Transfer-Encoding: chunked\r\n\r\n" if self.p.chunked else b"Connection: close\r\n\r\n"
             writer.write(hdr)
             put = self._chunk if self.p.chunked else (lambda b: b)
+            cut = self.rng.random() < self.p.truncate_prob
+            n_send = n_out // 2 if cut else n_out
             async with self.sem:                                      # queueing happens here
                 self.active += 1
                 try:
                     await asyncio.sleep(n_in / 100 * self.p.prefill_ms_per_100tok / 1e3)
-                    for _ in range(n_out):
-                        await asyncio.sleep((self.p.base_ms + self.p.per_seq_ms * self.active) / 1e3)
-                        writer.write(put(b'data: {"choices":[{"text":"x"}]}\n\n'))
+                    sent = 0
+                    while sent < n_send:
+                        k = min(self.p.merge, n_send - sent)
+                        await asyncio.sleep(k * (self.p.base_ms + self.p.per_seq_ms * self.active) / 1e3)
+                        writer.write(put(b'data: {"choices":[{"text":"' + b"x" * k + b'"}]}\n\n'))
                         await writer.drain()
+                        sent += k
                 finally:
                     self.active -= 1
-            writer.write(put(b'data: {"usage":{"completion_tokens":%d}}\n\ndata: [DONE]\n\n' % n_out))
+            if cut:
+                return                                                # connection closed mid-stream, no [DONE]
+            writer.write(put(b'data: {"choices":[],"usage":{"completion_tokens":%d}}\n\ndata: [DONE]\n\n' % n_out))
             if self.p.chunked:
                 writer.write(b"0\r\n\r\n")
             await writer.drain()
@@ -142,22 +169,49 @@ class MockEngine:
 class Rec:
     intended: float                       # when the schedule said to send
     sent: float = math.nan                # when we actually sent
-    first: float = math.nan               # first streamed token
+    first: float = math.nan               # first streamed token event
     end: float = math.nan
-    ntok: int = 0
+    ntok: int = 0                         # output tokens: server-reported usage if present, else content events
+    nevents: int = 0                      # content events seen (may be < ntok if the server merges tokens)
     ok: bool = False
     err: str = ""
     itl: list = field(default_factory=list)
 
 
-async def one_request(port, n_in, n_out, rec: Rec, timeout=30.0):
+@dataclass
+class Target:
+    host: str = "127.0.0.1"
+    port: int = 8000
+    path: str = "/v1/completions"
+    model: str = "mock"
+    ignore_eos: bool = True               # force exact output length so every engine does equal work
+
+    @staticmethod
+    def from_url(url, model="mock", ignore_eos=True):
+        u = urlsplit(url)
+        if u.scheme != "http":
+            raise ValueError("this client speaks plain http; put a local TLS-terminating proxy in front of https servers")
+        return Target(u.hostname, u.port or 80, u.path or "/v1/completions", model, ignore_eos)
+
+
+def make_payload(t: Target, n_in, n_out):
+    p = {"model": t.model, "prompt": " ".join(["hello"] * n_in), "max_tokens": n_out, "temperature": 0,
+         "stream": True, "stream_options": {"include_usage": True}}
+    if t.ignore_eos:
+        p["ignore_eos"] = True                                        # accepted by vLLM and SGLang; check your engine
+    return json.dumps(p).encode()
+
+
+async def one_request(target, n_in, n_out, rec: Rec, timeout=30.0, payload=None):
+    if isinstance(target, int):                                       # backwards compatible: bare port
+        target = Target(port=target)
     try:
         async def go():
-            reader, writer = await asyncio.open_connection("127.0.0.1", port)
-            payload = json.dumps({"max_tokens": n_out, "prompt_tokens": n_in, "stream": True}).encode()
+            reader, writer = await asyncio.open_connection(target.host, target.port)
+            body = payload or make_payload(target, n_in, n_out)
             rec.sent = time.perf_counter()
-            writer.write(b"POST /v1/completions HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\n"
-                         b"Content-Length: %d\r\n\r\n" % len(payload) + payload)
+            writer.write(f"POST {target.path} HTTP/1.1\r\nHost: {target.host}:{target.port}\r\n"
+                         f"Content-Type: application/json\r\nContent-Length: {len(body)}\r\n\r\n".encode() + body)
             await writer.drain()
             status = (await reader.readline()).decode()
             headers = {}
@@ -168,26 +222,38 @@ async def one_request(port, n_in, n_out, rec: Rec, timeout=30.0):
                 k, _, v = line.decode().partition(":")
                 headers[k.strip().lower()] = v.strip()
             if " 200 " not in status:
-                rec.err = status.strip()
+                rec.err = status.strip() or "empty status line"
                 writer.close()
                 return
-            parser, last, done = SSEParser(), None, False
+            parser, last, done, usage = SSEParser(), None, False, None
             async for chunk in read_body_chunks(reader, headers):
                 for ev in parser.feed(chunk):
                     now = time.perf_counter()
-                    if ev == "[DONE]":
+                    if ev.strip() == "[DONE]":
                         done = True
-                    elif '"text"' in ev:
+                        continue
+                    try:
+                        obj = json.loads(ev)
+                    except ValueError:
+                        rec.err = "unparseable event"
+                        continue
+                    if isinstance(obj, dict) and obj.get("usage"):
+                        usage = obj["usage"].get("completion_tokens", usage)
+                    text = ""
+                    for ch in (obj.get("choices") or []) if isinstance(obj, dict) else []:
+                        text += ch.get("text") or (ch.get("delta") or {}).get("content") or ""
+                    if text:                                          # one content-bearing event
                         if math.isnan(rec.first):
                             rec.first = now
                         elif last is not None:
                             rec.itl.append(now - last)
                         last = now
-                        rec.ntok += 1
+                        rec.nevents += 1
             rec.end = time.perf_counter()
-            rec.ok = done and rec.ntok == n_out                       # a truncated stream is a FAILURE
+            rec.ntok = usage if usage is not None else rec.nevents    # prefer the server's own token count
+            rec.ok = done and rec.ntok == n_out                       # truncated stream or wrong length = FAILURE
             if not rec.ok:
-                rec.err = f"incomplete stream: {rec.ntok}/{n_out} tokens, done={done}"
+                rec.err = f"incomplete or wrong-length stream: {rec.ntok}/{n_out} tokens, done={done}"
             writer.close()
         await asyncio.wait_for(go(), timeout)
     except asyncio.TimeoutError:
@@ -248,42 +314,58 @@ def percentile(xs, q):
     return xs[lo] + (xs[hi] - xs[lo]) * (k - lo)
 
 
-def summarize(recs, warmup=10, slo_ttft=0.5, slo_tpot=0.05, from_intended=True, usd_per_gpu_hour=None, gpus=1):
-    recs = sorted(recs, key=lambda r: r.intended)[warmup:]                   # discard warm-up by arrival order
+def _collect(recs, warmup, slo_ttft, slo_tpot, from_intended):
+    """Per-RUN statistics. Warm-up is discarded per run, by arrival order, so every run loses its own cold start."""
+    recs = sorted(recs, key=lambda r: r.intended)[warmup:]
     ok = [r for r in recs if r.ok]
     base = (lambda r: r.intended) if from_intended else (lambda r: r.sent)
     ttft = [r.first - base(r) for r in ok]
-    e2e = [r.end - base(r) for r in ok]
     tpot = [(r.end - r.first) / max(1, r.ntok - 1) for r in ok]
-    wall = max(r.end for r in ok) - min(r.intended for r in recs) if ok else math.nan
-    toks = sum(r.ntok for r in ok)
-    good = sum(1 for a, b in zip(ttft, tpot) if a <= slo_ttft and b <= slo_tpot)
-    out = dict(n=len(recs), failures=len(recs) - len(ok), success_rate=len(ok) / len(recs),
+    return dict(n=len(recs), ok=len(ok), ttft=ttft, tpot=tpot, e2e=[r.end - base(r) for r in ok],
+                wall=(max(r.end for r in ok) - min(r.intended for r in recs)) if ok else 0.0,
+                toks=sum(r.ntok for r in ok),
+                good=sum(1 for a, b in zip(ttft, tpot) if a <= slo_ttft and b <= slo_tpot))
+
+
+def _finalize(parts, usd_per_gpu_hour, gpus):
+    n = sum(p["n"] for p in parts); nok = sum(p["ok"] for p in parts)
+    ttft = [x for p in parts for x in p["ttft"]]; tpot = [x for p in parts for x in p["tpot"]]
+    e2e = [x for p in parts for x in p["e2e"]]
+    wall = sum(p["wall"] for p in parts)                      # sum of per-run windows: the gap BETWEEN runs is excluded
+    toks, good = sum(p["toks"] for p in parts), sum(p["good"] for p in parts)
+    out = dict(n=n, failures=n - nok, success_rate=nok / n if n else math.nan,
                ttft_p50=percentile(ttft, .5), ttft_p99=percentile(ttft, .99),
-               tpot_p50=percentile(tpot, .5), tpot_p99=percentile(tpot, .99),
-               e2e_p99=percentile(e2e, .99), tok_s=toks / wall,
-               goodput_rps=good / wall, slo_attain=good / len(recs))      # denominator = ALL requests, failures included
-    if usd_per_gpu_hour:
+               tpot_p50=percentile(tpot, .5), tpot_p99=percentile(tpot, .99), e2e_p99=percentile(e2e, .99),
+               tok_s=toks / wall if wall else 0.0, goodput_rps=good / wall if wall else 0.0,
+               slo_attain=good / n if n else math.nan,          # denominator = ALL requests, failures included
+               ttft_samples=ttft)
+    if usd_per_gpu_hour and toks:
         out["usd_per_mtok"] = usd_per_gpu_hour * gpus * wall / 3600 / (toks / 1e6)
     return out
 
 
+def summarize(recs, warmup=10, slo_ttft=0.5, slo_tpot=0.05, from_intended=True, usd_per_gpu_hour=None, gpus=1):
+    return _finalize([_collect(recs, warmup, slo_ttft, slo_tpot, from_intended)], usd_per_gpu_hour, gpus)
+
+
+def summarize_runs(runs, warmup=10, slo_ttft=0.5, slo_tpot=0.05, from_intended=True, usd_per_gpu_hour=None, gpus=1):
+    """Pool several repeats of the same configuration: warm-up per run, throughput over the sum of run windows."""
+    return _finalize([_collect(r, warmup, slo_ttft, slo_tpot, from_intended) for r in runs], usd_per_gpu_hour, gpus)
+
+
 def bootstrap_ci(xs, stat, B=800, alpha=0.05, seed=0):
+    """Percentile bootstrap over requests. Good for medians and means; for p99 it under-covers unless n is large
+    (about 1000 or more), because a resample can never exceed the sample maximum. See the coverage self-test."""
     rng = random.Random(seed)
     n = len(xs)
-    vals = sorted(stat([xs[rng.randrange(n)] for _ in range(n)]) for _ in range(B))
+    vals = sorted(stat(rng.choices(xs, k=n)) for _ in range(B))
     return vals[int(B * alpha / 2)], vals[int(B * (1 - alpha / 2)) - 1]
 
 
 def diff_ci(a, b, stat, B=800, alpha=0.05, seed=0):
     """CI for stat(a) - stat(b). If it excludes 0, the engines differ beyond resampling noise (for THIS workload)."""
     rng = random.Random(seed)
-    vals = []
-    for _ in range(B):
-        ra = [a[rng.randrange(len(a))] for _ in range(len(a))]
-        rb = [b[rng.randrange(len(b))] for _ in range(len(b))]
-        vals.append(stat(ra) - stat(rb))
-    vals.sort()
+    vals = sorted(stat(rng.choices(a, k=len(a))) - stat(rng.choices(b, k=len(b))) for _ in range(B))
     return vals[int(B * alpha / 2)], vals[int(B * (1 - alpha / 2)) - 1]
 
 
@@ -314,10 +396,16 @@ def manifest(extra=None):
             return subprocess.run(cmd, capture_output=True, text=True, timeout=10).stdout.strip() or None
         except Exception:                                            # noqa: BLE001
             return None
+    smi = None
+    if shutil.which("nvidia-smi"):
+        # field names differ between drivers; try the richer query first
+        for q in ("name,driver_version,clocks.sm,clocks.mem,persistence_mode,power.limit,clocks_throttle_reasons.active",
+                  "name,driver_version,clocks.sm,clocks.mem,persistence_mode,power.limit"):
+            smi = sh(["nvidia-smi", f"--query-gpu={q}", "--format=csv,noheader"])
+            if smi:
+                break
     m = dict(python=sys.version.split()[0], platform=platform.platform(), machine=platform.machine(),
-             argv=sys.argv, time_utc=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-             nvidia_smi=sh(["nvidia-smi", "--query-gpu=name,driver_version,clocks.sm,clocks.mem", "--format=csv,noheader"])
-             if shutil.which("nvidia-smi") else None)
+             argv=sys.argv, time_utc=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), nvidia_smi=smi)
     m.update(extra or {})
     m["config_hash"] = hashlib.sha256(json.dumps(m, sort_keys=True, default=str).encode()).hexdigest()[:12]
     return m
@@ -331,20 +419,27 @@ def selftests():
         results.append(cond)
         print(f"  [{'PASS' if cond else 'FAIL'}] {name}")
 
-    # SSE parser: result independent of how the byte stream is cut
-    stream = b'data: {"a":1}\n\ndata: {"b":2}\r\n\r\n: comment\n\ndata: [DONE]\n\n'
-    whole = SSEParser().feed(stream)
     rng = random.Random(1)
-    same = True
-    for _ in range(200):
-        p, out, i = SSEParser(), [], 0
-        while i < len(stream):
-            j = i + rng.randint(1, 7)
-            out += p.feed(stream[i:j]); i = j
-        same &= (out == whole)
-    check("SSE parser identical under 200 random chunkings", same and whole == ['{"a":1}', '{"b":2}', "[DONE]"])
+    # SSE parser: result independent of how the byte stream is cut, for LF, CRLF-only and multi-line data
+    streams = {
+        "LF/CRLF mix": (b'data: {"a":1}\n\ndata: {"b":2}\r\n\r\n: comment\n\ndata: [DONE]\n\n',
+                        ['{"a":1}', '{"b":2}', "[DONE]"]),
+        "CRLF only": (b'data: {"a":1}\r\n\r\ndata: {"b":2}\r\n\r\ndata: [DONE]\r\n\r\n',
+                      ['{"a":1}', '{"b":2}', "[DONE]"]),
+        "multi-line data": (b'data: line1\ndata: line2\n\ndata: [DONE]\n\n', ["line1\nline2", "[DONE]"]),
+        "partial last event": (b'data: one\n\ndata: tw', ["one"]),
+    }
+    for name, (stream, expect) in streams.items():
+        whole = SSEParser().feed(stream)
+        same = True
+        for _ in range(200):
+            p, out, i = SSEParser(), [], 0
+            while i < len(stream):
+                j = i + rng.randint(1, 7)
+                out += p.feed(stream[i:j]); i = j
+            same &= (out == whole)
+        check(f"SSE parser, {name}: 200 random chunkings agree and equal {expect!r}", same and whole == expect)
 
-    # percentile vs numpy
     try:
         import numpy as np
         xs = [rng.random() for _ in range(101)]
@@ -353,132 +448,258 @@ def selftests():
     except ImportError:
         check("percentile matches numpy (skipped: numpy missing)", True)
 
-    # Pareto: frontier is non-dominated, everything else is dominated
     pts = [dict(c=rng.random(), l=rng.random()) for _ in range(200)]
     kept = pareto(pts, ["c", "l"])
-    nd = all(not any(pts[j]["c"] <= pts[i]["c"] and pts[j]["l"] <= pts[i]["l"] and
-                     (pts[j]["c"] < pts[i]["c"] or pts[j]["l"] < pts[i]["l"]) for j in range(200)) for i in kept)
-    dom = all(any(pts[j]["c"] <= pts[i]["c"] and pts[j]["l"] <= pts[i]["l"] and
-                  (pts[j]["c"] < pts[i]["c"] or pts[j]["l"] < pts[i]["l"]) for j in range(200))
-              for i in range(200) if i not in kept)
-    check(f"Pareto frontier correct on 200 random points ({len(kept)} kept)", nd and dom)
+    dom_ = lambda j, i: (pts[j]["c"] <= pts[i]["c"] and pts[j]["l"] <= pts[i]["l"] and
+                         (pts[j]["c"] < pts[i]["c"] or pts[j]["l"] < pts[i]["l"]))
+    nd = all(not any(dom_(j, i) for j in range(200)) for i in kept)
+    dm = all(any(dom_(j, i) for j in range(200)) for i in range(200) if i not in kept)
+    check(f"Pareto frontier correct on 200 random points ({len(kept)} kept)", nd and dm)
 
-    # bootstrap CI coverage: the 95% CI of a median should contain the true median ~95% of the time
-    cover, trials = 0, 150
-    for s in range(trials):
-        r = random.Random(100 + s)
-        sample = [r.gauss(0, 1) for _ in range(120)]
-        lo, hi = bootstrap_ci(sample, lambda v: percentile(v, .5), B=200, seed=s)
-        cover += lo <= 0.0 <= hi
-    check(f"bootstrap 95% CI coverage of true median = {cover/trials:.2f} (want about 0.90-0.99)", 0.88 <= cover / trials <= 0.995)
+    # bootstrap coverage: median (n=120) and p99 at two sample sizes. The p99 numbers are INFORMATIONAL for n=160.
+    def coverage(n, q, truth, trials, B, gen):
+        c = 0
+        for sd in range(trials):
+            r = random.Random(500 + sd)
+            smp = [gen(r) for _ in range(n)]
+            lo, hi = bootstrap_ci(smp, lambda v: percentile(v, q), B=B, seed=sd)
+            c += lo <= truth <= hi
+        return c / trials
+    sig = 0.6
+    ln = lambda r: math.exp(r.gauss(0, sig))
+    c_med = coverage(120, .5, 1.0, 150, 200, ln)
+    c_160 = coverage(160, .99, math.exp(sig * 2.3263479), 150, 200, ln)
+    c_1000 = coverage(1000, .99, math.exp(sig * 2.3263479), 100, 150, ln)
+    print(f"      bootstrap coverage of true value (nominal 0.95): median n=120 -> {c_med:.2f}; "
+          f"p99 n=160 -> {c_160:.2f}; p99 n=1000 -> {c_1000:.2f}")
+    check("bootstrap median coverage within 0.88-0.995", 0.88 <= c_med <= 0.995)
+    check("bootstrap p99 coverage at n=1000 is at least 0.85 and not worse than at n=160 (minus noise)",
+          c_1000 >= 0.85 and c_1000 >= c_160 - 0.05)
 
-    # summarize: failures count against SLO attainment, warm-up is discarded
-    recs = []
-    for i in range(40):
-        r = Rec(intended=float(i), sent=float(i), first=i + 0.1, end=i + 0.5, ntok=11, ok=(i % 10 != 0))
-        recs.append(r)
-    s = summarize(recs, warmup=0, slo_ttft=0.5, slo_tpot=0.05)
-    check("summarize counts failures (4 of 40) and attainment uses ALL requests", s["failures"] == 4 and abs(s["slo_attain"] - 36 / 40) < 1e-9)
-    s2 = summarize(recs, warmup=10, slo_ttft=0.5, slo_tpot=0.05)
-    check("warm-up discards the first 10 requests by arrival", s2["n"] == 30)
-    # Pareto with a maximize axis and a knee
+    # summarize: failures count against SLO attainment, warm-up discarded
+    recs = [Rec(intended=float(i), sent=float(i), first=i + 0.1, end=i + 0.5, ntok=11, ok=(i % 10 != 0)) for i in range(40)]
+    s = summarize(recs, warmup=0)
+    check("summarize counts failures (4 of 40); attainment uses ALL requests", s["failures"] == 4 and abs(s["slo_attain"] - 36 / 40) < 1e-9)
+    check("warm-up discards the first 10 requests by arrival", summarize(recs, warmup=10)["n"] == 30)
+
+    # pooled runs: warm-up must come out of EACH run, and the gap between runs must not count as wall time
+    def mk(offset):
+        return [Rec(intended=offset + i * 0.1, sent=offset + i * 0.1, first=offset + i * 0.1 + 0.05,
+                    end=offset + i * 0.1 + 0.2, ntok=11, ok=True) for i in range(50)]
+    r1, r2 = mk(0.0), mk(1000.0)                                    # run 2 starts 1000 s later
+    sp = summarize_runs([r1, r2], warmup=10)
+    wall_expected = 2 * ((49 * 0.1 + 0.2) - 10 * 0.1)               # per-run window after dropping 10 warm-ups
+    check("pooled summary: 40 per run kept (80 total), warm-up taken from each run", sp["n"] == 80)
+    check("pooled throughput uses the sum of run windows, not the 1000 s gap",
+          abs(sp["tok_s"] - 80 * 11 / wall_expected) < 1e-6)
     rows = [dict(rate=r, slo_attain=a) for r, a in ((10, 1.0), (20, 0.995), (30, 0.7), (40, 0.4))]
     check("knee = highest rate with attainment >= 0.99", knee(rows) == 20)
+    check("make_payload is a valid OpenAI-style streaming request",
+          json.loads(make_payload(Target(model="m"), 3, 5)) == {"model": "m", "prompt": "hello hello hello", "max_tokens": 5,
+                                                              "temperature": 0, "stream": True,
+                                                              "stream_options": {"include_usage": True}, "ignore_eos": True})
     return all(results)
 
 
-# =============================================================== 7. coordinated-omission demonstration
-async def demo_coordinated_omission():
-    prof = EngineProfile("narrow", base_ms=6, per_seq_ms=0.5, capacity=4)
-    eng = MockEngine(prof); await eng.start()
-    open_recs = await run_open_loop(eng.port, rate=20, n_req=80, seed=5)
-    closed_recs = await run_closed_loop(eng.port, concurrency=4, n_req=80, seed=5)
+async def async_selftests():
+    """Tests that need sockets or streams: chunked and close-delimited bodies, errors, truncation, merged events, timeout."""
+    results = []
+
+    def check(name, cond):
+        results.append(cond)
+        print(f"  [{'PASS' if cond else 'FAIL'}] {name}")
+
+    # read_body_chunks on synthetic readers (no sockets)
+    r = asyncio.StreamReader()
+    r.feed_data(b"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"); r.feed_eof()
+    got = b"".join([c async for c in read_body_chunks(r, {"transfer-encoding": "chunked"})])
+    r2 = asyncio.StreamReader(); r2.feed_data(b"hello world"); r2.feed_eof()
+    got2 = b"".join([c async for c in read_body_chunks(r2, {})])
+    check("read_body_chunks: chunked body and close-delimited body both decode", got == got2 == b"hello world")
+
+    async def one(prof, n_out=20, timeout=5.0):
+        eng = MockEngine(prof); await eng.start()
+        rec = Rec(intended=time.perf_counter())
+        await one_request(Target(port=eng.port), 16, n_out, rec, timeout=timeout)
+        await eng.stop()
+        return rec
+
+    base = dict(base_ms=2, per_seq_ms=0, capacity=4)
+    r = await one(EngineProfile("ok", **base))
+    check("normal request succeeds with 20 tokens", r.ok and r.ntok == 20 and r.nevents == 20)
+    r = await one(EngineProfile("nochunk", chunked=False, **base))
+    check("close-delimited (non-chunked) body succeeds", r.ok and r.ntok == 20)
+    r = await one(EngineProfile("merged", merge=4, **base))
+    check("merged events (4 tokens/event): success judged by server usage, not event count",
+          r.ok and r.ntok == 20 and r.nevents == 5)
+    r = await one(EngineProfile("err", error_rate=1.0, **base))
+    check("HTTP 503 is recorded as a failure with its status", (not r.ok) and "503" in r.err)
+    r = await one(EngineProfile("trunc", truncate_prob=1.0, **base))
+    check("truncated stream (no [DONE]) is a failure", (not r.ok) and "incomplete" in r.err)
+    r = await one(EngineProfile("slow", base_ms=50, per_seq_ms=0, capacity=4), n_out=20, timeout=0.2)
+    check("client timeout is recorded as a failure", (not r.ok) and r.err == "timeout")
+
+    # error injection flows through to the SLO-attainment denominator
+    eng = MockEngine(EngineProfile("flaky", error_rate=0.3, **base), seed=3); await eng.start()
+    recs = await run_open_loop(eng.port, rate=50, n_req=60, seed=2, n_out_med=10)
     await eng.stop()
-    so, sc = summarize(open_recs, warmup=5), summarize(closed_recs, warmup=5)
-    print(f"  open-loop  @20 rps offered: ttft_p99={so['ttft_p99']*1e3:8.1f} ms   e2e_p99={so['e2e_p99']*1e3:8.1f} ms")
-    print(f"  closed-loop, 4 workers    : ttft_p99={sc['ttft_p99']*1e3:8.1f} ms   e2e_p99={sc['e2e_p99']*1e3:8.1f} ms")
+    s = summarize(recs, warmup=0, slo_ttft=5.0, slo_tpot=5.0)
+    check(f"with 30% injected errors: {s['failures']}/60 failures counted and attainment = {s['slo_attain']:.2f} < 0.85",
+          s["failures"] > 0 and s["slo_attain"] < 0.85)
+    return all(results)
+
+
+# =============================================================== 7. coordinated-omission demonstrations
+async def demo_coordinated_omission():
+    """All numbers vary run to run (wall-clock asyncio). The assertions test qualitative relations only."""
+    prof = EngineProfile("narrow", base_ms=6, per_seq_ms=0.5, capacity=4)
+    # capacity ~ 4 slots / (~52 tokens * ~8 ms + prefill) ~ 9 req/s. Below it: stable. Above it: no steady state.
+    out = {}
+    for label, rate, n in (("below capacity", 5, 90), ("2x overload, short run", 18, 40), ("2x overload, long run", 18, 160)):
+        eng = MockEngine(prof); await eng.start()
+        out[label] = summarize(await run_open_loop(eng.port, rate=rate, n_req=n, seed=5), warmup=3)
+        await eng.stop()
+    eng = MockEngine(prof); await eng.start()
+    closed = summarize(await run_closed_loop(eng.port, concurrency=4, n_req=90, seed=5), warmup=3)
+    await eng.stop()
+    print("  open-loop, Poisson arrivals, capacity of the mock server about 9 req/s:")
+    for label, s in out.items():
+        print(f"    {label:24s}: ttft_p99 = {s['ttft_p99']*1e3:8.1f} ms   e2e_p99 = {s['e2e_p99']*1e3:8.1f} ms   (n={s['n']})")
+    print(f"  closed-loop, 4 workers    : ttft_p99 = {closed['ttft_p99']*1e3:8.1f} ms   e2e_p99 = {closed['e2e_p99']*1e3:8.1f} ms   (n={closed['n']})")
     # client-side stall: measuring from SEND time hides the stall; from INTENDED time exposes it
     eng2 = MockEngine(EngineProfile("wide", base_ms=4, per_seq_ms=0.1, capacity=64)); await eng2.start()
     recs = await run_open_loop(eng2.port, rate=40, n_req=100, seed=6, stall_at=40, stall_s=0.6)
     await eng2.stop()
-    recs = sorted(recs, key=lambda r: r.intended)[5:]
-    ok = [r for r in recs if r.ok]
+    ok = [r for r in sorted(recs, key=lambda r: r.intended)[5:] if r.ok]
     share_send = sum(1 for r in ok if r.first - r.sent > 0.3) / len(ok)
     share_int = sum(1 for r in ok if r.first - r.intended > 0.3) / len(ok)
-    a = summarize(recs, warmup=0, from_intended=False)
-    b = summarize(recs, warmup=0, from_intended=True)
-    print(f"  0.6 s client stall at request 40 (of 100, 40 req/s offered):")
-    print(f"    share of requests with TTFT > 300 ms, measured from SEND time     = {share_send:5.1%}  (only requests already in flight)")
-    print(f"    share of requests with TTFT > 300 ms, measured from INTENDED time = {share_int:5.1%}  (also those that should have been sent during the stall)")
-    print(f"    mean TTFT: from send {sum(r.first - r.sent for r in ok)/len(ok)*1e3:6.1f} ms   from intended {sum(r.first - r.intended for r in ok)/len(ok)*1e3:6.1f} ms")
-    return so, sc, a, b
+    m_send = sum(r.first - r.sent for r in ok) / len(ok); m_int = sum(r.first - r.intended for r in ok) / len(ok)
+    print("  0.6 s client stall at request 40 (of 100, 40 req/s offered):")
+    print(f"    share with TTFT > 300 ms measured from SEND time     = {share_send:5.1%}")
+    print(f"    share with TTFT > 300 ms measured from INTENDED time = {share_int:5.1%}")
+    print(f"    mean TTFT: from send {m_send*1e3:6.1f} ms   from intended {m_int*1e3:6.1f} ms")
+    below, short, long_ = out["below capacity"], out["2x overload, short run"], out["2x overload, long run"]
+    checks = {
+        "below capacity, open-loop TTFT p99 is within 30x of closed-loop (a real but bounded gap)":
+            below["ttft_p99"] < 30 * max(closed["ttft_p99"], 0.02),
+        "under overload, open-loop TTFT p99 is at least 5x the closed-loop figure":
+            long_["ttft_p99"] > 5 * max(closed["ttft_p99"], 0.02),
+        "under overload, p99 keeps growing with run length (no steady state)": long_["ttft_p99"] > short["ttft_p99"],
+        "stall: intended-time measurement counts more slow requests than send-time": share_int > share_send,
+        "stall: intended-time mean TTFT exceeds send-time mean TTFT": m_int > m_send,
+    }
+    for name, c in checks.items():
+        print(f"  [{'PASS' if c else 'FAIL'}] {name}")
+    return all(checks.values())
 
 
 # =============================================================== 8. mock three-engine teardown
-async def teardown(rates=(15, 35, 70), repeats=2, n_req=90):
+WARMUP = 10
+
+
+async def teardown(rates=(15, 35, 70), repeats=3, n_req=150):
     profiles = [EngineProfile("engine-A", 4.0, 0.15, 16, gpus=2),
                 EngineProfile("engine-B", 3.0, 0.35, 32, gpus=2),
                 EngineProfile("engine-C", 5.0, 0.08, 8, gpus=1)]
     USD = 4.0
     table = {p.name: [] for p in profiles}
-    pooled = {p.name: {} for p in profiles}
     for p in profiles:
         for rate in rates:
             runs = []
             for rep in range(repeats):
                 eng = MockEngine(p, seed=rep); await eng.start()
-                recs = await run_open_loop(eng.port, rate, n_req, seed=1000 * rep + rate)
+                runs.append(await run_open_loop(eng.port, rate, n_req, seed=1000 * rep + rate))
                 await eng.stop()
-                runs.append(recs)
-            allr = [r for rs in runs for r in rs]
-            row = summarize(allr, warmup=10 * repeats, usd_per_gpu_hour=USD, gpus=p.gpus)
-            row.update(rate=rate, run_p99=[summarize(rs, warmup=10)["ttft_p99"] for rs in runs])
+            row = summarize_runs(runs, warmup=WARMUP, usd_per_gpu_hour=USD, gpus=p.gpus)
+            row.update(rate=rate, run_p99=[summarize(rs, warmup=WARMUP)["ttft_p99"] for rs in runs])
             table[p.name].append(row)
-            pooled[p.name][rate] = [r.first - r.intended for r in sorted(allr, key=lambda r: r.intended)[10 * repeats:] if r.ok]
-    return profiles, table, pooled
+    return profiles, table
 
 
-def print_teardown(profiles, table, pooled):
-    print("\n  engine     rate  ttft_p99(ms)  [95% CI]            tpot_p99(ms)  tok/s  fail  attain  $/Mtok  run-to-run p99 (ms)")
+def print_teardown(profiles, table):
+    print("\n  SAMPLE OUTPUT (wall-clock timing: your numbers will differ, and borderline verdicts can flip)")
+    print("  engine     rate     n  ttft_p99(ms)  [95% CI]            tpot_p99(ms)  tok/s  fail  attain  $/Mtok  per-run p99 (ms)")
     for p in profiles:
         for row in table[p.name]:
-            lo, hi = bootstrap_ci(pooled[p.name][row["rate"]], lambda v: percentile(v, .99), B=300)
+            lo, hi = bootstrap_ci(row["ttft_samples"], lambda v: percentile(v, .99), B=800)
             rr = " / ".join(f"{x*1e3:.0f}" for x in row["run_p99"])
-            print(f"  {p.name}  {row['rate']:4d}  {row['ttft_p99']*1e3:11.1f}  [{lo*1e3:6.1f},{hi*1e3:7.1f}]  {row['tpot_p99']*1e3:11.1f}  "
+            print(f"  {p.name}  {row['rate']:4d}  {row['n']:4d}  {row['ttft_p99']*1e3:11.1f}  [{lo*1e3:6.1f},{hi*1e3:7.1f}]  {row['tpot_p99']*1e3:11.1f}  "
                   f"{row['tok_s']:5.0f}  {row['failures']:4d}  {row['slo_attain']:6.2f}  {row['usd_per_mtok']:6.2f}  {rr}")
     print("\n  knee (highest offered rate with >=99% SLO attainment, failures counted):")
     for p in profiles:
         print(f"    {p.name}: {knee(table[p.name])} req/s")
-    # significance for one comparison at the middle rate
     mid = sorted({r['rate'] for r in table['engine-A']})[1]
-    lo, hi = diff_ci(pooled['engine-A'][mid], pooled['engine-B'][mid], lambda v: percentile(v, .99))
+    a = [r for r in table['engine-A'] if r['rate'] == mid][0]["ttft_samples"]
+    b = [r for r in table['engine-B'] if r['rate'] == mid][0]["ttft_samples"]
+    lo, hi = diff_ci(a, b, lambda v: percentile(v, .99))
     verdict = "engines differ beyond resampling noise" if lo > 0 or hi < 0 else "NOT distinguishable at this sample size"
     print(f"\n  p99 TTFT difference A-B at {mid} req/s: 95% CI [{lo*1e3:.1f}, {hi*1e3:.1f}] ms -> {verdict}")
-    # Pareto over (cost, p99 TTFT) with throughput maximized, all (engine, rate) points
     pts, labels = [], []
     for p in profiles:
         for row in table[p.name]:
-            if row["slo_attain"] >= 0.99:                       # only points that actually meet the SLO are candidates
+            if row["slo_attain"] >= 0.99:
                 pts.append(dict(cost=row["usd_per_mtok"], ttft=row["ttft_p99"], tput=row["tok_s"]))
                 labels.append(f"{p.name}@{row['rate']}")
     kept = pareto(pts, ["cost", "ttft"], ["tput"])
     print("  SLO-feasible Pareto-optimal (cost, p99 TTFT, throughput):", ", ".join(labels[i] for i in kept))
     print("  excluded as infeasible (SLO attainment < 99%):",
           ", ".join(f"{p.name}@{r['rate']}" for p in profiles for r in table[p.name] if r["slo_attain"] < 0.99))
+    cheapest = min((r["usd_per_mtok"], p.name, r["rate"]) for p in profiles for r in table[p.name])
+    print(f"  note: the lowest $/Mtok anywhere is {cheapest[1]}@{cheapest[2]} ({cheapest[0]:.2f}); "
+          f"it is {'feasible' if cheapest[1] + '@' + str(cheapest[2]) in labels else 'NOT SLO-feasible'}")
+
+
+# =============================================================== 9. command-line client for real servers
+async def run_real(args):
+    target = Target.from_url(args.url, args.model, ignore_eos=not args.no_ignore_eos)
+    recs = await run_open_loop(target, args.rate, args.n, args.seed, n_in_med=args.n_in, n_out_med=args.n_out)
+    s = summarize(recs, warmup=args.warmup, slo_ttft=args.slo_ttft, slo_tpot=args.slo_tpot,
+                  usd_per_gpu_hour=args.usd_per_gpu_hour, gpus=args.gpus)
+    s.pop("ttft_samples")
+    print(json.dumps(s, indent=2))
+    errs = {}
+    for r in recs:
+        if not r.ok:
+            errs[r.err.split(":")[0]] = errs.get(r.err.split(":")[0], 0) + 1
+    print("failure reasons:", errs or "none")
+    if args.out:
+        with open(args.out, "w") as f:
+            for r in recs:
+                f.write(json.dumps(asdict(r)) + "\n")
+        print(f"raw per-request records written to {args.out}")
+    print(json.dumps(manifest(dict(url=args.url, model=args.model, rate=args.rate, n=args.n, seed=args.seed)), indent=2))
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "run":
+        ap = argparse.ArgumentParser(prog="ch36_benchmark_teardown.py run",
+                                     description="Open-loop load against a real OpenAI-compatible /v1/completions server")
+        ap.add_argument("--url", required=True); ap.add_argument("--model", required=True)
+        ap.add_argument("--rate", type=float, required=True, help="offered requests per second (Poisson)")
+        ap.add_argument("--n", type=int, default=600); ap.add_argument("--warmup", type=int, default=50)
+        ap.add_argument("--seed", type=int, default=1)
+        ap.add_argument("--n-in", type=int, default=256, help="median prompt length in words (about tokens)")
+        ap.add_argument("--n-out", type=int, default=128, help="median output tokens (lognormal spread)")
+        ap.add_argument("--slo-ttft", type=float, default=0.5); ap.add_argument("--slo-tpot", type=float, default=0.05)
+        ap.add_argument("--usd-per-gpu-hour", type=float, default=None); ap.add_argument("--gpus", type=int, default=1)
+        ap.add_argument("--no-ignore-eos", action="store_true", help="do not send ignore_eos (outputs may stop early)")
+        ap.add_argument("--out", default=None)
+        asyncio.run(run_real(ap.parse_args(sys.argv[2:])))
+        return
     print("== self-tests ==")
     ok = selftests()
+    print("== self-tests needing sockets (mock server on localhost) ==")
+    ok &= asyncio.run(async_selftests())
     if "--selftest" in sys.argv:
         sys.exit(0 if ok else 1)
-    print("\n== coordinated omission demonstration (mock servers) ==")
-    asyncio.run(demo_coordinated_omission())
+    print("\n== coordinated omission demonstrations (mock servers; SAMPLE OUTPUT, varies per run) ==")
+    ok &= asyncio.run(demo_coordinated_omission())
     print("\n== mock three-engine teardown (engines are INVENTED; shows the method, not any real result) ==")
-    profiles, table, pooled = asyncio.run(teardown())
-    print_teardown(profiles, table, pooled)
+    profiles, table = asyncio.run(teardown())
+    print_teardown(profiles, table)
     print("\n== run manifest ==")
     print(json.dumps(manifest(dict(note="mock run")), indent=2))
+    print("\nALL PASS" if ok else "\nFAILURES")
     sys.exit(0 if ok else 1)
 
 
