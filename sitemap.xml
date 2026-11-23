@@ -2,230 +2,242 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/01-h100-architecture/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/02-clusters-inline-ptx/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/03-asynchronicity-mbarrier/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/04-cutensormap-tma-swizzling/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/05-cp-async-bulk-l2-hinting/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/06-wgmma-part-1/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/07-wgmma-part-2/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/08-kernel-design-part-1/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/09-kernel-design-part-2/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/10-stream-k-scheduling/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/11-multi-gpu-nccl/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/12-flashattention-3/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/13-nsight-compute/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/14-nsight-systems/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/15-cute-layouts/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/16-cute-layout-algebra/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/16-cute-strides/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/16-cutlass-gemm/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/17-cute-layout-algebra/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/17-cute-tensors-tiling/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/17-cutlass-pipelines/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/18-cta-indexing/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/18-cute-tensors-tiling/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/19-cta-indexing/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/19-tiled-copy/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/20-mma-atoms/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/20-tiled-copy/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/21-mma-atoms/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/21-shared-layouts/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/22-gemm-construction/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/22-shared-layouts/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/23-cutlass-gemm/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/23-gemm-construction/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/24-cutlass-gemm/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/24-cutlass-pipelines/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/25-cutlass-pipelines/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/25-epilogue-fusion/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/26-epilogue-fusion/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/26-precision-block-scaling/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/27-benchmarking-integration/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/27-precision-block-scaling/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/28-benchmarking-integration/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/28-workbook-capstone/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/29-workbook-capstone/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/30-cutlass-attention-foundations/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/31-cutlass-hopper-fmha/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
+    </url>
+    <url>
+         <loc>https://maximumbeings.github.io/programming-the-h100/32-inference-engine-and-harness/</loc>
+         <lastmod>2026-11-23</lastmod>
+    </url>
+    <url>
+         <loc>https://maximumbeings.github.io/programming-the-h100/33-moe-expert-parallel/</loc>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/appendix-blackwell-b200/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/cutlass-workshop-validation/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/eight-gpu-validation/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/final-audit/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/getting-started/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
+    </url>
+    <url>
+         <loc>https://maximumbeings.github.io/programming-the-h100/inference-systems-overview/</loc>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/revalidation-2026-11-18/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/review-fixes-2026-11-21/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/validation-2026-11-21/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/validation-b200/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
     <url>
          <loc>https://maximumbeings.github.io/programming-the-h100/examples/advanced/</loc>
-         <lastmod>2026-11-21</lastmod>
+         <lastmod>2026-11-23</lastmod>
     </url>
 </urlset>
