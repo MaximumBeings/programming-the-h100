@@ -1,0 +1,4081 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/42-gateway-capstone/">
+      
+      
+        <link rel="prev" href="../41-edge-fallback-resilience/">
+      
+      
+        <link rel="next" href="../43-paged-kv-cache/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>42. Capstone — One Gateway, Four Mechanisms - Programming the H100: CUDA, CuTe, and CUTLASS from First Principles</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/image-viewer.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-42-capstone-one-gateway-four-mechanisms-one-harness" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-header__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              42. Capstone — One Gateway, Four Mechanisms
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-nav__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../review-fixes-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 Review Corrections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 H100 Revalidation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../revalidation-2026-11-18/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cutlass-workshop-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    H100 CuTe/CUTLASS Workshop Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eight-gpu-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eight-A100 Training Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    B200 Compatibility Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — Introductory CuTe
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — Introductory CuTe
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cute-strides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Strides, Storage and Memory Addresses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cute-layout-algebra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hierarchical Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../18-cute-tensors-tiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    18. Tensors, Slicing & Predication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../19-cta-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    19. CTA and Byte-Address Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_18" >
+        
+          
+          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_18">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20-tiled-copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20. Thread Ownership & Tiled Copy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21-mma-atoms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    21. MMA Atoms & Register Fragments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../22-shared-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    22. Shared Layouts, Banks & Swizzles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../23-gemm-construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    23. Build a Complete Tiled GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../24-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    24. CUTLASS Collective-Builder GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../25-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    25. Hopper Pipelines & Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../26-epilogue-fusion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    26. Epilogue Fusion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../27-precision-block-scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    27. Precision & Block Scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../28-benchmarking-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    28. Benchmarking & Framework Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../29-workbook-capstone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    29. Worked Labs & Capstone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30-cutlass-attention-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XII — Inference Systems on Hopper
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XII — Inference Systems on Hopper
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-systems-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview and the Twelve Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../32-inference-engine-and-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    32. Inference Engine Anatomy and the Measurement Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../33-moe-expert-parallel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    33. MoE Expert Parallelism — Sharding, All-to-All and Load Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../34-kv-cache-offloading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    34. Hierarchical KV-Cache Offloading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../35-disaggregated-prefill-decode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    35. Disaggregated Prefill/Decode over RDMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../36-benchmark-teardown/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../37-speculative-decoding-70b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    37. Speculative Decoding at 70B — Multi-GPU Cost Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_22" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XIII — Hardware-Agnostic Inference Systems
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_22">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XIII — Hardware-Agnostic Inference Systems
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../38-semantic-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    38. Semantic Cache — Thresholds, False Hits, Economics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../39-complexity-router/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    39. Multi-Model Complexity Router — Entropy, Calibration, Cost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../40-gpu-autoscaler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    40. Queue-Based GPU Autoscaling with KEDA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../41-edge-fallback-resilience/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    41. Resilience and Edge Fallback — Breakers, Retries, WebGPU and MLX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    42. Capstone — One Gateway, Four Mechanisms
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    42. Capstone — One Gateway, Four Mechanisms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#421-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.1 The pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#422-what-is-reused-and-what-is-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.2 What is reused and what is new
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="42.2 What is reused and what is new">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assumptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#423-the-glue-in-the-order-requests-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.3 The glue, in the order requests flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#424-self-tests-12-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.4 Self-tests (12, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#425-experiment-1-the-ladder-no-outage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.5 Experiment 1 — the ladder, no outage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="42.5 Experiment 1 — the ladder, no outage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hand-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hand checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-ladder-says" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the ladder says
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#426-the-harness-is-the-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.6 The harness is the point
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#427-experiment-2-the-large-pool-goes-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.7 Experiment 2 — the large pool goes down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#428-experiment-3-the-cache-threshold-end-to-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.8 Experiment 3 — the cache threshold, end to end
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#429-runbook-for-a-real-gateway-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.9 Runbook for a real gateway (UNTESTED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4210-failure-catalogue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.10 Failure catalogue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4211-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.11 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="42.11 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4212-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.12 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_23" >
+        
+          
+          <label class="md-nav__link" for="__nav_23" id="__nav_23_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XIV — Building an Inference Engine from Scratch
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_23_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_23">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XIV — Building an Inference Engine from Scratch
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../43-paged-kv-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    43. A Paged KV Cache from Scratch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../44-continuous-batching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    44. A Continuous-Batching Scheduler with Preemption
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../45-radix-prefix-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    45. A Radix-Tree Prefix Cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../46-mini-engine-capstone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_24" >
+        
+          
+          <label class="md-nav__link" for="__nav_24" id="__nav_24_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blackwell Appendix
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_24_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_24">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Blackwell Appendix
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native B200 — UMMA, GEMM and Attention
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-fp4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native FP4 — NVFP4 and MXFP4 Formats and Emulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#421-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.1 The pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#422-what-is-reused-and-what-is-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.2 What is reused and what is new
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="42.2 What is reused and what is new">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assumptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#423-the-glue-in-the-order-requests-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.3 The glue, in the order requests flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#424-self-tests-12-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.4 Self-tests (12, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#425-experiment-1-the-ladder-no-outage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.5 Experiment 1 — the ladder, no outage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="42.5 Experiment 1 — the ladder, no outage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hand-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hand checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-ladder-says" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the ladder says
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#426-the-harness-is-the-point" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.6 The harness is the point
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#427-experiment-2-the-large-pool-goes-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.7 Experiment 2 — the large pool goes down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#428-experiment-3-the-cache-threshold-end-to-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.8 Experiment 3 — the cache threshold, end to end
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#429-runbook-for-a-real-gateway-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.9 Runbook for a real gateway (UNTESTED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4210-failure-catalogue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.10 Failure catalogue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4211-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.11 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="42.11 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4212-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        42.12 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/42-gateway-capstone.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="chapter-42-capstone-one-gateway-four-mechanisms-one-harness">Chapter 42 — Capstone: One Gateway, Four Mechanisms, One Harness<a class="headerlink" href="#chapter-42-capstone-one-gateway-four-mechanisms-one-harness" title="Permanent link">&para;</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Evidence status</p>
+<p><strong>Run on CPU, in a simulator:</strong> a gateway that chains the semantic cache (Chapter 38), the complexity router (Chapter 39), queue-autoscaled GPU pools (Chapter 40) and the circuit breaker (Chapter 41), measured with the record type and statistics of the Chapter 36 harness. 12 self-tests and three experiments (<code>ch42_gateway_capstone.py</code>). Experiment cells show the mean and, in brackets, the minimum–maximum over three seeds.
+<strong>Not run on any GPU, cluster or network.</strong> The request rates, service times, prices, cold start, cache and router behaviour are <strong>assumed</strong> or come from the earlier chapters' synthetic worlds. No number here predicts a real deployment. The runbook in 42.9 is <strong>UNTESTED</strong>.
+<strong>What the simulator leaves out:</strong></p>
+<ul>
+<li><strong>Real engine behaviour.</strong> A replica is "4 slots, lognormal service time". Continuous batching, KV-cache pressure and prefix caching (Chapters 43–46) are not modelled.</li>
+<li><strong>In-flight cache dedup.</strong> A cache entry becomes visible one nominal service time after its request starts, but two identical requests in flight at once both go to the model.</li>
+<li><strong>The router's wait.</strong> The router's K-token prefix is charged to the small pool as load, but it does not delay the large-pool request beyond a fixed 0.15 s.</li>
+<li><strong>Fallback target.</strong> The fallback is the small pool, not an on-device model (Chapter 41's edge); the circuit breaker is Chapter 41's, unchanged.</li>
+<li><strong>Node provisioning, per-pod queues, network and tenants,</strong> as listed in Chapter 40.</li>
+<li><strong>Drift.</strong> The router threshold is calibrated once per seed and never re-checked.</li>
+</ul>
+</div>
+<p>The previous four chapters each built one mechanism and tested it alone. A gateway uses them together, and the mechanisms interact: the cache changes the load the autoscaler sees, the router changes the quality the cache is protecting, and the breaker's fallback is the capacity the router starved. This chapter wires them into one simulator and asks the question a portfolio project exists to answer: <strong>what does each mechanism buy once the others are present, and what does it cost?</strong></p>
+<h2 id="421-the-pipeline">42.1 The pipeline<a class="headerlink" href="#421-the-pipeline" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                 request
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                    │
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>            ┌───────▼────────┐  hit  ──────────────────────────► answer (0.02 s)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>            │ semantic cache │
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>            │   (ch38)       │
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>            └───────┬────────┘
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                 miss
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            ┌───────▼────────┐
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            │ router (ch39)  │  entropy &gt; τ ?
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            └───┬────────┬───┘
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>            hard│        │easy
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        ┌───────▼──┐  ┌──▼───────┐
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        │ breaker  │  │  small   │  autoscaled or static pool (ch40)
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        │ (ch41)   │  │  pool    │
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        └───┬───┬──┘  └──────────┘
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        up  │   │ open / down
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>     ┌──────▼┐  └────────────────► small pool (fallback, lower quality)
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>     │ large │  autoscaled or static pool (ch40)
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>     │ pool  │
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>     └───────┘
+</span></code></pre></div>
+<p>Every request leaves with one of four fates: cache <strong>hit</strong>, served by the <strong>large</strong> pool, served by the <strong>small</strong> pool (routed or fallback), or <strong>failed</strong> (a hung large pool and no fallback).</p>
+<h2 id="422-what-is-reused-and-what-is-new">42.2 What is reused and what is new<a class="headerlink" href="#422-what-is-reused-and-what-is-new" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>From</th>
+<th>Used as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>World</code>, <code>SemanticCache</code></td>
+<td>Chapter 38</td>
+<td>The request stream (6000 intents, Zipf 0.6, 10% exact repeats) and the cache, threshold 0.92</td>
+</tr>
+<tr>
+<td><code>make_data</code>, <code>calibrate_tau</code></td>
+<td>Chapter 39</td>
+<td>Per-intent difficulty, entropy feature and the two models' correctness; τ calibrated per seed for ≤2% quality loss (conservative)</td>
+</tr>
+<tr>
+<td><code>Scaler</code>, <code>simulate</code>, <code>make_arrivals</code>, <code>lognormal_service</code></td>
+<td>Chapter 40</td>
+<td>The pools: FIFO queue, 4 slots per replica, 60 s cold start, KEDA/HPA rules</td>
+</tr>
+<tr>
+<td><code>CircuitBreaker</code></td>
+<td>Chapter 41</td>
+<td>Guards the large pool: 3 consecutive failures open it for 10 s</td>
+</tr>
+<tr>
+<td><code>Rec</code>, <code>summarize_runs</code>, <code>diff_ci</code>, <code>percentile</code></td>
+<td>Chapter 36</td>
+<td>Per-request records, SLO attainment with failures in the denominator, pooled percentiles, bootstrap difference CIs</td>
+</tr>
+<tr>
+<td><code>gateway()</code></td>
+<td>new</td>
+<td>The glue: one pass in arrival order, then the two pools, then the records</td>
+</tr>
+</tbody>
+</table>
+<h3 id="assumptions">Assumptions<a class="headerlink" href="#assumptions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Offered load</td>
+<td>4 req/s, a 100 s burst at 12 req/s from t = 400, back to 4 req/s until t = 900 (about 4400 requests)</td>
+</tr>
+<tr>
+<td>Small pool</td>
+<td>mean service 0.6 s, $1.00 per replica-hour</td>
+</tr>
+<tr>
+<td>Large pool</td>
+<td>mean service 3.0 s, $4.00 per replica-hour</td>
+</tr>
+<tr>
+<td>Cold start</td>
+<td>60 s; billed from creation</td>
+</tr>
+<tr>
+<td>SLO</td>
+<td>first token within 5 s of the request's arrival (failures count against it), 50 ms per output token</td>
+</tr>
+<tr>
+<td>Billing window</td>
+<td>900 s plus a 180 s drain, the same for every configuration</td>
+</tr>
+<tr>
+<td>Outage (42.7)</td>
+<td>the large pool is unreachable from t = 600 to 720; clients wait 3 s, then fail</td>
+</tr>
+</tbody>
+</table>
+<h2 id="423-the-glue-in-the-order-requests-flow">42.3 The glue, in the order requests flow<a class="headerlink" href="#423-the-glue-in-the-order-requests-flow" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>                              <span class="c1"># arrival order</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="o">...</span> <span class="n">insert</span> <span class="n">cache</span> <span class="n">entries</span> <span class="n">whose</span> <span class="n">completion</span> <span class="n">time</span> <span class="n">has</span> <span class="n">passed</span> <span class="o">...</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">entry</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">vecs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">now</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>                       <span class="c1"># hit</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">correct</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">intent</span><span class="p">)</span> <span class="ow">and</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;correct&quot;</span><span class="p">]</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="k">continue</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">pool</span> <span class="o">=</span> <span class="s2">&quot;large&quot;</span> <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">cfg</span><span class="o">.</span><span class="n">router</span> <span class="ow">or</span> <span class="n">H</span><span class="p">[</span><span class="n">intent</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">tau</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;small&quot;</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="k">if</span> <span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;large&quot;</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">router</span><span class="p">:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="n">jobs</span><span class="p">[</span><span class="s2">&quot;small&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)))</span>    <span class="c1"># the K-token prefix runs on the small pool</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="k">if</span> <span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;large&quot;</span><span class="p">:</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="n">down</span> <span class="o">=</span> <span class="n">outage</span> <span class="ow">and</span> <span class="n">in_outage</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="k">if</span> <span class="n">breaker</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>            <span class="n">mode</span><span class="p">,</span> <span class="n">gen</span> <span class="o">=</span> <span class="n">breaker</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>            <span class="k">if</span> <span class="n">mode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>      <span class="n">pool</span> <span class="o">=</span> <span class="s2">&quot;small&quot;</span>                       <span class="c1"># breaker open</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>                <span class="n">breaker</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">gen</span><span class="p">,</span> <span class="ow">not</span> <span class="n">down</span><span class="p">,</span> <span class="n">t</span> <span class="o">+</span> <span class="p">(</span><span class="n">HANG</span> <span class="k">if</span> <span class="n">down</span> <span class="k">else</span> <span class="mi">0</span><span class="p">))</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>                <span class="k">if</span> <span class="n">down</span><span class="p">:</span>          <span class="n">pool</span><span class="p">,</span> <span class="n">delay</span> <span class="o">=</span> <span class="s2">&quot;small&quot;</span><span class="p">,</span> <span class="n">delay</span> <span class="o">+</span> <span class="n">HANG</span>  <span class="c1"># attempt hung</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="k">elif</span> <span class="n">down</span><span class="p">:</span>                <span class="n">kind</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;fail&quot;</span><span class="p">;</span> <span class="k">continue</span>           <span class="c1"># no fallback</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">jobs</span><span class="p">[</span><span class="n">pool</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">t</span> <span class="o">+</span> <span class="n">delay</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;req&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)))</span>
+</span></code></pre></div>
+<p>Four modelling choices set what the results mean:</p>
+<ol>
+<li><strong>A cache hit is correct only if the entry is for the same intent and the answer stored with it was correct.</strong> A hit on a sibling intent is a wrong answer; a hit on the right intent inherits whichever model produced it, including a wrong small-model answer.</li>
+<li><strong>The cache learns from what it was served.</strong> An entry is inserted one nominal service time after its request started, with the correctness of the model that answered, so a fallback answer from the small model can be cached and served again.</li>
+<li><strong>The router's prefix costs the small pool real capacity.</strong> Chapter 39 showed that the feature needs the small model's first K tokens; every request routed large therefore also puts a job of 20% of a small answer on the small pool.</li>
+<li><strong>Quality counts failures.</strong> A failed request is a wrong answer. Quality is the fraction of all requests answered correctly.</li>
+</ol>
+<h2 id="424-self-tests-12-all-pass">42.4 Self-tests (12, all pass)<a class="headerlink" href="#424-self-tests-12-all-pass" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3 ch42_gateway_capstone.py tests
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Property</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Every request has exactly one fate (hit, large, small, fail)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>All-large with no cache: quality equals the mean large-model correctness of the drawn intents, exactly</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Router threshold −∞ sends everything to the large pool and reproduces the all-large quality</td>
+</tr>
+<tr>
+<td>4</td>
+<td>A threshold of 1.0 gives only exact-repeat hits, none wrong</td>
+</tr>
+<tr>
+<td>5</td>
+<td>No hit is served before its entry was inserted</td>
+</tr>
+<tr>
+<td>6</td>
+<td>The run is deterministic for a fixed seed</td>
+</tr>
+<tr>
+<td>7</td>
+<td>No request is served before it arrived; first token precedes the end</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Static all-large cost equals replicas × simulated time × price</td>
+</tr>
+<tr>
+<td>9</td>
+<td>With no outage, adding the fallback policy changes no request's fate</td>
+</tr>
+<tr>
+<td>10</td>
+<td>During an outage, fallback strictly reduces failures; without it, every failure is a large-pool request in the window</td>
+</tr>
+<tr>
+<td>11</td>
+<td>SLO attainment never exceeds the success rate</td>
+</tr>
+<tr>
+<td>12</td>
+<td>The cache serves more than 30% of requests on this workload (a guard that the cache is active in the other tests)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="425-experiment-1-the-ladder-no-outage">42.5 Experiment 1 — the ladder, no outage<a class="headerlink" href="#425-experiment-1-the-ladder-no-outage" title="Permanent link">&para;</a></h2>
+<p>Each row adds one mechanism or one sizing decision. "Static 12" is a large pool of twelve replicas; "static 12+2" adds two small replicas.</p>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>$/1k requests</th>
+<th>SLO attainment %</th>
+<th>TTFT p50 s</th>
+<th>TTFT p99 s</th>
+<th>Quality %</th>
+<th>Hit %</th>
+<th>To large %</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A all-large, static 12</td>
+<td>3.271 [3.238–3.326]</td>
+<td>100.0</td>
+<td>0.45</td>
+<td>0.52</td>
+<td>87.6 [86.9–88.7]</td>
+<td>0</td>
+<td>100</td>
+</tr>
+<tr>
+<td>B + cache, static 12</td>
+<td>3.281 [3.248–3.336]</td>
+<td>100.0</td>
+<td>0.41</td>
+<td>0.50</td>
+<td>86.6 [85.8–87.8]</td>
+<td>46.2</td>
+<td>53.8</td>
+</tr>
+<tr>
+<td>B2 + cache, static 7</td>
+<td>1.918 [1.899–1.950]</td>
+<td>100.0</td>
+<td>0.41</td>
+<td>0.50</td>
+<td>86.6 [85.8–87.8]</td>
+<td>46.2</td>
+<td>53.8</td>
+</tr>
+<tr>
+<td>C + router, static 12+2</td>
+<td>3.417 [3.383–3.474]</td>
+<td>100.0</td>
+<td>0.20</td>
+<td>0.65</td>
+<td>85.5 [85.0–86.4]</td>
+<td>46.3</td>
+<td>47.2</td>
+</tr>
+<tr>
+<td>C2 + router, static 6+1</td>
+<td>1.713 [1.697–1.742]</td>
+<td>100.0</td>
+<td>0.20</td>
+<td>0.65</td>
+<td>85.5 [85.0–86.4]</td>
+<td>46.3</td>
+<td>47.2</td>
+</tr>
+<tr>
+<td>F autoscaler only</td>
+<td>5.451 [5.420–5.475]</td>
+<td>89.8 [88.5–91.2]</td>
+<td>0.46</td>
+<td>53.13 [48.44–58.59]</td>
+<td>87.6 [86.9–88.7]</td>
+<td>0</td>
+<td>100</td>
+</tr>
+<tr>
+<td>D cache + router + autoscaler</td>
+<td>4.544 [4.449–4.601]</td>
+<td>93.3 [92.6–94.1]</td>
+<td>0.20</td>
+<td>39.43 [34.24–44.59]</td>
+<td>85.5 [85.0–86.4]</td>
+<td>46.3</td>
+<td>47.2</td>
+</tr>
+</tbody>
+</table>
+<p>TTFT p50, D minus A, pooled across seeds: 95% bootstrap CI [−0.26, −0.23] s.</p>
+<h3 id="hand-checks">Hand checks<a class="headerlink" href="#hand-checks" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Request count.</strong> 400 s × 4 + 100 s × 12 + 400 s × 4 = 4400; the runs have about 4400.</li>
+<li><strong>Cost of row A.</strong> 12 replicas × 1080 s × $4/3600 = $14.40 for about 4400 requests: $3.27 per thousand. Matches 3.271.</li>
+<li><strong>Cost of row B2.</strong> 7 × 1080 × 4/3600 = $8.40, plus nothing for a small pool that does not exist: 8.40 / 4.4 = $1.91 per thousand. Matches 1.918.</li>
+<li><strong>Cost of row C2.</strong> (6 × 4 + 1 × 1) × 1080 / 3600 = $7.50: $1.70 per thousand. Matches 1.713.</li>
+<li><strong>Sizing.</strong> The large pool's share of the burst is 12 req/s × (1 − 0.46) = 6.5 req/s; at 3 s each that is 19.4 requests in flight, which needs 19.4 / 4 = 4.9 replicas at full slot use and 6.9 at 70%. Row B2 used 7.</li>
+<li><strong>Quality.</strong> The cache costs 1.0 point (87.6 → 86.6) and the router a further 1.1 (86.6 → 85.5); the two losses add, as the per-request correctness of each decision is independent in this model.</li>
+</ul>
+<h3 id="what-the-ladder-says">What the ladder says<a class="headerlink" href="#what-the-ladder-says" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>A cache saves nothing until the fleet shrinks.</strong> Row B has the same cost as row A: 46% of requests no longer reach the large pool, and the twelve replicas still bill the same hours. Right-sizing the fleet to the reduced load (row B2) is what cuts the bill, by 41%.</li>
+<li><strong>The router, at this tolerance, saves little.</strong> The conservative calibration (≤2% quality loss) sends about 88% of cache misses to the large pool, so C2's cost is 11% below B2's, and it costs 1.1 points of quality. Its larger effect is on median latency (0.41 s to 0.20 s): hits are 46% of requests, so the median sits just past them, and in row C the next-fastest group is the small pool's answers rather than the large pool's. The router is also a <em>load</em> on the small pool: row C is dearer than row B by the cost of the extra replicas.</li>
+<li><strong>The autoscaler, as configured, loses to a fleet sized by someone who knew the burst.</strong> Row F costs more than the static oracle (5.45 against 3.27 per thousand) and misses the SLO on 10% of requests, with a p99 first-token latency near 53 s: the burst waits through a 60 s cold start, then the 300 s scale-down window holds the overshoot, as Chapter 40 found. Rows B2 and C2 are <em>oracle-sized</em> (they use the burst height, which a real operator would have to guess), so they are the achievable floor, not a promise.</li>
+<li><strong>The cache and router help the autoscaler too.</strong> Row D is 17% cheaper than row F (4.54 against 5.45) and attains the SLO on 93.3% rather than 89.8%, because there is less load to scale for.</li>
+<li><strong>The latency CI is narrow because the effect is the cache.</strong> D's median is 0.25 s lower than A's (CI −0.26 to −0.23): the median request is a hit or a quick small-pool answer. It says nothing about the tail, which the autoscaler dominates.</li>
+</ol>
+<h2 id="426-the-harness-is-the-point">42.6 The harness is the point<a class="headerlink" href="#426-the-harness-is-the-point" title="Permanent link">&para;</a></h2>
+<p>Each row comes from the same <code>Rec</code> records and <code>summarize_runs</code> as Chapter 36, so the rules that chapter argued for hold here: warm-up is discarded per run; latency is measured from the intended arrival time; failures stay in the denominator of SLO attainment; ranges are over seeds; differences carry a bootstrap interval. If the gateway were real, the same summary code would run on the same records produced by a network client instead of a simulator.</p>
+<h2 id="427-experiment-2-the-large-pool-goes-down">42.7 Experiment 2 — the large pool goes down<a class="headerlink" href="#427-experiment-2-the-large-pool-goes-down" title="Permanent link">&para;</a></h2>
+<p>Config D, with the large pool unreachable from t = 600 to 720.</p>
+<table>
+<thead>
+<tr>
+<th>Policy</th>
+<th>Failures</th>
+<th>SLO attainment %</th>
+<th>Quality %</th>
+<th>$/1k</th>
+<th>Fallbacks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No fallback</td>
+<td>187 [177–205]</td>
+<td>89.1 [88.0–89.9]</td>
+<td>82.1 [81.8–82.5]</td>
+<td>4.539</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Breaker + small-pool fallback</td>
+<td>0</td>
+<td>93.3 [92.6–94.1]</td>
+<td>84.5 [84.0–85.2]</td>
+<td>4.539</td>
+<td>187 [180–199]</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Hand check.</strong> The window holds about 490 requests; 60% of them are cache hits late in the run, and about 88% of misses route large, so roughly 490 × 0.4 × 0.88 ≈ 170 requests need the large pool. The measured 187 failures (and, with the breaker, 187 fallbacks) are in that range.</li>
+<li><strong>The fallback restores the SLO figure to its no-outage level</strong> (93.3%, row D) at a quality cost: the quality is 84.5% against 85.5% with no outage, because the fallback answers come from the small model, which is less accurate on the hard queries that routed large. Without the fallback, quality falls to 82.1%.</li>
+<li><strong>No extra cost.</strong> Both policies cost the same: the 187 extra small-pool requests do not make the small pool scale.</li>
+<li><strong>First three requests.</strong> The breaker needs three failures to open, so the first three requests in the window each wait 3 s before reaching the small pool; after that requests go directly, apart from one probe every 10 s that also waits 3 s.</li>
+</ul>
+<h2 id="428-experiment-3-the-cache-threshold-end-to-end">42.8 Experiment 3 — the cache threshold, end to end<a class="headerlink" href="#428-experiment-3-the-cache-threshold-end-to-end" title="Permanent link">&para;</a></h2>
+<p>Config D, varying the cosine threshold.</p>
+<table>
+<thead>
+<tr>
+<th>Threshold</th>
+<th>Hit %</th>
+<th>Wrong hits (% of hits)</th>
+<th>Quality %</th>
+<th>$/1k</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.85</td>
+<td>69.7</td>
+<td>64.2 [61.6–67.6]</td>
+<td>48.2 [45.8–50.1]</td>
+<td>3.830 [3.113–4.302]</td>
+</tr>
+<tr>
+<td>0.92</td>
+<td>46.2</td>
+<td>2.8 [2.3–3.3]</td>
+<td>85.5 [85.0–86.4]</td>
+<td>4.544</td>
+</tr>
+<tr>
+<td>0.97</td>
+<td>17.5</td>
+<td>0.0</td>
+<td>86.6 [86.1–87.3]</td>
+<td>5.096</td>
+</tr>
+<tr>
+<td>no cache</td>
+<td>0</td>
+<td>—</td>
+<td>86.6 [86.1–87.3]</td>
+<td>5.314</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>The cheapest setting is useless.</strong> Threshold 0.85 has the lowest cost and answers fewer than half the requests correctly: two thirds of its hits are on a sibling intent. A cost column without a quality column would have recommended it.</li>
+<li><strong>Hand check.</strong> At 0.92, 46.2% hits × 2.8% wrong = 1.3% of requests answered wrongly by the cache; at the 87% base accuracy those would have been right about 87% of the time, so the cache costs about 1.1 points, as measured (86.6 → 85.5).</li>
+<li><strong>0.97 buys safety, not savings.</strong> Quality equals the no-cache figure, and the cost falls only 4%.</li>
+<li><strong>The threshold is a quality decision with a price,</strong> exactly as Chapter 38 concluded; here it is visible in the end-to-end number.</li>
+</ul>
+<h2 id="429-runbook-for-a-real-gateway-untested">42.9 Runbook for a real gateway (UNTESTED)<a class="headerlink" href="#429-runbook-for-a-real-gateway-untested" title="Permanent link">&para;</a></h2>
+<p>None of this has been run. It describes how to replace each simulated part with a real one while keeping the measurement the same.</p>
+<ol>
+<li><strong>Fix the measurement first.</strong> Use the Chapter 36 client in open-loop mode against a <em>single</em> URL (the gateway), with the offered-rate schedule above and fixed output lengths. Record the run manifest. Keep warm-up, per-run statistics and failure accounting exactly as in Chapter 36.</li>
+<li><strong>Run the ladder in the same order:</strong> (A) the large model alone with a static fleet; (B) add the cache and repeat at the <em>same</em> fleet, then at a fleet sized to the measured hit rate; (C) add the router, with the small model's prefix cost measured, not assumed; (D) add the autoscaler last, with a measured cold start.</li>
+<li><strong>Calibrate on your traffic, not these worlds:</strong> the cache threshold from labelled same-intent / different-intent pairs (Chapter 38); the router threshold from labelled correctness (Chapter 39); the cold start by timing a new replica to first token (Chapter 40).</li>
+<li><strong>Inject the fault in a controlled way,</strong> for example by scaling the large deployment to zero replicas for two minutes and restoring it (<code>kubectl scale deployment/&lt;large&gt; --replicas=0</code>, then back to the original count). Record failures, attainment and quality for each policy as in 42.7. Do this in a test environment.</li>
+<li><strong>Report with the Chapter 36 template:</strong> the ladder table with ranges over repeated runs, the CI on each pairwise difference you claim, and the manifest.</li>
+</ol>
+<h2 id="4210-failure-catalogue">42.10 Failure catalogue<a class="headerlink" href="#4210-failure-catalogue" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Cause</th>
+<th>Defence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Savings never appear on the bill</td>
+<td>Cache or router reduces load but the fleet keeps its size</td>
+<td>Size pools to the measured reduced load; make capacity follow demand</td>
+</tr>
+<tr>
+<td>Autoscaler loses to a hand-sized fleet</td>
+<td>Cold start, scale-down window and burst</td>
+<td>Headroom floor, backlog-aware metric, shorter cold start (Chapter 40)</td>
+</tr>
+<tr>
+<td>Cache saves money and quality goes with it</td>
+<td>Threshold too low; sibling intents match</td>
+<td>Calibrate on labelled pairs; report quality beside cost</td>
+</tr>
+<tr>
+<td>Fallback answer cached and re-served</td>
+<td>Small-model answer stored under the same key</td>
+<td>Store the producing model with the entry; do not serve degraded answers as full-quality hits</td>
+</tr>
+<tr>
+<td>Router starves its own fallback</td>
+<td>The small pool is sized for the easy queries only</td>
+<td>Size the small pool for fallback load, not just routed load</td>
+</tr>
+<tr>
+<td>Router prefix ignored in capacity planning</td>
+<td>Every large-routed request also runs K tokens on the small model</td>
+<td>Add the prefix load to the small pool's sizing</td>
+</tr>
+<tr>
+<td>Breaker opens late</td>
+<td>Three consecutive failures at 3 s each</td>
+<td>Lower the first-token timeout or the threshold; trip on failure rate</td>
+</tr>
+<tr>
+<td>Quality metric excludes failures</td>
+<td>Averaged over answered requests only</td>
+<td>Count a failure as a wrong answer, as here</td>
+</tr>
+<tr>
+<td>Gains attributed to the wrong mechanism</td>
+<td>Measured with all mechanisms changed at once</td>
+<td>Build the ladder one rung at a time, same workload, same seeds</td>
+</tr>
+<tr>
+<td>Router drifts</td>
+<td>Traffic mix shifts after calibration</td>
+<td>Re-check on fresh labelled samples on a schedule</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4211-exercises">42.11 Exercises<a class="headerlink" href="#4211-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>With the same workload, what does a large-pool static fleet of 8 replicas cost per thousand requests with the cache on and no router? (Use 4400 requests, a 1080 s billing window and the $4 price.)</li>
+<li>If the hit rate in the burst were 60% rather than 46%, how many large replicas keep 70% slot utilisation during the burst, with no router?</li>
+<li>Row F costs more than row A. Give two reasons from this chapter, and one change that would help.</li>
+<li>At threshold 0.92, 46.2% of requests hit and 2.8% of hits are wrong. How many of 4400 requests are answered wrongly by the cache?</li>
+<li>The router sends 12% of misses to the small pool. A second team proposes raising that to 40% by loosening the quality tolerance. Name the two costs, besides latency, that the ladder shows you must measure before accepting.</li>
+</ol>
+<h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
+<ol>
+<li>8 × 1080 s × $4 / 3600 = $9.60 for 4400 requests: $2.18 per thousand (plus about $0.01 per thousand for the embedding model).</li>
+<li>Burst rate 12 req/s; misses 40%: 4.8 req/s; at 3 s each, 14.4 in flight; at 4 slots, 3.6 replicas at full use; at 70%, 5.1; so 6 replicas.</li>
+<li>(a) The autoscaler starts from one replica and each new replica takes 60 s to warm, so the burst waits; (b) the HPA's scale-down window keeps the overshoot for 300 s and bills it. One change: a higher floor of replicas, a backlog-aware metric, or a shorter cold start.</li>
+<li>4400 × 0.462 × 0.028 ≈ 57 requests.</li>
+<li>The quality loss (the ladder lost 1.1 points at 12%, and would lose more at 40%), and the capacity: the small pool must now carry three times the routed load plus the prefix jobs and any fallback traffic, so its sizing, and its cost, change.</li>
+</ol>
+<h2 id="4212-summary">42.12 Summary<a class="headerlink" href="#4212-summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Each mechanism was tested alone in Chapters 38–41; this chapter measures them together on one workload with the Chapter 36 statistics.</li>
+<li>A cache or router reduces load, not cost: the bill falls only when the fleet shrinks to match (−41% with a right-sized fleet in the cache-only case, −48% with the router).</li>
+<li>Autoscaling, with a 60 s cold start and default scaling rules, cost more than a fleet sized for the burst and missed the SLO on 7–10% of requests; the cache and router reduced its cost by 17%.</li>
+<li>The router, at a conservative quality tolerance, sent about 88% of misses to the large model, saved about 11% and cost 1.1 points of quality; its prefix is a real load on the small pool.</li>
+<li>With the large pool down for two minutes, the breaker and a small-pool fallback turned 187 failures into 0 and restored the SLO figure, at a quality cost of 1.0 point.</li>
+<li>Cost without quality is a trap: the cheapest cache threshold answered fewer than half the requests correctly.</li>
+<li>All of this is simulated. The method (a ladder, one change at a time, same records and same statistics) is what transfers; the numbers do not.</li>
+</ul>
+<h2 id="files-and-sources">Files and sources<a class="headerlink" href="#files-and-sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Code: <code>docs/examples/inference-systems/ch42_gateway_capstone.py</code> (imports <code>ch36_benchmark_teardown.py</code>, <code>ch38_semantic_cache.py</code>, <code>ch39_complexity_router.py</code>, <code>ch40_gpu_autoscaler.py</code> and <code>ch41_edge_fallback.py</code> from the same folder)</li>
+<li>Chapters reused: <a href="../36-benchmark-teardown/">Chapter 36</a>, <a href="../38-semantic-cache/">Chapter 38</a>, <a href="../39-complexity-router/">Chapter 39</a>, <a href="../40-gpu-autoscaler/">Chapter 40</a>, <a href="../41-edge-fallback-resilience/">Chapter 41</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../41-edge-fallback-resilience/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 41. Resilience and Edge Fallback — Breakers, Retries, WebGPU and MLX">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                41. Resilience and Edge Fallback — Breakers, Retries, WebGPU and MLX
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../43-paged-kv-cache/" class="md-footer__link md-footer__link--next" aria-label="Next: 43. A Paged KV Cache from Scratch">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                43. A Paged KV Cache from Scratch
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/image-viewer.js"></script>
+      
+    
+  </body>
+</html>
