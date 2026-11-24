@@ -1,0 +1,4012 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/44-continuous-batching/">
+      
+      
+        <link rel="prev" href="../43-paged-kv-cache/">
+      
+      
+        <link rel="next" href="../appendix-blackwell-b200/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>44. A Continuous-Batching Scheduler with Preemption - Programming the H100: CUDA, CuTe, and CUTLASS from First Principles</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/image-viewer.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-44-a-continuous-batching-scheduler-with-preemption" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-header__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              44. A Continuous-Batching Scheduler with Preemption
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-nav__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../review-fixes-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 Review Corrections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 H100 Revalidation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../revalidation-2026-11-18/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cutlass-workshop-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    H100 CuTe/CUTLASS Workshop Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eight-gpu-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eight-A100 Training Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    B200 Compatibility Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — Introductory CuTe
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — Introductory CuTe
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cute-strides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Strides, Storage and Memory Addresses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cute-layout-algebra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hierarchical Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../18-cute-tensors-tiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    18. Tensors, Slicing & Predication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../19-cta-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    19. CTA and Byte-Address Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_18" >
+        
+          
+          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_18">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20-tiled-copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20. Thread Ownership & Tiled Copy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21-mma-atoms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    21. MMA Atoms & Register Fragments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../22-shared-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    22. Shared Layouts, Banks & Swizzles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../23-gemm-construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    23. Build a Complete Tiled GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../24-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    24. CUTLASS Collective-Builder GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../25-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    25. Hopper Pipelines & Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../26-epilogue-fusion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    26. Epilogue Fusion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../27-precision-block-scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    27. Precision & Block Scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../28-benchmarking-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    28. Benchmarking & Framework Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../29-workbook-capstone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    29. Worked Labs & Capstone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30-cutlass-attention-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XII — Inference Systems on Hopper
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XII — Inference Systems on Hopper
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-systems-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview and the Twelve Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../32-inference-engine-and-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    32. Inference Engine Anatomy and the Measurement Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../33-moe-expert-parallel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    33. MoE Expert Parallelism — Sharding, All-to-All and Load Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../34-kv-cache-offloading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    34. Hierarchical KV-Cache Offloading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../35-disaggregated-prefill-decode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    35. Disaggregated Prefill/Decode over RDMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../36-benchmark-teardown/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../37-speculative-decoding-70b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    37. Speculative Decoding at 70B — Multi-GPU Cost Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_22" >
+        
+          
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XIII — Hardware-Agnostic Inference Systems
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_22">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XIII — Hardware-Agnostic Inference Systems
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../38-semantic-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    38. Semantic Cache — Thresholds, False Hits, Economics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../39-complexity-router/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    39. Multi-Model Complexity Router — Entropy, Calibration, Cost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../40-gpu-autoscaler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    40. Queue-Based GPU Autoscaling with KEDA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_23" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_23" id="__nav_23_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XIV — Building an Inference Engine from Scratch
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_23_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_23">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XIV — Building an Inference Engine from Scratch
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../43-paged-kv-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    43. A Paged KV Cache from Scratch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    44. A Continuous-Batching Scheduler with Preemption
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    44. A Continuous-Batching Scheduler with Preemption
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#441-why-batching-must-be-per-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.1 Why batching must be per iteration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#442-the-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.2 The model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#443-the-scheduling-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.3 The scheduling loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#444-self-tests-14-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.4 Self-tests (14, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#445-experiment-1-static-versus-continuous-batching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.5 Experiment 1 — static versus continuous batching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#446-experiment-2-memory-pressure-and-preemption-8-reqs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.6 Experiment 2 — memory pressure and preemption (8 req/s)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#447-experiment-3-the-watermark-512-blocks-8-reqs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.7 Experiment 3 — the watermark (512 blocks, 8 req/s)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#448-experiment-4-chunked-prefill-4-reqs-longer-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.8 Experiment 4 — chunked prefill (4 req/s, longer prompts)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#449-experiment-5-the-slot-cap-12-reqs-4096-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.9 Experiment 5 — the slot cap (12 req/s, 4096 blocks)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4410-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.10 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4411-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.11 On real hardware (UNTESTED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4412-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.12 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="44.12 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4413-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.13 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_24" >
+        
+          
+          <label class="md-nav__link" for="__nav_24" id="__nav_24_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blackwell Appendix
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_24_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_24">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Blackwell Appendix
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native B200 — UMMA, GEMM and Attention
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-fp4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native FP4 — NVFP4 and MXFP4 Formats and Emulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#441-why-batching-must-be-per-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.1 Why batching must be per iteration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#442-the-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.2 The model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#443-the-scheduling-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.3 The scheduling loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#444-self-tests-14-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.4 Self-tests (14, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#445-experiment-1-static-versus-continuous-batching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.5 Experiment 1 — static versus continuous batching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#446-experiment-2-memory-pressure-and-preemption-8-reqs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.6 Experiment 2 — memory pressure and preemption (8 req/s)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#447-experiment-3-the-watermark-512-blocks-8-reqs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.7 Experiment 3 — the watermark (512 blocks, 8 req/s)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#448-experiment-4-chunked-prefill-4-reqs-longer-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.8 Experiment 4 — chunked prefill (4 req/s, longer prompts)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#449-experiment-5-the-slot-cap-12-reqs-4096-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.9 Experiment 5 — the slot cap (12 req/s, 4096 blocks)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4410-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.10 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4411-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.11 On real hardware (UNTESTED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4412-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.12 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="44.12 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4413-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        44.13 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/44-continuous-batching.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="chapter-44-a-continuous-batching-scheduler-with-preemption">Chapter 44 — A Continuous-Batching Scheduler with Preemption<a class="headerlink" href="#chapter-44-a-continuous-batching-scheduler-with-preemption" title="Permanent link">&para;</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Evidence status</p>
+<p><strong>Run on CPU, in a simulator:</strong> a continuous-batching scheduler with paged-block accounting, preemption by recomputation, a memory watermark and chunked prefill; a static-batching baseline; 14 self-tests; five experiments (<code>ch44_continuous_batching.py</code>). Experiment cells show the mean and, in brackets, the minimum–maximum over 3 seeds of 600 requests.
+<strong>Nothing here is measured on a GPU.</strong> The cost of one engine iteration (15 ms fixed + 0.05 ms per prefill token + 0.2 ms per decoding sequence) and the workload (prompts with median 256 tokens, outputs with median 128, Poisson arrivals) are <strong>assumed</strong>. The shapes of the curves are the result; the absolute numbers are not predictions for any real model. The vLLM commands in 44.10 are <strong>UNTESTED</strong> and from memory.
+<strong>Choices that favour the baseline (static batching):</strong> it ignores memory limits, and it streams each request's tokens as they are produced instead of returning them when the whole batch ends.</p>
+</div>
+<p>Chapter 43 built the memory manager. This chapter builds the part that decides <em>what runs in each step</em>: the scheduler. It is where an engine's throughput, tail latency and behaviour under memory pressure come from.</p>
+<h2 id="441-why-batching-must-be-per-iteration">44.1 Why batching must be per iteration<a class="headerlink" href="#441-why-batching-must-be-per-iteration" title="Permanent link">&para;</a></h2>
+<p>One decode step for one sequence reads all the model weights to produce one token, so the cost is dominated by the weight read, not by arithmetic. Running 64 sequences in the same step reads the weights once and so produces 64 tokens for little more than the cost of one. Batching is how a GPU gets its throughput.</p>
+<p><strong>Static batching</strong> forms a batch, runs it until <em>every</em> member has finished, then forms the next one. Output lengths vary widely, so a finished sequence's slot sits idle (and is still computed, as padding) until the longest member ends, and new requests wait for the whole batch.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>static batching, N = 4, time →
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a> req A  |prefill|dddddd.................|   finished early, slot wasted
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a> req B  |prefill|dddddddddddddddd.......|
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a> req C  |prefill|dddd...................|
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a> req D  |prefill|dddddddddddddddddddddd.|   longest decides batch length
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                                         ^ only now can E, F, G, H start
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>continuous batching: the batch is re-formed every iteration
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a> req A  |prefill|dddddd|
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a> req B  |prefill|dddddddddddddddd|
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a> req C  |prefill|dddd|
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a> req D  |prefill|dddddddddddddddddddddd|
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a> req E            |prefill|dddddddd|        joins as soon as C&#39;s slot frees
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a> req F                      |prefill|ddd|
+</span></code></pre></div>
+<p>This is <em>iteration-level scheduling</em>, introduced by the Orca system and adopted by vLLM and SGLang; the memory side (paged blocks, Chapter 43) is what makes it practical, because sequences can then join and leave without moving anyone's KV cache.</p>
+<h2 id="442-the-model">44.2 The model<a class="headerlink" href="#442-the-model" title="Permanent link">&para;</a></h2>
+<p><strong>Time.</strong> One engine iteration costs <code>t0 + cp × (prefill tokens) + cd × (decoding sequences)</code> with <code>t0 = 15 ms</code>, <code>cp = 0.05 ms</code>, <code>cd = 0.2 ms</code> (assumed). One iteration does all of:</p>
+<ol>
+<li>every running sequence that has finished its prefill decodes one token;</li>
+<li>prompts (or chunks of prompts) are prefilled;</li>
+<li>the iteration that finishes a prompt's prefill also emits that request's next token (the first token for a new request).</li>
+</ol>
+<p><strong>Memory.</strong> <code>n_blocks</code> blocks of <code>B = 16</code> tokens (default 2048 blocks = 32 768 token slots). A request is <strong>admitted</strong> only when the blocks for its whole current prompt are free (above a watermark), and they are allocated at once. A decoding sequence needs one more block each time its KV length reaches a block boundary.</p>
+<p><strong>Policy (the same as vLLM's default behaviour in spirit; not a claim about its code):</strong></p>
+<ul>
+<li><strong>Strict FCFS admission.</strong> The head of the waiting queue blocks everyone behind it if it does not fit.</li>
+<li><strong>Slot cap</strong> <code>max_num_seqs</code> on running sequences.</li>
+<li><strong>Watermark.</strong> Admission leaves a fraction of the pool free, as headroom for decode growth.</li>
+<li><strong>Preemption by recompute.</strong> If a decoding sequence needs a block and none is free, the <em>youngest</em> running sequence is evicted: its blocks are freed and it goes back to the <em>front</em> of the waiting queue. When readmitted, it re-prefills its prompt <strong>plus the tokens it had already generated</strong>, then continues. Its first-token time is not reset, since the user already saw that token.</li>
+<li><strong>No admissions in an iteration that preempted.</strong> Otherwise a new request would take the blocks just freed and the evicted one would loop.</li>
+<li><strong>Rejection.</strong> A request whose prompt plus output could never fit in the pool is rejected on arrival; without that rule it would block the head of the queue forever.</li>
+<li><strong>Chunked prefill.</strong> A per-iteration token budget <code>max_batched_tokens</code>, shared between decode tokens (one each) and prefill tokens. A long prompt is spread over several iterations.</li>
+</ul>
+<p>The scheduler does not know output lengths in advance. The simulator knows them only to decide when a sequence ends.</p>
+<h2 id="443-the-scheduling-loop">44.3 The scheduling loop<a class="headerlink" href="#443-the-scheduling-loop" title="Permanent link">&para;</a></h2>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>loop while any request is unfinished:
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    advance clock to the next arrival if nothing is running or waiting
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    enqueue arrivals; reject any that can never fit
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    # 1. decode set
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    for seq in running (oldest first):
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        if seq.kv_len % B == 0:                # needs a new block
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>            while no free block:
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                victim = running[-1]           # youngest
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                preempt(victim)                # free blocks, requeue at front
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                if victim is seq: break
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>            if seq was preempted: continue
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>            take a block
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        add seq to decode set
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    # 2. prefill
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    budget = max_batched_tokens - len(decode set)
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    continue partially prefilled running sequences, then
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    admit from waiting while: slots free, budget left, blocks(head) &lt;= free - watermark
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    # 3. execute
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    dt = t0 + cp*prefill_tokens + cd*len(decode set)
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    advance the clock; emit tokens; free finished sequences
+</span></code></pre></div>
+<p>Because victims are taken from the back and sequences are visited oldest first, a victim has never already been scheduled in the same iteration.</p>
+<h2 id="444-self-tests-14-all-pass">44.4 Self-tests (14, all pass)<a class="headerlink" href="#444-self-tests-14-all-pass" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>What is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>one request's first-token and finish times match the closed form</td>
+</tr>
+<tr>
+<td>2</td>
+<td>a one-token output finishes with its prefill iteration; the clock jumps over idle time</td>
+</tr>
+<tr>
+<td>3</td>
+<td>continuous with one slot reproduces static batch-size-1 <em>exactly</em>, for 60 requests</td>
+</tr>
+<tr>
+<td>4</td>
+<td>24 runs (12 seeds × a roomy and a tiny pool): every admitted request emits exactly <code>out</code> tokens, arrival ≤ first token ≤ finish, and after <strong>every iteration</strong> the block count equals the sum over running sequences and no sequence holds the wrong number of blocks (832 preemptions exercised)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>heavy memory pressure terminates and returns every block</td>
+</tr>
+<tr>
+<td>6</td>
+<td>a request bigger than the whole pool is rejected; the request behind it proceeds</td>
+</tr>
+<tr>
+<td>7</td>
+<td>with no preemption, total prefill work equals the sum of prompt lengths</td>
+</tr>
+<tr>
+<td>8</td>
+<td>with preemption, prefill work exceeds that sum</td>
+</tr>
+<tr>
+<td>9</td>
+<td>chunked prefill keeps every iteration's duration within the budget's bound</td>
+</tr>
+<tr>
+<td>10</td>
+<td>strict FCFS: first-token times are non-decreasing in arrival order when nothing is preempted</td>
+</tr>
+<tr>
+<td>11</td>
+<td>same seed, same result</td>
+</tr>
+<tr>
+<td>12</td>
+<td>static batch: a finished slot still costs compute (exact times for a 2-token and a 100-token request)</td>
+</tr>
+<tr>
+<td>13</td>
+<td>continuous throughput ≥ static (N = 32) on 5 of 5 seeds</td>
+</tr>
+<tr>
+<td>14</td>
+<td>block count after L tokens is <code>⌈L/B⌉</code>, checked against the Chapter 43 cache</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hand check (test 1).</strong> Prompt 100, output 11: prefill iteration <code>0.015 + 100 × 0.00005 = 0.020 s</code> (first token), then 10 decode iterations of <code>0.015 + 0.0002 = 0.0152 s</code> each: <code>0.020 + 0.152 = 0.172 s</code>.</p>
+<h2 id="445-experiment-1-static-versus-continuous-batching">44.5 Experiment 1 — static versus continuous batching<a class="headerlink" href="#445-experiment-1-static-versus-continuous-batching" title="Permanent link">&para;</a></h2>
+<p>Workload: prompt median 256 (mean 351), output median 128 (mean 199). The continuous scheduler has 2048 blocks. The "attain" column is the fraction of requests meeting the SLO: time to first token ≤ 2 s <strong>and</strong> mean time per output token ≤ 80 ms. Goodput counts only the tokens of requests that met it.</p>
+<table>
+<thead>
+<tr>
+<th>rate (req/s)</th>
+<th>scheme</th>
+<th>tokens/s</th>
+<th>TTFT p50 (s)</th>
+<th>TTFT p99 (s)</th>
+<th>attain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.5</td>
+<td>static N=8</td>
+<td>103 [97–109]</td>
+<td>3.55</td>
+<td>17.0</td>
+<td>0.35</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>static N=32</td>
+<td>103 [97–109]</td>
+<td>3.17</td>
+<td>15.1</td>
+<td>0.37</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td><strong>continuous</strong></td>
+<td>103 [97–109]</td>
+<td><strong>0.035</strong></td>
+<td><strong>0.104</strong></td>
+<td><strong>1.00</strong></td>
+</tr>
+<tr>
+<td>1</td>
+<td>static N=8</td>
+<td>162 [159–166]</td>
+<td>83.9</td>
+<td>155</td>
+<td>0.02</td>
+</tr>
+<tr>
+<td>1</td>
+<td>static N=32</td>
+<td>200 [188–210]</td>
+<td>6.5</td>
+<td>19.2</td>
+<td>0.16</td>
+</tr>
+<tr>
+<td>1</td>
+<td><strong>continuous</strong></td>
+<td>204 [191–217]</td>
+<td><strong>0.037</strong></td>
+<td><strong>0.107</strong></td>
+<td><strong>1.00</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>static N=8</td>
+<td>164 [163–168]</td>
+<td>222</td>
+<td>434</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>2</td>
+<td>static N=32</td>
+<td>313 [308–322]</td>
+<td>41.9</td>
+<td>86.3</td>
+<td>0.03</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>continuous</strong></td>
+<td>400 [373–426]</td>
+<td><strong>0.039</strong></td>
+<td><strong>0.108</strong></td>
+<td><strong>1.00</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>static N=8</td>
+<td>166 [163–168]</td>
+<td>311</td>
+<td>603</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>5</td>
+<td>static N=32</td>
+<td>323 [321–325]</td>
+<td>121</td>
+<td>242</td>
+<td>0.02</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>continuous</strong></td>
+<td>920 [869–975]</td>
+<td><strong>0.045</strong></td>
+<td><strong>0.127</strong></td>
+<td><strong>1.00</strong></td>
+</tr>
+<tr>
+<td>8</td>
+<td>static N=8</td>
+<td>166 [162–168]</td>
+<td>338</td>
+<td>651</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>8</td>
+<td>static N=32</td>
+<td>324 [322–325]</td>
+<td>147</td>
+<td>289</td>
+<td>0.02</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>continuous</strong></td>
+<td>1350 [1290–1420]</td>
+<td><strong>0.062</strong></td>
+<td>1.85 [0.15–4.11]</td>
+<td>0.965 [0.90–1.00]</td>
+</tr>
+<tr>
+<td>12</td>
+<td>static N=8</td>
+<td>164 [162–168]</td>
+<td>355</td>
+<td>684</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>12</td>
+<td>static N=32</td>
+<td>323 [317–325]</td>
+<td>155</td>
+<td>314</td>
+<td>0.02</td>
+</tr>
+<tr>
+<td>12</td>
+<td>continuous</td>
+<td>1500 [1450–1540]</td>
+<td>6.67</td>
+<td>15.1</td>
+<td>0.36</td>
+</tr>
+</tbody>
+</table>
+<p>What the table shows:</p>
+<ul>
+<li><strong>At 0.5 req/s all three have the same throughput</strong> (103 tokens/s, simply arrivals times mean output length: the server is not saturated), but static batching makes a new request wait for the batch in flight: first-token latency is 3 s instead of 35 ms. The throughput gain from continuous batching appears only when load is high. The latency gain appears at any load.</li>
+<li><strong>Static batching has a hard capacity</strong>, which the analysis predicts. A batch of <code>N</code> lasts <code>t0 + cp × (sum of prompts) + (max output − 1) × (t0 + cd × N)</code>. With the workload's mean maximum output over a batch (563 tokens for N = 8, 856 for N = 32), that gives 9.49 s and 18.88 s per batch: <strong>0.84 req/s (168 tokens/s) for N = 8 and 1.70 req/s (338 tokens/s) for N = 32</strong>. The simulation measured 166 and 324 at saturation. Only 35% (N = 8) and 23% (N = 32) of the slot-iterations produce a needed token (mean output ÷ mean batch maximum). Above those rates the queue grows without bound: the TTFT of hundreds of seconds is a backlog over a finite 600-request run, not a steady state.</li>
+<li><strong>Continuous batching kept up to about 8 req/s with 2048 blocks</strong>, about 4.7 times the capacity of the better static configuration (1.7 req/s). At 12 req/s it falls over, but the cause is memory, not compute (next experiment): with 4096 blocks it sustains 12 req/s with every request in its SLO (Experiment 5, 128 slots).</li>
+</ul>
+<h2 id="446-experiment-2-memory-pressure-and-preemption-8-reqs">44.6 Experiment 2 — memory pressure and preemption (8 req/s)<a class="headerlink" href="#446-experiment-2-memory-pressure-and-preemption-8-reqs" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>blocks</th>
+<th>token slots</th>
+<th>tokens/s</th>
+<th>preemptions</th>
+<th>extra prefill work</th>
+<th>TTFT p99 (s)</th>
+<th>e2e p99 (s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4096</td>
+<td>65 536</td>
+<td>1350 [1290–1420]</td>
+<td>0</td>
+<td>0%</td>
+<td>0.16</td>
+<td>28.3</td>
+</tr>
+<tr>
+<td>2048</td>
+<td>32 768</td>
+<td>1350 [1290–1420]</td>
+<td>8.7 [0–18]</td>
+<td>1.2%</td>
+<td>1.85 [0.15–4.1]</td>
+<td>28.6</td>
+</tr>
+<tr>
+<td>1024</td>
+<td>16 384</td>
+<td>1070 [1040–1090]</td>
+<td>93 [87–98]</td>
+<td>17.7%</td>
+<td>25.1 [20–30]</td>
+<td>39.8</td>
+</tr>
+<tr>
+<td>512</td>
+<td>8192</td>
+<td>688 [663–700]</td>
+<td>190 [178–200]</td>
+<td>34.5%</td>
+<td>90 [83–100]</td>
+<td>96.7</td>
+</tr>
+<tr>
+<td>256</td>
+<td>4096</td>
+<td>377 [359–388]</td>
+<td>246 [201–285]</td>
+<td>43.3%</td>
+<td>236 [222–251]</td>
+<td>241</td>
+</tr>
+</tbody>
+</table>
+<p>(<em>Extra prefill work</em> is the prefill tokens computed beyond the sum of prompt lengths, as a percentage: the cost of recomputation.) The scheduler degrades gradually rather than failing: halving the pool from 4096 to 2048 blocks costs nothing visible except a few preemptions, but from 1024 down, throughput falls by 21%, 49% and 72% while the tail latency grows by orders of magnitude. <strong>The KV pool size is a capacity parameter of the whole service</strong>, which is why Chapter 43's block arithmetic matters.</p>
+<h2 id="447-experiment-3-the-watermark-512-blocks-8-reqs">44.7 Experiment 3 — the watermark (512 blocks, 8 req/s)<a class="headerlink" href="#447-experiment-3-the-watermark-512-blocks-8-reqs" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>watermark (fraction kept free)</th>
+<th>preemptions</th>
+<th>tokens/s</th>
+<th>e2e p99 (s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.00</td>
+<td>299 [267–324]</td>
+<td>682 [659–695]</td>
+<td>98.2</td>
+</tr>
+<tr>
+<td>0.01</td>
+<td>190 [178–200]</td>
+<td>688 [663–700]</td>
+<td>96.7</td>
+</tr>
+<tr>
+<td>0.05</td>
+<td>39.7 [35–46]</td>
+<td>683 [659–697]</td>
+<td>97.7</td>
+</tr>
+<tr>
+<td>0.10</td>
+<td>6.7 [5–10]</td>
+<td>662 [637–677]</td>
+<td>103</td>
+</tr>
+<tr>
+<td>0.20</td>
+<td>0.3 [0–1]</td>
+<td>604 [580–616]</td>
+<td>120</td>
+</tr>
+</tbody>
+</table>
+<p>A bigger watermark removes almost all preemptions (299 → 0.3) but, past about 5%, it also lowers throughput and raises the tail, because the headroom is memory that could hold running sequences. Between 0% and 5% the throughput does not change (682–688, with overlapping seed ranges), so in this model preemptions are cheap enough that removing them is worth only a small headroom. The best value depends on the cost of a recompute against the value of the memory, which is a property of the real system.</p>
+<h2 id="448-experiment-4-chunked-prefill-4-reqs-longer-prompts">44.8 Experiment 4 — chunked prefill (4 req/s, longer prompts)<a class="headerlink" href="#448-experiment-4-chunked-prefill-4-reqs-longer-prompts" title="Permanent link">&para;</a></h2>
+<p>Prompts here have median 1000 tokens (clipped to 4096). Without chunking, an iteration that prefills a long prompt stalls every decoding sequence for its whole duration. <strong>ITL</strong> is the inter-token latency, weighted by the number of decoding sequences affected.</p>
+<table>
+<thead>
+<tr>
+<th><code>max_batched_tokens</code></th>
+<th>ITL p99 (ms)</th>
+<th>TTFT p50 (s)</th>
+<th>TTFT p99 (s)</th>
+<th>tokens/s</th>
+<th>attain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>none</td>
+<td>128 [117–133]</td>
+<td>0.090</td>
+<td>0.36</td>
+<td>753</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>4096</td>
+<td>129 [117–134]</td>
+<td>0.090</td>
+<td>0.38</td>
+<td>753</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>1024</td>
+<td>70.5 [70–71]</td>
+<td>0.111</td>
+<td>0.45</td>
+<td>753</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>512</td>
+<td>45.2 [45–46]</td>
+<td>0.143</td>
+<td>0.63</td>
+<td>753</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>256</td>
+<td>32.6 [32–33]</td>
+<td>0.256</td>
+<td>1.28</td>
+<td>752</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>128</td>
+<td>25.2 [25–25]</td>
+<td>5.54 [0.94–9.86]</td>
+<td>12.3</td>
+<td>706</td>
+<td>0.45</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hand check.</strong> A budget of 1024 bounds the iteration at <code>0.015 + 1024 × 0.00005 + 128 × 0.0002 = 0.092 s</code>; the measured p99 of 70.5 ms is below it, as it must be.</p>
+<p>A smaller budget lowers the stall that decoders see (128 → 25 ms) and raises the time to first token, because a long prompt now takes several iterations (0.09 → 0.26 s at 256). Throughput stays flat down to 256. <strong>At 128 it collapses</strong>: decode tokens count against the budget, so when the decode batch is near the budget there is almost nothing left for prefill, new prompts starve, and TTFT p50 jumps to 5.5 s. Set the budget well above the number of sequences you expect to decode together.</p>
+<h2 id="449-experiment-5-the-slot-cap-12-reqs-4096-blocks">44.9 Experiment 5 — the slot cap (12 req/s, 4096 blocks)<a class="headerlink" href="#449-experiment-5-the-slot-cap-12-reqs-4096-blocks" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th><code>max_num_seqs</code></th>
+<th>tokens/s</th>
+<th>TTFT p99 (s)</th>
+<th>TPOT p99 (ms)</th>
+<th>attain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8</td>
+<td>450</td>
+<td>208</td>
+<td>18.8</td>
+<td>0.03</td>
+</tr>
+<tr>
+<td>16</td>
+<td>770</td>
+<td>95.4</td>
+<td>22.0</td>
+<td>0.06</td>
+</tr>
+<tr>
+<td>32</td>
+<td>1170</td>
+<td>39.0</td>
+<td>26.8</td>
+<td>0.14</td>
+</tr>
+<tr>
+<td>64</td>
+<td>1570</td>
+<td>11.2</td>
+<td>37.1</td>
+<td>0.38</td>
+</tr>
+<tr>
+<td>128</td>
+<td>1760</td>
+<td>1.15 [0.17–1.71]</td>
+<td>51.6</td>
+<td><strong>1.00</strong></td>
+</tr>
+<tr>
+<td>256</td>
+<td>1760</td>
+<td>1.15 [0.17–1.71]</td>
+<td>51.7</td>
+<td><strong>1.00</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Fewer slots give each token a shorter step (TPOT 18.8 ms at 8 slots against 51.6 ms at 128) but throughput is lower and the queue longer. Going from 128 to 256 changes nothing because the number running never reaches 128 under this load. The slot cap is where a latency-per-token target is traded against throughput; the right value is where TPOT p99 is just inside your SLO.</p>
+<h2 id="4410-failure-modes-and-edge-cases">44.10 Failure modes and edge cases<a class="headerlink" href="#4410-failure-modes-and-edge-cases" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>What happens</th>
+<th>Handled by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Head-of-line blocking</td>
+<td>a large request that does not fit holds back small ones that would</td>
+<td>strict FCFS by design; Exercise 3</td>
+</tr>
+<tr>
+<td>Request larger than the pool</td>
+<td>would block forever</td>
+<td>rejected on arrival (test 6)</td>
+</tr>
+<tr>
+<td>Preemption storms</td>
+<td>preempt, readmit, preempt again, doing no useful work</td>
+<td>no admission in a preempting iteration; the watermark</td>
+</tr>
+<tr>
+<td>Recompute cost</td>
+<td>prompt + generated tokens are prefilled again</td>
+<td>counted as extra prefill work (Experiment 2)</td>
+</tr>
+<tr>
+<td>Chunk budget below the decode batch</td>
+<td>prefill starves</td>
+<td>Experiment 4, budget 128</td>
+</tr>
+<tr>
+<td>Output length unknown</td>
+<td>admission cannot reserve for growth</td>
+<td>watermark and preemption</td>
+</tr>
+<tr>
+<td>Preempting the oldest instead of the youngest</td>
+<td>throws away the most work</td>
+<td>youngest-first</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not modelled:</strong> swapping preempted KV to CPU (Chapter 34, Exercise 7); prefix caching (Chapter 45); the per-iteration cost being really a function of batch composition and sequence lengths (attention cost grows with context); multi-GPU scheduling; priorities and fairness; speculative decoding.</p>
+<h2 id="4411-on-real-hardware-untested">44.11 On real hardware (UNTESTED)<a class="headerlink" href="#4411-on-real-hardware-untested" title="Permanent link">&para;</a></h2>
+<p>Flag and metric names are from memory; check them against <code>vllm serve --help</code> and your version's metrics page.</p>
+<ol>
+<li>Serve with explicit scheduler settings: <code>vllm serve MODEL --max-num-seqs 128 --max-num-batched-tokens 2048 --enable-chunked-prefill --gpu-memory-utilization 0.90</code>.</li>
+<li>Drive it open-loop with the Chapter 36 client at several rates, as in Experiment 1, and record TTFT, TPOT and attainment.</li>
+<li>Watch the preemption counter (a vLLM metric whose name should contain "preemptions") while shrinking <code>--gpu-memory-utilization</code> or raising <code>--max-model-len</code>, to reproduce Experiment 2.</li>
+<li>Sweep <code>--max-num-batched-tokens</code> as in Experiment 4 and look for the point where TTFT collapses.</li>
+<li>Compare against your simulator after replacing <code>T0</code>, <code>CP</code>, <code>CD</code> with values fitted from a short profile (a decode-only run for <code>t0</code> and <code>cd</code>, a long-prompt run for <code>cp</code>).</li>
+</ol>
+<h2 id="4412-exercises">44.12 Exercises<a class="headerlink" href="#4412-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Compute the finish time of a single request with a 400-token prompt and 21 output tokens with the assumed costs.</li>
+<li>Using the static-batching formula, estimate the capacity in requests per second of <code>N = 16</code> if the mean maximum output length over 16 requests is 700 tokens and the mean prompt is 351.</li>
+<li>Strict FCFS lets one large request block small ones. Describe a skip-ahead policy, and the starvation it introduces.</li>
+<li>Why preempt the youngest sequence? Compute the recompute cost of preempting a sequence with a 1000-token prompt and 200 generated tokens.</li>
+<li>In Experiment 4 the budget of 128 collapsed. With 100 sequences decoding, how many prefill tokens can each iteration carry, and how long does a 1000-token prompt take to prefill?</li>
+<li>Read Experiment 3 and pick a watermark for the 512-block pool. Say what you would measure on a real system to choose it.</li>
+<li>Swapping a preempted sequence's KV to CPU and back is an alternative to recomputing. Compare them for the sequence in Exercise 4, for a 70B BF16 model at 320 KiB of KV per token and an assumed 25 GB/s each way.</li>
+<li>Why does Experiment 1 show equal throughput for all three schemes at 0.5 req/s, and what does that say about when to bother with continuous batching?</li>
+</ol>
+<h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Prefill iteration: <code>0.015 + 400 × 0.00005 = 0.035 s</code> (this also emits token 1). Then 20 decode iterations of 0.0152 s = 0.304 s. Total 0.339 s.</li>
+<li>Batch time = <code>0.015 + 0.00005 × 16 × 351 + 699 × (0.015 + 0.0002 × 16)</code> = <code>0.015 + 0.281 + 699 × 0.0182</code> = <code>0.015 + 0.281 + 12.72</code> ≈ 13.0 s. Capacity = 16 / 13.0 ≈ 1.2 req/s, about 245 tokens/s at a mean output of 199.</li>
+<li>Skip-ahead: scan the queue and admit the first request that fits. It improves utilisation when the head is large, but a large request can be passed over indefinitely if small ones keep arriving and keep the pool occupied. A bound fixes it: allow only a limited number of overtakes, or after waiting beyond some time stop skipping and let the pool drain for the head.</li>
+<li>The youngest has produced the least, so evicting it discards the least work and the oldest sequences, which are closest to finishing, are protected. The recompute prefill is <code>1000 + 200 = 1200</code> tokens, so <code>1200 × 0.00005 = 60 ms</code> of prefill time plus the wait to be readmitted. Evicting an old sequence with long output would cost far more.</li>
+<li>Prefill tokens per iteration: <code>128 − 100 = 28</code>. A 1000-token prompt needs <code>⌈1000 / 28⌉ = 36</code> iterations of about <code>0.015 + 28 × 0.00005 + 100 × 0.0002 = 0.0364 s</code>, which is about 1.3 s, before queueing. This is an illustration of the mechanism, not the batch size the simulation actually had.</li>
+<li>Experiment 3 has no throughput difference between 0 and 5%, preemptions fall from 299 to 40, and past 10% throughput drops. A value around 5% is a reasonable choice for this model. On a real system, measure the preemption rate and e2e p99 at 1%, 3%, 5% and 10% under your traffic at your peak rate, over several seeds, and pick the smallest value that brings preemptions close to zero without lowering throughput.</li>
+<li>KV size: <code>1200 × 327 680 B = 393 MB</code>. At 25 GB/s that is 15.7 ms out and 15.7 ms back, 31 ms in total (copies can overlap with compute, so the visible cost may be lower). Recompute costs 60 ms in the assumed model. Swap is cheaper in these assumed numbers; it needs CPU memory and the transfer bandwidth, and recompute needs neither. Which is better depends on measured prefill speed and PCIe bandwidth. Measure both.</li>
+<li>At 0.5 req/s the server is idle most of the time, so throughput is set by arrivals, not by the scheduler. Continuous batching matters when the system is busy, and its latency benefit (no waiting for a batch in flight) appears even at low load: TTFT p50 was 35 ms against about 3 s.</li>
+</ol>
+<h2 id="4413-summary">44.13 Summary<a class="headerlink" href="#4413-summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Batching must be re-decided every iteration. Static batching wastes slots on finished sequences (only 23–35% of slot-iterations were useful in this workload) and makes new requests wait for the batch in flight.</li>
+<li>Its capacity can be computed in closed form and the simulation agrees (166 and 324 tokens/s measured against 168 and 338 predicted). In the simulation continuous batching sustained about 4.7 times the better static capacity (8 against 1.7 req/s).</li>
+<li>Memory sets continuous batching's capacity: a pool of 2048 blocks fell over at 12 req/s where 4096 blocks did not.</li>
+<li>Preemption by recomputation makes memory exhaustion a slow-down, not a crash, but heavy pressure costs throughput and tail latency; the watermark trades preemptions against headroom.</li>
+<li>Chunked prefill trades decode stalls against time to first token, and a budget close to the decode batch size starves prefill.</li>
+<li>All numbers come from an assumed cost model. Fit <code>t0</code>, <code>cp</code> and <code>cd</code> to your own hardware before comparing.</li>
+</ul>
+<h2 id="files-and-sources">Files and sources<a class="headerlink" href="#files-and-sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Code: <code>docs/examples/inference-systems/ch44_continuous_batching.py</code></li>
+<li>Iteration-level scheduling: Yu et al., "Orca: A Distributed Serving System for Transformer-Based Generative Models" (OSDI 2022). Paged memory management: Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention" (SOSP 2023). This chapter implements its own simplified version and makes no claim about the internals of vLLM or SGLang.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../43-paged-kv-cache/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 43. A Paged KV Cache from Scratch">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                43. A Paged KV Cache from Scratch
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../appendix-blackwell-b200/" class="md-footer__link md-footer__link--next" aria-label="Next: Native B200 — UMMA, GEMM and Attention">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Native B200 — UMMA, GEMM and Attention
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/image-viewer.js"></script>
+      
+    
+  </body>
+</html>
