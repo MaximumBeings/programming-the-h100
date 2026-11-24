@@ -24,10 +24,10 @@ The project list comes from a public LinkedIn post by Ravi A Samy listing twelve
 | 8 | Queue-based GPU autoscaler | [Chapter 40](40-gpu-autoscaler.md) |
 | 9 | Semantic AI gateway and cache | [Chapter 38](38-semantic-cache.md) |
 | 10 | Multi-model complexity router | [Chapter 39](39-complexity-router.md) |
-| 11 | WebGPU / MLX edge fallback | Part XIII (planned) |
+| 11 | WebGPU / MLX edge fallback | [Chapter 41](41-edge-fallback-resilience.md); combined with projects 8–10 in the [Chapter 42](42-gateway-capstone.md) capstone |
 | 12 | Public inference benchmark teardown | [Chapter 36](36-benchmark-teardown.md) |
 
-Part XIV goes one level down: it builds the core of an engine in the style of vLLM and SGLang (paged KV cache, continuous-batching scheduler, radix prefix cache), starting with [Chapter 43](43-paged-kv-cache.md) and [Chapter 44](44-continuous-batching.md) and [Chapter 45](45-radix-prefix-cache.md), closing with the capstone engine of [Chapter 46](46-mini-engine-capstone.md). Its chapters are numbered from 43 because Chapters 41 and 42 are reserved for Part XIII.
+Part XIV goes one level down: it builds the core of an engine in the style of vLLM and SGLang (paged KV cache, continuous-batching scheduler, radix prefix cache), starting with [Chapter 43](43-paged-kv-cache.md) and [Chapter 44](44-continuous-batching.md) and [Chapter 45](45-radix-prefix-cache.md), closing with the capstone engine of [Chapter 46](46-mini-engine-capstone.md). Its chapters are numbered from 43 because Chapters 41 and 42 belong to Part XIII.
 
 The Triton book is at <https://maximumbeings.github.io/triton-from-first-principles/>.
 

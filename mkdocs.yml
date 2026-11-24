@@ -180,6 +180,8 @@ nav:
       - 38. Semantic Cache — Thresholds, False Hits, Economics: 38-semantic-cache.md
       - 39. Multi-Model Complexity Router — Entropy, Calibration, Cost: 39-complexity-router.md
       - 40. Queue-Based GPU Autoscaling with KEDA: 40-gpu-autoscaler.md
+      - 41. Resilience and Edge Fallback — Breakers, Retries, WebGPU and MLX: 41-edge-fallback-resilience.md
+      - 42. Capstone — One Gateway, Four Mechanisms: 42-gateway-capstone.md
   - Part XIV — Building an Inference Engine from Scratch:
       - 43. A Paged KV Cache from Scratch: 43-paged-kv-cache.md
       - 44. A Continuous-Batching Scheduler with Preemption: 44-continuous-batching.md
