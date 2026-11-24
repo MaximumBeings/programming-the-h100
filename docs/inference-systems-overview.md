@@ -27,7 +27,7 @@ The project list comes from a public LinkedIn post by Ravi A Samy listing twelve
 | 11 | WebGPU / MLX edge fallback | Part XIII (planned) |
 | 12 | Public inference benchmark teardown | [Chapter 36](36-benchmark-teardown.md) |
 
-Part XIV goes one level down: it builds the core of an engine in the style of vLLM and SGLang (paged KV cache, continuous-batching scheduler, radix prefix cache), starting with [Chapter 43](43-paged-kv-cache.md). Its chapters are numbered from 43 because Chapters 41 and 42 are reserved for Part XIII.
+Part XIV goes one level down: it builds the core of an engine in the style of vLLM and SGLang (paged KV cache, continuous-batching scheduler, radix prefix cache), starting with [Chapter 43](43-paged-kv-cache.md) and [Chapter 44](44-continuous-batching.md). Its chapters are numbered from 43 because Chapters 41 and 42 are reserved for Part XIII.
 
 The Triton book is at <https://maximumbeings.github.io/triton-from-first-principles/>.
 

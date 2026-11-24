@@ -182,6 +182,7 @@ nav:
       - 40. Queue-Based GPU Autoscaling with KEDA: 40-gpu-autoscaler.md
   - Part XIV — Building an Inference Engine from Scratch:
       - 43. A Paged KV Cache from Scratch: 43-paged-kv-cache.md
+      - 44. A Continuous-Batching Scheduler with Preemption: 44-continuous-batching.md
   - Blackwell Appendix:
       - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md
       - Native FP4 — NVFP4 and MXFP4 Formats and Emulation: appendix-blackwell-fp4.md
