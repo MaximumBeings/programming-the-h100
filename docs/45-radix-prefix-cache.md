@@ -1,0 +1,244 @@
+# Chapter 45 — A Radix-Tree Prefix Cache
+
+!!! warning "Evidence status"
+    **Run on CPU:** a radix-tree prefix cache with pinning and LRU/FIFO eviction, a block-hash cache for comparison, 14 self-tests (including comparisons with brute-force references), and seven experiments (`ch45_radix_prefix_cache.py`). Experiment cells show the mean and, in brackets, the minimum–maximum over 3 seeds of 1500 requests.
+    **Nothing here touches a GPU or real KV tensors.** The cache stores *token ids and counts*, not KV blocks; joining the tree to Chapter 43's block pool is left to the capstone. Token ids are random integers and the workloads (system prompts, multi-turn chat, RAG, exact repeats) are **assumed shapes**, not traces. Statements about how SGLang and vLLM organise their caches (token-granular radix tree and full-block hashing respectively) are from memory of their designs; check the current documentation.
+
+Chapter 44's scheduler made every request pay for its whole prompt. Most prompts share a beginning: the same system prompt, the same few-shot examples, the same chat history. A **prefix cache** keeps the KV of past prompts and lets a new request skip the prefill for the part it shares.
+
+## 45.1 What can be reused
+
+The KV entries of token `i` depend only on tokens `0..i`, so two requests with the same first `m` tokens have identical KV for those `m` tokens, and only the first `m`. That is why the unit is the **prefix**: sharing stops at the first token that differs, even if the rest is identical.
+
+```
+request 1:  [ system prompt (1000 tokens) ][ user A ]
+request 2:  [ system prompt (1000 tokens) ][ user B ]    reuse the first 1000, compute user B
+request 3:  [ user B' ][ system prompt (1000 tokens) ]   reuse nothing, different first token
+```
+
+This has a practical consequence for how prompts are built (Experiment 1: RAG).
+
+## 45.2 The radix tree
+
+A **radix tree** (a compressed trie) stores each cached sequence as a path from the root. Each edge holds a *run* of tokens, and a node exists only where paths branch or end.
+
+```
+cached:  [1 2 3 4 5]   [1 2 3 9]   [1 2 7]
+
+            root
+             |
+          [1 2]            node A (2 tokens)
+          /    \
+      [3]       [7]        node B (1), node D (1)
+      /  \
+  [4 5]  [9]               node C (2), node E (1)
+
+stored tokens: 2 + 1 + 1 + 2 + 1 = 7 = the number of distinct prefixes of the three sequences
+```
+
+Matching walks from the root; if the match ends inside an edge, the edge is **split** there, so that a request can pin exactly the prefix it uses. Because every token on a shared path is stored once, the tree holds **exactly one token per distinct prefix** (test 3).
+
+### Pinning
+
+A running request needs its prefix to stay in memory while it decodes. `acquire(tokens)` matches, **pins** every node on the path (a reference count per node) and inserts the new suffix; `release(handle)` unpins. Only unpinned leaves can be evicted, so a pinned path is safe, and a node is never evicted while a descendant exists (evicting the middle of a path would orphan the rest).
+
+### Eviction
+
+When the cache is over capacity, the tree evicts the **least recently used unpinned leaf**, which may expose its parent as a new leaf. A heap with lazy validation finds the victim without scanning the tree: an entry is discarded if the node died, grew a child or was pinned, and re-pushed with its fresh key if it was touched. A hit updates the access time of every node on the matched path.
+
+### Failure
+
+If the new suffix does not fit even after evicting everything evictable (the rest is pinned), `acquire` raises `CacheFull` carrying the length it did match. The caller still serves the request, using the matched prefix, but without caching it.
+
+## 45.3 Block-hash caching, for comparison
+
+The other common design hashes each **full block** of `B` tokens together with the hash of the previous block (a chain), and keeps a table from chain hash to a cached block. A lookup follows the chain block by block until it misses. Two consequences:
+
+- **Granularity.** Only whole blocks are shared: the usable prefix is the shared length rounded down to a multiple of `B`.
+- **Correctness depends on the hash.** A collision makes the engine reuse the wrong KV, silently. The radix tree compares token ids and cannot do that.
+
+## 45.4 Self-tests (14, all pass)
+
+| # | What is checked |
+|---|---|
+| 1 | the fast longest-common-prefix helper equals a naive loop on 300 random pairs |
+| 2 | a hand example: insert, match, split (5 tokens, then 1 new token = 6 stored) |
+| 3 | the tree stores exactly one token per distinct prefix, for 20 random sets of 40 sequences, with invariants checked after every insert |
+| 4 | **match length equals the brute-force maximum common prefix** over all stored sequences, 20 sessions × 60 queries |
+| 5 | a pinned sequence survives memory pressure; the least recently used unpinned leaf is the one evicted |
+| 6 | the eviction victim always has the minimum last-access time among evictable leaves, checked against a scan of all leaves, 15 sessions |
+| 7 | when everything is pinned, `acquire` raises `CacheFull` and the cache is unchanged |
+| 8 | pin counts equal the number of live handles through each node under random acquire/release, 15 sessions |
+| 9 | ten requests sharing a 100-token prefix store it once (300 tokens, not 1200) |
+| 10 | block-hash match never exceeds the radix match and is within one block of it |
+| 11 | an 8-bit block hash returned wrong matches 373 times in 400 requests; a 64-bit hash, 0 times |
+| 12 | prefixing a per-tenant salt token prevents any cross-tenant match |
+| 13 | on exactly repeated prompts, LRU beats FIFO (0.693 vs 0.649) |
+| 14 | same seed, same hit rate |
+
+`check_invariants` verifies after each step that every child is keyed by its edge's first token, parent links are consistent, the token count equals the sum of edge lengths and stays within capacity, and each node's pin count equals the number of live handles passing through it.
+
+Test 11 uses a deliberately tiny hash to show the mechanism (a table of a few hundred blocks fills a 256-value hash space almost completely). It says nothing about the hash used by any real engine; it shows why the width matters (Exercise 7).
+
+## 45.5 Experiment 1 — hit rate against cache size
+
+*Hit rate* is the fraction of prompt tokens served from the cache. Cache size is in tokens.
+
+| workload | 4k | 16k | 64k | 256k | 1M |
+|---|---|---|---|---|---|
+| system prompts (20 × 1000 tokens, Zipf popularity, 100–300 unique tokens) | 0.297 | 0.627 | 0.807 | 0.822 | 0.822 |
+| multi-turn chat (40 conversations; each turn's prompt = the whole history + a new message) | 0.050 | 0.234 | 0.735 | **0.928** | 0.928 |
+| RAG, 3 of 200 documents in random order | 0.002 | 0.009 | 0.035 | 0.125 | 0.262 |
+| RAG, the same documents sorted by id | 0.003 | 0.018 | 0.064 | 0.188 | 0.285 |
+| popular exact-repeat prompts (300, Zipf) | 0.121 | 0.357 | 0.614 | 0.822 | 0.841 |
+| no sharing (control) | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+
+(seed ranges are within ±0.01 everywhere; see the script output.)
+
+- **System prompts** saturate at 0.822 once all 20 prompts fit (20 000 tokens plus tails): the ceiling is the shared fraction, 1000 of a mean 1199 tokens (0.834), minus first-time misses.
+- **Multi-turn chat** needs far more memory (the whole conversation history is the prefix) but reaches the highest hit rate, 0.928, once the histories fit.
+- **RAG**: the prefix is shared only while documents appear in the same order. Sorting the documents lifted the hit rate from 0.125 to 0.188 at 256k tokens, and from 0.262 to 0.285 at 1M. The effect is modest here (3 documents from 200), but it is free to try. With a *fixed* first document (a common pattern) the whole first document is a shared prefix.
+- The **control** confirms the cache does not invent hits.
+
+## 45.6 Experiment 2 — radix versus block hashing
+
+System-prompt workload, 64 000-token cache.
+
+| scheme | hit rate |
+|---|---|
+| radix (token granularity) | 0.807 [0.804–0.808] |
+| block-hash, B = 16 | 0.801 [0.798–0.803] |
+| block-hash, B = 64 | 0.775 [0.772–0.776] |
+| block-hash, B = 256 | 0.615 [0.613–0.618] |
+
+**Hand check.** The shared prefix is 1000 tokens and the mean prompt 1199. A block cache can only reuse `⌊1000/B⌋ × B` of it, losing `1000 mod B` tokens per hit: 8 (B = 16), 40 (B = 64), 232 (B = 256). As a fraction of the mean prompt: 0.007, 0.033, 0.194. The measured losses against radix: 0.006, 0.032, 0.192. They match. **Granularity costs `(shared length mod B) / prompt length`**, so a big block size is cheap for long shared prefixes that happen to be multiples of it and expensive otherwise.
+
+## 45.7 Experiment 3 — LRU versus FIFO
+
+| workload (cache tokens) | LRU | FIFO |
+|---|---|---|
+| system prompts (10 000) | 0.513 | 0.513 |
+| multi-turn chat (40 000) | 0.523 | 0.523 |
+| popular exact-repeat prompts (100 000, outputs not cached) | **0.721** [0.715–0.725] | 0.677 [0.666–0.685] |
+
+LRU beat FIFO by 0.044 on exactly repeated prompts but made **no difference at all** on the first two workloads. The reason is a property of the tree: only *leaves* are evicted, and in those workloads the leaves are the per-request tails (a unique user message, or a conversation's newest turn), each created once and not hit again while it is a leaf. For a leaf, "least recently used" and "oldest" are the same thing. The two policies differ only when a *hot leaf is old*, as with an exactly repeated prompt.
+
+## 45.8 Experiment 4 — pinned sequences under concurrency
+
+Multi-turn chat, 40 000-token cache; "in flight" is the number of requests holding their prefix pinned at once.
+
+| in flight | hit rate | requests that could not be cached (of 1500) |
+|---|---|---|
+| 1 | 0.523 [0.519–0.531] | 0 |
+| 4 | 0.523 [0.519–0.531] | 0 |
+| 16 | 0.522 [0.516–0.531] | 17 |
+| 32 | 0.303 [0.297–0.309] | 1303 |
+| 64 | 0.356 [0.352–0.362] | 1370 |
+
+Pinning is the limit on how many requests can be served with caching at once: at 32 in flight, `32 × 2051 ≈ 65 600` tokens of pinned prompts exceed the 40 000-token cache, and 87% of requests are refused caching. The hit rate then falls from 0.52 to 0.30.
+
+The hit rate at 64 is slightly *higher* than at 32 (0.356 against 0.303). This is not investigated here. A plausible explanation (untested) is that when almost every request is refused, the cache stays frozen with whatever was pinned, including the 20 system prompts that every conversation starts with (600 of a 2051-token mean prompt, 29%), and the refused requests still match against that content.
+
+## 45.9 Experiment 5 — prefill work saved
+
+Using the assumed prefill cost of 0.05 ms per token, and a 256 000-token cache:
+
+| workload | mean prompt (tokens) | hit rate | prefill ms/request, no cache | with cache |
+|---|---|---|---|---|
+| system prompts | 1199 | 0.823 | 60.0 | 10.6 |
+| multi-turn chat | 2051 | 0.928 | 102.6 | 7.4 |
+| RAG, random order | 2520 | 0.122 | 126.0 | 110.6 |
+| RAG, sorted | 2520 | 0.188 | 126.0 | 102.3 |
+| popular exact repeats | 1069 | 0.823 | 53.5 | 9.5 |
+| no sharing | 995 | 0.000 | 49.8 | 49.8 |
+
+(the per-request cost is `mean prompt × (1 − hit rate) × 0.05 ms`; e.g. 2051 × 0.072 × 0.05 = 7.4 ms.) Because the assumed cost of one iteration has a 15 ms fixed part (Chapter 44), the saving on the *latency of one request* is smaller than the saving in *prefill tokens*; the larger effect is on throughput, because prefill work competes with decoding in the same iterations.
+
+## 45.10 Experiment 6 — tree shape
+
+256 000-token cache:
+
+| workload | nodes | tokens | mean edge length |
+|---|---|---|---|
+| system prompts | 1503 | 255 918 | 170.3 |
+| multi-turn chat | 1693 | 255 938 | 151.2 |
+| RAG, random order | 237 | 254 660 | 1074.5 |
+| RAG, sorted | 257 | 255 180 | 992.9 |
+| popular exact repeats | 885 | 255 914 | 289.2 |
+| no sharing | 463 | 255 907 | 552.7 |
+
+A node per 150–1000 tokens: the bookkeeping is small next to the KV it indexes. Per-node metadata matters only if edges become very short (page size 1 and heavy branching).
+
+## 45.11 Experiment 7 — a scan of unique prompts
+
+System-prompt workload, 64 000-token cache, warmed with 600 requests; then `k` unique 2000-token prompts are inserted; then the hit rate on the next 300 requests is measured.
+
+| unique prompts injected | hit rate on the next 300 requests |
+|---|---|
+| 0 | 0.810 |
+| 10 | 0.796 |
+| 30 | 0.767 |
+| 100 | 0.765 |
+
+One hundred unique prompts (200 000 tokens, over three times the cache) lowered the hit rate by 0.045, not to zero: the system prompts are re-cached by the first few probe requests, so the cost is a short burst of misses. The effect is measured over only 300 requests; a longer-running burst of unique traffic would cost more.
+
+## 45.12 Failure modes and edge cases
+
+| Situation | What happens | Handled by |
+|---|---|---|
+| Everything pinned | `CacheFull`; the request runs uncached with its matched prefix | test 7 |
+| Hash collision (block-hash cache) | wrong KV served silently | wide hash; the radix tree compares tokens (test 11) |
+| Cross-tenant sharing | one tenant's prompt is a hit for another, and timing reveals it | per-tenant salt as the first token (test 12); costs sharing across tenants (Exercise 5) |
+| Scan of unique prompts | evicts the hot set | LRU recovers quickly (Experiment 7); a scan-resistant policy is an extension |
+| Prefix order | a shared document later in the prompt is not shared | build prompts with stable parts first (Experiment 1) |
+| Page size above 1 | a node's last block may be partial; extending it needs copy-on-write (Chapter 43) | not modelled |
+| Stale or changed model weights, LoRA adapters, sampling-irrelevant settings | KV computed under one model is wrong under another | the cache key must include the model and adapter; not modelled |
+| Decoded output tokens | caching generated text helps multi-turn and costs memory otherwise | the `cache_output` switch in the harness |
+
+**Not modelled:** KV tensors and the block pool; multi-GPU and cache-aware routing across replicas; eviction cost; speculative or partial-token matching; cache warm-up persistence across restarts.
+
+## 45.13 On real hardware (UNTESTED)
+
+Names are from memory; check them against your version.
+
+1. Turn prefix caching on in your engine (vLLM has an automatic prefix caching option; SGLang's radix cache is on by default) and look for a *prefix cache hit rate* in its logs or metrics.
+2. Replay a real prompt trace (the Chapter 36 client can send fixed prompts) twice, with the cache on and off, and compare TTFT and throughput.
+3. Compare the engine's reported hit rate with this chapter's simulator run on the *same* token sequences. A large difference means the engine's block size or eviction differs from the model above.
+4. Check isolation: with two tenants' keys, send a prompt as tenant A and the same prompt as tenant B, and compare TTFT. A faster second request means cross-tenant sharing exists.
+
+## 45.14 Exercises
+
+1. For the sequences `(1,2,3,4,5)`, `(1,2,3,9)`, `(1,2,7)`, how many nodes does the tree have and how many tokens does it store?
+2. Why does the tree store exactly one token per distinct prefix?
+3. The shared prefix is 1500 tokens and the mean prompt is 1800. Predict the loss in hit rate from `B = 64` blocks compared with a token-granular cache.
+4. Multi-turn requests average 2051 tokens and each pins its prompt. How many requests can be in flight with a 40 000-token cache before pinned tokens exceed it, ignoring sharing?
+5. A service has 10 tenants, each with its own salt and the 20 × 1000-token system prompts. How many cached tokens do the system prompts need compared with a shared cache? What does the salt buy?
+6. Why were LRU and FIFO identical on the first two workloads of Experiment 3?
+7. A chain hash has `b` bits. For a lookup of a block that is *not* cached against a table of `M` entries, the chance of a false match is about `M / 2^b` (for a well-mixed hash). Compute it for `b = 8, M = 4000`, and for `b = 64, M = 10^6` and 10^9 lookups.
+8. A scan of 100 unique 2000-token prompts lowered the hit rate by only 0.045. Name two properties of the workload that made it cheap, and one workload in which it would be costly.
+
+### Solutions
+
+1. Nodes `[1 2]`, `[3]`, `[4 5]`, `[9]`, `[7]` = 5 nodes; tokens 2 + 1 + 2 + 1 + 1 = 7, the number of distinct prefixes: 1, 12, 123, 1234, 12345, 1239, 127.
+2. Each token on an edge corresponds to exactly one prefix (the path to it), and two sequences that share a prefix share the path, so a prefix appears once. Counting distinct prefixes and counting stored tokens are the same count (test 3 checks it on random sets).
+3. The loss per hit is `1500 mod 64 = 28` tokens (`1500 = 23 × 64 + 28`). As a fraction of the mean prompt: `28 / 1800 = 0.0156`, multiplied by the fraction of requests that hit the full prefix (close to 1 once the cache is warm). Expect about 0.015 lower.
+4. `40 000 / 2051 ≈ 19.5`, so about 19 requests with no sharing between them. With sharing among conversations (the system prompt) somewhat more fit; in the experiment 16 in flight were fine (17 refusals) and 32 were not.
+5. 10 × 20 000 = 200 000 tokens, against 20 000 shared: ten times as much. The salt stops one tenant's cache hit from being observed by another (timing) and from mixing KV between them, at the cost of that memory and of every tenant paying its own first miss.
+6. Only leaves are evicted. In those workloads the leaves are the unique tails, which are created once and never hit again as leaves, so ordering by last use and ordering by age give the same order. They differ only when an old leaf is hit repeatedly (exact repeats).
+7. `b = 8, M = 4000`: the formula gives `4000/256 = 15.6`, which exceeds 1: the table has more entries than hash values, so almost every lookup finds a collision (the formula is only valid for `M ≪ 2^b`). `b = 64, M = 10^6`: `10^6 / 1.84 × 10^19 ≈ 5.4 × 10^-14` per lookup, so about `5.4 × 10^-5` over 10^9 lookups (roughly one in twenty thousand that a single false hit occurs in a billion lookups).
+8. The unique prompts displaced system prompts, which are small (20 000 tokens) and refill from the first few requests; and the probe had 300 requests, which dilutes a short loss. It would be costly where the hot set is large and slow to rebuild (long multi-turn histories that each take many turns to accumulate) or where scans repeat continually.
+
+## 45.15 Summary
+
+- A prefix cache reuses KV for the leading tokens two prompts share. A radix tree stores each distinct prefix once, finds the longest match exactly (checked against brute force), and pins the paths of running requests.
+- Hit rates here ranged from 0.82 (system prompts) to 0.93 (multi-turn chat) once the cache could hold the working set, 0.12–0.19 for RAG in random or sorted order, and 0 with no sharing.
+- Block hashing loses `(shared length mod B) / prompt length`; the measured losses matched the hand calculation (0.006, 0.032, 0.192).
+- Pinned prefixes bound concurrency: at 32 requests in flight the 40 000-token cache could no longer hold them, and 87% of requests were refused caching.
+- LRU and FIFO were equal wherever leaves are one-time tails; LRU won only with exactly repeated prompts.
+- Isolation is a real concern: salt per tenant, and make the cache key include the model and adapter.
+- Everything here uses token counts and synthetic workloads. Replay your own prompt trace before relying on any hit rate.
+
+## Files and sources
+
+- Code: `docs/examples/inference-systems/ch45_radix_prefix_cache.py`
+- Radix-tree prefix caching ("RadixAttention"): Zheng et al., "SGLang: Efficient Execution of Structured Language Model Programs" (2023). Block-level prefix caching: the automatic prefix caching feature of vLLM. This chapter implements its own simplified versions and makes no claim about their internals.
