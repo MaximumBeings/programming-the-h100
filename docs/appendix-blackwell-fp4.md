@@ -58,7 +58,7 @@ NVIDIA's CUTLASS documentation for SM100 lists the block-scaled tensor-core inst
 
 ## A.4 The emulation
 
-The file `fp4_formats.py` ([download](examples/blackwell/fp4_formats.py)) uses only the Python standard library. Its core pieces:
+The file `fp4_formats.py` ([download](examples/inference-systems/fp4_formats.py)) uses only the Python standard library. Its core pieces:
 
 ```python
 E2M1_POS = [0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0]       # index parity = mantissa bit
