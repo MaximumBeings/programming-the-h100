@@ -21,11 +21,13 @@ The project list comes from a public LinkedIn post by Ravi A Samy listing twelve
 | 5 | MoE expert-parallel router | [Chapter 33](33-moe-expert-parallel.md) |
 | 6 | FP4/INT4 quantization and calibration pipeline | Triton from First Principles, Part 8; [native FP4 in the Blackwell appendix](appendix-blackwell-fp4.md) |
 | 7 | Speculative decoding harness | Triton Part 8 (verify kernel); [Chapter 37](37-speculative-decoding-70b.md) (70B cost model) |
-| 8 | Queue-based GPU autoscaler | Part XIII (planned) |
+| 8 | Queue-based GPU autoscaler | [Chapter 40](40-gpu-autoscaler.md) |
 | 9 | Semantic AI gateway and cache | [Chapter 38](38-semantic-cache.md) |
 | 10 | Multi-model complexity router | [Chapter 39](39-complexity-router.md) |
 | 11 | WebGPU / MLX edge fallback | Part XIII (planned) |
 | 12 | Public inference benchmark teardown | [Chapter 36](36-benchmark-teardown.md) |
+
+Part XIV goes one level down: it builds the core of an engine in the style of vLLM and SGLang (paged KV cache, continuous-batching scheduler, radix prefix cache), starting with [Chapter 43](43-paged-kv-cache.md). Its chapters are numbered from 43 because Chapters 41 and 42 are reserved for Part XIII.
 
 The Triton book is at <https://maximumbeings.github.io/triton-from-first-principles/>.
 
