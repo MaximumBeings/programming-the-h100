@@ -1,0 +1,3824 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/39-complexity-router/">
+      
+      
+        <link rel="prev" href="../38-semantic-cache/">
+      
+      
+        <link rel="next" href="../40-gpu-autoscaler/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>39. Multi-Model Complexity Router — Entropy, Calibration, Cost - Programming the H100: CUDA, CuTe, and CUTLASS from First Principles</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/image-viewer.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-39-multi-model-complexity-router-entropy-calibration-cost" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-header__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              39. Multi-Model Complexity Router — Entropy, Calibration, Cost
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-nav__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../review-fixes-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 Review Corrections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 H100 Revalidation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../revalidation-2026-11-18/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cutlass-workshop-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    H100 CuTe/CUTLASS Workshop Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eight-gpu-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eight-A100 Training Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    B200 Compatibility Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — Introductory CuTe
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — Introductory CuTe
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cute-strides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Strides, Storage and Memory Addresses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cute-layout-algebra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hierarchical Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../18-cute-tensors-tiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    18. Tensors, Slicing & Predication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../19-cta-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    19. CTA and Byte-Address Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_18" >
+        
+          
+          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_18">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20-tiled-copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20. Thread Ownership & Tiled Copy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21-mma-atoms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    21. MMA Atoms & Register Fragments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../22-shared-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    22. Shared Layouts, Banks & Swizzles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../23-gemm-construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    23. Build a Complete Tiled GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../24-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    24. CUTLASS Collective-Builder GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../25-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    25. Hopper Pipelines & Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../26-epilogue-fusion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    26. Epilogue Fusion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../27-precision-block-scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    27. Precision & Block Scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../28-benchmarking-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    28. Benchmarking & Framework Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../29-workbook-capstone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    29. Worked Labs & Capstone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30-cutlass-attention-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XII — Inference Systems on Hopper
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XII — Inference Systems on Hopper
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-systems-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview and the Twelve Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../32-inference-engine-and-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    32. Inference Engine Anatomy and the Measurement Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../33-moe-expert-parallel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    33. MoE Expert Parallelism — Sharding, All-to-All and Load Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../34-kv-cache-offloading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    34. Hierarchical KV-Cache Offloading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../35-disaggregated-prefill-decode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    35. Disaggregated Prefill/Decode over RDMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../36-benchmark-teardown/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../37-speculative-decoding-70b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    37. Speculative Decoding at 70B — Multi-GPU Cost Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_22" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XIII — Hardware-Agnostic Inference Systems
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_22">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XIII — Hardware-Agnostic Inference Systems
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../38-semantic-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    38. Semantic Cache — Thresholds, False Hits, Economics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    39. Multi-Model Complexity Router — Entropy, Calibration, Cost
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    39. Multi-Model Complexity Router — Entropy, Calibration, Cost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#391-what-entropy-means-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.1 What "entropy" means here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#392-the-synthetic-world" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.2 The synthetic world
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#393-self-tests-21-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.3 Self-tests (21, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#394-how-informative-is-the-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.4 How informative is the feature?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#395-the-costquality-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.5 The cost–quality frontier
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#396-calibrating-the-threshold-without-fooling-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.6 Calibrating the threshold without fooling yourself
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#397-distribution-shift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.7 Distribution shift
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#398-when-does-the-router-pay-at-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.8 When does the router pay at all?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#399-runbook-measuring-it-on-a-real-model-pair-untested-on-a-real-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.9 Runbook: measuring it on a real model pair (UNTESTED on a real pair)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3910-failure-catalogue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.10 Failure catalogue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3911-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.11 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="39.11 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3912-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.12 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../40-gpu-autoscaler/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    40. Queue-Based GPU Autoscaling with KEDA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_23" >
+        
+          
+          <label class="md-nav__link" for="__nav_23" id="__nav_23_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XIV — Building an Inference Engine from Scratch
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_23_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_23">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XIV — Building an Inference Engine from Scratch
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../43-paged-kv-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    43. A Paged KV Cache from Scratch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_24" >
+        
+          
+          <label class="md-nav__link" for="__nav_24" id="__nav_24_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blackwell Appendix
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_24_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_24">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Blackwell Appendix
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native B200 — UMMA, GEMM and Attention
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-fp4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native FP4 — NVFP4 and MXFP4 Formats and Emulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#391-what-entropy-means-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.1 What "entropy" means here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#392-the-synthetic-world" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.2 The synthetic world
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#393-self-tests-21-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.3 Self-tests (21, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#394-how-informative-is-the-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.4 How informative is the feature?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#395-the-costquality-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.5 The cost–quality frontier
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#396-calibrating-the-threshold-without-fooling-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.6 Calibrating the threshold without fooling yourself
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#397-distribution-shift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.7 Distribution shift
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#398-when-does-the-router-pay-at-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.8 When does the router pay at all?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#399-runbook-measuring-it-on-a-real-model-pair-untested-on-a-real-pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.9 Runbook: measuring it on a real model pair (UNTESTED on a real pair)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3910-failure-catalogue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.10 Failure catalogue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3911-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.11 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="39.11 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3912-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        39.12 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/39-complexity-router.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="chapter-39-multi-model-complexity-router-entropy-calibration-cost">Chapter 39 — Multi-Model Complexity Router: Entropy, Calibration, Cost<a class="headerlink" href="#chapter-39-multi-model-complexity-router-entropy-calibration-cost" title="Permanent link">&para;</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Evidence status</p>
+<p><strong>Run on CPU, in a synthetic world:</strong> the entropy feature, the routing and cost accounting, the calibration procedure, a real-data <code>calibrate</code> command, and 21 self-tests (<code>ch39_complexity_router.py</code>).
+<strong>Invented:</strong> both "models" and all queries. Each query has a latent difficulty <em>d</em>; the small and large models answer correctly with made-up probabilities that depend on <em>d</em>; the small model's token logits are synthetic. Every number below is a property of that world, <strong>not of any real model pair</strong>. Section 39.9 is the procedure for measuring the real numbers; it is <strong>UNTESTED</strong> on a real model pair.
+Sample outputs vary with seeds; the self-tests assert properties, not these exact numbers.</p>
+</div>
+<p>A complexity router sends easy queries to a small, cheap model and hard ones to a large, expensive one. The project brief says to route on "entropy". This chapter fixes what that means, shows how to choose the threshold without fooling yourself, and measures when the router actually saves money. In this synthetic world it saves <strong>less than you would hope</strong>, and the reasons are the useful part.</p>
+<h2 id="391-what-entropy-means-here">39.1 What "entropy" means here<a class="headerlink" href="#391-what-entropy-means-here" title="Permanent link">&para;</a></h2>
+<p>"Entropy" is ambiguous until you fix five things. We fix them:</p>
+<table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>Definition used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Which distribution</td>
+<td>the <strong>small</strong> model's next-token distribution, <code>softmax(logits)</code>, temperature 1</td>
+</tr>
+<tr>
+<td>Which positions</td>
+<td>the first <strong>K = 8</strong> greedily decoded tokens of the small model's answer</td>
+</tr>
+<tr>
+<td>Aggregation</td>
+<td><strong>mean</strong> over those K positions</td>
+</tr>
+<tr>
+<td>Units</td>
+<td><strong>nats</strong> (natural log). Divide by ln 2 for bits</td>
+</tr>
+<tr>
+<td>Range</td>
+<td>0 ≤ H ≤ ln V; for V = 64, ln V = 4.159 nats</td>
+</tr>
+</tbody>
+</table>
+<p>Formally, for one position with probabilities p_v: H = −Σ_v p_v ln p_v. The router feature is the mean of H over the K positions. A threshold τ (in nats) sends a query to the large model when the feature exceeds τ.</p>
+<p><strong>Consequences of that definition.</strong></p>
+<ul>
+<li>The small model must run first, for K tokens, to produce the feature. Unrouted queries simply let it finish its answer (cost <code>c_s</code>). Routed queries waste the K-token prefix and then pay the large model: <code>k·c_s + c_l</code>, where <strong>k = cost of the K-token prefix / cost of a full small answer</strong>, between 0 and 1. With routed fraction <em>f</em>, cost relative to always-large is <code>((1−f)·c_s + f·(k·c_s + c_l)) / c_l</code>. <strong>k = 1 is the worst case</strong> (the whole small answer is produced before escalating, as in a cascade) and an upper bound on cost; a short prefix of a long answer has k well below 1. Routed queries also pay extra <strong>latency</strong>: the small model's prefill plus K decode steps before escalation.</li>
+<li>τ is specific to the small model, its tokenizer and vocabulary, the prompt template, and the sampling temperature. Change any of them and τ must be recalibrated.</li>
+<li>An API that returns only the top-k logprobs gives you a <em>truncated</em> entropy (renormalised over k tokens), which is not the same quantity. Use the same truncation at calibration and at serving.</li>
+</ul>
+<p><strong>Hand check.</strong> A three-way distribution (0.5, 0.25, 0.25) has H = 0.5 ln 2 + 2 × 0.25 ln 4 = 0.3466 + 0.6931 = 1.0397 nats, which is 1.5 bits (Exercise 1).</p>
+<h2 id="392-the-synthetic-world">39.2 The synthetic world<a class="headerlink" href="#392-the-synthetic-world" title="Permanent link">&para;</a></h2>
+<p>Difficulty d ~ Beta(2, 3). The small model answers correctly with probability <code>0.97 − 0.85 d</code>, the large model with <code>0.98 − 0.25 d</code> (both clipped to [0.02, 1]). The small model's logits are Gaussian noise plus a boost on one token; the boost shrinks with <em>d</em> and carries per-query noise, so easy queries tend to give peaked, low-entropy distributions and the feature is informative but imperfect. A second, weaker baseline feature, prompt length, is also generated.</p>
+<h2 id="393-self-tests-21-all-pass">39.3 Self-tests (21, all pass)<a class="headerlink" href="#393-self-tests-21-all-pass" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>What is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entropy (6)</td>
+<td>uniform = ln V; one-hot = 0; 0 ≤ H ≤ ln V on random logits; shift invariance; fair coin = ln 2; flatter means larger H</td>
+</tr>
+<tr>
+<td>World (2)</td>
+<td>corr(H, d) is positive and below 1; large model beats small</td>
+</tr>
+<tr>
+<td>Routing (3)</td>
+<td>routed fraction nonincreasing in τ; τ = −∞ equals always-large exactly; τ = +∞ equals always-small exactly</td>
+</tr>
+<tr>
+<td>AUC (2)</td>
+<td>oracle ≥ entropy &gt; length &gt; 0.5; a constant score has AUC exactly 0.5</td>
+</tr>
+<tr>
+<td>Cost (4)</td>
+<td>hand computations at k = 1 and k = 0.2; routing everything costs (k·c_s + c_l)/c_l, never below 1; break-even price ratio <code>1 + f·k/(1−f)</code> equals 6.25 at k = 1 and 2.05 at k = 0.2 and the router then costs exactly 1.0</td>
+</tr>
+<tr>
+<td>Calibration (4)</td>
+<td>the chosen τ meets its own criterion on validation (weak, true by construction); conservative τ ≤ naive τ (a theorem, since SE ≥ 0); <strong>generalisation</strong>: over 100 splits, scored on 100 000 fresh queries, the conservative rule violates the 2-point target in 8/100 and the naive rule in 55/100; the <code>calibrate</code> file entry point works on an exported jsonl</td>
+</tr>
+</tbody>
+</table>
+<h2 id="394-how-informative-is-the-feature">39.4 How informative is the feature?<a class="headerlink" href="#394-how-informative-is-the-feature" title="Permanent link">&para;</a></h2>
+<p>Sample output on 60 000 queries:</p>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>always-small quality</td>
+<td>0.628</td>
+</tr>
+<tr>
+<td>always-large quality</td>
+<td>0.878</td>
+</tr>
+<tr>
+<td>corr(H, d)</td>
+<td>0.784</td>
+</tr>
+<tr>
+<td>AUC of oracle <em>d</em> for "small model wrong"</td>
+<td>0.706</td>
+</tr>
+<tr>
+<td>AUC of entropy</td>
+<td>0.668</td>
+</tr>
+<tr>
+<td>AUC of prompt length</td>
+<td>0.630</td>
+</tr>
+</tbody>
+</table>
+<p>AUC 0.668 means: pick one query the small model got wrong and one it got right; the wrong one has the higher entropy 66.8% of the time. Even the oracle that knows <em>d</em> exactly reaches only 0.706, because in this world the small model errs at random even on easy queries (its accuracy at <em>d</em> = 0 is 0.97, at <em>d</em> = 0.5 it is 0.545). <strong>A router cannot predict what is not predictable.</strong> This ceiling decides everything below.</p>
+<h2 id="395-the-costquality-frontier">39.5 The cost–quality frontier<a class="headerlink" href="#395-the-costquality-frontier" title="Permanent link">&para;</a></h2>
+<p>Quality as a function of the routed fraction, c_small = 1, c_large = 15. The cost column is the <strong>worst case k = 1</strong> (relative to always-large); see 39.8 for a short prefix:</p>
+<table>
+<thead>
+<tr>
+<th>routed</th>
+<th>oracle <em>d</em></th>
+<th>entropy</th>
+<th>length</th>
+<th>random</th>
+<th>cost ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.10</td>
+<td>0.675</td>
+<td>0.670</td>
+<td>0.667</td>
+<td>0.652</td>
+<td>0.167</td>
+</tr>
+<tr>
+<td>0.20</td>
+<td>0.714</td>
+<td>0.707</td>
+<td>0.701</td>
+<td>0.677</td>
+<td>0.267</td>
+</tr>
+<tr>
+<td>0.30</td>
+<td>0.747</td>
+<td>0.741</td>
+<td>0.731</td>
+<td>0.703</td>
+<td>0.367</td>
+</tr>
+<tr>
+<td>0.40</td>
+<td>0.777</td>
+<td>0.769</td>
+<td>0.758</td>
+<td>0.727</td>
+<td>0.467</td>
+</tr>
+<tr>
+<td>0.50</td>
+<td>0.803</td>
+<td>0.794</td>
+<td>0.785</td>
+<td>0.752</td>
+<td>0.567</td>
+</tr>
+<tr>
+<td>0.70</td>
+<td>0.845</td>
+<td>0.837</td>
+<td>0.828</td>
+<td>0.802</td>
+<td>0.767</td>
+</tr>
+<tr>
+<td>1.00</td>
+<td>0.878</td>
+<td>0.878</td>
+<td>0.878</td>
+<td>0.878</td>
+<td>1.067</td>
+</tr>
+</tbody>
+</table>
+<p>Entropy beats random and beats prompt length, and sits close to the oracle. But all curves are only modestly above the straight line from (0, 0.628) to (1, 0.878). At 50% routed, entropy gets 0.794 against random's 0.752: 4.2 points of quality for the same cost. Note the last row: at k = 1, routing everything costs <strong>1.067</strong>, more than always-large, because the small model ran first. With a K-token prefix that is 20% of an answer (k = 0.2) it costs 1.013, still above 1.</p>
+<h2 id="396-calibrating-the-threshold-without-fooling-yourself">39.6 Calibrating the threshold without fooling yourself<a class="headerlink" href="#396-calibrating-the-threshold-without-fooling-yourself" title="Permanent link">&para;</a></h2>
+<p>The goal: the cheapest router whose quality is within δ = 0.02 of always-large. Procedure:</p>
+<ol>
+<li>Split labelled data into <strong>validation</strong> (choose τ) and <strong>test</strong> (report). Never report on the data that chose τ.</li>
+<li>For each candidate τ, compute the per-query <strong>paired gap</strong> <code>router_correct − large_correct</code>. Pairing matters: both models answered the same queries, so the gap's standard error is much smaller than comparing two independent accuracies (here the gap's standard deviation is 0.186).</li>
+<li><strong>Naive:</strong> take the largest τ with mean gap ≥ −δ.
+   <strong>Conservative:</strong> take the largest τ with <code>mean gap − 1.645·SE ≥ −δ</code> (one-sided 95% lower bound).</li>
+</ol>
+<p><strong>How to score a threshold.</strong> The violation rate must be measured on a <em>large fresh set</em>, not on the 2000-query test half that came out of the same split, because a small test half has its own standard error (about 0.005) and so reports violations that are really test noise. Each chosen τ below is scored on both: its own 2000-query test half, and a fresh 100 000-query set from the same generator (a good approximation of its true gap).</p>
+<table>
+<thead>
+<tr>
+<th>validation n</th>
+<th>splits</th>
+<th>method</th>
+<th>P(test-half gap &lt; −0.02)</th>
+<th><strong>P(fresh-set gap &lt; −0.02)</strong></th>
+<th>mean fresh gap</th>
+<th>routed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1000</td>
+<td>300</td>
+<td>naive</td>
+<td>0.500</td>
+<td>0.473</td>
+<td>−0.0204</td>
+<td>0.825</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>300</td>
+<td>conservative</td>
+<td>0.117</td>
+<td><strong>0.043</strong></td>
+<td>−0.0120</td>
+<td>0.885</td>
+</tr>
+<tr>
+<td>2000</td>
+<td>300</td>
+<td>naive</td>
+<td>0.547</td>
+<td>0.437</td>
+<td>−0.0199</td>
+<td>0.827</td>
+</tr>
+<tr>
+<td>2000</td>
+<td>300</td>
+<td>conservative</td>
+<td>0.090</td>
+<td><strong>0.033</strong></td>
+<td>−0.0137</td>
+<td>0.872</td>
+</tr>
+<tr>
+<td>5000</td>
+<td>120</td>
+<td>naive</td>
+<td>0.467</td>
+<td>0.300</td>
+<td>−0.0188</td>
+<td>0.834</td>
+</tr>
+<tr>
+<td>5000</td>
+<td>120</td>
+<td>conservative</td>
+<td>0.100</td>
+<td><strong>0.033</strong></td>
+<td>−0.0150</td>
+<td>0.862</td>
+</tr>
+<tr>
+<td>20000</td>
+<td>40</td>
+<td>naive</td>
+<td>0.450</td>
+<td>0.200</td>
+<td>−0.0189</td>
+<td>0.832</td>
+</tr>
+<tr>
+<td>20000</td>
+<td>40</td>
+<td>conservative</td>
+<td>0.075</td>
+<td><strong>0.000</strong></td>
+<td>−0.0169</td>
+<td>0.847</td>
+</tr>
+</tbody>
+</table>
+<p>Read the fresh-set column. The naive rule sits on the boundary, so it violates the target in <strong>20–47%</strong> of splits (it improves with more validation data but never reaches the nominal rate). The conservative rule violates in <strong>0–4.3%</strong>, consistent with its nominal one-sided 5%. (The splits are few at 40 for the last row, so "0.000" means "none in 40", not "never".) The test-half column overstates both (9–12% for the conservative rule) because a 2000-query test half has its own sampling noise; it is a poor measure of whether a threshold generalises.</p>
+<p><strong>Validation size trades cost, not validity.</strong> More validation data lets the conservative rule route fewer queries (88.5% at n = 1000, 84.7% at n = 20 000) because its safety margin <code>1.645·SE</code> shrinks. A rough guide: for a margin of δ/2 = 0.01 you need <code>(2 × 1.645 × 0.186 / 0.02)² ≈ 940</code> validation queries. The conservative rule costs routed fraction (0.872 vs 0.827 at n = 2000, which at k = 1 and a 15× price gap is a cost ratio of about 0.94 vs 0.89), and that is the price of not breaking the quality target.</p>
+<h2 id="397-distribution-shift">39.7 Distribution shift<a class="headerlink" href="#397-distribution-shift" title="Permanent link">&para;</a></h2>
+<p>Threshold calibrated on Beta(2,3) difficulty (τ = 1.408 nats), deployed on other traffic. Because <code>gap = (unrouted fraction) × (small-model error − large-model error in the unrouted slice)</code>, the table shows both factors:</p>
+<table>
+<thead>
+<tr>
+<th>traffic</th>
+<th>routed</th>
+<th>quality</th>
+<th>always-large</th>
+<th>gap</th>
+<th>unrouted slice</th>
+<th>small-model error in it</th>
+<th>large-model error in it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>same, Beta(2,3)</td>
+<td>0.841</td>
+<td>0.859</td>
+<td>0.877</td>
+<td>−0.0185</td>
+<td>0.159</td>
+<td>0.179</td>
+<td>0.063</td>
+</tr>
+<tr>
+<td>harder, Beta(3,2)</td>
+<td>0.964</td>
+<td>0.821</td>
+<td>0.827</td>
+<td>−0.0060</td>
+<td>0.036</td>
+<td>0.240</td>
+<td>0.074</td>
+</tr>
+<tr>
+<td>much harder, Beta(5,2)</td>
+<td>0.993</td>
+<td>0.800</td>
+<td>0.801</td>
+<td>−0.0016</td>
+<td>0.007</td>
+<td>0.338</td>
+<td>0.120</td>
+</tr>
+<tr>
+<td>easier, Beta(2,5)</td>
+<td>0.724</td>
+<td>0.881</td>
+<td>0.907</td>
+<td><strong>−0.0266</strong></td>
+<td>0.276</td>
+<td>0.158</td>
+<td>0.062</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hand check, easier traffic:</strong> 0.276 × (0.158 − 0.062) = 0.0265 ✓. Same traffic: 0.159 × (0.179 − 0.063) = 0.0184 ✓.</p>
+<p>What this shows: the breach on easier traffic comes from the <strong>larger unrouted slice</strong> (27.6% instead of 15.9%), not from worse errors inside it (the small model's error rate in the unrouted slice is actually <em>lower</em>, 0.158 against 0.179). A fixed τ leaves more queries unrouted when the traffic is easier, and each unrouted query carries a quality cost that the calibration allowed for only at the calibration traffic mix. Note also that the same-traffic gap (−0.0185) was already only 0.0015 inside the target. Harder traffic is safe but expensive: nearly everything is escalated. Monitor the routed fraction, the quality of the unrouted slice (sampled and judged), and the feature distribution against the calibration set, and re-run calibration on a schedule and on every change of small model, prompt template or temperature.</p>
+<h2 id="398-when-does-the-router-pay-at-all">39.8 When does the router pay at all?<a class="headerlink" href="#398-when-does-the-router-pay-at-all" title="Permanent link">&para;</a></h2>
+<p>At the calibrated routed fraction f = 0.84, the router costs <code>((1−f)·c_s + f·(k·c_s + c_l))/c_l</code> of always-large. It is below 1 only if <code>c_l/c_s &gt; 1 + f·k/(1−f)</code>: <strong>6.25 at k = 1</strong> (the printed 6.24 uses the unrounded f) and <strong>2.05 at k = 0.2</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>c_l / c_s</th>
+<th>cost ratio, k = 1 (worst case)</th>
+<th>cost ratio, k = 0.2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>1.340</td>
+<td>1.004</td>
+</tr>
+<tr>
+<td>5</td>
+<td>1.040</td>
+<td>0.905</td>
+</tr>
+<tr>
+<td>10</td>
+<td>0.940</td>
+<td>0.873</td>
+</tr>
+<tr>
+<td>15</td>
+<td>0.906</td>
+<td>0.862</td>
+</tr>
+<tr>
+<td>30</td>
+<td>0.873</td>
+<td>0.851</td>
+</tr>
+<tr>
+<td>100</td>
+<td>0.850</td>
+<td>0.843</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hand checks, c_l/c_s = 15.</strong> k = 1: (0.16 × 1 + 0.84 × 16)/15 = 13.6/15 = 0.9067 ✓. k = 0.2: (0.16 × 1 + 0.84 × 15.2)/15 = 12.928/15 = 0.8619 ✓.</p>
+<p>The earlier version of this chapter charged every query the full small-model cost, which is the k = 1 worst case. How large k is depends on your answer length: it is the cost of prefill plus K = 8 decode steps relative to the whole small answer, so measure it. Whatever k is, the router also adds latency to every routed query (the small model's prefill and K decode steps before escalation), which the cost ratio does not show.</p>
+<p>Honest conclusion for this world: holding quality within 2 points of the large model, a feature this weak routes 84% of traffic upward and saves 5–14% at a 15× price gap depending on k. A complexity router earns its keep only when (a) the small model's errors are predictable (AUC well above 0.67), (b) a large fraction of traffic is genuinely easy, and (c) the price gap is large. Measure all three before building it.</p>
+<h2 id="399-runbook-measuring-it-on-a-real-model-pair-untested-on-a-real-pair">39.9 Runbook: measuring it on a real model pair (UNTESTED on a real pair)<a class="headerlink" href="#399-runbook-measuring-it-on-a-real-model-pair-untested-on-a-real-pair" title="Permanent link">&para;</a></h2>
+<p>The calibration code and the file reader are tested on synthetic data; the model calls are not.</p>
+<ol>
+<li><strong>Sample traffic.</strong> A representative sample, stratified by task type. Use at least the validation size from 39.6 (about 940 for a 0.01 margin at this gap spread, more if your gap has a wider spread) plus an equal test half. Run <strong>both</strong> models on every query.</li>
+<li><strong>Judge.</strong> Score each answer with a rubric, exact match, or a judge model; spot-check by hand. The router can only be as good as this label.</li>
+<li><strong>Log the feature.</strong> For the small model, request logprobs for the first K = 8 tokens. With vLLM use <code>logprobs</code> on the OpenAI-compatible endpoint; servers return only top-k logprobs, so compute the entropy of the renormalised top-k and use the <strong>same k</strong> at calibration and at serving. Write one JSON object per query to a file: <code>{"entropy": 1.37, "small_correct": true, "large_correct": true}</code> (entropy in nats, averaged over the K positions).</li>
+<li><strong>Check the ceiling.</strong> <code>python3 /full/path/ch39_complexity_router.py calibrate /full/path/records.jsonl --delta 0.02 --seed 0 --c-small 1 --c-large 15 --prefix-frac 0.2</code> prints <code>auc_small_wrong</code> among its fields. If it is near 0.5, stop: no threshold will help. The same command prints the conservative τ, the routed fraction, the test-half gap with its one-sided 95% lower bound, the cost ratio at k = 1 and at your <code>--prefix-frac</code>, both break-even price ratios, and the validation size you would need for a δ/2 margin.</li>
+<li><strong>Repeat with different <code>--seed</code> values</strong> and compare the chosen τ: a threshold that moves a lot between seeds means too little data.</li>
+<li><strong>Measure k and the latency.</strong> Time the small model's prefill plus 8 decode steps against a full answer on your hardware.</li>
+<li><strong>Shadow, then canary.</strong> Log what the router would have done while serving everything from the large model. Then canary 1–5% with a kill switch, and track unrouted-slice quality separately from overall quality.</li>
+</ol>
+<h2 id="3910-failure-catalogue">39.10 Failure catalogue<a class="headerlink" href="#3910-failure-catalogue" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Cause</th>
+<th>Defence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Threshold violates target in production</td>
+<td>naive calibration; winner's curse</td>
+<td>conservative rule; separate test set</td>
+</tr>
+<tr>
+<td>Silent quality loss on easy traffic</td>
+<td>confident small model that is wrong</td>
+<td>audit the unrouted slice; add a cheap verifier for high-stakes classes</td>
+</tr>
+<tr>
+<td>Saving disappears on hard traffic</td>
+<td>router escalates nearly everything</td>
+<td>track routed fraction; alert when it passes ~90%</td>
+</tr>
+<tr>
+<td>τ stops working after a change</td>
+<td>entropy depends on model, prompt template, temperature, tokenizer</td>
+<td>recalibrate on any change</td>
+</tr>
+<tr>
+<td>Router costs more than always-large</td>
+<td>the prefix is wasted on routed queries; low price gap</td>
+<td>compute break-even <code>1 + f·k/(1−f)</code> before building</td>
+</tr>
+<tr>
+<td>Truncated logprobs</td>
+<td>API returns top-k only</td>
+<td>calibrate and serve with the same k</td>
+</tr>
+<tr>
+<td>Judge error</td>
+<td>label noise treated as truth</td>
+<td>check judge against human labels on a sample</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3911-exercises">39.11 Exercises<a class="headerlink" href="#3911-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Compute the entropy of (0.5, 0.25, 0.25) in nats and in bits.</li>
+<li>The calibrated threshold is 1.408 nats. Express it in bits, and describe what a per-position entropy near 1.4 nats looks like in this synthetic world (Experiment 6).</li>
+<li>What does the router cost relative to always-large if it routes every query, with c_small = 1, c_large = 15, at k = 1 and at k = 0.2?</li>
+<li>The naive rule violated the 2-point target in 44% of splits on the fresh set (n_val = 2000). Why not about 5%, and why does the conservative rule not violate more than about 4%?</li>
+<li>Easier traffic broke the target but harder traffic did not. Using the decomposition in 39.7, explain, and say what you would monitor.</li>
+<li>Entropy AUC is 0.668. If you could raise it to 0.85 with a better feature, which quantities in the cost tables would change?</li>
+<li><strong>Code.</strong> Add a cascade variant: the small model answers; a verifier returns a confidence; low-confidence answers go to the large model. Write the cost formula, including the verifier.</li>
+</ol>
+<h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
+<ol>
+<li>H = 0.5 ln 2 + 0.25 ln 4 + 0.25 ln 4 = 0.3466 + 0.3466 + 0.3466 = 1.0397 nats. Divide by ln 2 = 0.6931: 1.5 bits. (Check: 0.5 × 1 + 0.5 × 2 = 1.5 bits.)</li>
+<li>1.408 / 0.6931 = 2.031 bits, about a third of the maximum ln 64 = 4.159 nats. In this world (Experiment 6) a per-position entropy of 1.36 nats is a distribution with one dominant token at about 0.76 probability and about 17% of the mass spread thinly beyond the top five of the 64 tokens; 2.11 nats is a top token near 0.58. Note that the feature is a mean over 8 positions, so a single position can be far from the mean. The perplexity <code>e^1.408 = 4.09</code> is an arithmetic equivalence ("as uncertain as 4 equally likely tokens"), not a description of where the mass sits.</li>
+<li>k = 1: (1 + 15)/15 = 1.0667, 6.7% more than always-large. k = 0.2: (0.2 + 15)/15 = 1.0133, 1.3% more. In both cases routing everything is worse than not routing, because the prefix was wasted.</li>
+<li>A threshold chosen as the edge of "mean gap ≥ −δ" among 200 candidates has its validation gap at the boundary by construction, helped by selection on noise (winner's curse). On fresh data the true gap is below the boundary a large fraction of the time (44% here, 20% at n_val = 20 000). The conservative rule asks for the one-sided 95% lower bound to clear the boundary, so the true gap falls below −δ at about the nominal 5% (measured 0–4.3%). The 2000-query test half reports about 9–12% for the conservative rule only because the test half itself has a standard error of about 0.005; scoring on a large fresh set removes that noise.</li>
+<li>By the decomposition gap = unrouted fraction × (small error − large error in the slice): easier traffic leaves 27.6% unrouted instead of 15.9%, and the small model's error in the slice is 0.158 (not worse than the calibration traffic's 0.179), so the gap grows from 0.0185 to 0.0265. Harder traffic leaves only 3.6% unrouted, so the gap shrinks even though the small model errs more in that slice (0.240). Monitor routed fraction, quality of the unrouted slice (sampled and judged), and the feature distribution against the calibration set.</li>
+<li>The routed fraction needed to reach the quality target would fall (fewer queries need escalating), which lowers the cost ratio and moves the break-even price ratio <code>1 + f·k/(1 − f)</code> down toward 1. The always-large and always-small quality columns do not change.</li>
+<li>Cost per request = c_small + c_verifier + f_escalated × c_large, relative to always-large: (c_s + c_v + f·c_l)/c_l. It pays only if the verifier is cheap relative to the large model and its errors are less correlated with the small model's than entropy is. Measure verifier AUC the same way as in 39.4.</li>
+</ol>
+<h2 id="3912-summary">39.12 Summary<a class="headerlink" href="#3912-summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fix the definition: which model, which tokens, which aggregation, which units. τ is meaningless without them.</li>
+<li>The K-token prefix is always paid and wasted on routed queries, so routing everything costs more than not routing. k = 1 is the worst case; measure k.</li>
+<li>Calibrate on held-out data with a paired, conservative bound, and score the threshold on a large fresh set. The naive choice violated its target in 20–47% of splits; the conservative one in 0–4%.</li>
+<li>The ceiling is how predictable the small model's errors are. In this world it was low, and the router saved 5–14% at a 15× price gap depending on k.</li>
+<li>All numbers here are synthetic. Run Section 39.9 on your real model pair before building anything on this.</li>
+</ul>
+<h2 id="files">Files<a class="headerlink" href="#files" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Code: <code>docs/examples/inference-systems/ch39_complexity_router.py</code></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../38-semantic-cache/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 38. Semantic Cache — Thresholds, False Hits, Economics">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                38. Semantic Cache — Thresholds, False Hits, Economics
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../40-gpu-autoscaler/" class="md-footer__link md-footer__link--next" aria-label="Next: 40. Queue-Based GPU Autoscaling with KEDA">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                40. Queue-Based GPU Autoscaling with KEDA
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/image-viewer.js"></script>
+      
+    
+  </body>
+</html>

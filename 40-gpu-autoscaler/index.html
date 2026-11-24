@@ -1,0 +1,4277 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A hardware-level companion guide to the NVIDIA Hopper architecture — from the H100 die and its memory hierarchy, through inline PTX, TMA, mbarrier pipelines and WGMMA tensor cores, up to warp-specialized kernel design, multi-GPU NCCL, Nsight profiling and CUTLASS/CuTe.">
+      
+      
+        <meta name="author" content="Oluwaseyi Awoga">
+      
+      
+        <link rel="canonical" href="https://maximumbeings.github.io/programming-the-h100/40-gpu-autoscaler/">
+      
+      
+        <link rel="prev" href="../39-complexity-router/">
+      
+      
+        <link rel="next" href="../43-paged-kv-cache/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>40. Queue-Based GPU Autoscaling with KEDA - Programming the H100: CUDA, CuTe, and CUTLASS from First Principles</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/image-viewer.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/code.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-40-queue-based-gpu-autoscaling-with-keda" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-header__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              40. Queue-Based GPU Autoscaling with KEDA
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="teal"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" class="md-nav__button md-logo" aria-label="Programming the H100: CUDA, CuTe, and CUTLASS from First Principles" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 4h12v1h3v2h-3v2h3v2h-3v2h3v2h-3v2h3v2h-3v1H6v-1H3v-2h3v-2H3v-2h3v-2H3V9h3V7H3V5h3zm5 11v3h1v-3zm2 0v3h1v-3zm2 0v3h1v-3z"/></svg>
+
+    </a>
+    Programming the H100: CUDA, CuTe, and CUTLASS from First Principles
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/maximumbeings/programming-the-h100" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    maximumbeings/programming-the-h100
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../review-fixes-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 Review Corrections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-2026-11-21/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 21 H100 Revalidation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started & Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../revalidation-2026-11-18/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 18 H100 Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cutlass-workshop-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    H100 CuTe/CUTLASS Workshop Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation & Final Audit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eight-gpu-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Eight-A100 Training Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    B200 Compatibility Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part I — The Machine
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part I — The Machine
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-h100-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. NVIDIA H100 GPU Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part II — The Instruction Layer
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part II — The Instruction Layer
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-clusters-inline-ptx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Clusters, Inline PTX, Data Types & Pointers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-asynchronicity-mbarrier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Asynchronicity, Barriers & the mbarrier Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part III — Moving Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part III — Moving Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-cutensormap-tma-swizzling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. cuTensorMap, TMA & Swizzling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-cp-async-bulk-l2-hinting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. cp.async.bulk, TMA Transfers & L2 Cache Hinting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IV — Tensor Cores
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IV — Tensor Cores
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-wgmma-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. WGMMA — Warp Group Matrix Multiply-Accumulate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-wgmma-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part V — Kernel Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part V — Kernel Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-kernel-design-part-1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Kernel Design, Warp Specialization & Pipelining
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-kernel-design-part-2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Pipelines, Epilogues & Persistent Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-stream-k-scheduling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Stream-K Scheduling & Multi-Kernel Launch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_15" id="__nav_15_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VI — Scaling Out
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VI — Scaling Out
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-multi-gpu-nccl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Multi-GPU Systems, NCCL & Distributed Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_16" id="__nav_16_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VII — Putting It to Work
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VII — Putting It to Work
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../12-flashattention-3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    12. FlashAttention-3 on the H100
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../13-nsight-compute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    13. Profiling with Nsight Compute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../14-nsight-systems/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    14. Application Profiling with Nsight Systems
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_17" >
+        
+          
+          <label class="md-nav__link" for="__nav_17" id="__nav_17_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part VIII — Introductory CuTe
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_17_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_17">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part VIII — Introductory CuTe
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../15-cute-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    15. CuTe Foundations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../16-cute-strides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    16. Strides, Storage and Memory Addresses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../17-cute-layout-algebra/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    17. Hierarchical Layout Algebra
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../18-cute-tensors-tiling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    18. Tensors, Slicing & Predication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../19-cta-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    19. CTA and Byte-Address Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_18" >
+        
+          
+          <label class="md-nav__link" for="__nav_18" id="__nav_18_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_18_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_18">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part IX — Intermediate CuTe and GEMM
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20-tiled-copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    20. Thread Ownership & Tiled Copy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21-mma-atoms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    21. MMA Atoms & Register Fragments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../22-shared-layouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    22. Shared Layouts, Banks & Swizzles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../23-gemm-construction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    23. Build a Complete Tiled GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../24-cutlass-gemm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    24. CUTLASS Collective-Builder GEMM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_19" >
+        
+          
+          <label class="md-nav__link" for="__nav_19" id="__nav_19_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_19_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_19">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part X — Advanced CUTLASS Workshop
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../25-cutlass-pipelines/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    25. Hopper Pipelines & Scheduling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../26-epilogue-fusion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    26. Epilogue Fusion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../27-precision-block-scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    27. Precision & Block Scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../28-benchmarking-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    28. Benchmarking & Framework Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../29-workbook-capstone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    29. Worked Labs & Capstone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_20" >
+        
+          
+          <label class="md-nav__link" for="__nav_20" id="__nav_20_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_20_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_20">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XI — CUTLASS FlashAttention
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30-cutlass-attention-foundations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    30. Attention from Layouts to Online Softmax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31-cutlass-hopper-fmha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    31. Hopper CUTLASS FMHA — Build, Trace and Validate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_21" >
+        
+          
+          <label class="md-nav__link" for="__nav_21" id="__nav_21_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XII — Inference Systems on Hopper
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_21_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_21">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XII — Inference Systems on Hopper
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-systems-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview and the Twelve Projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../32-inference-engine-and-harness/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    32. Inference Engine Anatomy and the Measurement Harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../33-moe-expert-parallel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    33. MoE Expert Parallelism — Sharding, All-to-All and Load Balance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../34-kv-cache-offloading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    34. Hierarchical KV-Cache Offloading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../35-disaggregated-prefill-decode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    35. Disaggregated Prefill/Decode over RDMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../36-benchmark-teardown/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    36. Public Benchmark Teardown — vLLM vs SGLang vs TensorRT-LLM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../37-speculative-decoding-70b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    37. Speculative Decoding at 70B — Multi-GPU Cost Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_22" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_22" id="__nav_22_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XIII — Hardware-Agnostic Inference Systems
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_22_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_22">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XIII — Hardware-Agnostic Inference Systems
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../38-semantic-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    38. Semantic Cache — Thresholds, False Hits, Economics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../39-complexity-router/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    39. Multi-Model Complexity Router — Entropy, Calibration, Cost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    40. Queue-Based GPU Autoscaling with KEDA
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    40. Queue-Based GPU Autoscaling with KEDA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#401-the-moving-parts-what-the-documentation-says" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.1 The moving parts (what the documentation says)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#402-the-model-in-this-chapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.2 The model in this chapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#403-self-tests-23-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.3 Self-tests (23, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#404-the-cold-start-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.4 The cold-start budget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#405-experiment-1-static-versus-autoscaled-one-hour-five-seeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.5 Experiment 1 — static versus autoscaled, one hour, five seeds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#406-where-the-overshoot-comes-from-a-causal-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.6 Where the overshoot comes from (a causal test)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#407-experiments-on-bursts-scale-to-zero-load-testing-flapping-and-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.7 Experiments on bursts, scale-to-zero, load testing, flapping and metrics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="40.7 Experiments on bursts, scale-to-zero, load testing, flapping and metrics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experiment-2-a-10-burst-2-20-reqs-for-120-s-at-t-600" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 2 — a 10× burst (2 → 20 req/s for 120 s at t = 600)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experiment-3-scale-to-zero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 3 — scale to zero
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experiment-4-testing-the-scaler-open-loop-versus-closed-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 4 — testing the scaler: open loop versus closed loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experiment-5-flapping-and-the-stabilization-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 5 — flapping and the stabilization window
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experiment-6-which-metric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 6 — which metric
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#408-failure-catalogue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.8 Failure catalogue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#409-manifest-and-runbook-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.9 Manifest and runbook (UNTESTED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4010-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.10 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="40.10 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4011-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.11 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_23" >
+        
+          
+          <label class="md-nav__link" for="__nav_23" id="__nav_23_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Part XIV — Building an Inference Engine from Scratch
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_23_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_23">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Part XIV — Building an Inference Engine from Scratch
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../43-paged-kv-cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    43. A Paged KV Cache from Scratch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_24" >
+        
+          
+          <label class="md-nav__link" for="__nav_24" id="__nav_24_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Blackwell Appendix
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_24_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_24">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Blackwell Appendix
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-b200/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native B200 — UMMA, GEMM and Attention
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appendix-blackwell-fp4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Native FP4 — NVFP4 and MXFP4 Formats and Emulation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#401-the-moving-parts-what-the-documentation-says" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.1 The moving parts (what the documentation says)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#402-the-model-in-this-chapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.2 The model in this chapter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#403-self-tests-23-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.3 Self-tests (23, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#404-the-cold-start-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.4 The cold-start budget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#405-experiment-1-static-versus-autoscaled-one-hour-five-seeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.5 Experiment 1 — static versus autoscaled, one hour, five seeds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#406-where-the-overshoot-comes-from-a-causal-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.6 Where the overshoot comes from (a causal test)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#407-experiments-on-bursts-scale-to-zero-load-testing-flapping-and-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.7 Experiments on bursts, scale-to-zero, load testing, flapping and metrics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="40.7 Experiments on bursts, scale-to-zero, load testing, flapping and metrics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experiment-2-a-10-burst-2-20-reqs-for-120-s-at-t-600" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 2 — a 10× burst (2 → 20 req/s for 120 s at t = 600)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experiment-3-scale-to-zero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 3 — scale to zero
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experiment-4-testing-the-scaler-open-loop-versus-closed-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 4 — testing the scaler: open loop versus closed loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experiment-5-flapping-and-the-stabilization-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 5 — flapping and the stabilization window
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#experiment-6-which-metric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experiment 6 — which metric
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#408-failure-catalogue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.8 Failure catalogue
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#409-manifest-and-runbook-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.9 Manifest and runbook (UNTESTED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4010-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.10 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="40.10 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4011-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        40.11 Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/maximumbeings/programming-the-h100/edit/main/docs/40-gpu-autoscaler.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="chapter-40-queue-based-gpu-autoscaling-with-keda">Chapter 40 — Queue-Based GPU Autoscaling with KEDA<a class="headerlink" href="#chapter-40-queue-based-gpu-autoscaling-with-keda" title="Permanent link">&para;</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Evidence status</p>
+<p><strong>Run on CPU, in a simulator:</strong> the scaling rules (modelled on the documented KEDA and Kubernetes HPA behaviour), the queue and billing accounting, 23 self-tests, and seven experiments (<code>ch40_gpu_autoscaler.py</code>). Experiment cells show the mean and, in brackets, the minimum–maximum over several seeds.
+<strong>Not run on any cluster.</strong> The workload (arrival rates, service times, cold-start times) and the GPU price ($4/GPU-hour) are <strong>assumed</strong>. The manifest and runbook in 40.9 are <strong>UNTESTED</strong>.
+<strong>What the simulator leaves out, and why it matters:</strong></p>
+<ul>
+<li><strong>One GPU per replica.</strong> A 70B model in BF16 has 140 GB of weights and does not fit one 80 GB H100, so a real replica is a tensor-parallel group and <strong>GPU-seconds here are replica-seconds</strong>: multiply by the tensor-parallel degree.</li>
+<li><strong>One global FIFO queue.</strong> Real vLLM pods behind a Service each keep their own queue; backlog already assigned to an old pod does not move to a new one, so real wake-up and burst latency is worse than shown.</li>
+<li><strong>No node provisioning.</strong> Time to get a GPU node, and any delay before the cluster autoscaler removes an idle node, are not modelled; the second would erode the savings from removing pods.</li>
+<li><strong>Fixed cold start</strong>, no image-pull variance, no readiness subtleties, 0.1 s time step.</li>
+</ul>
+</div>
+<p>GPU inference autoscaling is hard for one reason: <strong>a new replica is not capacity until it has loaded its weights</strong>, which takes tens of seconds to minutes, while the scaler decides every 15 seconds. Most of this chapter's results come from that gap, and several of them contradict the folklore "autoscaling saves money".</p>
+<h2 id="401-the-moving-parts-what-the-documentation-says">40.1 The moving parts (what the documentation says)<a class="headerlink" href="#401-the-moving-parts-what-the-documentation-says" title="Permanent link">&para;</a></h2>
+<p>Facts below are from the KEDA ScaledObject specification and the Kubernetes HPA documentation (links at the end).</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KEDA operator</td>
+<td>handles <strong>0 ↔ 1</strong> replicas (activation / deactivation)</td>
+</tr>
+<tr>
+<td>HPA controller</td>
+<td>handles <strong>1 ↔ N</strong>, driven by the metric KEDA exposes</td>
+</tr>
+<tr>
+<td><code>pollingInterval</code></td>
+<td>default <strong>30 s</strong>: how often KEDA checks each trigger. It governs 0 ↔ 1; the HPA polls on its own schedule (the controller manager's sync period, 15 s by default) for 1 ↔ N</td>
+</tr>
+<tr>
+<td><code>useCachedMetrics</code></td>
+<td>default <strong>false</strong>. When true, KEDA caches each trigger's metric for the polling interval so scaling respects it</td>
+</tr>
+<tr>
+<td><code>cooldownPeriod</code></td>
+<td>default <strong>300 s</strong>: wait after the trigger was last active before scaling to <strong>zero</strong>; it applies only to scaling to zero, so it does nothing when <code>minReplicaCount</code> &gt; 0</td>
+</tr>
+<tr>
+<td><code>minReplicaCount</code> / <code>maxReplicaCount</code></td>
+<td>default <strong>0</strong> / <strong>100</strong></td>
+</tr>
+<tr>
+<td><code>advanced.horizontalPodAutoscalerConfig.behavior</code></td>
+<td>passes scaling-behaviour settings straight to the HPA</td>
+</tr>
+<tr>
+<td>HPA default scale-up</td>
+<td>no stabilization window; per 15 s the larger of +100% or +4 pods (<code>selectPolicy: Max</code>)</td>
+</tr>
+<tr>
+<td>HPA default scale-down</td>
+<td><strong>300 s</strong> stabilization window; at most 100% per 15 s</td>
+</tr>
+</tbody>
+</table>
+<p>The stabilization window works as a rolling maximum: when metrics say "scale down", the HPA uses the highest desired replica count from the window.</p>
+<h2 id="402-the-model-in-this-chapter">40.2 The model in this chapter<a class="headerlink" href="#402-the-model-in-this-chapter" title="Permanent link">&para;</a></h2>
+<p><code>Scaler</code> implements those rules as pure logic:</p>
+<ul>
+<li>KEDA checks the trigger every 30 s. If replicas = 0 and the metric &gt; 0, it sets 1. If the metric has been 0 for 300 s and <code>min_replicas = 0</code>, it sets 0.</li>
+<li>Every 15 s the HPA computes <code>desired = ceil(metric / target)</code> for an external metric with an average-value target. It does nothing if the ratio <code>(metric/current)/target</code> is within 10% of 1. Scale-up per period is limited to <code>current + max(100% of current, 4)</code>. Scale-down uses the maximum desired value over the last 300 s and at most 100% per period. The result is clamped to <code>[max(min,1), max]</code>.</li>
+<li>By default the HPA reads a <strong>fresh</strong> metric at each sync (<code>useCachedMetrics: false</code>). <code>cached_metrics=True</code> models the alternative where it reads the value KEDA cached at its last 30 s poll.</li>
+<li>The default metric is <strong>outstanding requests = waiting + running</strong>; the target is <strong>3 per replica</strong> (each replica has 4 slots, so about 75% slot occupancy). A <code>rate</code> metric (arrivals in the last 30 s divided by 30, times the mean service time) is the Little's-law estimate of steady demand and <strong>ignores backlog</strong>; a <code>queue</code> metric counts only waiting requests.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Where the HPA formula comes from</p>
+<p>The Kubernetes documentation's general formula is <code>desiredReplicas = ceil(currentReplicas × currentMetric / desiredMetric)</code>. For an external metric with an <code>AverageValue</code> target the controller divides the total by the replica count first, which makes the result <code>ceil(total / target)</code>. The simulator uses the latter.</p>
+</div>
+<h2 id="403-self-tests-23-all-pass">40.3 Self-tests (23, all pass)<a class="headerlink" href="#403-self-tests-23-all-pass" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>What is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HPA arithmetic (4)</td>
+<td>metric 30 / target 3 from 4 replicas goes to 8 (the scale-up cap), not 10; the path from 1 replica is 5, 10, 20, 40, 80, 100 (clamped at max); 10% tolerance in and just outside</td>
+</tr>
+<tr>
+<td>Stabilization (2)</td>
+<td>with a 300 s window the replica count holds, then falls; with no window it falls at once</td>
+</tr>
+<tr>
+<td>KEDA (4)</td>
+<td>activation 0 → 1; scale to zero only after 300 s idle (the 11th idle poll, not before); <code>min=1</code> never reaches zero; a request during cooldown resets it</td>
+</tr>
+<tr>
+<td>Accounting (6)</td>
+<td>static N: GPU-seconds = N × horizon exactly; no negative wait; with ample capacity every arrival starts and finishes; concurrency never exceeds replicas × slots; busy slot-seconds equal total service time; sojourn = wait + service</td>
+</tr>
+<tr>
+<td>Billing through scaling (2)</td>
+<td>with a scripted scaler and no traffic: GPU-seconds equal 2 × 600 plus 3 × (time the extra replicas existed) across a scale-up and a drain, and across a scale-up whose still-warming pods are cancelled</td>
+</tr>
+<tr>
+<td>Metric timing (1)</td>
+<td>a spike starting just after KEDA's t = 30 poll is acted on at the HPA's t = 45 sync with the default fresh metric and at t = 60 with <code>useCachedMetrics</code></td>
+</tr>
+<tr>
+<td>Rate metric (1)</td>
+<td>in steady state it tracks the true outstanding count (8.92 vs 9.11 against the expected 3 req/s × 3 s = 9)</td>
+</tr>
+<tr>
+<td>Behaviour (3)</td>
+<td>low-load wait is near zero and sojourn ≈ service; a request after scale-to-zero waits at least the cold start and at most cold start + 30 s polling lag; same seed gives identical results</td>
+</tr>
+</tbody>
+</table>
+<h2 id="404-the-cold-start-budget">40.4 The cold-start budget<a class="headerlink" href="#404-the-cold-start-budget" title="Permanent link">&para;</a></h2>
+<p>Time from "the load changes" to "a new replica serves" is</p>
+<p><code>lag = HPA sync (0 to 15 s) + metric pipeline + pod scheduling + image pull + weight load + warm-up</code></p>
+<p>and for 0 → 1 the HPA sync is replaced by KEDA's polling delay (0 to 30 s). The metric pipeline (for example a Prometheus scrape interval) is <strong>not modelled</strong>.</p>
+<p>The weight-load term is bandwidth arithmetic. These are <strong>assumed</strong> bandwidths, not measurements:</p>
+<table>
+<thead>
+<tr>
+<th>Model on disk</th>
+<th>Size</th>
+<th>at 1 GB/s</th>
+<th>at 2 GB/s</th>
+<th>at 7 GB/s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>70B, BF16</td>
+<td>140 GB</td>
+<td>140 s</td>
+<td>70 s</td>
+<td>20 s</td>
+</tr>
+<tr>
+<td>70B, FP8</td>
+<td>70 GB</td>
+<td>70 s</td>
+<td>35 s</td>
+<td>10 s</td>
+</tr>
+</tbody>
+</table>
+<p>Image pull, scheduling, CUDA graph capture and warm-up are on top. The experiments use 15, 30, 60, 120, 180 and 300 s to span the range.</p>
+<h2 id="405-experiment-1-static-versus-autoscaled-one-hour-five-seeds">40.5 Experiment 1 — static versus autoscaled, one hour, five seeds<a class="headerlink" href="#405-experiment-1-static-versus-autoscaled-one-hour-five-seeds" title="Permanent link">&para;</a></h2>
+<p>Load steps 2 → 6 → 10 → 4 req/s (15 minutes each). One replica serves 4/3 = 1.33 req/s at saturation. SLO: wait ≤ 5 s. Cold start 60 s. Autoscaled runs start from steady state (2 replicas).</p>
+<table>
+<thead>
+<tr>
+<th>policy</th>
+<th>GPU-s</th>
+<th>attainment</th>
+<th>peak replicas</th>
+<th>$/1k requests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>static 4 (sized for the average)</td>
+<td>14 800</td>
+<td>0.100 [0.096–0.107]</td>
+<td>4</td>
+<td>0.83</td>
+</tr>
+<tr>
+<td>static 9 (sized for the peak)</td>
+<td>33 300</td>
+<td>1.000</td>
+<td>9</td>
+<td>1.86</td>
+</tr>
+<tr>
+<td>autoscale, default (fresh metric)</td>
+<td>37 043 [31 116–43 129]</td>
+<td>0.992 [0.979–1.000]</td>
+<td>23 [14–36]</td>
+<td>2.07 [1.74–2.42]</td>
+</tr>
+<tr>
+<td>autoscale, <code>useCachedMetrics</code></td>
+<td>41 501 [31 271–54 473]</td>
+<td>0.982 [0.970–1.000]</td>
+<td>36 [14–69]</td>
+<td>2.32 [1.74–3.03]</td>
+</tr>
+<tr>
+<td>autoscale, scale-up capped at +8</td>
+<td>37 076 [31 116–42 889]</td>
+<td>0.993 [0.982–1.000]</td>
+<td>23 [14–35]</td>
+<td>2.07 [1.74–2.40]</td>
+</tr>
+<tr>
+<td>autoscale, rate metric</td>
+<td>25 512 [25 146–25 806]</td>
+<td>0.951 [0.929–0.966]</td>
+<td>11 [11–12]</td>
+<td>1.42 [1.41–1.44]</td>
+</tr>
+<tr>
+<td>autoscale, rate metric + 60 s window</td>
+<td>23 229 [22 883–23 591]</td>
+<td>0.934 [0.916–0.963]</td>
+<td>11 [11–12]</td>
+<td>1.30 [1.28–1.32]</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hand checks.</strong> Static 9: 9 × 3700 s = 33 300 GPU-s; × $4/3600 = $37.00; over about 19.8 thousand requests that is $1.86 per thousand ✓. An ideal scaler tracking load at the target would average 5.5 replicas × 3600 s = 19 800 GPU-s.</p>
+<p>What this shows:</p>
+<ul>
+<li><strong>The default autoscaler is roughly a wash against static-for-peak.</strong> It averaged 11% more GPU-seconds (+25% with the cached metric) with a seed range that runs from 7% below to 30% above, and it missed the SLO slightly more (0.992 vs 1.000). Autoscaling this workload with default behaviour does not reliably save money; it saves it on some seeds.</li>
+<li>Fresh and cached metrics differ on average (37 043 vs 41 501) but the seed ranges overlap heavily; the clearer difference is peak replicas (23 vs 36).</li>
+<li>Capping scale-up at +8 changes nothing here (37 076 vs 37 043).</li>
+<li><strong>A rate-based metric is much cheaper</strong> (−23% against static-for-peak) but <strong>attainment falls to 0.951</strong>: it provisions to demand with no allowance for backlog, so it is a different point on the cost–SLO trade-off, not a free improvement.</li>
+<li><code>min=0</code> and <code>min=1</code> are identical in this experiment because the system is never idle.</li>
+</ul>
+<h2 id="406-where-the-overshoot-comes-from-a-causal-test">40.6 Where the overshoot comes from (a causal test)<a class="headerlink" href="#406-where-the-overshoot-comes-from-a-causal-test" title="Permanent link">&para;</a></h2>
+<p>The default autoscaler peaks at 23 replicas on average (up to 36) when about 11 replicas serve the final 10 req/s step. A single 2 → 12 req/s step (held 600 s, cold start 60 s) makes the effect visible, and we ablate the suspected causes. Steady need at 12 req/s is about 12 replicas (36 outstanding at a target of 3). Five seeds.</p>
+<table>
+<thead>
+<tr>
+<th>variant</th>
+<th>peak replicas</th>
+<th>attainment, step window</th>
+<th>GPU-s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>baseline: cold 60 s, window 300 s, default policy</td>
+<td>100 [100–100]</td>
+<td>0.823 [0.813–0.828]</td>
+<td>47 354 [46 705–47 870]</td>
+</tr>
+<tr>
+<td>cold start 1 s (backlog cannot build)</td>
+<td>21 [16–28]</td>
+<td>0.952 [0.936–0.964]</td>
+<td>18 393 [16 961–20 232]</td>
+</tr>
+<tr>
+<td>scale-down window 0 (nothing is held)</td>
+<td>100 [100–100]</td>
+<td>0.751 [0.615–0.862]</td>
+<td>19 768 [17 179–23 083]</td>
+</tr>
+<tr>
+<td>rate metric (ignores backlog)</td>
+<td>13 [13–14]</td>
+<td>0.650 [0.600–0.720]</td>
+<td>13 852 [13 531–14 476]</td>
+</tr>
+<tr>
+<td>scale-up capped at +8</td>
+<td>60 [59–60]</td>
+<td>0.830 [0.819–0.838]</td>
+<td>32 638 [31 221–33 346]</td>
+</tr>
+<tr>
+<td><code>useCachedMetrics</code></td>
+<td>100 [100–100]</td>
+<td>0.792 [0.785–0.798]</td>
+<td>47 562 [46 880–48 170]</td>
+</tr>
+</tbody>
+</table>
+<p>Reading the ablations:</p>
+<ul>
+<li><strong>Both a backlog build-up during the cold start and the scale-down window are needed to reach the baseline cost.</strong> Removing the cold start (1 s) cuts the peak from 100 to 21 and GPU-seconds by 61%. Removing the window leaves the peak at 100 but cuts GPU-seconds by 58%, because the 100 replicas are no longer held for five minutes. The mechanism: while new pods warm up, demand exceeds capacity and the backlog grows; the metric includes the backlog, so the HPA computes a replica count for a load that is partly transient; and the 300 s rolling maximum then pays to hold the overshoot.</li>
+<li>The rate metric removes the overshoot (peak 13) and 71% of the cost, but <strong>attainment drops to 0.650</strong>: backlog accumulated during the cold start drains slowly because the fleet is sized for steady demand with only 25% slot headroom. Cheaper and worse. Lowering the target, or adding a backlog term, trades cost back for attainment.</li>
+<li>Capping scale-up at +8 cut GPU-seconds by 31% (47 354 → 32 638) with attainment indistinguishable at five seeds (0.830 vs 0.823; the ranges overlap).</li>
+</ul>
+<p><strong>Exercise 7</strong> asks you to explore a combination.</p>
+<h2 id="407-experiments-on-bursts-scale-to-zero-load-testing-flapping-and-metrics">40.7 Experiments on bursts, scale-to-zero, load testing, flapping and metrics<a class="headerlink" href="#407-experiments-on-bursts-scale-to-zero-load-testing-flapping-and-metrics" title="Permanent link">&para;</a></h2>
+<h3 id="experiment-2-a-10-burst-2-20-reqs-for-120-s-at-t-600">Experiment 2 — a 10× burst (2 → 20 req/s for 120 s at t = 600)<a class="headerlink" href="#experiment-2-a-10-burst-2-20-reqs-for-120-s-at-t-600" title="Permanent link">&para;</a></h3>
+<p>Attainment is in the window [600, 1020). Three seeds. "Floor" is <code>minReplicaCount</code>; peak replicas in the capped table is always the cap.</p>
+<p><strong>maxReplicaCount = 100:</strong></p>
+<table>
+<thead>
+<tr>
+<th>cold</th>
+<th>floor</th>
+<th>attainment</th>
+<th>p99 wait</th>
+<th>peak replicas</th>
+<th>GPU-s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>15 s</td>
+<td>2</td>
+<td>0.565 [0.544–0.599]</td>
+<td>26.9 s</td>
+<td>93</td>
+<td>36 619</td>
+</tr>
+<tr>
+<td>15 s</td>
+<td>8</td>
+<td>0.738 [0.716–0.756]</td>
+<td>13.5 s</td>
+<td>64</td>
+<td>32 066</td>
+</tr>
+<tr>
+<td>15 s</td>
+<td>16</td>
+<td><strong>1.000</strong></td>
+<td>1.0 s</td>
+<td>26</td>
+<td>29 676</td>
+</tr>
+<tr>
+<td>60 s</td>
+<td>2</td>
+<td>0.222 [0.217–0.232]</td>
+<td>59.5 s</td>
+<td>100</td>
+<td>42 520</td>
+</tr>
+<tr>
+<td>60 s</td>
+<td>8</td>
+<td>0.361 [0.356–0.367]</td>
+<td>35.4 s</td>
+<td>100</td>
+<td>47 439</td>
+</tr>
+<tr>
+<td>60 s</td>
+<td>16</td>
+<td><strong>1.000</strong></td>
+<td>1.2 s</td>
+<td>28</td>
+<td>30 111</td>
+</tr>
+<tr>
+<td>180 s</td>
+<td>2</td>
+<td>0.137 [0.131–0.141]</td>
+<td>148.0 s</td>
+<td>100</td>
+<td>53 925</td>
+</tr>
+<tr>
+<td>180 s</td>
+<td>8</td>
+<td>0.186 [0.173–0.193]</td>
+<td>94.5 s</td>
+<td>100</td>
+<td>56 909</td>
+</tr>
+<tr>
+<td>180 s</td>
+<td>16</td>
+<td><strong>1.000</strong></td>
+<td>1.3 s</td>
+<td>28</td>
+<td>30 296</td>
+</tr>
+</tbody>
+</table>
+<p><strong>maxReplicaCount = 24:</strong></p>
+<table>
+<thead>
+<tr>
+<th>cold</th>
+<th>floor</th>
+<th>attainment</th>
+<th>p99 wait</th>
+<th>GPU-s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>15 s</td>
+<td>2</td>
+<td>0.417 [0.363–0.483]</td>
+<td>26.9 s</td>
+<td>14 262</td>
+</tr>
+<tr>
+<td>15 s</td>
+<td>8</td>
+<td>0.685 [0.656–0.717]</td>
+<td>13.5 s</td>
+<td>19 332</td>
+</tr>
+<tr>
+<td>15 s</td>
+<td>16</td>
+<td><strong>1.000</strong></td>
+<td>1.0 s</td>
+<td>28 861</td>
+</tr>
+<tr>
+<td>60 s</td>
+<td>2</td>
+<td>0.199 [0.196–0.201]</td>
+<td>59.5 s</td>
+<td>14 882</td>
+</tr>
+<tr>
+<td>60 s</td>
+<td>8</td>
+<td>0.241 [0.231–0.251]</td>
+<td>35.4 s</td>
+<td>19 457</td>
+</tr>
+<tr>
+<td>60 s</td>
+<td>16</td>
+<td><strong>1.000</strong></td>
+<td>1.2 s</td>
+<td>28 861</td>
+</tr>
+<tr>
+<td>180 s</td>
+<td>2</td>
+<td>0.125 [0.119–0.130]</td>
+<td>148.0 s</td>
+<td>17 077</td>
+</tr>
+<tr>
+<td>180 s</td>
+<td>8</td>
+<td>0.184 [0.171–0.192]</td>
+<td>94.5 s</td>
+<td>20 842</td>
+</tr>
+<tr>
+<td>180 s</td>
+<td>16</td>
+<td><strong>1.000</strong></td>
+<td>1.3 s</td>
+<td>28 886</td>
+</tr>
+</tbody>
+</table>
+<p><strong>How to read both tables.</strong></p>
+<ul>
+<li>A floor of 16 held the burst with no SLO loss at every cold start and with either cap. Reactive scaling needs three HPA steps (2 → 6 → 12 → 24, 45 s) to reach about 20 replicas, plus the cold start before they serve, against a burst that lasts 120 s.</li>
+<li><strong>Headroom is not cheaper, it is a price for the SLO.</strong> With the cap at 24, the floor-16 fleet costs about twice the GPU-seconds of the capped low floors (28 861 vs 14 262–20 842) and is the only configuration that meets the SLO. With the cap at 100 the low floors cost <em>more</em> than floor 16 (32 000–57 000 vs 30 000), but only because the overshoot builds up to 100 replicas; the cap is what makes that go away.</li>
+<li><strong>Hand check.</strong> 16 replicas × 1600 s = 25 600 GPU-s of floor; the extra 3 261 GPU-s (28 861 − 25 600) is about 8 replicas above the floor for roughly 410 s.</li>
+</ul>
+<p><strong>The sizing is sharp.</strong> A floor of 16 has a capacity of 16 × 1.33 = 21.3 req/s. With the cap at 24, cold start 60 s, three seeds:</p>
+<table>
+<thead>
+<tr>
+<th>burst rate</th>
+<th>attainment in the window</th>
+<th>p99 wait</th>
+<th>peak replicas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>18 req/s</td>
+<td>1.000</td>
+<td>0.4 s</td>
+<td>23</td>
+</tr>
+<tr>
+<td>20 req/s</td>
+<td>1.000</td>
+<td>1.2 s</td>
+<td>24</td>
+</tr>
+<tr>
+<td>22 req/s</td>
+<td>0.923 [0.845–0.976]</td>
+<td>5.7 s</td>
+<td>24</td>
+</tr>
+<tr>
+<td>25 req/s</td>
+<td>0.463 [0.434–0.506]</td>
+<td>13.1 s</td>
+<td>24</td>
+</tr>
+</tbody>
+</table>
+<p>A burst only 10% above the floor's capacity already breaks the SLO. Size the floor from measured peaks with margin, not from the average burst.</p>
+<h3 id="experiment-3-scale-to-zero">Experiment 3 — scale to zero<a class="headerlink" href="#experiment-3-scale-to-zero" title="Permanent link">&para;</a></h3>
+<p>Load of 3 req/s for 300 s, idle, then 1 req/s for 60 s at t = 1500. Cold start 60 s. Three seeds; the first-request wait is for one seed. "Cap +1" limits scale-up to one pod per period. <strong>For this experiment requests are assumed to wait somewhere while there are zero replicas</strong> (see below for why that needs a gateway).</p>
+<table>
+<thead>
+<tr>
+<th>policy</th>
+<th>GPU-s</th>
+<th>attainment</th>
+<th>replicas created</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>min=0</code>, default HPA behaviour</td>
+<td>10 017 [9 422–10 953]</td>
+<td>0.938 [0.935–0.940]</td>
+<td>22 [21–24]</td>
+</tr>
+<tr>
+<td><code>min=0</code>, no scale-down window</td>
+<td>3 308 [3 031–3 799]</td>
+<td>0.845 [0.731–0.935]</td>
+<td>39 [33–51]</td>
+</tr>
+<tr>
+<td><code>min=0</code>, cap +1</td>
+<td>5 306 [4 786–5 746]</td>
+<td>0.938 [0.935–0.940]</td>
+<td>9 [8–10]</td>
+</tr>
+<tr>
+<td><code>min=0</code>, no window, cap +1</td>
+<td>2 222 [2 147–2 327]</td>
+<td>0.823 [0.667–0.935]</td>
+<td>15 [14–16]</td>
+</tr>
+<tr>
+<td><code>min=0</code>, rate metric</td>
+<td><strong>2 821</strong> [2 730–2 986]</td>
+<td>0.938 [0.935–0.940]</td>
+<td>2 [2–3]</td>
+</tr>
+<tr>
+<td><code>min=1</code>, default HPA behaviour</td>
+<td>5 001 [4 511–5 726]</td>
+<td>1.000 [0.999–1.000]</td>
+<td>4 [3–5]</td>
+</tr>
+</tbody>
+</table>
+<p>The first request after the idle period waits <strong>89.7 s</strong> in every <code>min=0</code> row when the burst starts exactly on a KEDA poll boundary (t = 1500) and <strong>74.7 s</strong> when it starts at t = 1515. That is the cold start (60 s) plus the time until KEDA's next poll (0 to 30 s), so the earlier figure of "cold start + 29.7 s" was the worst phase by construction. All 62 requests of the wake-up burst miss the 5 s SLO in the <code>min=0</code> rows (62 of 960 requests, hence 0.938).</p>
+<p><strong>What this says about scale-to-zero.</strong></p>
+<ul>
+<li>The saving is real but depends on how the scaler behaves after waking. With default HPA behaviour <code>min=0</code> used <strong>twice</strong> the GPU-seconds of <code>min=1</code> (10 017 vs 5 001): the backlog that builds during the cold start makes the HPA create about 22 replicas and the 300 s window holds them. That is the overshoot of 40.6, not something intrinsic to scale-to-zero.</li>
+<li>With a backlog-blind rate metric, <code>min=0</code> used <strong>44% fewer</strong> GPU-seconds than <code>min=1</code> (2 821 vs 5 001) at the cost of the wake-up burst missing its SLO.</li>
+<li>The "no window" variants are cheapest of all but their attainment is lower and varies widely across seeds (0.82–0.85, ranges down to 0.67). I did not isolate why; releasing capacity while requests are still arriving is the likely reason.</li>
+</ul>
+<p><strong>Scale-from-zero needs something in front of the pods.</strong> With <code>minReplicaCount: 0</code> there are no vLLM pods, so the vLLM metrics (<code>vllm:num_requests_waiting</code> and the rest) do not exist, and a request sent to a Service with no ready endpoints is rejected, not queued. A real scale-from-zero setup needs a component that holds requests and exposes a metric: your own gateway or queue, or KEDA's HTTP add-on (check its current status and fit). The simulator's queue at zero replicas has no counterpart in the Section 40.9 manifest.</p>
+<h3 id="experiment-4-testing-the-scaler-open-loop-versus-closed-loop">Experiment 4 — testing the scaler: open loop versus closed loop<a class="headerlink" href="#experiment-4-testing-the-scaler-open-loop-versus-closed-loop" title="Permanent link">&para;</a></h3>
+<p>The open-loop run is offered a 20 req/s burst for 120 s. The closed-loop runs are <strong>not</strong> offered that burst: each client waits for its reply, then thinks, so offered load is whatever the clients and the system's latency allow.</p>
+<table>
+<thead>
+<tr>
+<th>load generator</th>
+<th>peak outstanding</th>
+<th>p99 wait</th>
+<th>attainment</th>
+<th>peak replicas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>open loop, 20 req/s burst</td>
+<td><strong>1301</strong></td>
+<td>60.9 s</td>
+<td>0.397</td>
+<td>100</td>
+</tr>
+<tr>
+<td>closed loop, 8 clients, think 3 s</td>
+<td>8</td>
+<td>0.1 s</td>
+<td>1.000</td>
+<td>3</td>
+</tr>
+<tr>
+<td>closed loop, 64 clients, think 0.5 s</td>
+<td>64</td>
+<td>19.7 s</td>
+<td>0.982</td>
+<td>22</td>
+</tr>
+</tbody>
+</table>
+<p>A closed loop can never have more than <code>clients</code> requests outstanding, and its arrival rate falls as latency rises, so it cannot reproduce the demand that overwhelms the scaler. With enough clients (64) it does exercise the scaler, up to 22 replicas, but it still never presents 1301 outstanding requests and reports 0.982 attainment where the open-loop burst gives 0.397. Test the scaler with a load generator whose arrival times do not depend on responses, as in Chapter 36.</p>
+<h3 id="experiment-5-flapping-and-the-stabilization-window">Experiment 5 — flapping and the stabilization window<a class="headerlink" href="#experiment-5-flapping-and-the-stabilization-window" title="Permanent link">&para;</a></h3>
+<p>Load alternates 2 ↔ 12 req/s every 150 s, cold start 60 s, three seeds.</p>
+<table>
+<thead>
+<tr>
+<th>scale-down window</th>
+<th>scale events</th>
+<th>replicas created</th>
+<th>warm-up GPU-s (created × 60)</th>
+<th>attainment</th>
+<th>GPU-s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 s</td>
+<td>93</td>
+<td>649</td>
+<td>38 960</td>
+<td>0.355 [0.283–0.405]</td>
+<td>49 049</td>
+</tr>
+<tr>
+<td>60 s</td>
+<td>54</td>
+<td>584</td>
+<td>35 060</td>
+<td>0.375 [0.362–0.398]</td>
+<td>82 525</td>
+</tr>
+<tr>
+<td>300 s</td>
+<td>11</td>
+<td>101</td>
+<td>6 080</td>
+<td>0.899 [0.892–0.906]</td>
+<td>58 009</td>
+</tr>
+<tr>
+<td>600 s</td>
+<td>10</td>
+<td>99</td>
+<td>5 920</td>
+<td>0.899 [0.892–0.906]</td>
+<td>84 242</td>
+</tr>
+</tbody>
+</table>
+<p>The 60 s window is the most expensive of the short windows because it still removes capacity at every trough but, unlike 0 s, holds the overshoot for a minute: 584 replicas are created (35 060 GPU-seconds spent only warming up) and the surviving ones are kept. A 300 s window rides through the 150 s troughs (101 creations). A 600 s window holds peak capacity so long that it costs 45% more than 300 s for the same attainment.</p>
+<h3 id="experiment-6-which-metric">Experiment 6 — which metric<a class="headerlink" href="#experiment-6-which-metric" title="Permanent link">&para;</a></h3>
+<p>Steady 8 req/s for 30 minutes, starting from 8 replicas, three seeds.</p>
+<table>
+<thead>
+<tr>
+<th>metric</th>
+<th>attainment</th>
+<th>p99 wait</th>
+<th>GPU-s</th>
+<th>peak replicas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>waiting + running</td>
+<td>1.000</td>
+<td>0.2 s</td>
+<td>22 102 [20 355–23 746]</td>
+<td>13</td>
+</tr>
+<tr>
+<td>waiting only (queue depth)</td>
+<td>0.749 [0.744–0.758]</td>
+<td>64.7 s</td>
+<td>132 401 [131 002–134 261]</td>
+<td>100</td>
+</tr>
+<tr>
+<td>rate (Little's law)</td>
+<td>1.000</td>
+<td>0.4 s</td>
+<td>16 995 [16 905–17 070]</td>
+<td>9</td>
+</tr>
+</tbody>
+</table>
+<p>With adequate capacity the queue is almost always empty, so a queue-only metric reads "no load", scales down, lets the queue build, and then scales up hard: a sawtooth that cost 6.0× more and failed the SLO. <strong>Scale on total outstanding work or on a rate-based estimate, not on the waiting queue alone.</strong> In steady load the rate metric was cheapest and equally good; its weakness is the step response shown in 40.6.</p>
+<h2 id="408-failure-catalogue">40.8 Failure catalogue<a class="headerlink" href="#408-failure-catalogue" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Mechanism</th>
+<th>Where seen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overshoot</td>
+<td>backlog built during cold start inflates the metric, and the window holds the result</td>
+<td>40.6</td>
+</tr>
+<tr>
+<td>Burst shorter than scale-up latency</td>
+<td>capacity arrives after the burst</td>
+<td>Exp 2</td>
+</tr>
+<tr>
+<td>Burst just above the floor's capacity</td>
+<td>22 req/s against 21.3</td>
+<td>Exp 2</td>
+</tr>
+<tr>
+<td>Wake-up overshoot</td>
+<td>scale from zero then builds a fleet for the backlog</td>
+<td>Exp 3</td>
+</tr>
+<tr>
+<td>Nothing to queue requests at zero replicas</td>
+<td>no pods, so no vLLM metrics and rejected requests</td>
+<td>Exp 3</td>
+</tr>
+<tr>
+<td>Test blind to scaling</td>
+<td>closed-loop load cannot present the burst</td>
+<td>Exp 4</td>
+</tr>
+<tr>
+<td>Flapping</td>
+<td>window shorter than the load oscillation</td>
+<td>Exp 5</td>
+</tr>
+<tr>
+<td>Sawtooth</td>
+<td>queue-only metric</td>
+<td>Exp 6</td>
+</tr>
+<tr>
+<td>Cost of the window</td>
+<td>a long scale-down window holds idle GPUs</td>
+<td>Exp 1, 5</td>
+</tr>
+<tr>
+<td>Cached metric</td>
+<td>with <code>useCachedMetrics</code> the HPA acts on a value up to 30 s old</td>
+<td>Exp 1, 7</td>
+</tr>
+<tr>
+<td>Per-pod queues</td>
+<td>real backlog stays with old pods, worse than the simulator's global queue</td>
+<td>not modelled</td>
+</tr>
+<tr>
+<td>Node provisioning and node scale-down</td>
+<td>GPU nodes take time to arrive and linger after pods leave</td>
+<td>not modelled</td>
+</tr>
+<tr>
+<td>Metric pipeline lag</td>
+<td>scrape intervals add to every decision</td>
+<td>not modelled</td>
+</tr>
+<tr>
+<td>Readiness too early</td>
+<td>pod marked ready before weights and graphs are warm</td>
+<td>not modelled</td>
+</tr>
+</tbody>
+</table>
+<h2 id="409-manifest-and-runbook-untested">40.9 Manifest and runbook (UNTESTED)<a class="headerlink" href="#409-manifest-and-runbook-untested" title="Permanent link">&para;</a></h2>
+<p>Everything here is <strong>untested on a cluster</strong>. Documented: the ScaledObject fields <code>pollingInterval</code>, <code>cooldownPeriod</code>, <code>minReplicaCount</code>, <code>maxReplicaCount</code> and <code>advanced.horizontalPodAutoscalerConfig.behavior</code> (KEDA specification), and the Prometheus trigger fields <code>serverAddress</code>, <code>query</code> and <code>threshold</code> (all required; the example writes <code>threshold</code> as a quoted string). The metric names <code>vllm:num_requests_running</code> and <code>vllm:num_requests_waiting</code> are listed in the vLLM metrics documentation, but that page does not confirm the label names: the <code>model_name</code> label is likely, <code>namespace</code> depends on your scrape configuration. Fix the labels to match your setup.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keda.sh/v1alpha1</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ScaledObject</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vllm-llama70b</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">scaleTargetRef</span><span class="p">:</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vllm-llama70b</span><span class="w">            </span><span class="c1"># your Deployment; each replica is a tensor-parallel group</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">pollingInterval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="c1"># cooldownPeriod is omitted: it only governs scaling to zero, and minReplicaCount &gt; 0 here</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">minReplicaCount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span><span class="w">              </span><span class="c1"># from the Experiment 2 workload (20 req/s peak x 3 s / 4 slots = 15 replicas at full slots); replace with YOUR measured peak plus margin</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">maxReplicaCount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="nt">advanced</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">horizontalPodAutoscalerConfig</span><span class="p">:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">behavior</span><span class="p">:</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">        </span><span class="nt">scaleUp</span><span class="p">:</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">          </span><span class="nt">stabilizationWindowSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">          </span><span class="nt">policies</span><span class="p">:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pods</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">              </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="nt">scaleDown</span><span class="p">:</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">          </span><span class="nt">stabilizationWindowSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">          </span><span class="nt">policies</span><span class="p">:</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Percent</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">25</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">              </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">  </span><span class="nt">triggers</span><span class="p">:</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheus</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">        </span><span class="nt">serverAddress</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://prometheus.monitoring:9090</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">        </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sum(vllm:num_requests_running{namespace=&quot;llm&quot;,model_name=&quot;llama70b&quot;}) + sum(vllm:num_requests_waiting{namespace=&quot;llm&quot;,model_name=&quot;llama70b&quot;})</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">        </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3&quot;</span>
+</span></code></pre></div>
+<p>For a service that scales to zero, put a gateway or queue in front that holds requests and exposes its own depth metric, and point the trigger at that.</p>
+<p>Runbook:</p>
+<ol>
+<li><strong>Measure the cold start first.</strong> From <code>kubectl apply</code> to the first successful request on a fresh pod, on a fresh node and on a warm node. This number sets everything else.</li>
+<li><strong>Run the scaler open loop.</strong> Use the Chapter 36 client with a rate that does not depend on responses. A step of 2 then 12 req/s, back to back: <code>python3 /full/path/ch36_benchmark_teardown.py run --url http://HOST:8000 --model MODEL --rate 2 --n 600 --warmup 30 --seed 1 --out /full/path/step1.json &amp;&amp; python3 /full/path/ch36_benchmark_teardown.py run --url http://HOST:8000 --model MODEL --rate 12 --n 7200 --warmup 30 --seed 2 --out /full/path/step2.json</code> (300 s at 2 req/s, then 600 s at 12 req/s). Watch <code>kubectl get hpa -w</code> and <code>kubectl get scaledobject</code> alongside.</li>
+<li><strong>Record per step:</strong> wait/TTFT p99, SLO attainment, replica count over time, GPU-seconds (replicas × tensor-parallel degree × time), and peak outstanding.</li>
+<li><strong>Check for overshoot:</strong> peak replicas against <code>ceil(steady outstanding / target)</code>. A ratio above about 2 means the scale-up policy or window is too aggressive for your cold start.</li>
+<li><strong>Tune in this order:</strong> the scale-up cap, the scale-down window, the floor for headroom, and then the metric. Re-run steps 2 to 4 after each change, over several seeds.</li>
+<li><strong>Scale to zero:</strong> only after measuring the wake-up cost as in Experiment 3 on your own cold start, and only with a gateway in front.</li>
+</ol>
+<h2 id="4010-exercises">40.10 Exercises<a class="headerlink" href="#4010-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>From 1 replica with the default HPA scale-up policy and a desired count of 167, list the replica counts at each 15 s period and the time to reach the cap of 100.</li>
+<li>A 70B FP8 model is 70 GB. How long does the weight load take at 2 GB/s and at 7 GB/s, and what is the worst-case time from "the load changes" to "a new replica can serve" with the default fresh HPA metric, ignoring pull, warm-up and scrape lag?</li>
+<li>Why does a queue-only metric produce a sawtooth, and how much did it cost in Experiment 6?</li>
+<li>In Experiment 3 default-behaviour <code>min=0</code> used 10 017 GPU-seconds and <code>min=1</code> used 5 001, although <code>min=0</code> saved about 900 idle GPU-seconds. Explain, and say what would make <code>min=0</code> cheaper.</li>
+<li>A teammate load-tests the autoscaler with 64 concurrent clients and reports "the scaler handles 10× bursts". What is wrong with that conclusion?</li>
+<li>In the ablation, capping scale-up at +8 cut GPU-seconds by 31% with indistinguishable attainment. Why?</li>
+<li>The rate metric cut cost by 71% in the step ablation but attainment fell from 0.823 to 0.650. Propose a change that recovers attainment, and say what you would measure to confirm it.</li>
+<li>How many replicas hold a 20 req/s burst at the stated service time and target, and why is a floor of 16 sharp rather than safe?</li>
+</ol>
+<h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Each period adds <code>max(100% of current, 4)</code>: 1 → 5 → 10 → 20 → 40 → 80 → 100 (160 clamped to the cap, since the desired count is above 100). Six decisions at 15 s spacing, so the sixth is 75 s after the first. The replicas created at the last step are ready one cold start later: full capacity is at least 75 s + cold start.</li>
+<li>70 GB / 2 GB/s = 35 s; 70 GB / 7 GB/s = 10 s. With a fresh metric the HPA acts at its next sync, so the worst case is 15 s (sync) + load time: 50 s and 25 s, plus image pull, warm-up and any Prometheus scrape interval. With <code>useCachedMetrics: true</code>, or for scale from zero, add up to 30 s of KEDA polling.</li>
+<li>With enough capacity the queue is nearly empty, so the metric says "no load" and the scaler removes replicas; the queue then builds, the metric spikes, and the scaler scales up hard. Each spike builds a large fleet that the 300 s window holds. Cost: 132 401 GPU-seconds against 22 102 (6.0×) and attainment 0.749 against 1.000.</li>
+<li>The wake-up burst (62 requests) waits through the whole cold start, so a backlog of tens of requests forms; the HPA divides it by the target of 3, creates about 22 replicas, and the 300 s window keeps them. The extra cost comes from that overshoot, not from scale-to-zero. <code>min=0</code> became cheaper than <code>min=1</code> when the scaler ignored backlog (rate metric: 2 821 GPU-seconds) or released capacity at once (window 0: 3 308), at the price of the wake-up burst missing its SLO (and, for window 0, lower and more variable attainment).</li>
+<li>Closed-loop clients cannot present more than their own number of outstanding requests, and their arrival rate falls as latency rises. With 64 clients and 0.5 s think time the scaler reached 22 replicas and reported 0.982 attainment, while an open-loop 20 req/s burst produced 1301 outstanding requests, 100 replicas and 0.397. The test measures a fixed concurrency, not a burst. Use open-loop arrivals.</li>
+<li>Attainment is bounded by the 60 s cold start, which no scale-up rate can shorten: the first minute of the step is lost either way. The extra replicas the default policy built (100 against 60) arrived after the backlog had formed and only cost money until the 300 s window released them.</li>
+<li>The rate metric sizes the fleet for steady demand with only 25% slot headroom, so the backlog accumulated during the cold start drains slowly. Options: lower the target (for example 2 instead of 3) to buy headroom; add a backlog term to the metric; keep a floor. Measure attainment and GPU-seconds over several seeds at each setting, and check the peak replicas and the time the backlog takes to drain after a step.</li>
+<li>20 req/s × 3 s = 60 requests in flight. At full slot use, 60/4 = 15 replicas; at the target of 3 per replica, 60/3 = 20. A floor of 16 has a capacity of 21.3 req/s, only 6% above the burst, so a burst of 22 req/s already dropped attainment to 0.923 (0.845–0.976 over seeds) and 25 req/s to 0.463. A floor is a sizing decision from measured peaks with margin, not a safety net.</li>
+</ol>
+<h2 id="4011-summary">40.11 Summary<a class="headerlink" href="#4011-summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A replica is not capacity until it is warm. Everything about GPU autoscaling follows from the cold-start gap.</li>
+<li>With default behaviour the autoscaler was roughly a wash against a fleet sized for the peak (+11% GPU-seconds on average, seeds from −7% to +30%). Its overshoot comes from the cold-start backlog inflating the metric and the 300 s window holding the result; removing either cut cost by about 60%.</li>
+<li>A rate-based metric removes the overshoot and is much cheaper, but it lowers attainment on steps. It is a different point on the trade-off, not a fix.</li>
+<li>For bursts shorter than the scale-up latency, headroom is the only thing that kept the SLO, at about twice the GPU-seconds of the capped alternatives, and it has a sharp edge (22 req/s against a 21.3 req/s floor).</li>
+<li>Scale-to-zero can be much cheaper (−44% with a backlog-blind metric) or twice as expensive (default behaviour) depending on the scaler's behaviour after waking; it needs a gateway to queue requests, and the first request waits the cold start plus 0 to 30 s.</li>
+<li>Scale on waiting + running, or a rate estimate; not the waiting queue alone.</li>
+<li>Test the scaler with open-loop arrivals.</li>
+<li>Everything here is simulated. Measure your real cold start and run the runbook before trusting any number.</li>
+</ul>
+<h2 id="files-and-sources">Files and sources<a class="headerlink" href="#files-and-sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Code: <code>docs/examples/inference-systems/ch40_gpu_autoscaler.py</code></li>
+<li>KEDA ScaledObject specification: <a href="https://keda.sh/docs/2.16/reference/scaledobject-spec/">https://keda.sh/docs/2.16/reference/scaledobject-spec/</a></li>
+<li>KEDA scaling deployments (0↔1 handled by KEDA, 1↔N by the HPA): <a href="https://keda.sh/docs/2.16/concepts/scaling-deployments/">https://keda.sh/docs/2.16/concepts/scaling-deployments/</a></li>
+<li>KEDA Prometheus scaler: <a href="https://keda.sh/docs/2.16/scalers/prometheus/">https://keda.sh/docs/2.16/scalers/prometheus/</a></li>
+<li>Kubernetes Horizontal Pod Autoscaling (default behaviour and stabilization window): <a href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/</a></li>
+<li>vLLM metrics documentation: <a href="https://docs.vllm.ai/en/v0.8.5/serving/metrics.html">https://docs.vllm.ai/en/v0.8.5/serving/metrics.html</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../39-complexity-router/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 39. Multi-Model Complexity Router — Entropy, Calibration, Cost">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                39. Multi-Model Complexity Router — Entropy, Calibration, Cost
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../43-paged-kv-cache/" class="md-footer__link md-footer__link--next" aria-label="Next: 43. A Paged KV Cache from Scratch">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                43. A Paged KV Cache from Scratch
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Oluwaseyi Awoga
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/maximumbeings" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "search.share", "search.suggest", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/image-viewer.js"></script>
+      
+    
+  </body>
+</html>
