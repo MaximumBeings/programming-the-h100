@@ -1,6 +1,7 @@
 """Chapter 33: MoE expert parallelism -- routing, load balance, all-to-all volume, and a gloo all-to-all check.
 
-Run:  python3 ch33_moe_expert_parallel.py
+Run:  python3 ch33_moe_expert_parallel.py          (the chapter's numbers)
+      python3 ch33_moe_expert_parallel.py --test   (self-tests)
 CPU only. The all-to-all uses torch.distributed with the gloo backend to verify dispatch/combine LOGIC.
 It says nothing about NCCL/NVLink/InfiniBand performance.
 """
@@ -60,11 +61,14 @@ def alltoall_bytes_per_gpu(tokens_per_gpu, topk, hidden, bytes_per_elem, ep):
 
 
 # ------------------------------------------------------------- 3. all-to-all dispatch/combine on gloo
-def _worker(rank, world, init_file, n_tokens, hidden, n_experts, topk, result_q):
+def _worker(rank, world, init_file, n_tokens, hidden, n_experts, topk, result_q, mode="uniform"):
     dist.init_process_group("gloo", init_method=f"file://{init_file}", rank=rank, world_size=world)
     g = torch.Generator().manual_seed(100 + rank)
     x = torch.randn(n_tokens, hidden, generator=g)
-    experts = torch.randint(0, n_experts, (n_tokens, topk), generator=g)
+    per_rank_ = n_experts // world
+    # mode "uniform": any expert; "all_to_rank0": every copy goes to rank 0 (other ranks receive nothing)
+    hi = n_experts if mode == "uniform" else per_rank_
+    experts = torch.randint(0, hi, (n_tokens, topk), generator=g)
     weights = torch.softmax(torch.randn(n_tokens, topk, generator=g), -1)
     per_rank = n_experts // world
 
@@ -98,20 +102,78 @@ def _worker(rank, world, init_file, n_tokens, hidden, n_experts, topk, result_q)
     for t in range(n_tokens):
         for k in range(topk):
             ref[t] += weights[t, k] * expert_fn(int(experts[t, k]), x[t])
-    result_q.put((rank, bool(torch.allclose(y, ref, atol=1e-5)), s))
+    # ownership: every expert id this rank received must be one this rank actually holds. A stateless toy expert
+    # cannot detect mis-routing by itself, so check it explicitly.
+    owned = bool(((recv_e // per_rank) == rank).all()) if sum(r) else True
+    result_q.put((rank, bool(torch.allclose(y, ref, atol=1e-5)) and owned, s))
     dist.destroy_process_group()
 
 
-def check_alltoall(world=4):
+def check_alltoall(world=4, mode="uniform", topk=2, n_tokens=64, n_experts=16):
     with tempfile.TemporaryDirectory() as d:
         init = os.path.join(d, "rdv")
         q = mp.get_context("spawn").Queue()
-        procs = [mp.get_context("spawn").Process(target=_worker, args=(r, world, init, 64, 8, 16, 2, q))
+        procs = [mp.get_context("spawn").Process(target=_worker, args=(r, world, init, n_tokens, 8, n_experts, topk, q, mode))
                  for r in range(world)]
         [p.start() for p in procs]
         res = sorted(q.get() for _ in procs)
         [p.join() for p in procs]
     return res
+
+
+# ------------------------------------------------------------- self-tests
+def run_tests():
+    results = []
+
+    def check(name, cond):
+        results.append((name, bool(cond)))
+
+    E, G, T, K = 64, 8, 4000, 2
+    a = skewed_router(T, E, K, 0.5, seed=1)
+    check("router: shape [T, k], ids in range", tuple(a.shape) == (T, K) and int(a.min()) >= 0 and int(a.max()) < E)
+    check("router: the k experts of one token are distinct", bool((a[:, 0] != a[:, 1]).all()))
+    check("router: same seed gives the same assignment", bool((a == skewed_router(T, E, K, 0.5, seed=1)).all()))
+    loads = expert_loads(a, E)
+    check("expert loads sum to tokens x k", int(loads.sum()) == T * K)
+    check("contiguous GPU loads conserve the total", float(gpu_loads_contiguous(loads, G).sum()) == float(loads.sum()))
+    check("imbalance of a perfectly even load is exactly 1.0", imbalance(torch.ones(8)) == 1.0)
+    check("imbalance is never below 1", all(imbalance(gpu_loads_contiguous(expert_loads(skewed_router(T, E, K, sk, 0), E), G)) >= 1.0
+                                            for sk in (0.0, 0.5, 1.0)))
+    imb = [imbalance(gpu_loads_contiguous(expert_loads(skewed_router(T, E, K, sk, 0), E), G)) for sk in (0.0, 0.5, 1.0)]
+    check("more skew, more contiguous imbalance", imb[0] < imb[1] < imb[2])
+    hot = expert_loads(skewed_router(T, E, K, 1.0, 0), E)
+    p8, p0 = eplb_place(hot, G, 8), eplb_place(hot, G, 0)
+    check("placement conserves total load (8 replicas and 0 replicas)",
+          abs(float(p8.sum()) - float(hot.sum())) < 1e-3 and abs(float(p0.sum()) - float(hot.sum())) < 1e-3)
+    check("replicas improve a skewed load", imbalance(p8) < imbalance(gpu_loads_contiguous(hot, G)))
+    check("skew 1.0: +8 and +16 replicas bring imbalance under 1.02", imbalance(p8) < 1.02 and imbalance(eplb_place(hot, G, 16)) < 1.02)
+    hc0 = eplb_place(torch.tensor([100., 1., 1., 1.]), 2, 0)
+    hc2 = eplb_place(torch.tensor([100., 1., 1., 1.]), 2, 2)
+    check("hand case, no replicas: loads [100,1,1,1] on 2 GPUs -> [101, 2]", torch.allclose(hc0, torch.tensor([101., 2.])))
+    check("hand case, 2 replicas: hot expert split 3 ways -> [67.667, 35.333]",
+          torch.allclose(hc2, torch.tensor([67.6667, 35.3333]), atol=1e-3))
+    try:
+        eplb_place(hot, G, 3); raised = False
+    except ValueError:
+        raised = True
+    check("replica count that breaks (E+R) % GPUs == 0 raises ValueError (documented failure)", raised)
+    check("dispatch bytes are 0 on one GPU", alltoall_bytes_per_gpu(8192, 2, 4096, 2, 1) == 0)
+    check("dispatch bytes linear in tokens", alltoall_bytes_per_gpu(2000, 2, 64, 2, 8) == 2 * alltoall_bytes_per_gpu(1000, 2, 64, 2, 8))
+    check("EP=8 dispatch is 117.4 MB (chapter figure)", abs(alltoall_bytes_per_gpu(8192, 2, 4096, 2, 8) / 1e6 - 117.44) < 0.01)
+    for label, kw in (("4 ranks, uniform routing, top-2", {}),
+                      ("2 ranks, top-1", dict(world=2, topk=1)),
+                      ("4 ranks, every copy to rank 0 (3 ranks receive nothing)", dict(mode="all_to_rank0"))):
+        res = check_alltoall(**kw)
+        world = kw.get("world", 4)
+        topk = kw.get("topk", 2)
+        check(f"gloo all-to-all matches reference: {label}", all(ok for _, ok, _ in res))
+        check(f"  send counts conserve tokens x k per rank: {label}", all(sum(sc) == 64 * topk for _, _, sc in res))
+        if kw.get("mode") == "all_to_rank0":
+            check("  all sends target rank 0", all(sc[0] == 64 * topk and sum(sc[1:]) == 0 for _, _, sc in res))
+    for name, good in results:
+        print(f"  [{'PASS' if good else 'FAIL'}] {name}")
+    print(f"{sum(g for _, g in results)}/{len(results)} self-tests pass")
+    return all(g for _, g in results)
 
 
 def main():
@@ -132,4 +194,7 @@ def main():
 
 
 if __name__ == "__main__":
+    import sys
+    if "--test" in sys.argv:
+        sys.exit(0 if run_tests() else 1)
     main()

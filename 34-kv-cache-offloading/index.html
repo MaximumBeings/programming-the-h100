@@ -2443,13 +2443,74 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#345-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+  <a href="#345-self-tests-23-all-pass" class="md-nav__link">
     <span class="md-ellipsis">
       
-        34.5 What to measure on real hardware (untested)
+        34.5 Self-tests (23, all pass)
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#346-four-more-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        34.6 Four more experiments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#347-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        34.7 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#348-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        34.8 What to measure on real hardware (untested)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#349-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        34.9 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="34.9 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2480,6 +2541,17 @@
     <span class="md-ellipsis">
       
         Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
       
     </span>
   </a>
@@ -3210,13 +3282,74 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#345-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+  <a href="#345-self-tests-23-all-pass" class="md-nav__link">
     <span class="md-ellipsis">
       
-        34.5 What to measure on real hardware (untested)
+        34.5 Self-tests (23, all pass)
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#346-four-more-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        34.6 Four more experiments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#347-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        34.7 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#348-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        34.8 What to measure on real hardware (untested)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#349-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        34.9 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="34.9 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3247,6 +3380,17 @@
     <span class="md-ellipsis">
       
         Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
       
     </span>
   </a>
@@ -3374,9 +3518,133 @@
 </tbody>
 </table>
 <p>"Without stalling decode" is achievable only by restoring <strong>ahead</strong> of need, using pinned host memory and a separate copy stream so the transfer overlaps other requests' compute (<a href="../14-nsight-systems/">Chapter 14</a> shows how to see whether it does), and never by paging in the sequence being decoded.</p>
-<h2 id="345-what-to-measure-on-real-hardware-untested">34.5 What to measure on real hardware (untested)<a class="headerlink" href="#345-what-to-measure-on-real-hardware-untested" title="Permanent link">&para;</a></h2>
+<h2 id="345-self-tests-23-all-pass">34.5 Self-tests (23, all pass)<a class="headerlink" href="#345-self-tests-23-all-pass" title="Permanent link">&para;</a></h2>
+<p>Run <code>python3 /Users/oluwaseyiawoga/Developer/programming-the-h100/docs/examples/inference-systems/ch34_kv_offload.py --test</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>What is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Arithmetic (4)</td>
+<td>327,680 bytes per token and 4,096 per layer; restore time linear in tokens; NVMe slower than CPU restore; at prefill speed equal to the NVMe rate, restore and recompute cost the same</td>
+</tr>
+<tr>
+<td>Tier mechanics (8)</td>
+<td>a first access is a miss; the cascade GPU, CPU, NVMe on a three-session hand case; an access returns the tier that held the session and moves it to the GPU; an immediate re-access hits the GPU; LRU picks the oldest as the victim and touching a session protects it; a session larger than every bounded tier is dropped; one larger than the GPU tier skips to the next</td>
+</tr>
+<tr>
+<td>Invariants (3)</td>
+<td>after 3,000 random accesses a session is never in two tiers and no bounded tier exceeds its capacity; with unbounded NVMe no session is ever lost</td>
+</tr>
+<tr>
+<td>Whole runs (7)</td>
+<td>hit fractions sum to 1; the GPU hit rate is the same under all three policies; adding a tier never raises the miss rate or the mean latency; determinism by seed; more skew gives a higher GPU hit rate; with very fast prefill the cost is capped by recompute; the decode-stall limit</td>
+</tr>
+<tr>
+<td>Failure (1)</td>
+<td>zero requests raises <code>ZeroDivisionError</code></td>
+</tr>
+</tbody>
+</table>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>23/23 self-tests pass
+</span></code></pre></div>
+<p><strong>The tests can fail.</strong> Four broken copies: evicting the <em>newest</em> session instead of the oldest fails both LRU tests; not removing a session from its old tier when promoting it fails the "never in two tiers" test; removing the "larger than the tier" rule crashes the oversize tests; and charging the restore time even when recompute is cheaper passed all 22 tests of the first version of the suite, because at the default 20,000 tokens per second restore is always cheaper. That is why the fast-prefill test (number 22) was added.</p>
+<p>The code's docstring used to call the hierarchy "inclusive". It is <strong>exclusive</strong>: a session lives in exactly one tier, and promoting it removes it from the lower one. The test above checks that, and the docstring is fixed.</p>
+<h2 id="346-four-more-experiments">34.6 Four more experiments<a class="headerlink" href="#346-four-more-experiments" title="Permanent link">&para;</a></h2>
+<p>All use <code>run</code>: 400 sessions of 4,096 tokens, 6,000 requests, the GPU holds 40 sessions, seed 0 unless stated (<code>--extras</code>).</p>
+<p><strong>A. Popularity skew</strong> (GPU + 120-session CPU + unbounded NVMe):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>zipf  gpu-hit  cpu-hit  nvme-hit  miss   mean resume latency
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a> 0.6    0.197    0.348     0.389  0.067     74.30 ms
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a> 0.8    0.331    0.331     0.272  0.067     58.15 ms
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a> 1.1    0.598    0.236     0.104  0.062     32.42 ms
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a> 1.4    0.817    0.116     0.020  0.048     15.25 ms
+</span></code></pre></div>
+<p>The miss column is almost constant because with unbounded NVMe the only misses are <strong>first visits</strong>: 399 distinct sessions were touched at zipf 0.6 (399/6000 = 0.0665) and 287 at zipf 1.4 (287/6000 = 0.048). The remaining variation is where the hit lands, and that decides latency: 74 ms when most requests reach down to NVMe and 15 ms when most stay on the GPU.</p>
+<p><strong>B. How big should the CPU tier be?</strong> (GPU + CPU only):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>cpu sessions  gpu-hit  cpu-hit  miss   mean resume latency
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>           0    0.598    0.000  0.402     82.40 ms
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>          40    0.598    0.123  0.280     60.24 ms
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>         120    0.598    0.236  0.166     39.79 ms
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>         240    0.598    0.316  0.086     25.39 ms
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>         360    0.598    0.341  0.062     20.94 ms
+</span></code></pre></div>
+<p>Returns diminish. The first 40 sessions save 22.2 ms (0.55 ms per session), the next 80 save 20.5 ms (0.26 ms each), the next 120 save 14.4 ms (0.12 each), and the last 120 save 4.5 ms (0.04 each). The GPU hit rate does not move at all: it is set by the GPU tier alone.</p>
+<p><strong>C. When does restore stop winning?</strong> A 4,096-token session:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>prefill tok/s  recompute   restore CPU   restore NVMe   cheapest
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>         5000     819.2 ms       24.4 ms       134.2 ms   CPU restore
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>        20000     204.8 ms       24.4 ms       134.2 ms   CPU restore
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        30000     136.5 ms       24.4 ms       134.2 ms   CPU restore
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>        50000      81.9 ms       24.4 ms       134.2 ms   CPU restore
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>       200000      20.5 ms       24.4 ms       134.2 ms   recompute
+</span></code></pre></div>
+<p>NVMe restore never wins once prefill reaches about 30,500 tokens per second. CPU restore wins up to about 167,800 tokens per second. These are the two thresholds from section 34.2, shown as a table.</p>
+<p><strong>D. Seed spread.</strong> Mean resume latency for the GPU + CPU policy over eight seeds: 39.8, 40.2, 39.3, 38.3, 39.4, 39.3, 39.1, 37.8 ms (min 37.8, max 40.2). With 6,000 requests the policy comparison is stable across seeds; the 2.4 ms spread is small next to the 40 ms gap between policies.</p>
+<h2 id="347-failure-modes-and-edge-cases">34.7 Failure modes and edge cases<a class="headerlink" href="#347-failure-modes-and-edge-cases" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>What happens</th>
+<th>Where it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Session larger than every bounded tier</td>
+<td>silently dropped; the next request recomputes</td>
+<td>self-test 11</td>
+</tr>
+<tr>
+<td>Session larger than the GPU tier only</td>
+<td>skips to the next tier</td>
+<td>self-test 12</td>
+</tr>
+<tr>
+<td>Promotion without removal from the old tier</td>
+<td>the session is counted twice and memory is double-booked</td>
+<td>broken copy 2</td>
+</tr>
+<tr>
+<td>Evicting the newest instead of the oldest</td>
+<td>thrashing: hot sessions are demoted first</td>
+<td>broken copy 1</td>
+</tr>
+<tr>
+<td>Prefill faster than the break-even speed</td>
+<td>restore is slower than recompute; the code uses the cheaper one, a naive system that always restores loses</td>
+<td>self-test 22 and experiment C</td>
+</tr>
+<tr>
+<td>Unbounded NVMe</td>
+<td>the tier grows without limit in this model (400 sessions x 1.34 GB = 537 GB); a real drive is finite</td>
+<td>model assumption</td>
+</tr>
+<tr>
+<td>Zero requests</td>
+<td>division by zero when averaging</td>
+<td>self-test 23</td>
+</tr>
+<tr>
+<td>Sessions of different lengths</td>
+<td>the simulator uses a fixed length per run; whole-session LRU favours short sessions</td>
+<td>not modelled</td>
+</tr>
+<tr>
+<td>Active sequence read every step</td>
+<td>cannot be offloaded; PCIe fetch exceeds the per-layer compute budget beyond about 3,500 tokens for one sequence</td>
+<td>section 34.4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not modelled:</strong> partial restores (only the prefix that matches); prefix sharing between sessions (Chapter 45); several concurrent restores contending for one PCIe link; the cost of <strong>writing</strong> a demoted session to CPU or NVMe, which uses the same links; NVMe queue depth and latency; pinned-memory allocation limits; session expiry and privacy deletion; compression or quantisation of stored KV; a restore that overlaps with the previous request's compute; and any real traffic trace.</p>
+<h2 id="348-what-to-measure-on-real-hardware-untested">34.8 What to measure on real hardware (untested)<a class="headerlink" href="#348-what-to-measure-on-real-hardware-untested" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">UNTESTED ON H100</p>
+<p>None of the following was run. Commands are from memory; verify flags against your installed versions.</p>
 <table>
 <thead>
 <tr>
@@ -3386,16 +3654,20 @@
 </thead>
 <tbody>
 <tr>
-<td>Real PCIe and NVMe bandwidth</td>
-<td><code>cudaMemcpy</code> from pinned memory; a large sequential read with direct I/O. Do not trust nominal figures</td>
+<td>Real PCIe bandwidth</td>
+<td><code>nvidia-smi topo -m</code> for the topology; <code>bandwidthTest</code> from the CUDA samples with <code>--memory=pinned --mode=shmoo</code> (check that the sample is built and the flags match your version); or a small <code>cudaMemcpyAsync</code> loop from pinned memory</td>
+</tr>
+<tr>
+<td>Real NVMe bandwidth</td>
+<td>a large sequential read with direct I/O, for example <code>fio --name=seq --filename=/path/to/testfile --rw=read --bs=1M --direct=1 --size=16G --iodepth=16</code> (use your own test path)</td>
 </tr>
 <tr>
 <td>Real prefill speed</td>
-<td>Your engine on your model, at your prompt lengths</td>
+<td>Your engine on your model, at your prompt lengths, with the Chapter 32 client</td>
 </tr>
 <tr>
 <td>Break-even</td>
-<td>The inequality from Worked Example 34.2.1 with the numbers above</td>
+<td>The inequality from Worked Example 34.2.1 with the three numbers above</td>
 </tr>
 <tr>
 <td>Hit rate per tier</td>
@@ -3406,14 +3678,37 @@
 <td>Nsight Systems timeline: does the copy stream run beside compute without delaying the decode step?</td>
 </tr>
 <tr>
+<td>Engine support</td>
+<td>Check your engine's documentation for a KV-offload or KV-transfer option and for whether it restores prefixes or whole sessions; flag names change between releases</td>
+</tr>
+<tr>
 <td>End effect</td>
 <td>TTFT for returning sessions and tokens per second for active ones, using the Chapter 32 harness</td>
 </tr>
 </tbody>
 </table>
+<p>Replace the three constants in <code>ch34_kv_offload.py</code> (<code>PCIE_BW</code>, <code>NVME_BW</code>, <code>PREFILL_TPS</code>) with your measurements and rerun <code>--extras</code>.</p>
 </div>
+<h2 id="349-exercises">34.9 Exercises<a class="headerlink" href="#349-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>The break-even prefill speed for a CPU restore is about 167,800 tokens per second at 55 GB/s. What is it for a PCIe link that actually delivers 25 GB/s?</li>
+<li>How much KV memory do the 40 GPU sessions and the 120 CPU sessions of the simulation represent?</li>
+<li>Explain the miss rates in experiment A: why are they 0.067 at zipf 0.6 and 0.048 at zipf 1.4, and why does the NVMe policy's miss rate not fall to zero?</li>
+<li>Using experiment B, would you buy a 240-session CPU tier or a 120-session one? What other number do you need?</li>
+<li>Why is the GPU hit rate identical for all three policies?</li>
+<li>Eight sequences of 4,096 tokens are active and share the PCIe link. How long does fetching one layer's KV for all of them take, compared with the per-layer budget? And if the model had 64 KV heads instead of 8?</li>
+</ol>
+<h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Per token: <code>327,680 / 25e9</code> = 13.1 µs, so break-even is <code>1 / 13.1 µs</code> ≈ 76,300 tokens per second. A slower link makes recompute competitive earlier.</li>
+<li><code>40 x 4,096 x 327,680</code> = 53.7 GB on the GPU and <code>120 x 4,096 x 327,680</code> = 161.1 GB in host memory. The GPU figure is KV only; weights and activations come on top.</li>
+<li>With unbounded NVMe nothing is ever evicted for good, so a request misses only the first time its session appears. At zipf 0.6 almost all 400 sessions appear (399 of them), giving 399/6000 = 0.0665; at zipf 1.4 only 287 distinct sessions appear in 6,000 requests, giving 0.048. The rate cannot reach zero, because the first visit to each session has nothing to restore.</li>
+<li>240 sessions lowers mean resume latency from 39.8 ms to 25.4 ms, saving 14.4 ms for 120 more sessions (161 GB of host memory). Whether that is worth it depends on the price of that memory against the value of latency and, because the GPU's saved prefill capacity is also freed, on how loaded the prefill pool is. Neither number is in the chapter.</li>
+<li>The GPU tier is an LRU over the request sequence. A session is on the GPU if it was accessed recently enough, regardless of where it was demoted to. Lower tiers affect only what happens after a GPU miss, not what the GPU holds.</li>
+<li>Eight sequences need <code>8 x 0.305</code> = 2.44 ms per layer against a 0.263 ms budget: about nine times too slow. With 64 KV heads (no grouped-query attention) each token's per-layer KV is eight times larger, so the largest single sequence that can be fetched in time falls from about 3,525 to about 441 tokens.</li>
+</ol>
 <h2 id="chapter-summary">Chapter Summary<a class="headerlink" href="#chapter-summary" title="Permanent link">&para;</a></h2>
-<p>KV cache costs about 320 KiB per token, so idle sessions crowd out active ones, and tiering them into GPU, CPU RAM and NVMe can avoid recomputation. Whether a tier helps depends on one comparison: restoring KV from the tier against re-running prefill. With an assumed 55 GB/s PCIe link, 10 GB/s NVMe and 20,000 tokens per second prefill, a CPU restore beats recompute by about eight times but one NVMe drive by only about 1.5, and NVMe loses outright if prefill exceeds about 30,000 tokens per second. A Zipf-popularity simulation cut mean resume latency from 82 ms to 40 ms with a CPU tier and to 32 ms with NVMe added. The active sequence cannot be paged in each step: one layer's fetch over PCIe exceeds the 0.26 ms per-layer compute budget beyond about 3,500 tokens. Offloading therefore serves idle, preempted and shared-prefix sessions, not the sequence being decoded.</p>
+<p>KV cache costs about 320 KiB per token, so idle sessions crowd out active ones, and tiering them into GPU, CPU RAM and NVMe can avoid recomputation. Whether a tier helps depends on one comparison: restoring KV from the tier against re-running prefill. With an assumed 55 GB/s PCIe link, 10 GB/s NVMe and 20,000 tokens per second prefill, a CPU restore beats recompute by about eight times but one NVMe drive by only about 1.5, and NVMe loses outright if prefill exceeds about 30,000 tokens per second. A Zipf-popularity simulation cut mean resume latency from 82 ms to 40 ms with a CPU tier and to 32 ms with NVMe added; returns diminish with tier size, and popularity skew matters more than any single constant. 23 self-tests check the tier mechanics and invariants. The active sequence cannot be paged in each step: one layer's fetch over PCIe exceeds the 0.26 ms per-layer compute budget beyond about 3,500 tokens. Offloading therefore serves idle, preempted and shared-prefix sessions, not the sequence being decoded.</p>
 <h2 id="self-check-questions">Self-Check Questions<a class="headerlink" href="#self-check-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Why is the restore-versus-recompute comparison independent of context length in this model?</li>
@@ -3430,6 +3725,11 @@
 <li>Each layer's KV for a 4,096-token sequence takes about 0.3 ms to fetch over PCIe, longer than the 0.26 ms of compute available per layer, and every sequence in the batch would need the same link at once, so the fetch cannot be hidden.</li>
 <li>Multi-turn chat or agent sessions that resume after a pause, and shared system prompts or documents reused across requests, benefit. A single long conversation being decoded continuously does not, because its KV is needed every step.</li>
 </ol>
+<h2 id="files-and-sources">Files and sources<a class="headerlink" href="#files-and-sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Code: <code>docs/examples/inference-systems/ch34_kv_offload.py</code> (<code>--test</code> for the 23 self-tests, <code>--extras</code> for experiments A to D)</li>
+<li>Bandwidths and prefill speed are assumed round numbers, not measurements. The LMCache project and the KV-transfer layers in vLLM are examples of production systems built on the same idea; this chapter makes no claim about their internals.</li>
+</ul>
 
 
 

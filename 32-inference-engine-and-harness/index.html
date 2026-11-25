@@ -2437,6 +2437,89 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#327-self-tests-21-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.7 Self-tests (21, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#328-experiment-a-the-batch-cap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.8 Experiment A: the batch cap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#329-experiment-b-prefill-interference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.9 Experiment B: prefill interference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3210-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.10 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3211-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.11 On real hardware (UNTESTED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3212-programming-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.12 Programming exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="32.12 Programming exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#chapter-summary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2463,6 +2546,17 @@
     <span class="md-ellipsis">
       
         Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
       
     </span>
   </a>
@@ -3299,6 +3393,89 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#327-self-tests-21-all-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.7 Self-tests (21, all pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#328-experiment-a-the-batch-cap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.8 Experiment A: the batch cap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#329-experiment-b-prefill-interference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.9 Experiment B: prefill interference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3210-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.10 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3211-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.11 On real hardware (UNTESTED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3212-programming-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        32.12 Programming exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="32.12 Programming exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#chapter-summary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3325,6 +3502,17 @@
     <span class="md-ellipsis">
       
         Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
       
     </span>
   </a>
@@ -3501,6 +3689,156 @@
 </tbody>
 </table>
 <p>For a real server, replace <code>simulate</code> with a client that sends the same requests and records first-token and last-token timestamps, and keep <code>summarize</code> unchanged.</p>
+<h2 id="327-self-tests-21-all-pass">32.7 Self-tests (21, all pass)<a class="headerlink" href="#327-self-tests-21-all-pass" title="Permanent link">&para;</a></h2>
+<p>The metric hand-check and Little's law are two checks. The harness is reused by Chapters 33 to 46, so it gets a wider net. Run <code>python3 /Users/oluwaseyiawoga/Developer/programming-the-h100/docs/examples/inference-systems/ch32_inference_harness.py --test</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>What is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Arithmetic (4)</td>
+<td>KV bytes per token is 327,680 for the 70B shape and linear in layers; the decode floor halves when GPUs double and is linear in bytes per parameter</td>
+</tr>
+<tr>
+<td>Percentile (4)</td>
+<td><code>q=0</code> is the minimum and <code>q=1</code> the maximum; the median of <code>[1,2,3,4]</code> is 2.5; a single element returns itself; the function is monotone in <code>q</code></td>
+</tr>
+<tr>
+<td>Workload (3)</td>
+<td>the same seed gives identical requests and a different seed does not; arrivals never decrease and lengths are at least 1</td>
+</tr>
+<tr>
+<td>Engine (4)</td>
+<td><code>simulate</code> does not change its input; every request finishes with exactly <code>output</code> tokens and ordered timestamps; <code>max_batch=1</code> never overlaps two requests; at 10 times the arrival rate with the same lengths, p99 TTFT does not fall</td>
+</tr>
+<tr>
+<td>Metrics (4)</td>
+<td>the hand case (TPOT 0.10, TTFT p50 0.35, goodput 1/1.4); a tighter SLO never raises attainment; a one-token reply does not divide by zero; the cost formula gives $8,000 per million tokens for 1,000 tokens in one hour on two GPUs at $4</td>
+</tr>
+<tr>
+<td>Conservation (2)</td>
+<td>Little's law within 2 percent on five seeds; <code>pct([])</code> raises <code>IndexError</code>, a documented failure</td>
+</tr>
+</tbody>
+</table>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>21/21 self-tests pass
+</span></code></pre></div>
+<p><strong>The tests can fail.</strong> Two deliberate breakages were tried on a copy: removing the batch cap from the admission loop fails the <code>max_batch=1</code> test, and dropping the <code>- 1</code> from the TPOT denominator fails the hand case. The second one passed all 20 earlier tests, which is why the hand case is part of the suite and not only a printed line.</p>
+<h2 id="328-experiment-a-the-batch-cap">32.8 Experiment A: the batch cap<a class="headerlink" href="#328-experiment-a-the-batch-cap" title="Permanent link">&para;</a></h2>
+<p>The engine takes <code>max_batch</code>, the most sequences it will run in one iteration. In a real server the equivalent limit is set by KV-cache memory, not a flag, so this experiment shows the shape of the trade, not a tuning guide. Rate 12 requests per second, 300 requests, seed 2 (<code>--extras</code>):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>max_batch  ttft_p50  ttft_p99  tpot_p50  tput(tok/s)  slo_ok
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>        4   119.523   225.917    0.0211          184    0.03
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>        8    56.060   106.728    0.0223          340    0.04
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>       16    25.106    47.547    0.0247          585    0.09
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>       32     8.853    18.507    0.0295          899    0.21
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>       64     2.125     3.507    0.0388         1189    0.49
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>      128     0.077     0.160    0.0442         1246    1.00
+</span></code></pre></div>
+<ul>
+<li>Throughput rises with the cap and TPOT also rises: each step carries more sequences, so each token takes longer, but more tokens leave per second.</li>
+<li>TTFT falls by three orders of magnitude, because the cap is what keeps arrivals waiting.</li>
+<li>Caps of 96, 112, 128 and 192 give the same result (TTFT p99 0.160 to 0.166 or lower, attainment 1.00). The cap stops mattering once it exceeds the number of sequences that are ever running at once, which here is between 81 and 96.</li>
+<li>The 64 row equals the 12 req/s row of the section 32.5 sweep. That is a consistency check: same seed, same default cap.</li>
+</ul>
+<h2 id="329-experiment-b-prefill-interference">32.9 Experiment B: prefill interference<a class="headerlink" href="#329-experiment-b-prefill-interference" title="Permanent link">&para;</a></h2>
+<p>In the engine, a newly admitted prompt's prefill time is added to the iteration, so every running sequence waits for it. Rate 4 requests per second, 300 requests, seed 2, output median 128, prompt median varied:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>prompt_median  ttft_p50  tpot_p50  tpot_p99  tput(tok/s)
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>          128     0.038    0.0238    0.0250          575
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>          512     0.051    0.0252    0.0279          574
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>         2048     0.105    0.0328    0.0458          573
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>         8192    13.962    0.1335    0.2249          426
+</span></code></pre></div>
+<ul>
+<li>From 128 to 2048 the median TPOT rises from 23.8 to 32.8 ms even though the generated output is identical: the decode steps are stalled by other users' prefills.</li>
+<li>The 8192 row breaks the pattern. Throughput falls from about 575 to 426 tokens per second at the same offered rate, and TTFT p50 is 14 seconds. Prefill alone is saturating the server. The mean of a log-normal is <code>median x exp(sigma^2/2)</code> = <code>8192 x 1.2776</code> ≈ 10,466 tokens, which is 0.262 s of prefill per request at 40,000 tokens per second, and four requests per second need 1.05 s of prefill per second of wall time. Offered load exceeds capacity.</li>
+<li>Real engines mitigate this by splitting a long prefill into chunks and mixing them with decode steps (Chapter 44). The simulator does not, which is why this is the baseline that chapter improves on.</li>
+</ul>
+<h2 id="3210-failure-modes-and-edge-cases">32.10 Failure modes and edge cases<a class="headerlink" href="#3210-failure-modes-and-edge-cases" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>What happens</th>
+<th>Where it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Offered load above capacity</td>
+<td>the queue grows without bound during the run; wall time includes draining the tail, so measured throughput falls below offered load</td>
+<td>Experiment A at cap 4; Experiment B at 8192</td>
+</tr>
+<tr>
+<td>Near the knee, few requests</td>
+<td>results depend heavily on the seed: at 12 req/s, five seeds give TTFT p50 of 1.623, 0.762, 2.125, 0.752 and 0.108 s and SLO attainment of 0.58, 1.00, 0.49, 0.85 and 0.97. At 8 req/s the same seeds all give 0.058 to 0.063 s</td>
+<td>report several seeds or a confidence interval near the knee</td>
+</tr>
+<tr>
+<td>p99 from few samples</td>
+<td>with 300 requests, p99 is the third-largest value; with 20 it is nearly the maximum</td>
+<td><code>pct</code> interpolates, it does not warn</td>
+</tr>
+<tr>
+<td>Empty request list</td>
+<td><code>pct</code> raises <code>IndexError</code></td>
+<td>self-test 21</td>
+</tr>
+<tr>
+<td>Reply of one token</td>
+<td>TPOT is defined as 0 (division guarded)</td>
+<td>self-test 18</td>
+</tr>
+<tr>
+<td>SLO thresholds chosen after seeing the data</td>
+<td>attainment can be made to look good by tuning the SLO</td>
+<td>fix the SLO before the run</td>
+</tr>
+<tr>
+<td>Cost computed from wall time</td>
+<td>an overloaded run has a long drain, which raises cost per token for a reason that is not the engine's efficiency</td>
+<td>compare at equal attainment</td>
+</tr>
+<tr>
+<td>Little's law passes</td>
+<td>says the bookkeeping is consistent for <strong>any</strong> cost constants, including absurd ones</td>
+<td>do not read it as validation of the cost model</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not modelled:</strong> KV-cache memory and the preemption it forces (Chapters 43 and 44); chunked prefill; prefix reuse (Chapter 45); more than one GPU, communication, and pipeline bubbles; speculative decoding; request cancellation, timeouts and retries; tokenizer, network and queueing outside the engine; variation in step time (the model uses a constant); GPU clock and thermal behaviour; streaming back-pressure from slow clients.</p>
+<h2 id="3211-on-real-hardware-untested">32.11 On real hardware (UNTESTED)<a class="headerlink" href="#3211-on-real-hardware-untested" title="Permanent link">&para;</a></h2>
+<p>Nothing in this chapter has been run on a GPU server. These steps are from memory and must be checked against the version you install; flag names change between releases.</p>
+<ol>
+<li><strong>Pick the engine and record its version.</strong> For example, <code>python3 -m pip show vllm</code> (or the version your container reports) and <code>nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv</code>. Write both into the run record.</li>
+<li><strong>Start the server with fixed settings</strong> and write them down: model, tensor-parallel size, maximum sequence length, maximum number of running sequences, GPU memory fraction. A result without these is not comparable.</li>
+<li><strong>Replace <code>simulate</code> with a client.</strong> It must send the same <code>Req</code> list at the same arrival times, record the time of the first streamed token and of the last, and fill <code>first_token</code>, <code>finish</code> and <code>generated</code>. Then call <code>summarize</code> unchanged. Use the same <code>make_workload</code> seed so the simulated and real runs see identical requests.</li>
+<li><strong>Check the decode floor.</strong> Run a single request with a long output and no other load. Measure TPOT. It must be at or above <code>decode_floor_ms</code> for your model and GPU count; if it is below, something in the arithmetic (bytes per parameter, GPU count, bandwidth) is wrong.</li>
+<li><strong>Sweep the rate</strong> across idle, loaded and overloaded, repeat each point with at least three seeds, and plot TTFT p50 and p99, TPOT p50, throughput and attainment against rate. Find the knee as in section 32.5.</li>
+<li><strong>Fit the cost model.</strong> From the single-request run take <code>base</code>, from a batch-of-N run take <code>per_seq</code>, and rerun the simulator with those constants. Compare the simulated and real knees. The difference is the part of the model this chapter did not capture.</li>
+<li><strong>Capture a profile</strong> of one decode iteration with Nsight Systems (<a href="../14-nsight-systems/">Chapter 14</a>) to confirm the iteration is dominated by the weight read, as section 32.1 assumes.</li>
+</ol>
+<h2 id="3212-programming-exercises">32.12 Programming exercises<a class="headerlink" href="#3212-programming-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>In Experiment A, which caps among 64, 80, 96 meet at least 95 percent attainment at 12 req/s? What does the cost per million tokens do between them (default 2 GPUs at $4 per hour)?</li>
+<li>Compute the decode floor for an 8-billion-parameter model on one H100 in BF16 and in FP8, and its KV bytes per token for 32 layers, 8 KV heads and head dimension 128.</li>
+<li>At 4 req/s, at what prompt median does prefill alone saturate the simulator? Compare with Experiment B.</li>
+<li>Chunked prefill: change <code>simulate</code> so each iteration charges at most <code>chunk</code> prompt tokens of prefill and keeps the rest of a prompt waiting for later iterations. State, before running, what happens to TPOT p99 and to TTFT p50 in Experiment B at prompt median 2048.</li>
+<li>Show that Little's law cannot detect a wrong <code>per_kv_token</code> constant, by changing it by a factor of 100 and rerunning the check.</li>
+<li>Add a test that two runs of <code>simulate</code> on the same workload give identical results, and one that scaling all cost constants by 2 does not reduce any request's latency.</li>
+</ol>
+<h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Caps 80 and 96 both reach attainment 1.00, and 64 does not (0.49). Cost per million tokens: $1.87 at 64, $1.79 at 80, $1.78 at 96. The cap that is cheapest per token is also the one that meets the SLO, because a cap that is too low leaves the GPU idle behind a queue while its fixed cost keeps accruing. Past 96 nothing changes, since the cap is no longer the binding limit.</li>
+<li><code>8e9 x 2 B / 3.35e12 B/s</code> = 4.78 ms in BF16 and 2.39 ms in FP8 (weights only, batch 1). KV per token: <code>2 x 32 x 8 x 128 x 2</code> = 131,072 bytes = 128 KiB.</li>
+<li>Prefill demand is <code>rate x median x exp(sigma^2/2) / prefill_tps</code>. Setting it to 1 with sigma 0.7 gives <code>median = 40,000 / (4 x 1.2776)</code> ≈ 7,827 tokens. Decode steps also take time, so the true saturation point is lower. Experiment B shows 2048 healthy (about 26 percent prefill load) and 8192 overloaded (about 105 percent), which is consistent.</li>
+<li>Prediction, not a measurement: TPOT p99 should fall, because a decode step no longer waits for a whole long prompt, only for one chunk. TTFT p50 should rise slightly, because a prompt is now finished over several iterations. Chapter 44 builds this and tests it.</li>
+<li>The check compares <code>area/wall</code> with <code>lambda x W</code>; both are computed from the same simulated timeline. Any per-iteration cost, however wrong, produces a consistent timeline, so the two sides agree. Rerunning with <code>per_kv_token = 1e-6</code> (workload of 300 requests at 4 req/s, seed 1) leaves the relative difference at 0.316 percent (0.322 percent at the default), while the mean request latency goes from 3.955 s to 8.165 s. The conclusion in section 32.5 stands: it validates bookkeeping only.</li>
+<li>For identical runs, compare every <code>(first_token, finish)</code> pair. For the scaling test, multiply <code>base</code>, <code>per_seq</code>, <code>per_kv_token</code> by 2 and divide <code>prefill_tps</code> by 2; every <code>finish - arrival</code> must not decrease. This held for all 4,500 request comparisons in 30 runs (10 seeds, rates 2, 6 and 10 req/s, 150 requests each), but it is an empirical property of this simulator, not a theorem: if it ever fails, check first for a cost term applied with the wrong sign.</li>
+</ol>
 <h2 id="chapter-summary">Chapter Summary<a class="headerlink" href="#chapter-summary" title="Permanent link">&para;</a></h2>
 <p>Serving splits into compute-bound prefill, which sets TTFT, and memory-bound decode, which sets TPOT. The decode floor is weight bytes over bandwidth, about 21 ms per token for a 70B BF16 model across two H100s at batch 1, before KV reads and communication. Continuous batching refills the batch every iteration, and shared weight reads make throughput rise with load until the batch is full. A fair measurement fixes and publishes the workload, reports TTFT, TPOT, percentiles, goodput under an SLO and cost, and sweeps the load. The simulator in this chapter reproduces those shapes and passes a hand-computed metric check and Little's law, but its numbers are illustrative.</p>
 <h2 id="self-check-questions">Self-Check Questions<a class="headerlink" href="#self-check-questions" title="Permanent link">&para;</a></h2>
@@ -3519,6 +3857,11 @@
 <li>A server can raise throughput by letting requests queue into large batches, which makes users wait. Throughput alone hides that.</li>
 <li>It checks that the simulator's time-average occupancy equals arrival rate times mean residence time, which catches bookkeeping errors. It does not check that the cost constants resemble a real GPU.</li>
 </ol>
+<h2 id="files-and-sources">Files and sources<a class="headerlink" href="#files-and-sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Code: <code>docs/examples/inference-systems/ch32_inference_harness.py</code> (<code>--test</code> for the self-tests, <code>--extras</code> for Experiments A and B)</li>
+<li>The decode floor uses the NVIDIA H100 SXM datasheet bandwidth (3.35 TB/s). The KV formula is the standard <code>2 x layers x kv_heads x head_dim x bytes</code>. The cost model constants are placeholders.</li>
+</ul>
 
 
 

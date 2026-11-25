@@ -2432,13 +2432,74 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#335-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+  <a href="#335-self-tests-24-all-pass" class="md-nav__link">
     <span class="md-ellipsis">
       
-        33.5 What to measure on real hardware (untested)
+        33.5 Self-tests (24, all pass)
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#336-four-more-measurements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        33.6 Four more measurements
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#337-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        33.7 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#338-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        33.8 What to measure on real hardware (untested)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#339-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        33.9 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="33.9 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2469,6 +2530,17 @@
     <span class="md-ellipsis">
       
         Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
       
     </span>
   </a>
@@ -3244,13 +3316,74 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#335-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+  <a href="#335-self-tests-24-all-pass" class="md-nav__link">
     <span class="md-ellipsis">
       
-        33.5 What to measure on real hardware (untested)
+        33.5 Self-tests (24, all pass)
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#336-four-more-measurements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        33.6 Four more measurements
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#337-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        33.7 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#338-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        33.8 What to measure on real hardware (untested)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#339-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        33.9 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="33.9 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3281,6 +3414,17 @@
     <span class="md-ellipsis">
       
         Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
       
     </span>
   </a>
@@ -3385,6 +3529,10 @@
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>rank 3: matches reference? True   tokens sent to ranks 0..3 = [34, 33, 32, 29]
 </span></code></pre></div>
 <p>The send counts differ by rank and by destination, which is why the exchange needs <code>all_to_all_single</code> with <strong>uneven split sizes</strong> and a preliminary exchange of those sizes. A fixed-size all-to-all would silently truncate or pad.</p>
+<div class="admonition note">
+<p class="admonition-title">What the check could not see, and the fix</p>
+<p>The first version of this check passed even when the dispatch sent tokens to the <strong>wrong rank</strong>. The toy expert (<code>t * (e + 1)</code>) is a pure function of the expert id, so any rank can compute any expert and the output still matches the reference. A deliberately broken copy that used <code>dest = exp_flat % world</code> instead of <code>exp_flat // per_rank</code> printed <code>True</code> on all four ranks. The check now also asserts that every expert id a rank receives is one it owns (<code>recv_e // per_rank == rank</code>). The same broken copy now fails. The chapter's printed output is unchanged, because the correct code passes both tests.</p>
+</div>
 <h3 id="the-pattern-in-code">The pattern in code<a class="headerlink" href="#the-pattern-in-code" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">dest</span> <span class="o">=</span> <span class="n">exp_flat</span> <span class="o">//</span> <span class="n">per_rank</span>                     <span class="c1"># which rank owns each chosen expert</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">order</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">stable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># group token copies by destination</span>
@@ -3397,10 +3545,130 @@
 </span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">y</span><span class="o">.</span><span class="n">index_add_</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">tok_idx</span><span class="p">,</span> <span class="n">result</span> <span class="o">*</span> <span class="n">weights</span><span class="o">.</span><span class="n">flatten</span><span class="p">()[:,</span> <span class="kc">None</span><span class="p">])</span>   <span class="c1"># 6. weighted sum per token</span>
 </span></code></pre></div>
 <p>On GPUs the same structure uses NCCL all-to-all or a specialized dispatch library, and the experts run as one <strong>grouped GEMM</strong> so that many small matrix multiplies of different sizes execute in a single kernel launch. Chapters <a href="../20-tiled-copy/">20</a> to <a href="../29-workbook-capstone/">29</a> cover the GEMM machinery that a grouped GEMM builds on.</p>
-<h2 id="335-what-to-measure-on-real-hardware-untested">33.5 What to measure on real hardware (untested)<a class="headerlink" href="#335-what-to-measure-on-real-hardware-untested" title="Permanent link">&para;</a></h2>
+<h2 id="335-self-tests-24-all-pass">33.5 Self-tests (24, all pass)<a class="headerlink" href="#335-self-tests-24-all-pass" title="Permanent link">&para;</a></h2>
+<p>Run <code>python3 /Users/oluwaseyiawoga/Developer/programming-the-h100/docs/examples/inference-systems/ch33_moe_expert_parallel.py --test</code> (about 15 seconds, needs PyTorch; the gloo checks start 2 to 4 processes each).</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>What is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Router (3)</td>
+<td>output shape <code>[T, k]</code> with ids in range; the <code>k</code> experts of one token are distinct; the same seed gives the same assignment</td>
+</tr>
+<tr>
+<td>Loads and imbalance (5)</td>
+<td>expert loads sum to <code>T x k</code>; contiguous GPU loads conserve the total; a perfectly even load has imbalance exactly 1.0; imbalance is never below 1; more skew gives more imbalance</td>
+</tr>
+<tr>
+<td>Placement (6)</td>
+<td>total load is conserved with 0 and 8 replicas; replicas improve a skewed load; at skew 1.0, 8 and 16 replicas bring imbalance under 1.02; two hand-computed cases (loads <code>[100,1,1,1]</code> on 2 GPUs give <code>[101, 2]</code> with no replicas and <code>[67.667, 35.333]</code> with 2); a replica count that breaks <code>(E + R) % GPUs == 0</code> raises <code>ValueError</code></td>
+</tr>
+<tr>
+<td>Volume (3)</td>
+<td>zero bytes on one GPU; linear in tokens; the 117.4 MB figure for EP=8</td>
+</tr>
+<tr>
+<td>gloo all-to-all (7)</td>
+<td>match with the reference for 4 ranks (uniform, top-2), 2 ranks (top-1), and 4 ranks with every copy sent to rank 0 so three ranks receive nothing; send counts conserve <code>tokens x k</code> per rank; every send targets rank 0 in the last case</td>
+</tr>
+</tbody>
+</table>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>24/24 self-tests pass
+</span></code></pre></div>
+<p><strong>The tests can fail.</strong> Three broken copies were tried: skipping the undo-sort fails the 4-rank and 2-rank match; leaving out the router weights in the final sum fails the 4-rank and rank-0 match; giving a replica to the <em>least</em> loaded expert fails the "under 1.02" check and the two-replica hand case. The first version of this suite had 21 tests and let the third breakage pass, because "replicas improve a skewed load" is also true of a poor replica choice. The two hand cases and the 1.02 threshold were added for that reason.</p>
+<h2 id="336-four-more-measurements">33.6 Four more measurements<a class="headerlink" href="#336-four-more-measurements" title="Permanent link">&para;</a></h2>
+<p>All use the same simulator as section 33.3 (64 experts, 8 GPUs, top-2).</p>
+<p><strong>A. How many replicas?</strong> Skew 1.0, 20,000 tokens, seed 0:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>replicas  imbalance  extra expert weights
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>       0      2.935   0 %
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>       8      1.001   12.5 %
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>      16      1.000   25 %
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>      24      1.001   37.5 %
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>      32      1.001   50 %
+</span></code></pre></div>
+<p>Two points. Without replicas but with balanced packing the busiest GPU still carries 2.9 times the mean, against 3.9 for contiguous placement: packing helps, but a single expert cannot be split across GPUs, and the hottest one alone is about 2.9 times a GPU's average share. Eight replicas (12.5 percent more expert weights) remove the problem; more buy nothing here.</p>
+<p><strong>B. The seed matters.</strong> The same contiguous placement over eight seeds (20,000 tokens):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>skew 0.5: 2.22 1.62 2.21 2.27 1.82 1.62 1.82 1.38   (min 1.38, max 2.27)
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>skew 1.0: 3.94 2.41 3.45 3.74 2.60 2.10 2.89 2.00   (min 2.00, max 3.94)
+</span></code></pre></div>
+<p>The 3.935 printed in section 33.3 is seed 0, which is the worst of the eight at skew 1.0. A different popularity draw gives half that. Read the table as "imbalance is large and highly variable", not as a constant.</p>
+<p><strong>C. Small batches are noisy even with a perfectly uniform router.</strong> Skew 0, contiguous placement, mean over eight seeds:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>tokens per step   16     64     256    1024   4096   20000
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>mean imbalance    1.656  1.344  1.215  1.080  1.040  1.016
+</span></code></pre></div>
+<p>Decode steps carry few tokens per GPU, so some GPUs see several times the average just from sampling. Imbalance at decode is therefore a larger problem than the prefill-sized simulation of section 33.3 suggests.</p>
+<p><strong>D. Volume against <code>EP</code> and <code>k</code>.</strong> At 8,192 tokens per GPU, hidden 4,096, BF16:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>EP            2      4      8      16     32
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>dispatch MB   67.1   100.7  117.4  125.8  130.0
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>top-k (EP=8)  k=1: 58.7   k=2: 117.4   k=4: 234.9   k=8: 469.8
+</span></code></pre></div>
+<p>The volume saturates toward <code>tokens x k x hidden x bytes</code> = 134.2 MB as <code>EP</code> grows, and is exactly linear in <code>k</code>.</p>
+<h2 id="337-failure-modes-and-edge-cases">33.7 Failure modes and edge cases<a class="headerlink" href="#337-failure-modes-and-edge-cases" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>What happens</th>
+<th>Where it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Replica count with <code>(E + R) % GPUs != 0</code></td>
+<td>the packing runs out of slots and the code fails with <code>ValueError: min() arg is an empty sequence</code>, which does not name the cause</td>
+<td>self-test 14; validate <code>R</code> before calling</td>
+</tr>
+<tr>
+<td>A rank receives no tokens</td>
+<td>the receive buffer has size 0; the code returns the empty tensor instead of stacking nothing</td>
+<td>gloo test with every copy to rank 0</td>
+</tr>
+<tr>
+<td>Fixed-size all-to-all used for uneven counts</td>
+<td>truncates or pads silently</td>
+<td>section 33.4; uneven split sizes and a size exchange are required</td>
+</tr>
+<tr>
+<td>Undo-sort forgotten</td>
+<td>each token gets another token's result; the output is plausible-looking and wrong</td>
+<td>broken copy 1 in section 33.5</td>
+</tr>
+<tr>
+<td>Router weights forgotten</td>
+<td>the experts' outputs are summed unweighted</td>
+<td>broken copy 2</td>
+</tr>
+<tr>
+<td>Dispatch to the wrong rank</td>
+<td>invisible to a stateless toy expert; visible only if the receiving rank checks ownership</td>
+<td>note in section 33.4</td>
+</tr>
+<tr>
+<td>One expert hotter than a whole GPU's share</td>
+<td>cannot be fixed by moving experts; needs replicas</td>
+<td>experiment A: 2.935 at 0 replicas</td>
+</tr>
+<tr>
+<td>Placement computed from one load snapshot</td>
+<td>goes stale when traffic changes</td>
+<td>re-place from live counts</td>
+</tr>
+<tr>
+<td>Small decode batches</td>
+<td>imbalance from sampling alone</td>
+<td>experiment C</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not modelled:</strong> capacity limits and token dropping; shared experts that every token uses; expert compute time and its overlap with the all-to-all; router cost; hierarchical all-to-all (inside a node first, then across nodes); low-precision dispatch (sending FP8 activations); network topology and contention; the decode-specific low-latency dispatch kernels; the backward pass; and any NCCL or NVLink behaviour. The gloo test checks <strong>logic</strong> on CPU only.</p>
+<h2 id="338-what-to-measure-on-real-hardware-untested">33.8 What to measure on real hardware (untested)<a class="headerlink" href="#338-what-to-measure-on-real-hardware-untested" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">UNTESTED ON H100</p>
-<p>None of the following was run. It is the procedure for turning this chapter into a published result.</p>
+<p>None of the following was run. Commands are from memory; verify flags and tool names against the versions you install.</p>
 </div>
 <table>
 <thead>
@@ -3412,14 +3680,24 @@
 </thead>
 <tbody>
 <tr>
+<td>Topology</td>
+<td><code>nvidia-smi topo -m</code></td>
+<td>Shows which GPUs share NVLink and which cross PCIe or the network</td>
+</tr>
+<tr>
+<td>Raw all-to-all bandwidth</td>
+<td><code>alltoall_perf</code> from NVIDIA's <code>nccl-tests</code> repository, for example <code>-b 8M -e 1G -f 2 -g 8</code> on one node</td>
+<td>Gives the achieved fraction of the section 33.2 floor</td>
+</tr>
+<tr>
 <td>Layer time split</td>
 <td>Nsight Systems timeline (<a href="../14-nsight-systems/">Chapter 14</a>): expert compute versus all-to-all</td>
 <td>Shows the communication share</td>
 </tr>
 <tr>
 <td>Imbalance</td>
-<td>Per-GPU token counts per layer from the router, max divided by mean</td>
-<td>The slowest-GPU penalty</td>
+<td>Per-GPU token counts per layer from the router, max divided by mean, over many steps</td>
+<td>The slowest-GPU penalty; compare with experiments B and C</td>
 </tr>
 <tr>
 <td>Scaling</td>
@@ -3434,18 +3712,41 @@
 <tr>
 <td>Placement</td>
 <td>Imbalance and throughput with and without replicas under real traffic</td>
-<td>Whether replication pays for its memory</td>
+<td>Whether replication pays for its memory (experiment A)</td>
 </tr>
 <tr>
 <td>Decode versus prefill</td>
 <td>Separate runs at small and large batch</td>
 <td>The two regimes need different dispatch strategies</td>
 </tr>
+<tr>
+<td>Engine switch</td>
+<td>Check your engine's documentation for its expert-parallel option (vLLM has a flag for it in recent releases; verify the name)</td>
+<td>Needed to run any of this on a real MoE checkpoint</td>
+</tr>
 </tbody>
 </table>
 <p>Report each against the harness from <a href="../32-inference-engine-and-harness/">Chapter 32</a>: fixed workload, TTFT, TPOT and cost, not kernel times alone.</p>
+<h2 id="339-exercises">33.9 Exercises<a class="headerlink" href="#339-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Compute the dispatch volume per GPU at <code>EP = 64</code> for the section 33.2 setup, and the limit as <code>EP</code> grows.</li>
+<li>A model has 48 MoE layers. Using the section 33.2 floors, what is the total exposed all-to-all floor per forward pass at 8,192 tokens per GPU on <code>EP = 8</code> (NVLink) and on <code>EP = 16</code> (InfiniBand)? Then repeat the volume for a decode step with 64 tokens per GPU on <code>EP = 8</code> and say what limits it.</li>
+<li>Explain the value 1.656 in experiment C for 16 tokens, without running code.</li>
+<li>For 60 experts on 8 GPUs, which replica counts keep the placement code from failing?</li>
+<li>Add a capacity limit: each expert accepts at most <code>C</code> token copies per step and the rest are dropped. What must change in the reference, and what invariant replaces "send counts sum to <code>tokens x k</code>"?</li>
+<li>In <code>_worker</code>, replace the stateless toy expert with one that needs a per-rank weight. Predict which of the three gloo configurations fail if the dispatch uses <code>exp_flat % world</code>.</li>
+</ol>
+<h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>8192 x 2 x 4096 x 2 x 63/64</code> = 132.1 MB. The limit is <code>8192 x 2 x 4096 x 2</code> = 134.2 MB, so going from 8 to 64 GPUs adds 12.5 percent to the volume per GPU.</li>
+<li>NVLink: 48 x 522.0 µs = 25.1 ms. InfiniBand: 48 x 5,033.2 µs = 241.6 ms. Both are floors from datasheet bandwidth and cover dispatch plus combine. For a decode step with 64 tokens per GPU, the volume at <code>EP = 8</code> is <code>117.4 MB / 128</code> = 0.92 MB, whose bandwidth floor over NVLink is about 4 µs per layer. At that size the fixed latency of the exchange, not bandwidth, is what limits it, which is why decode uses different dispatch kernels.</li>
+<li>With 16 tokens and top-2 there are only 32 token copies for 8 GPUs, a mean of 4 per GPU. Random sampling makes the busiest GPU hold about 7 of them (median over 200 seeds, range 5 to 13), so max over mean is well above 1 even though every expert is equally likely. As tokens grow the relative fluctuation shrinks roughly as one over the square root of the count, which matches the fall to 1.016 at 20,000.</li>
+<li><code>(60 + R) % 8 == 0</code>, so <code>R = 4, 12, 20, ...</code> (<code>R ≡ 4 mod 8</code>). With <code>R = 0</code> it fails because 60 is not divisible by 8.</li>
+<li>Counting copies per expert, keep the first <code>C</code> and drop the rest; the reference must apply the same rule and treat dropped copies as contributing zero (or renormalise the remaining weights, whichever the model specifies; this must match). The conservation invariant becomes: sum of send counts = <code>tokens x k</code> minus the number dropped, and each expert's received count is at most <code>C</code>.</li>
+<li>Prediction, not a measurement: with an expert that depends on per-rank weights, a copy sent to a rank that does not own the expert is computed wrongly or not at all, so all three configurations should fail. The ownership assertion added in section 33.4 already catches the mis-routing without changing the expert, and the broken copy fails 4 of the 24 tests, including all three <code>matches reference</code> checks.</li>
+</ol>
 <h2 id="chapter-summary">Chapter Summary<a class="headerlink" href="#chapter-summary" title="Permanent link">&para;</a></h2>
-<p>An MoE layer routes each token to its top-<code>k</code> experts, and with experts sharded across GPUs every layer does a dispatch and a combine all-to-all on the critical path. The data volume per GPU is nearly independent of the expert-parallel degree, but the link it crosses is not: a bandwidth floor of about 0.5 ms over NVLink becomes about 5 ms over a 400 Gb/s InfiniBand link for the same tensors, per layer. Popular experts overload some GPUs, and the busiest GPU sets the layer time; in a synthetic simulation contiguous placement reached 3.9 times the mean load, and replicating hot experts restored 1.0, at the price of extra weight memory and an assumption of perfectly shared load. Inference balance comes from placement, not from a training loss. A four-process gloo test confirmed that uneven-size dispatch, expert computation, combine and weighted summation reproduce a single-process reference; GPU performance is left for you to measure.</p>
+<p>An MoE layer routes each token to its top-<code>k</code> experts, and with experts sharded across GPUs every layer does a dispatch and a combine all-to-all on the critical path. The data volume per GPU is nearly independent of the expert-parallel degree, but the link it crosses is not: a bandwidth floor of about 0.5 ms over NVLink becomes about 5 ms over a 400 Gb/s InfiniBand link for the same tensors, per layer. Popular experts overload some GPUs, and the busiest GPU sets the layer time; in a synthetic simulation contiguous placement reached 3.9 times the mean load, and replicating hot experts restored 1.0, at the price of extra weight memory and an assumption of perfectly shared load. Inference balance comes from placement, not from a training loss. A four-process gloo test confirmed that uneven-size dispatch, expert computation, combine and weighted summation reproduce a single-process reference; GPU performance is left for you to measure. The 24 self-tests also showed that the original dispatch check could not detect dispatch to the wrong rank, now fixed with an ownership assertion; and the imbalance figures vary widely with the random seed and fall toward 1 only as tokens per step grow.</p>
 <h2 id="self-check-questions">Self-Check Questions<a class="headerlink" href="#self-check-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Why does each MoE layer need two all-to-all exchanges?</li>
@@ -3462,6 +3763,11 @@
 <li>The balancing loss shapes the router during training. At inference the router is fixed and sees different traffic, so some experts can still be much more popular than others. Placement, replication and re-balancing from live statistics address that.</li>
 <li>Each rank sends a different number of token copies to each destination, so each receiver must know how much to expect before it can allocate its receive buffer and call the uneven-split exchange.</li>
 </ol>
+<h2 id="files-and-sources">Files and sources<a class="headerlink" href="#files-and-sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Code: <code>docs/examples/inference-systems/ch33_moe_expert_parallel.py</code> (<code>--test</code> for the 24 self-tests; the default run prints the chapter's numbers)</li>
+<li>Bandwidths are datasheet values (NVLink 450 GB/s one-way per H100, 400 Gb/s InfiniBand). The simulation's skew is synthetic.</li>
+</ul>
 
 
 

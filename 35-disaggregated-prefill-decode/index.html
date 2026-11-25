@@ -2482,13 +2482,74 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#356-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+  <a href="#356-self-tests-25-all-pass" class="md-nav__link">
     <span class="md-ellipsis">
       
-        35.6 What to measure on real hardware (untested)
+        35.6 Self-tests (25, all pass)
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#357-four-more-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        35.7 Four more experiments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#358-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        35.8 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#359-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        35.9 What to measure on real hardware (untested)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3510-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        35.10 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="35.10 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2519,6 +2580,17 @@
     <span class="md-ellipsis">
       
         Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
       
     </span>
   </a>
@@ -3232,13 +3304,74 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#356-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+  <a href="#356-self-tests-25-all-pass" class="md-nav__link">
     <span class="md-ellipsis">
       
-        35.6 What to measure on real hardware (untested)
+        35.6 Self-tests (25, all pass)
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#357-four-more-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        35.7 Four more experiments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#358-failure-modes-and-edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        35.8 Failure modes and edge cases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#359-what-to-measure-on-real-hardware-untested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        35.9 What to measure on real hardware (untested)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3510-exercises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        35.10 Exercises
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="35.10 Exercises">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3269,6 +3402,17 @@
     <span class="md-ellipsis">
       
         Worked Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-and-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files and sources
       
     </span>
   </a>
@@ -3354,8 +3498,8 @@
 <p>Read it as three lessons:</p>
 <ol>
 <li><strong>Decode is protected.</strong> At 6 and 10 requests per second the disaggregated TPOT p99 is 21 to 33 percent lower (0.0287 against 0.0364, and 0.0341 against 0.0508), because decode iterations no longer absorb prefill work. This is the benefit.</li>
-<li><strong>It is not free.</strong> At low load TTFT p99 is higher for the split (0.474 against 0.379): all prefill now queues on one instance instead of two, and the transfer adds delay.</li>
-<li><strong>The pool ratio matters.</strong> At 14 requests per second the single decode instance becomes the bottleneck and TPOT p99 is much worse for the split (0.1351 against 0.0736), and SLO attainment falls to 0.96. A 1:1 split is not the right ratio for this workload; the prefill-to-decode ratio has to follow the workload's prompt and output lengths.</li>
+<li><strong>It is not free.</strong> At low load TTFT p99 is higher for the split (0.474 against 0.379): all prefill now queues on one instance instead of two. The KV transfer does <strong>not</strong> appear in TTFT in this model, because the first token is produced by the prefill instance; it appears in TPOT instead (section 35.7, experiment B). If your design lets the decode side produce the first token, the transfer moves into TTFT.</li>
+<li><strong>The pool ratio matters.</strong> At 14 requests per second the single decode instance becomes the bottleneck and TPOT p99 is much worse for the split (0.1351 against 0.0736), and SLO attainment falls to 0.96. A 1:1 split is not the right ratio for this workload; the prefill-to-decode ratio has to follow the workload's prompt and output lengths. Section 35.7 tests that claim: one prefill and <strong>two</strong> decode instances bring TPOT p99 back to 0.0291 and attainment to 1.00 at the same rate, but that is three GPUs against two, and at equal GPU counts the split does not beat colocation once the load is high.</li>
 </ol>
 <p>These numbers come from placeholder constants. The mechanism (interference removed, a transfer and a queue added, a ratio to tune) is the content; the values are not.</p>
 <h2 id="355-decision-checklist">35.5 Decision checklist<a class="headerlink" href="#355-decision-checklist" title="Permanent link">&para;</a></h2>
@@ -3396,9 +3540,139 @@
 </tbody>
 </table>
 <p>Also compare against cheaper alternatives first: chunked prefill (splitting long prompts so decode iterations interleave) removes much of the interference without a transfer.</p>
-<h2 id="356-what-to-measure-on-real-hardware-untested">35.6 What to measure on real hardware (untested)<a class="headerlink" href="#356-what-to-measure-on-real-hardware-untested" title="Permanent link">&para;</a></h2>
+<h2 id="356-self-tests-25-all-pass">35.6 Self-tests (25, all pass)<a class="headerlink" href="#356-self-tests-25-all-pass" title="Permanent link">&para;</a></h2>
+<p>The simulation was extended in this pass: <code>sim_disagg_pool(reqs, n_prefill, n_decode, ...)</code> runs several prefill servers and several decode instances, and <code>sim_disagg</code> is now its 1+1 case. Two latent defects in the old function were fixed on the way: it <strong>modified the request objects it was given</strong>, and a request with a one-token reply was sent through an extra decode step. The default workload contains no one-token replies (0 in 20,000), so every number printed earlier in this chapter is unchanged; a regression test confirms <code>pool(1,1)</code> equals the old behaviour.</p>
+<p>Run <code>python3 /Users/oluwaseyiawoga/Developer/programming-the-h100/docs/examples/inference-systems/ch35_disaggregation.py --test</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>What is checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transfer (5)</td>
+<td>KV 327,680 bytes per token; 26.8 ms for 4,096 tokens at 400 Gb/s; linear in tokens and inverse in bandwidth; exposed time is 0 for slow prefill, positive for very fast prefill, and never exceeds the full transfer</td>
+</tr>
+<tr>
+<td>Hardware mapping (3)</td>
+<td>the decode floor halves when GPUs double; the printed rows for 2 x H100 and 4 x L40S; 70 GB of weights on one 48 GB card gives negative KV room and 0 sequences while still printing a floor</td>
+</tr>
+<tr>
+<td>Colocated (2)</td>
+<td>one replica equals the plain simulator; two replicas return every request once</td>
+</tr>
+<tr>
+<td>Disaggregated (12)</td>
+<td>input unchanged; every request returned once; TTFT at least the request's own prefill time; decode cannot finish before the KV arrives; a single prefill server is FIFO; determinism; a faster link never raises median TPOT; a one-token reply finishes at its first token; two exact hand cases for a single request; <code>pool(1,1)</code> equals the old function; 2+2 completes the same work</td>
+</tr>
+<tr>
+<td>Chapter claims (3)</td>
+<td>at 6 and 10 req/s the split has lower TPOT p99; at 6 req/s it has higher TTFT p99; at 14 req/s its TPOT p99 is worse and attainment lower</td>
+</tr>
+</tbody>
+</table>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>25/25 self-tests pass
+</span></code></pre></div>
+<p>The three "chapter claims" tests turn the prose of section 35.4 into regression tests: if a later change to the cost model reverses a claim, the test fails instead of the text silently going stale.</p>
+<p><strong>The tests can fail.</strong> Three broken copies: first token stamped at the end of decoding fails three tests; removing the FIFO prefill queue fails two; and dropping the transfer time from the decode start passed all 23 tests of the first version, because a 128-token decode takes far longer than any transfer. The two exact single-request cases were added for that reason.</p>
+<h2 id="357-four-more-experiments">35.7 Four more experiments<a class="headerlink" href="#357-four-more-experiments" title="Permanent link">&para;</a></h2>
+<p>Prompt median 2,048, output median 128, 500 requests, seed 3, 400 Gb/s link unless stated. The simulator's prefill speed is its default 40,000 tokens per second, which is why a different figure (20,000) appears in the exposed-time column of section 35.2: that column is a standalone arithmetic illustration (<code>--extras</code>).</p>
+<p><strong>A. Pool ratio at a fixed GPU count.</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>GPUs  rate  layout        ttft_p99  tpot_p99  slo_ok
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>   3    21  colocated x3     0.921    0.0697    1.00
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>   3    21  disagg 1+2        8.441    0.0297    0.19
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>   3    21  disagg 2+1        0.396    0.3699    0.65
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>   4    28  colocated x4     0.534    0.0739    1.00
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>   4    28  disagg 1+3       14.199    0.0266    0.16
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>   4    28  disagg 2+2        0.592    0.0751    1.00
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>   4    28  disagg 3+1        0.303    0.4893    0.52
+</span></code></pre></div>
+<p>The ratio is the whole story. A wrong ratio collapses the SLO attainment to between 0.16 and 0.65, because the underloaded pool is idle while the overloaded one queues: too few prefill servers (1+2, 1+3) blow up TTFT to 8 and 14 seconds with a protected, fast TPOT, and too few decode instances (2+1, 3+1) do the reverse. With the right ratio (2+2 at 28 req/s) the split matches colocation and <strong>does not beat it</strong> on these constants. In this simulator the case for splitting is protecting TPOT at moderate load, not a general throughput gain.</p>
+<p>The 14 req/s case of section 35.4 was left at two GPUs. Giving that workload a third GPU as a second decode instance (1+2) gives TTFT p99 1.042, TPOT p99 0.0291 and attainment 1.00.</p>
+<p><strong>B. Link speed</strong> (1+1, 10 req/s):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>link Gb/s  ttft_p99  tpot_p50  tpot_p99
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>       25     0.516    0.0324    0.0494
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>      100     0.516    0.0311    0.0362
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>      200     0.516    0.0309    0.0348
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>      400     0.516    0.0308    0.0341
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  ~infinite     0.516    0.0307    0.0339
+</span></code></pre></div>
+<p>TTFT does not change at all; TPOT p99 rises from 0.0341 to 0.0494 at 25 Gb/s. The reason is the model's definition: the first token comes from prefill, and the transfer sits between the first and second token, so it is amortised into TPOT. Above 100 Gb/s the link stops mattering for this workload.</p>
+<p><strong>C. Prompt length</strong> (rate 6, two GPUs):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>prompt_med  mode        ttft_p99  tpot_p99  slo_ok
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>       256  colocated      0.071    0.0244    1.00
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>       256  disagg 1+1     0.041    0.0274    1.00
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>      2048  colocated      0.379    0.0364    1.00
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>      2048  disagg 1+1     0.474    0.0287    1.00
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>      8192  colocated      6.235    0.2129    0.14
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>      8192  disagg 1+1    45.299    0.0292    0.08
+</span></code></pre></div>
+<p>At short prompts there is little interference to remove and the split is slightly worse on TPOT (0.0274 against 0.0244). At 8,192 the mean prompt is about 10,300 tokens, so one prefill server at 40,000 tokens per second needs <code>6 x 10,296 / 40,000</code> = 1.54 seconds of work per second and is saturated: TTFT p99 reaches 45 seconds. The decode side is protected (TPOT p99 0.0292 against 0.2129) but the bottleneck has moved to prefill. Colocated also fails here (SLO attainment 0.14), so both designs are overloaded; the split just fails differently.</p>
+<p><strong>D. Seed spread</strong> (rate 10, TPOT p99): the split has the lower TPOT p99 in <strong>8 of 8 seeds</strong> (colocated 0.0483 to 0.0573, split 0.0336 to 0.0526). The headline claim of the chapter does not depend on the seed. The margin does: seed 0 gives 0.0535 against 0.0526, almost a tie, and seed 1 gives 0.0483 against 0.0336.</p>
+<h2 id="358-failure-modes-and-edge-cases">35.8 Failure modes and edge cases<a class="headerlink" href="#358-failure-modes-and-edge-cases" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>What happens</th>
+<th>Where it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wrong pool ratio</td>
+<td>one pool idles while the other queues; SLO attainment falls to 0.16 to 0.65</td>
+<td>experiment A</td>
+</tr>
+<tr>
+<td>A single prefill server at long prompts</td>
+<td>saturates: TTFT p99 45 s at prompt median 8,192</td>
+<td>experiment C</td>
+</tr>
+<tr>
+<td>Slow link</td>
+<td>the transfer is amortised into TPOT; 25 Gb/s raises p99 by 45 percent here</td>
+<td>experiment B</td>
+</tr>
+<tr>
+<td>Where the first token is produced</td>
+<td>decides whether the transfer counts toward TTFT or TPOT; this model chooses prefill, a real system may not</td>
+<td>section 35.2</td>
+</tr>
+<tr>
+<td>Weights larger than the decode GPUs' memory</td>
+<td>KV room negative, 0 sequences; the floor is still printed and looks plausible</td>
+<td>self-test 8</td>
+</tr>
+<tr>
+<td>One-token reply</td>
+<td>now finishes at its first token; before this pass it was given an extra decode step</td>
+<td>self-test 18</td>
+</tr>
+<tr>
+<td>Simulator mutating its input</td>
+<td>fixed; a second run on the same list used stale <code>first_token</code> values</td>
+<td>self-test 11</td>
+</tr>
+<tr>
+<td>Decode node lost mid-transfer</td>
+<td>not modelled; the request must be re-prefilled or the transfer retried</td>
+<td>section 35.9</td>
+</tr>
+<tr>
+<td>Different tensor-parallel layouts on the two pools</td>
+<td>KV must be re-sharded on arrival; not modelled</td>
+<td>section 35.3</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not modelled:</strong> KV re-sharding between layouts; link contention among many simultaneous transfers; decode-instance memory limits (only <code>max_batch</code>); load balancing across decode instances beyond round-robin on readiness; prefill batching (the prefill server handles one prompt at a time); chunked prefill, which would be the colocated baseline to beat; failures and retries; prefix reuse; and the cost of the prefill and decode GPUs, which would differ in a mixed fleet.</p>
+<h2 id="359-what-to-measure-on-real-hardware-untested">35.9 What to measure on real hardware (untested)<a class="headerlink" href="#359-what-to-measure-on-real-hardware-untested" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">UNTESTED ON H100</p>
+<p>None of the following was run. Commands are from memory; verify against your installed versions.</p>
 <table>
 <thead>
 <tr>
@@ -3407,6 +3681,10 @@
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>Link bandwidth between nodes</td>
+<td><code>ib_write_bw</code> (from the <code>perftest</code> package) between two hosts, or <code>nccl-tests</code> <code>sendrecv_perf</code> / <code>alltoall_perf</code>; compare with the datasheet figure</td>
+</tr>
 <tr>
 <td>Actual transfer time and exposed time</td>
 <td>Time KV movement per prompt length on your link; compare with the table above</td>
@@ -3417,7 +3695,7 @@
 </tr>
 <tr>
 <td>Best pool ratio</td>
-<td>Sweep prefill:decode GPU counts at several prompt and output length mixes</td>
+<td>Sweep prefill:decode GPU counts at several prompt and output length mixes, as in experiment A</td>
 </tr>
 <tr>
 <td>Cost</td>
@@ -3429,11 +3707,34 @@
 </tr>
 <tr>
 <td>Failure behavior</td>
-<td>What happens when a decode node is lost mid-transfer</td>
+<td>Kill a decode node mid-transfer and record what the client sees</td>
+</tr>
+<tr>
+<td>Engine support</td>
+<td>Check your engine's documentation for a prefill/decode disaggregation or KV-transfer mode; names and maturity differ between releases</td>
 </tr>
 </tbody>
 </table>
+<p>To redo the section 35.7 sweep on your numbers, edit <code>CostModel</code> in <code>ch32_inference_harness.py</code> with values fitted from the Chapter 32 runbook and rerun <code>--extras</code>.</p>
 </div>
+<h2 id="3510-exercises">35.10 Exercises<a class="headerlink" href="#3510-exercises" title="Permanent link">&para;</a></h2>
+<ol>
+<li>In experiment B, TTFT p99 is identical for every link speed. Explain, and say where the transfer shows up instead. How would the metrics change if the decode instance produced the first token?</li>
+<li>Compute the prefill server's utilisation at 14 req/s from the mean prompt length (2,574 tokens) and the 40,000 tokens-per-second prefill rate. What does it say about the 1+1 result at that rate?</li>
+<li>Predict the utilisation of one prefill server at 21 req/s and use it to explain the <code>disagg 1+2</code> row of experiment A.</li>
+<li>The 1+1 row at 14 req/s has TPOT p99 0.1351 but 1+2 has 0.0291. Is it fair to conclude that the split is better than colocation at 14 req/s?</li>
+<li>What did the original <code>sim_disagg</code> do with a request whose output was one token, and why did that not change any number in this chapter?</li>
+<li>Using <code>decode_config</code>, what are the decode floor, KV room and sequence capacity of three L40S? Where does it fall between the two- and four-GPU rows?</li>
+</ol>
+<h3 id="solutions">Solutions<a class="headerlink" href="#solutions" title="Permanent link">&para;</a></h3>
+<ol>
+<li>The model stamps the first token at the end of prefill, before the transfer starts, so TTFT cannot depend on the link. The transfer lies between the first and second token, and TPOT is computed as <code>(finish - first) / (output - 1)</code>, so it is spread over the remaining tokens: 25 Gb/s gives TPOT p99 0.0494 against 0.0341 at 400 Gb/s. If the decode side produced the first token, the transfer would delay it and would show up in TTFT (about 54 ms for an 8,192-token prompt at 400 Gb/s, 859 ms at 25 Gb/s).</li>
+<li><code>14 x 2,574 / 40,000</code> = 0.90. The single prefill server is 90 percent utilised, close to saturation, so queueing is already significant and TTFT p99 is 1.04 s. The prefill side is almost as stretched as the decode side in that row.</li>
+<li><code>21 x 2,574 / 40,000</code> = 1.35. One server cannot keep up, so its queue grows during the run and TTFT p99 reaches 8.4 s. The decode side, with two instances, is comfortably underloaded, hence the very low TPOT.</li>
+<li>No. 1+2 uses three GPUs; the colocated comparison at two GPUs is 1.272 s TTFT p99, 0.0736 TPOT p99 and attainment 1.00 (section 35.4). The fair comparisons are at equal GPU counts, which experiment A gives: at 3 GPUs and 21 req/s colocated x3 meets the SLO fully while both splits miss it, and at 4 GPUs the best split (2+2) ties colocated.</li>
+<li>It sent the request through the decode loop, which only checks completion after incrementing the token count, so a one-token reply was given a second decode step and its <code>finish</code> was later than its <code>first_token</code>. The default workload contains no one-token replies (0 in 20,000 requests), so no printed value changed. It now finishes at the first token.</li>
+<li>Floor <code>70e9 / (3 x 0.864e12)</code> = 27.0 ms per token, KV room <code>3 x 48 - 70</code> = 74.0 GB, capacity 55 sequences. That sits between 2 x L40S (40.5 ms, 26.0 GB, 19) and 4 x L40S (20.3 ms, 122.0 GB, 90), as expected from the linear scaling.</li>
+</ol>
 <h2 id="chapter-summary">Chapter Summary<a class="headerlink" href="#chapter-summary" title="Permanent link">&para;</a></h2>
 <p>Disaggregation puts compute-bound prefill and memory-bound decode on separate pools so prefill bursts cannot stall decoding users, at the cost of moving each request's KV cache between pools. For a 4,096-token prompt that transfer is about 27 ms on a 400 Gb/s link and 107 ms on 100 Gb/s, and it can be hidden behind prefill only with layer-wise streaming in the best case. The pairing of H100s with L40S GPUs is a cost hypothesis: an L40S has about a quarter of an H100's memory bandwidth and no NVLink, so matching an H100's decode floor takes about four times as many of them. In a simulation on equal GPU counts, the split lowered TPOT p99 by 21 to 33 percent at moderate load, raised TTFT p99 at low load, and lost badly once its single decode instance saturated, so the pool ratio must be tuned. Decide with a measured comparison, and try chunked prefill first.</p>
 <h2 id="self-check-questions">Self-Check Questions<a class="headerlink" href="#self-check-questions" title="Permanent link">&para;</a></h2>
@@ -3449,9 +3750,14 @@
 <li>It removes prefill interference from decode, protecting inter-token latency. It costs a KV-cache transfer for every request, plus pool-ratio and layout complexity.</li>
 <li>If each layer's KV is sent as soon as that layer finishes prefill, the transfer proceeds during the remaining prefill and only the part beyond prefill's duration is visible. It assumes a fast, uncontended link and compatible layouts at both ends, which real systems may not have.</li>
 <li>The L40S has about 864 GB/s of bandwidth against 3.35 TB/s and lacks NVLink, so it decodes more slowly per GPU. It can only win if enough of them cost less than the H100s they replace for the same throughput.</li>
-<li>All prefill work queued on a single prefill instance instead of being spread over two, and each request also waited for its KV transfer before decode could start.</li>
-<li>The single decode instance, handling twice the work per GPU of the colocated case, became the bottleneck and its batch limit made requests wait. Give decode a larger share of the GPUs and re-run the sweep to find the ratio that suits the workload.</li>
+<li>All prefill work queued on a single prefill instance instead of being spread over two. The KV transfer is not part of TTFT in this simulation (the first token comes from prefill), so it is not the reason; it delays the start of decoding and shows up in TPOT.</li>
+<li>The single decode instance, handling twice the work per GPU of the colocated case, became the bottleneck and its batch limit made requests wait. Give decode a larger share of the GPUs and re-run the sweep to find the ratio that suits the workload. Section 35.7 does this: 1 prefill + 2 decode fixes the 14 req/s case, at the cost of a third GPU.</li>
 </ol>
+<h2 id="files-and-sources">Files and sources<a class="headerlink" href="#files-and-sources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Code: <code>docs/examples/inference-systems/ch35_disaggregation.py</code> (<code>--test</code> for the 25 self-tests, <code>--extras</code> for experiments A to D). It imports the harness from <code>ch32_inference_harness.py</code>, which must be in the same directory.</li>
+<li>GPU figures are datasheet values (H100 SXM 3.35 TB/s and 80 GB; L40S 864 GB/s and 48 GB). The systems named in section 35.2 (DistServe, Splitwise, Mooncake, NVIDIA Dynamo with NIXL) are pointers for further reading; this chapter makes no claim about their internals.</li>
+</ul>
 
 
 
