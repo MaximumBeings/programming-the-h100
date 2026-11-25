@@ -1,0 +1,22 @@
+test_cache_configuration (__main__.EngineReviewTests.test_cache_configuration) ... ok
+test_cachefull_match_is_not_a_pinned_handle (__main__.EngineReviewTests.test_cachefull_match_is_not_a_pinned_handle) ... ok
+test_empty_attention_is_not_a_nan_result (__main__.EngineReviewTests.test_empty_attention_is_not_a_nan_result) ... ok
+test_engine_checks_entire_batch_before_admission (__main__.EngineReviewTests.test_engine_checks_entire_batch_before_admission) ... ok
+test_engine_configuration (__main__.EngineReviewTests.test_engine_configuration) ... ok
+test_engine_positional_boundary_is_exact (__main__.EngineReviewTests.test_engine_positional_boundary_is_exact) ... ok
+test_engine_rejects_bad_requests_without_allocating (__main__.EngineReviewTests.test_engine_rejects_bad_requests_without_allocating) ... ok
+test_matmul_outputs_match_independent_non_blas_forward (__main__.EngineReviewTests.test_matmul_outputs_match_independent_non_blas_forward) ... BLAS diagnostic: length=1, warnings=0, finite=True, max_abs_error=6.22e-15
+BLAS diagnostic: length=2, warnings=0, finite=True, max_abs_error=5.33e-15
+BLAS diagnostic: length=3, warnings=0, finite=True, max_abs_error=6.22e-15
+BLAS diagnostic: length=4, warnings=0, finite=True, max_abs_error=4.44e-15
+BLAS diagnostic: length=7, warnings=0, finite=True, max_abs_error=4.44e-15
+BLAS diagnostic: length=16, warnings=0, finite=True, max_abs_error=4.44e-15
+BLAS diagnostic: length=31, warnings=0, finite=True, max_abs_error=5.33e-15
+ok
+test_request_lengths_and_arrivals_rejected (__main__.EngineReviewTests.test_request_lengths_and_arrivals_rejected) ... ok
+test_scheduler_configuration_rejected (__main__.EngineReviewTests.test_scheduler_configuration_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.048s
+
+OK

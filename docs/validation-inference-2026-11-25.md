@@ -2,6 +2,9 @@
 
 The [inference-engine path](inference-systems-overview.md) now has fresh reference runs and a working [CUDA/vLLM lab](47-vllm-tuning-lab.md). All final test commands below completed successfully. The two failed server startups are preserved, with their setup corrections explained below.
 
+!!! note "Follow-up adversarial review"
+    The current Python listings include later CPU corrections from the [agent audit](inference-adversarial-review-2026-11-25.md). That review has separate fresh CPU captures. This original dataset remains unchanged and proves only its archived source revisions. The shared HTTP client changed after the real-vLLM capture; its current version has CPU/mock validation, while exact-current real-vLLM integration has not been repeated. No CUDA kernel source changed in that review.
+
 ## System and source identity
 
 | Item | Captured value |
@@ -89,6 +92,6 @@ No raw log was rewritten to conceal either failure. The successful final run has
 
 This validates the listed programs and the small real-model serving path. The CPU mini engine still executes NumPy operations sequence by sequence; placing it on an H100 host does not make it a GPU engine. Its reported scheduler times remain simulated. The next engine work is batched/fused kernels in the Triton book and distributed ownership/collectives in the multi-GPU book.
 
-The following still require their own hardware/workload validation: real multi-GPU MoE and RDMA disaggregation; 70B speculative decoding; actual CPU/NVMe KV offload performance; KEDA on a cluster; browser/MLX fallback; real semantic-cache and router quality; and a repeated open-loop multi-engine load sweep. No numerical fix in the source changes made here is left awaiting its stated CPU/CUDA/serving rerun. These broader deployments are not claimed to have been tested by this session.
+The following still require their own hardware/workload validation: real multi-GPU MoE and RDMA disaggregation; 70B speculative decoding; actual CPU/NVMe KV offload performance; KEDA on a cluster; browser/MLX fallback; real semantic-cache and router quality; and a repeated open-loop multi-engine load sweep. At the time of this original capture, its listed fixes had completed their stated reruns. The follow-up agent audit records its additional source revisions and CPU tests separately; it does not relabel this historical serving capture as a run of the later shared client. These broader deployments are not claimed to have been tested by this session.
 
 The temporary pod was stopped after the logs were exported and their archive checksum verified locally. Earlier execution datasets remain unchanged.

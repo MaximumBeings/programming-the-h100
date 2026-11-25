@@ -1,0 +1,492 @@
+[
+  {
+    "source": "docs/examples/inference-systems/ch32_inference_harness.py",
+    "source_sha256": "a6673e3980979ab4b379bb243d27770c2938c0040e83cb75d82ef073032d258a",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch32_inference_harness.py"
+    ],
+    "start_utc": "2026-11-25T15:26:48.454725+00:00",
+    "end_utc": "2026-11-25T15:26:48.550055+00:00",
+    "seconds": 0.09533775004092604,
+    "exit_code": 0,
+    "log": "logs/ch32_inference_harness-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch32_inference_harness.py",
+    "source_sha256": "a6673e3980979ab4b379bb243d27770c2938c0040e83cb75d82ef073032d258a",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch32_inference_harness.py",
+      "--test"
+    ],
+    "start_utc": "2026-11-25T15:26:48.454692+00:00",
+    "end_utc": "2026-11-25T15:26:48.578331+00:00",
+    "seconds": 0.12365141708869487,
+    "exit_code": 0,
+    "log": "logs/ch32_inference_harness-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch33_moe_expert_parallel.py",
+    "source_sha256": "cfce25f562982926c612f290b0164470b0fd6001f39ef6ebb65302f8077694df",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch33_moe_expert_parallel.py"
+    ],
+    "start_utc": "2026-11-25T15:26:48.457005+00:00",
+    "end_utc": "2026-11-25T15:26:52.279268+00:00",
+    "seconds": 3.8223649580031633,
+    "exit_code": 0,
+    "log": "logs/ch33_moe_expert_parallel-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch33_moe_expert_parallel.py",
+    "source_sha256": "cfce25f562982926c612f290b0164470b0fd6001f39ef6ebb65302f8077694df",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch33_moe_expert_parallel.py",
+      "--test"
+    ],
+    "start_utc": "2026-11-25T15:26:48.455955+00:00",
+    "end_utc": "2026-11-25T15:26:56.020521+00:00",
+    "seconds": 7.564725708100013,
+    "exit_code": 0,
+    "log": "logs/ch33_moe_expert_parallel-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch34_kv_offload.py",
+    "source_sha256": "52411e23246e89d9fa719a44425b7af789d1e3d002cbf1ba9713b25e9fb6d5c8",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch34_kv_offload.py"
+    ],
+    "start_utc": "2026-11-25T15:26:48.578526+00:00",
+    "end_utc": "2026-11-25T15:26:48.871155+00:00",
+    "seconds": 0.29269429203122854,
+    "exit_code": 0,
+    "log": "logs/ch34_kv_offload-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch34_kv_offload.py",
+    "source_sha256": "52411e23246e89d9fa719a44425b7af789d1e3d002cbf1ba9713b25e9fb6d5c8",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch34_kv_offload.py",
+      "--test"
+    ],
+    "start_utc": "2026-11-25T15:26:48.550324+00:00",
+    "end_utc": "2026-11-25T15:26:50.207113+00:00",
+    "seconds": 1.6568330000154674,
+    "exit_code": 0,
+    "log": "logs/ch34_kv_offload-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch35_disaggregation.py",
+    "source_sha256": "51823780731649e732bd7dc59b1ef70aeebab43600b30144b74b89cbc23c2f42",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch35_disaggregation.py"
+    ],
+    "start_utc": "2026-11-25T15:26:49.252208+00:00",
+    "end_utc": "2026-11-25T15:26:49.629378+00:00",
+    "seconds": 0.37722883303649724,
+    "exit_code": 0,
+    "log": "logs/ch35_disaggregation-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch35_disaggregation.py",
+    "source_sha256": "51823780731649e732bd7dc59b1ef70aeebab43600b30144b74b89cbc23c2f42",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch35_disaggregation.py",
+      "--test"
+    ],
+    "start_utc": "2026-11-25T15:26:48.871506+00:00",
+    "end_utc": "2026-11-25T15:26:49.251898+00:00",
+    "seconds": 0.38041466602589935,
+    "exit_code": 0,
+    "log": "logs/ch35_disaggregation-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch36_benchmark_teardown.py",
+    "source_sha256": "cc75fa2ce6dc4e4e1bb6377f32e747b3720b925d021696fc118acfd996545609",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch36_benchmark_teardown.py"
+    ],
+    "start_utc": "2026-11-25T15:26:50.207239+00:00",
+    "end_utc": "2026-11-25T15:31:05.229119+00:00",
+    "seconds": 255.02648095798213,
+    "exit_code": 0,
+    "log": "logs/ch36_benchmark_teardown-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch36_benchmark_teardown.py",
+    "source_sha256": "cc75fa2ce6dc4e4e1bb6377f32e747b3720b925d021696fc118acfd996545609",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch36_benchmark_teardown.py",
+      "--selftest"
+    ],
+    "start_utc": "2026-11-25T15:26:49.630157+00:00",
+    "end_utc": "2026-11-25T15:26:57.972848+00:00",
+    "seconds": 8.342862624907866,
+    "exit_code": 0,
+    "log": "logs/ch36_benchmark_teardown-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch37_spec_decode_70b.py",
+    "source_sha256": "4c3fdefbe36311022cc18c1557512108301bf3a335630023287d48c5285ac2a6",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch37_spec_decode_70b.py"
+    ],
+    "start_utc": "2026-11-25T15:26:52.280018+00:00",
+    "end_utc": "2026-11-25T15:26:53.486704+00:00",
+    "seconds": 1.2067667500814423,
+    "exit_code": 0,
+    "log": "logs/ch37_spec_decode_70b-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch38_semantic_cache.py",
+    "source_sha256": "1bd701412f7b978ee1b510c58a0d6998461235642e30bf874887727a99a0e1a1",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch38_semantic_cache.py"
+    ],
+    "start_utc": "2026-11-25T15:26:56.020817+00:00",
+    "end_utc": "2026-11-25T15:27:17.026632+00:00",
+    "seconds": 21.006258375011384,
+    "exit_code": 0,
+    "log": "logs/ch38_semantic_cache-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch38_semantic_cache.py",
+    "source_sha256": "1bd701412f7b978ee1b510c58a0d6998461235642e30bf874887727a99a0e1a1",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch38_semantic_cache.py",
+      "--selftest"
+    ],
+    "start_utc": "2026-11-25T15:26:53.488097+00:00",
+    "end_utc": "2026-11-25T15:26:56.544630+00:00",
+    "seconds": 3.0566042499849573,
+    "exit_code": 0,
+    "log": "logs/ch38_semantic_cache-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch39_complexity_router.py",
+    "source_sha256": "944b2be2120d29c2dadef9603bb3d574c1d690083d53ae2d95944dfec340422c",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch39_complexity_router.py"
+    ],
+    "start_utc": "2026-11-25T15:26:57.973521+00:00",
+    "end_utc": "2026-11-25T15:28:25.781747+00:00",
+    "seconds": 87.80979224992916,
+    "exit_code": 0,
+    "log": "logs/ch39_complexity_router-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch39_complexity_router.py",
+    "source_sha256": "944b2be2120d29c2dadef9603bb3d574c1d690083d53ae2d95944dfec340422c",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch39_complexity_router.py",
+      "--selftest"
+    ],
+    "start_utc": "2026-11-25T15:26:56.545305+00:00",
+    "end_utc": "2026-11-25T15:27:07.714723+00:00",
+    "seconds": 11.169660208048299,
+    "exit_code": 0,
+    "log": "logs/ch39_complexity_router-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch40_gpu_autoscaler.py",
+    "source_sha256": "de539c8cdabb047f93d31a928521eb3dd790596a9206c7f04d687ef3c8138921",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch40_gpu_autoscaler.py"
+    ],
+    "start_utc": "2026-11-25T15:27:08.239252+00:00",
+    "end_utc": "2026-11-25T15:27:31.739329+00:00",
+    "seconds": 23.50055445905309,
+    "exit_code": 0,
+    "log": "logs/ch40_gpu_autoscaler-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch40_gpu_autoscaler.py",
+    "source_sha256": "de539c8cdabb047f93d31a928521eb3dd790596a9206c7f04d687ef3c8138921",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch40_gpu_autoscaler.py",
+      "--selftest"
+    ],
+    "start_utc": "2026-11-25T15:27:07.716559+00:00",
+    "end_utc": "2026-11-25T15:27:08.238367+00:00",
+    "seconds": 0.5222427909029648,
+    "exit_code": 0,
+    "log": "logs/ch40_gpu_autoscaler-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch41_edge_fallback.py",
+    "source_sha256": "2013108e5978d629ccb1bab956d7106133ce4739b4f26db6fb2f4be40e2c8881",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch41_edge_fallback.py"
+    ],
+    "start_utc": "2026-11-25T15:27:17.503981+00:00",
+    "end_utc": "2026-11-25T15:27:18.641939+00:00",
+    "seconds": 1.1379969159606844,
+    "exit_code": 0,
+    "log": "logs/ch41_edge_fallback-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch41_edge_fallback.py",
+    "source_sha256": "2013108e5978d629ccb1bab956d7106133ce4739b4f26db6fb2f4be40e2c8881",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch41_edge_fallback.py",
+      "tests"
+    ],
+    "start_utc": "2026-11-25T15:27:17.027735+00:00",
+    "end_utc": "2026-11-25T15:27:17.503445+00:00",
+    "seconds": 0.47508741705678403,
+    "exit_code": 0,
+    "log": "logs/ch41_edge_fallback-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch42_gateway_capstone.py",
+    "source_sha256": "5d7ac8b73c596d2de728ef8d8abbc5497403add0924bced259db31c4c72fcd9c",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch42_gateway_capstone.py"
+    ],
+    "start_utc": "2026-11-25T15:27:28.390645+00:00",
+    "end_utc": "2026-11-25T15:28:06.122133+00:00",
+    "seconds": 37.73218970897142,
+    "exit_code": 0,
+    "log": "logs/ch42_gateway_capstone-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch42_gateway_capstone.py",
+    "source_sha256": "5d7ac8b73c596d2de728ef8d8abbc5497403add0924bced259db31c4c72fcd9c",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch42_gateway_capstone.py",
+      "tests"
+    ],
+    "start_utc": "2026-11-25T15:27:18.647483+00:00",
+    "end_utc": "2026-11-25T15:27:28.390104+00:00",
+    "seconds": 9.742815874982625,
+    "exit_code": 0,
+    "log": "logs/ch42_gateway_capstone-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch43_paged_kv_cache.py",
+    "source_sha256": "d46d1d0c12b2c240960f8aea5b2abe04f6bc5cdbec1efd49cc2db977e4b30086",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch43_paged_kv_cache.py"
+    ],
+    "start_utc": "2026-11-25T15:27:32.908646+00:00",
+    "end_utc": "2026-11-25T15:27:36.066384+00:00",
+    "seconds": 3.157809083000757,
+    "exit_code": 0,
+    "log": "logs/ch43_paged_kv_cache-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch43_paged_kv_cache.py",
+    "source_sha256": "d46d1d0c12b2c240960f8aea5b2abe04f6bc5cdbec1efd49cc2db977e4b30086",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch43_paged_kv_cache.py",
+      "tests"
+    ],
+    "start_utc": "2026-11-25T15:27:31.740332+00:00",
+    "end_utc": "2026-11-25T15:27:32.908221+00:00",
+    "seconds": 1.167911250027828,
+    "exit_code": 0,
+    "log": "logs/ch43_paged_kv_cache-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch44_continuous_batching.py",
+    "source_sha256": "756974b7d6ca4af41fabd3cbccb968ad14a2854f7bc56cc8037b8adae8cb8e00",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch44_continuous_batching.py"
+    ],
+    "start_utc": "2026-11-25T15:27:37.088324+00:00",
+    "end_utc": "2026-11-25T15:27:44.027102+00:00",
+    "seconds": 6.9389264999190345,
+    "exit_code": 0,
+    "log": "logs/ch44_continuous_batching-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch44_continuous_batching.py",
+    "source_sha256": "756974b7d6ca4af41fabd3cbccb968ad14a2854f7bc56cc8037b8adae8cb8e00",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch44_continuous_batching.py",
+      "tests"
+    ],
+    "start_utc": "2026-11-25T15:27:36.069473+00:00",
+    "end_utc": "2026-11-25T15:27:37.087812+00:00",
+    "seconds": 1.0183611660031602,
+    "exit_code": 0,
+    "log": "logs/ch44_continuous_batching-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch45_radix_prefix_cache.py",
+    "source_sha256": "3557c81476d26e99526d55b03ba88129bcfb77651da119df84760afde40f0a1c",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch45_radix_prefix_cache.py"
+    ],
+    "start_utc": "2026-11-25T15:27:44.520436+00:00",
+    "end_utc": "2026-11-25T15:28:58.404016+00:00",
+    "seconds": 73.88490104209632,
+    "exit_code": 0,
+    "log": "logs/ch45_radix_prefix_cache-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch45_radix_prefix_cache.py",
+    "source_sha256": "3557c81476d26e99526d55b03ba88129bcfb77651da119df84760afde40f0a1c",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch45_radix_prefix_cache.py",
+      "tests"
+    ],
+    "start_utc": "2026-11-25T15:27:44.027868+00:00",
+    "end_utc": "2026-11-25T15:27:44.519899+00:00",
+    "seconds": 0.49206437496468425,
+    "exit_code": 0,
+    "log": "logs/ch45_radix_prefix_cache-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch46_mini_engine.py",
+    "source_sha256": "1403f63200f51d2d477b688157a35a0a383facfe92a420e3afa0d3e4dc920e1a",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch46_mini_engine.py"
+    ],
+    "start_utc": "2026-11-25T15:28:09.033431+00:00",
+    "end_utc": "2026-11-25T15:28:16.968824+00:00",
+    "seconds": 7.9355901250382885,
+    "exit_code": 0,
+    "log": "logs/ch46_mini_engine-full.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/ch46_mini_engine.py",
+    "source_sha256": "1403f63200f51d2d477b688157a35a0a383facfe92a420e3afa0d3e4dc920e1a",
+    "mode": "tests",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch46_mini_engine.py",
+      "tests"
+    ],
+    "start_utc": "2026-11-25T15:28:06.123286+00:00",
+    "end_utc": "2026-11-25T15:28:09.032641+00:00",
+    "seconds": 2.9094256249954924,
+    "exit_code": 0,
+    "log": "logs/ch46_mini_engine-tests.log"
+  },
+  {
+    "source": "docs/examples/inference-systems/fp4_formats.py",
+    "source_sha256": "b005824baebd86c26116617835d7d2487cce3ed293213c7e4864173c9837fddf",
+    "mode": "full",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/fp4_formats.py"
+    ],
+    "start_utc": "2026-11-25T15:28:16.970830+00:00",
+    "end_utc": "2026-11-25T15:28:28.553345+00:00",
+    "seconds": 11.582717083045281,
+    "exit_code": 0,
+    "log": "logs/fp4_formats-full.log"
+  },
+  {
+    "source": "tools/tests/test_inference_boundaries.py",
+    "source_sha256": "a9087683b451dabd2307197517dd9a2158505c14c863673a8fc18fbe76b66910",
+    "mode": "regression",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/tools/tests/test_inference_boundaries.py"
+    ],
+    "start_utc": "2026-11-25T15:28:25.783379+00:00",
+    "end_utc": "2026-11-25T15:28:27.155227+00:00",
+    "seconds": 1.3718828749842942,
+    "exit_code": 0,
+    "log": "logs/test_inference_boundaries-regression.log"
+  },
+  {
+    "source": "tools/tests/test_inference_core_review.py",
+    "source_sha256": "1002abb1fa02046ed63b2d6073066f443fc34010ffad5c55528ab9477b9727b4",
+    "mode": "regression",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/tools/tests/test_inference_core_review.py"
+    ],
+    "start_utc": "2026-11-25T15:28:27.156072+00:00",
+    "end_utc": "2026-11-25T15:28:28.460661+00:00",
+    "seconds": 1.3046157910721377,
+    "exit_code": 0,
+    "log": "logs/test_inference_core_review-regression.log"
+  },
+  {
+    "source": "tools/tests/test_inference_engine_review.py",
+    "source_sha256": "51866bd717282d866bfe8ea0ddefac0d078d0bd1d5e0d75366458f3cb684139e",
+    "mode": "regression",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/tools/tests/test_inference_engine_review.py"
+    ],
+    "start_utc": "2026-11-25T15:28:28.554686+00:00",
+    "end_utc": "2026-11-25T15:28:28.708381+00:00",
+    "seconds": 0.15370537503622472,
+    "exit_code": 0,
+    "log": "logs/test_inference_engine_review-regression.log"
+  },
+  {
+    "source": "tools/tests/test_inference_gateway_review.py",
+    "source_sha256": "78a1db49b742ee10507e1fe5d3f33f027f8dbf6bac8975fc011189b988afc7df",
+    "mode": "regression",
+    "command": [
+      "/private/tmp/h100-inference-audit-clean-20261125/bin/python",
+      "/private/tmp/h100-inference-review-20261125/tools/tests/test_inference_gateway_review.py"
+    ],
+    "start_utc": "2026-11-25T15:28:28.461516+00:00",
+    "end_utc": "2026-11-25T15:28:29.348090+00:00",
+    "seconds": 0.8865919170202687,
+    "exit_code": 0,
+    "log": "logs/test_inference_gateway_review-regression.log"
+  }
+]

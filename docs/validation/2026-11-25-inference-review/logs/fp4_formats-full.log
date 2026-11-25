@@ -1,0 +1,47 @@
+self-tests:
+  [PASS] E2M1 has exactly 15 distinct signed values {0, +-.5, 1, 1.5, 2, 3, 4, 6}
+  [PASS] E2M1 round-to-nearest-even on all seven ties
+  [PASS] E2M1 saturates at +-6 and keeps sign of zero-rounded values
+  [PASS] E4M3: 126 finite positive values, max 448, min 2^-9
+  [PASS] E4M3 rounding is idempotent and saturates
+  [PASS] E4M3 has 8 codes per binade (3 mantissa bits): 1.0, 1.125, ..., 1.875 all exact
+  [PASS] MXFP4 floor: quantizing already-quantized data changes nothing (idempotent)
+  [PASS] MXFP4 ceil: quantizing already-quantized data changes nothing (idempotent)
+  [PASS] NVFP4: quantizing already-quantized data changes nothing (idempotent)
+  [PASS] INT4 b32: quantizing already-quantized data changes nothing (idempotent)
+  [PASS] INT4 b16 + E4M3 scale: quantizing already-quantized data changes nothing (idempotent)
+  [PASS] MXFP4: every element is an E2M1 code times a power of two (shared per 32)
+  [PASS] NVFP4: every element is an E2M1 code times (E4M3 block scale x FP32 tensor scale)
+  [PASS] zero blocks stay exactly zero in every format
+  [PASS] bits per element: MXFP4 4.25, NVFP4 4.5
+  [PASS] MXFP4 floor clips the block maximum (7.0 -> 6.0); the ceil variant rounds it to 8.0 instead (7/2 = 3.5 ties to 4)
+  [PASS] NVFP4 block 16 is at least as accurate as block 64 on Gaussian data (20.43 dB vs 19.57 dB)
+  [PASS] NVFP4 per-tensor outlier (1e6): blocks of ordinary values (amax ~1) flush to exactly zero
+  [PASS] MXFP4 with the same outlier: ordinary blocks survive (power-of-two scale has +-127 binades of range)
+  [PASS] NVFP4 block-scale range: largest/smallest nonzero E4M3 scale = 448 / 2^-9 = 229,376
+
+SQNR in dB (higher is better) on 65,536 values, mean of 3 seeds. Idealized FP32 INT4 scales.
+  format                          gaussian   laplace  outliers
+  INT4 b32, FP32 scale (5.00 b)      20.30     18.27     16.36
+  INT4 b16, FP32 scale (6.00 b)      21.41     19.86     19.04
+  INT4 b32, E4M3 scale (4.25 b)      20.25     18.21     16.27
+  INT4 b16, E4M3 scale (4.50 b)      21.30     19.74     18.86
+  MXFP4 floor          (4.25 b)      18.78     17.95     15.95
+  MXFP4 ceil           (4.25 b)      18.74     17.56     15.59
+  NVFP4                (4.50 b)      20.44     20.64     20.73
+
+Dot-product relative error |dot_q - dot| / (||a|| ||b||), K=4096, mean of 128 random pairs (lower is better):
+  INT4 b32, FP32 scale (5.00 b)  0.00224
+  INT4 b16, FP32 scale (6.00 b)  0.00166
+  INT4 b32, E4M3 scale (4.25 b)  0.00219
+  INT4 b16, E4M3 scale (4.50 b)  0.00176
+  MXFP4 floor          (4.25 b)  0.00231
+  MXFP4 ceil           (4.25 b)  0.00254
+  NVFP4                (4.50 b)  0.00153
+
+One 16-element block with a single outlier (3.7) among values near 0.05:
+  MXFP4 floor (block padded with 16 zeros)   outlier ->  3.0000   max |err| on the others = 0.0500
+  NVFP4                                      outlier ->  3.7000   max |err| on the others = 0.0500
+  INT4 b16, FP32 scale                       outlier ->  3.7000   max |err| on the others = 0.0500
+
+ALL PASS

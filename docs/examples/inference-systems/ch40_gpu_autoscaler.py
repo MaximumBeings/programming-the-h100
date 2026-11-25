@@ -244,10 +244,13 @@ def pct(a, p):
 
 def summarize(res, slo_wait, price_gpu_hr, window=None, arrivals=None):
     w, n = res["wait"], res["n"]
+    started = res["started"]
     if window is not None and arrivals is not None:
         sel = (arrivals[:n] >= window[0]) & (arrivals[:n] < window[1])
         w = w[sel]
-    ok = float((w <= slo_wait).mean()) if len(w) else float("nan")
+        started = started[sel]
+    # An unstarted request has only a lower-bound wait, never an observed SLO success.
+    ok = float((started & (w <= slo_wait)).mean()) if len(w) else float("nan")
     cost = res["gpu_s"] / 3600.0 * price_gpu_hr
     return dict(n=len(w), p50=pct(w, 50), p99=pct(w, 99), attain=ok, gpu_s=res["gpu_s"], cost=cost,
                 cost_per_1k=1000.0 * cost / max(1, res["n"]), never_started=int((~res["started"]).sum()), events=len(res["events"]))

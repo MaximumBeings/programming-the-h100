@@ -84,7 +84,7 @@ The complete [CUDA PyTorch program](examples/inference-systems/ch47_paged_attent
 python ch47_paged_attention_cuda.py
 ```
 
-Its tensors use `pool[physical_block, slot, head, dimension]`. For block size 8 and logical token 17, `logical_block=17//8=2`, `slot=17%8=1`. Read `table[2]` to find the physical block. The last block may be partial: length 17 uses just one slot of its third block.
+Its tensors use `pool[physical_block, slot, head, dimension]`. Positions are zero-based. For block size 8 and logical position 17 (the eighteenth token), `logical_block=17//8=2`, `slot=17%8=1`. Read `table[2]` to find the physical block. A length-17 sequence instead ends at position 16 and uses only slot 0 of its third block.
 
 For each query head the implementation keeps maximum `m`, denominator `l` and numerator vector `z`. For the next tile's scores `s`:
 
@@ -94,7 +94,7 @@ For each query head the implementation keeps maximum `m`, denominator `l` and nu
 4. Set `l = a*l + sum(p)` and `z = a*z + p@V`.
 5. After the last block, return `z/l`.
 
-The test covers lengths 1, 3, 17 and 65 in FP32, FP16 and BF16. It converts the already quantized inputs to a float64 NumPy dense reference, so an error reflects the attention calculation rather than comparing different rounded input values. CUDA accumulation is FP32. An empty visible-key set is rejected explicitly. A successful comparison checks numerical output; this sequence of PyTorch operations is **not a fused PagedAttention kernel** and makes no speed claim.
+The test covers lengths 1, 3, 17 and 65 in FP32, FP16 and BF16. It converts the already quantized inputs to a float64 NumPy dense reference, so an error reflects the attention calculation rather than comparing different rounded input values. CUDA accumulation is FP32. An empty visible-key set is rejected explicitly. A successful comparison checks numerical output; this sequence of PyTorch operations is **not a fused PagedAttention kernel** and makes no speed claim. The low-level teaching routine assumes finite inputs, matching tensor dimensions, and a block table containing valid nonnegative physical block ids owned by the sequence. Its test constructs those inputs internally. A serving engine must validate ownership and bounds before invoking it; the empty-length and short-table guards are not a complete untrusted-input validator.
 
 ## 47.6 Tune server settings in an explicit order
 
@@ -143,6 +143,10 @@ The CPU mini engine remains a correctness oracle. Do not replace its simple test
 
 ## 47.10 Captured H100 run — November 25, 2026
 
+!!! note "Archived real-server result and current client scope"
+
+    The H100/vLLM output below belongs to the archived November 25 client revision. The follow-up audit corrected the shared Chapter 36 client's protocol and accounting paths; that current client has fresh CPU/mock regression and full-program reruns, but its exact-current integration with real vLLM has not been repeated. The successful archived serving run remains valid for its captured source. The CUDA attention probe is unchanged by those client corrections.
+
 On one H100 80GB HBM3, driver 595.112.07, the CUDA program completed all 12 numerical comparisons. The real vLLM 0.11.2 server completed both repeated greedy requests, a streaming warm-up and all eight measured 32-token streams without failures. The serial smoke test reported TTFT p50 13.58 ms and TPOT p50 6.72 ms; these are short-run observations, not peak performance or a load-capacity result. See the [complete dated record and raw logs](validation-inference-2026-11-25.md).
 
 Beginning of the CUDA stdout:
@@ -154,11 +158,31 @@ PASS torch.float32 length=17 max_abs_error=1.04e-07
 PASS torch.float32 length=65 max_abs_error=9.28e-08
 ```
 
-## Complete lab sources
 
-### CUDA block-walk program
+<!-- BEGIN COMPLETE INFERENCE SOURCE -->
+## Complete runnable code
 
-```python
+The complete implementation is shown below, including its checks and entry point. The listing and downloadable `.py` file contain exactly the same source. Copy the file under the displayed filename; keep supporting files in the same directory.
+
+[Download all inference examples and supporting modules](examples/inference-systems/inference-systems.zip) or read the [environment and command guide](examples/inference-systems/README.md).
+
+The [follow-up agent audit](inference-adversarial-review-2026-11-25.md) records the corrections, fresh CPU captures and hardware limits for this source.
+
+Supporting modules: [ch36_benchmark_teardown.py](examples/inference-systems/ch36_benchmark_teardown.py), [ch43_paged_kv_cache.py](examples/inference-systems/ch43_paged_kv_cache.py).
+
+The CUDA program requires a CUDA GPU. Start the Chapter 47 vLLM server before running the HTTP probe; its `--model` and `--output` arguments are required.
+
+```bash
+python3 docs/examples/inference-systems/ch47_paged_attention_cuda.py
+python3 docs/examples/inference-systems/ch47_vllm_probe.py \
+  --model Qwen/Qwen2.5-0.5B-Instruct --output probe.json
+```
+
+### ch47_paged_attention_cuda.py
+
+[Download ch47_paged_attention_cuda.py](examples/inference-systems/ch47_paged_attention_cuda.py)
+
+```python title="ch47_paged_attention_cuda.py" linenums="1"
 #!/usr/bin/env python3
 """Educational block-walk attention on CUDA via PyTorch (not a fused kernel).
 
@@ -233,12 +257,13 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 ```
 
-### Real-server streaming probe
+### ch47_vllm_probe.py
 
-```python
+[Download ch47_vllm_probe.py](examples/inference-systems/ch47_vllm_probe.py)
+
+```python title="ch47_vllm_probe.py" linenums="1"
 #!/usr/bin/env python3
 """Run real streaming requests; compare repeated greedy outputs.
 
@@ -305,8 +330,9 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 ```
+
+<!-- END COMPLETE INFERENCE SOURCE -->
 
 ## Exercises with worked answers
 

@@ -1,0 +1,26 @@
+self-tests:
+  [PASS] HPA formula: metric 30, target 3 -> desired ceil(30/3) = 10 (capped by the scale-up policy from 4 replicas: 4 + max(4,4) = 8)
+  [PASS] scale-up path from 1 replica toward desired 167 under 'max(100%, +4 pods)' per 15 s, clamped at max_replicas=100: [5, 10, 20, 40, 80, 100]
+  [PASS] tolerance: metric/current/target = 1.1 is within 10% -> no change
+  [PASS] just outside tolerance (ratio 1.1033) -> scales to ceil(3.31/3) = 2
+  [PASS] scale-down stabilization: after load drops, replicas stay at 10 for the 300 s window then fall (first fall at step 21 of 21)
+  [PASS] with no stabilization window the same drop scales down at once (to the 100%/period limit, floor 1)
+  [PASS] KEDA activation: 0 replicas and metric > 0 -> 1
+  [PASS] KEDA scale to zero only after the metric has been 0 for the cooldown (300 s): returns 0 at the 11th idle poll, not before
+  [PASS] min_replicas = 1 never scales to zero
+  [PASS] a request arriving during the cooldown resets it
+  [PASS] static N: GPU-seconds = N * horizon exactly (4200.0 = 6 * 700)
+  [PASS] every request that started did so at or after its arrival (no negative wait)
+  [PASS] with ample capacity (6 replicas for 4 req/s) every one of the 2366 arrivals starts and finishes before the horizon (2366 started, 2366 finished)
+  [PASS] concurrency never exceeds replicas x slots: max in flight 24 <= 6 x 4 = 24
+  [PASS] busy slot-seconds equal the sum of service durations of the started requests
+  [PASS] bookkeeping identity: sojourn = wait + service for every request (max abs error 2.27e-13)
+  [PASS] low utilisation (3 req/s offered vs 5.33 capacity): mean wait 0.06 s is below one tick-plus-queueing bound of 1 s; mean sojourn 3.04 s is mean service 3 s plus that wait
+  [PASS] scale from zero: first request waits at least the cold start (wait 110.0 s >= 90) plus KEDA's polling lag
+  [PASS] billing across a scale-up and a drain: events at 105 s (to 5) and 300 s (to 2): GPU-s 1785.3 = 2*600 + 3*(300-105) = 1785.0 within one tick of drain
+  [PASS] billing when pods still warming are CANCELLED by a scale-down: up at 105 s, down at 120 s: GPU-s 1245.0 = 2*600 + 3*(120-105) = 1245.0; replicas alive at the end 2 == 2
+  [PASS] a spike starts at t=31 just after KEDA's poll at t=30: with the default FRESH metric the HPA first scales at t=45 (its t=45 sync); with useCachedMetrics it waits for the next KEDA poll and scales at t=60
+  [PASS] rate metric (arrivals in the last 30 s / 30 x mean service) tracks the true outstanding count in steady state: mean 8.92 vs 9.11 (within 10%; both near 3 req/s x 3 s = 9)
+  [PASS] same seed, same result (waits, GPU-seconds, scaling events)
+
+ALL PASS   (0 s)

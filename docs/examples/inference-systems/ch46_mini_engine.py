@@ -30,6 +30,10 @@ T0, CP, CD = c44.T0, c44.CP, c44.CD
 # --------------------------------------------------------------------------
 class TinyLM:
     def __init__(self, V=96, d=32, H=2, L=2, ff=64, max_pos=1024, seed=0):
+        if any(not isinstance(x, (int, np.integer)) or x <= 0 for x in (V, d, H, L, ff, max_pos)):
+            raise ValueError("model dimensions must be positive integers")
+        if d % H or d % 2:
+            raise ValueError("model width must be even and divisible by the head count")
         r = np.random.default_rng(seed)
         self.V, self.d, self.H, self.L, self.D = V, d, H, L, d // H
         sc = lambda n, m: r.standard_normal((n, m)) / math.sqrt(n)
@@ -232,7 +236,12 @@ class Seq:
                  "first_token", "done", "preempts", "rejected", "cached_tokens")
 
     def __init__(self, id, arrival, prompt, max_new):
-        self.id, self.arrival, self.prompt, self.max_new = id, arrival, list(prompt), max_new
+        prompt = list(prompt)
+        if not math.isfinite(arrival) or arrival < 0:
+            raise ValueError("arrival must be finite and nonnegative")
+        if not prompt or not isinstance(max_new, (int, np.integer)) or max_new <= 0:
+            raise ValueError("a request needs a nonempty prompt and positive integer max_new")
+        self.id, self.arrival, self.prompt, self.max_new = id, arrival, prompt, max_new
         self.out, self.computed, self.target = [], 0, len(prompt)
         self.table = []
         self.first_token = self.done = None
@@ -244,6 +253,12 @@ class Seq:
 class Engine:
     def __init__(self, model, n_blocks=256, B=8, max_seqs=16, budget=None, watermark=0.0,
                  prefix_cache=False, hook=None, debug=False):
+        if any(not isinstance(x, (int, np.integer)) or x <= 0 for x in (n_blocks, B, max_seqs)):
+            raise ValueError("n_blocks, B and max_seqs must be positive integers")
+        if budget is not None and (not isinstance(budget, (int, np.integer)) or budget <= 0):
+            raise ValueError("budget must be None or a positive integer")
+        if not math.isfinite(watermark) or not 0 <= watermark < 1:
+            raise ValueError("watermark must be finite and in [0, 1)")
         self.m, self.n_blocks, self.B = model, n_blocks, B
         self.max_seqs = max_seqs
         self.budget_cap = budget if budget else 10 ** 12
@@ -280,6 +295,12 @@ class Engine:
     def run(self, reqs):
         """reqs: list of (id, arrival, prompt tokens, max_new). Returns the list of Seq."""
         seqs = [Seq(*r) for r in reqs]
+        # Reject the whole input batch before allocating or mutating the prefix cache.
+        for seq in seqs:
+            if any(not isinstance(t, (int, np.integer)) or not 0 <= t < self.m.V for t in seq.prompt):
+                raise ValueError("prompt token ids must be integers in the model vocabulary")
+            if len(seq.prompt) + seq.max_new - 1 > len(self.m.P):
+                raise ValueError("request exceeds the model's positional capacity")
         pending = sorted(seqs, key=lambda s: s.arrival)
         waiting, running = deque(), []
         ip, t, finished, rejected, n = 0, 0.0, 0, 0, len(seqs)

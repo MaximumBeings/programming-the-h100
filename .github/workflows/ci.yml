@@ -86,6 +86,8 @@ jobs:
       - name: Verify inference-system captures and current sources
         run: |
           python3 tools/verify_inference_validation.py
+          python3 tools/verify_inference_review.py
+          python3 tools/embed_inference_sources.py --check
           python3 -m py_compile docs/examples/inference-systems/*.py tools/run_inference_references.py
 
       - name: Verify SVG readability
@@ -101,7 +103,9 @@ jobs:
         run: python3 tools/verify_site_links.py
 
       - name: Verify displayed source formatting
-        run: python3 tools/verify_code_formatting.py --site-dir site
+        run: |
+          python3 tools/verify_code_formatting.py --site-dir site
+          python3 tools/verify_inline_inference.py --site-dir site
 
       - name: Deploy
         run: mkdocs gh-deploy --force

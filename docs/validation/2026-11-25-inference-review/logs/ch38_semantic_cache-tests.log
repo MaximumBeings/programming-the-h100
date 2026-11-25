@@ -1,0 +1,20 @@
+self-tests:
+  [PASS] world sanity: mean cosine same-intent (0.962) > sibling (0.884) > unrelated (-0.001)
+  [PASS] all synthetic vectors have unit norm
+  [PASS] an exact repeat of a stored vector hits at threshold 0.999999 with similarity 1
+  [PASS] partition isolation: in 600 random operations (157 of them hits, so the test exercises hits) no lookup returns another partition's entry. By construction of the dict keying; this guards regressions
+  [PASS] TTL: valid at t=99.9, expired at exactly t=100 (strict) and after
+  [PASS] LRU: capacity 3, after touching entry 0 the least recently used (entry 1) is evicted
+  [PASS] replaying the same seeded stream gives identical counts and per-entry tallies
+  [PASS] EMPIRICAL (not a theorem for a streaming cache: a higher threshold means more inserts, which can mean more later hits): hit rate is nonincreasing over this threshold grid [0.98, 0.94, 0.91, 0.9, 0.49, 0.1]
+  [PASS] false-hit rate at threshold 0.99 (0.000) is below that at 0.80 (0.712)
+  [PASS] Wilson upper bound for 0 events in 200 trials is 0.0188 (about 3/n = 0.015 to 0.019)
+  [PASS] Wilson 95% interval, EXACT coverage at n=200, p=0.02 (binomial sum, no simulation): 0.9331; asserted in [0.92, 0.98] (Wilson coverage oscillates with n and p)
+  [PASS] cluster bootstrap: with 5 entries carrying all 40 false hits of 100 hits the interval is wide, and with no events it returns None
+  [PASS] ... and it is wider than the naive Wilson interval on the same 40/100: cluster [0.16,0.64] vs Wilson [0.31,0.50]
+  [PASS] exact-match baseline: 4 queries (v, v, new, v) -> hit rate 0.50 (= 2/4: the 2nd and 4th are repeats; the 3rd is new)
+  [PASS] cost per request by hand: 0.00002 + 0.6*0.004 + 0.01*0.10 = 0.00342; function gives 0.00342
+  [PASS] break-even bad-answer cost = (0.40*0.004 - 0.00002)/0.01 = 0.1580, and at that cost the cache equals no cache
+  [PASS] calibrate() picks tau=0.93: lowest threshold with Wilson upper bound <= 1% on 3000 sibling pairs
+
+ALL PASS   (3 s)

@@ -1,0 +1,14 @@
+......Process SpawnProcess-1:
+Traceback (most recent call last):
+  File "/Users/oluwaseyiawoga/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/Users/oluwaseyiawoga/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/private/tmp/h100-inference-review-20261125/tools/tests/test_inference_core_review.py", line 21, in injected_worker_failure
+    raise RuntimeError("injected worker failure before publishing a result")
+RuntimeError: injected worker failure before publishing a result
+.....
+----------------------------------------------------------------------
+Ran 11 tests in 1.065s
+
+OK

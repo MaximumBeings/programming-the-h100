@@ -1,0 +1,34 @@
+{
+  "start_utc": "2026-11-25T15:26:48.434276+00:00",
+  "scope": "CPU references and simulations only; no new GPU execution",
+  "python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+  "platform": "macOS-26.6-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy_torch": "2.5.5 2.8.0",
+  "source_hashes": {
+    "ch32_inference_harness.py": "a6673e3980979ab4b379bb243d27770c2938c0040e83cb75d82ef073032d258a",
+    "ch33_moe_expert_parallel.py": "cfce25f562982926c612f290b0164470b0fd6001f39ef6ebb65302f8077694df",
+    "ch34_kv_offload.py": "52411e23246e89d9fa719a44425b7af789d1e3d002cbf1ba9713b25e9fb6d5c8",
+    "ch35_disaggregation.py": "51823780731649e732bd7dc59b1ef70aeebab43600b30144b74b89cbc23c2f42",
+    "ch36_benchmark_teardown.py": "cc75fa2ce6dc4e4e1bb6377f32e747b3720b925d021696fc118acfd996545609",
+    "ch37_spec_decode_70b.py": "4c3fdefbe36311022cc18c1557512108301bf3a335630023287d48c5285ac2a6",
+    "ch38_semantic_cache.py": "1bd701412f7b978ee1b510c58a0d6998461235642e30bf874887727a99a0e1a1",
+    "ch39_complexity_router.py": "944b2be2120d29c2dadef9603bb3d574c1d690083d53ae2d95944dfec340422c",
+    "ch40_gpu_autoscaler.py": "de539c8cdabb047f93d31a928521eb3dd790596a9206c7f04d687ef3c8138921",
+    "ch41_edge_fallback.py": "2013108e5978d629ccb1bab956d7106133ce4739b4f26db6fb2f4be40e2c8881",
+    "ch42_gateway_capstone.py": "5d7ac8b73c596d2de728ef8d8abbc5497403add0924bced259db31c4c72fcd9c",
+    "ch43_paged_kv_cache.py": "d46d1d0c12b2c240960f8aea5b2abe04f6bc5cdbec1efd49cc2db977e4b30086",
+    "ch44_continuous_batching.py": "756974b7d6ca4af41fabd3cbccb968ad14a2854f7bc56cc8037b8adae8cb8e00",
+    "ch45_radix_prefix_cache.py": "3557c81476d26e99526d55b03ba88129bcfb77651da119df84760afde40f0a1c",
+    "ch46_mini_engine.py": "1403f63200f51d2d477b688157a35a0a383facfe92a420e3afa0d3e4dc920e1a",
+    "ch47_paged_attention_cuda.py": "f469ad5c8e588b20c42e1348ed02ffc21ff7c7fd9d755edfae477e3c9c622815",
+    "ch47_vllm_probe.py": "37571907a61216203ddb70076b2814e4e664f6157e29fde03ba76570d9c942c4",
+    "fp4_formats.py": "b005824baebd86c26116617835d7d2487cce3ed293213c7e4864173c9837fddf"
+  },
+  "workers": 4,
+  "thread_environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  }
+}

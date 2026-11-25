@@ -17,10 +17,20 @@ def transfer_ms(tokens, gbit_per_s):
     return tokens * KV / (gbit_per_s * 1e9 / 8) * 1e3
 
 
-def exposed_ms(tokens, gbit_per_s, prefill_tps):
-    """If KV is streamed layer by layer WHILE prefill runs, only the part not hidden behind prefill is exposed
-    (best case: perfect overlap)."""
-    return max(0.0, transfer_ms(tokens, gbit_per_s) - tokens / prefill_tps * 1e3)
+def exposed_ms(tokens, gbit_per_s, prefill_tps, layers=80):
+    """Ideal equal-layer pipeline: layer KV becomes available only at its end.
+
+    A link serializes layer transfers. Even when it is faster than prefill,
+    the final layer's transfer cannot finish before that layer produces KV.
+    """
+    if layers <= 0 or prefill_tps <= 0 or gbit_per_s <= 0 or tokens < 0:
+        raise ValueError("positive layers/rates and nonnegative token count required")
+    prefill = tokens / prefill_tps * 1e3
+    transfer = transfer_ms(tokens, gbit_per_s) / layers
+    finished = 0.0
+    for layer in range(1, layers + 1):
+        finished = max(finished, layer * prefill / layers) + transfer
+    return max(0.0, finished - prefill)
 
 
 # ------------------------------------------------------------- 2. hardware mapping (datasheet values, check yours)
@@ -41,9 +51,11 @@ def decode_config(name, n, weight_bytes=70e9, ctx_tokens=4096):
 # ------------------------------------------------------------- 3. interference simulation
 def sim_colocated(reqs, replicas, max_batch, cost):
     from ch32_inference_harness import simulate
+    if replicas <= 0 or max_batch <= 0:
+        raise ValueError("replicas and max_batch must be positive")
     shards = [[] for _ in range(replicas)]
     for i, r in enumerate(reqs):
-        shards[i % replicas].append(Req(len(shards[i % replicas]), r.arrival, r.prompt, r.output))
+        shards[i % replicas].append(Req(r.rid, r.arrival, r.prompt, r.output))
     out, wall = [], 0.0
     for sh in shards:
         done, w, _ = simulate(sh, max_batch=max_batch, cost=cost)
@@ -58,7 +70,7 @@ def _decode_instance(pending, max_batch, cost):
     gen = {}
     while len(done) < len(pending):
         while i < len(pending) and pending[i][0] <= now and len(running) < max_batch:
-            running.append(pending[i]); gen[pending[i][1].rid] = 1; i += 1
+            running.append(pending[i]); gen[pending[i][1].rid] = 1; pending[i][1].generated = 1; i += 1
         if not running:
             now = pending[i][0]; continue
         kv = sum(r.prompt + gen[r.rid] for _, r, _ in running)
@@ -66,6 +78,7 @@ def _decode_instance(pending, max_batch, cost):
         for item in list(running):
             _, r, first = item
             gen[r.rid] += 1
+            r.generated = gen[r.rid]
             if gen[r.rid] >= r.output:
                 r.first_token, r.finish = first, now
                 done.append(r); running.remove(item)
@@ -76,7 +89,13 @@ def sim_disagg_pool(reqs, n_prefill, n_decode, max_batch, cost, link_gbit):
     """n_prefill FIFO prefill servers (a request goes to whichever frees first), then a KV transfer, then one of
     n_decode decode instances (assigned round-robin in order of readiness). Works on copies of the requests."""
     import heapq
-    reqs = [Req(r.rid, r.arrival, r.prompt, r.output) for r in reqs]
+    if min(n_prefill, n_decode, max_batch) <= 0 or link_gbit <= 0:
+        raise ValueError("pool sizes, batch cap and link bandwidth must be positive")
+    if any(r.prompt < 1 or r.output < 1 or r.arrival < 0 for r in reqs):
+        raise ValueError("requests require positive token counts and nonnegative arrival")
+    if len({r.rid for r in reqs}) != len(reqs):
+        raise ValueError("request IDs must be unique")
+    reqs = sorted((Req(r.rid, r.arrival, r.prompt, r.output) for r in reqs), key=lambda r: r.arrival)
     free = [0.0] * n_prefill
     ready, finished = [], []
     for r in reqs:
@@ -85,6 +104,7 @@ def sim_disagg_pool(reqs, n_prefill, n_decode, max_batch, cost, link_gbit):
         heapq.heappush(free, t)
         if r.output <= 1:                                             # nothing left to decode: done at the first token
             r.first_token = r.finish = t
+            r.generated = 1
             finished.append(r)
             continue
         ready.append((t + transfer_ms(r.prompt, link_gbit) / 1e3, r, t))   # first token is produced by prefill
@@ -116,8 +136,8 @@ def run_tests():
     check("transfer: 4096 tokens at 400 Gb/s is 26.8 ms (chapter figure)", abs(transfer_ms(4096, 400) - 26.8435) < 0.001)
     check("transfer is linear in tokens and inverse in bandwidth",
           abs(transfer_ms(2000, 100) - 2 * transfer_ms(1000, 100)) < 1e-9 and abs(transfer_ms(1000, 200) * 2 - transfer_ms(1000, 100)) < 1e-9)
-    check("exposed is 0 when prefill is slower than the transfer, positive when prefill is very fast",
-          exposed_ms(4096, 400, 20000) == 0.0 and exposed_ms(4096, 400, 1e6) > 0)
+    check("fast link still exposes the final layer transfer; fast prefill exposes the backlog",
+          abs(exposed_ms(4096, 400, 20000) - transfer_ms(4096,400)/80) < 1e-9 and exposed_ms(4096, 400, 1e6) > transfer_ms(4096,400)/80)
     check("exposed never exceeds the full transfer time", all(0 <= exposed_ms(n, g, t) <= transfer_ms(n, g) + 1e-9
                                                               for n in (512, 4096, 65536) for g in (100, 400) for t in (1e3, 2e4, 1e6)))
     f2, room2, s2 = decode_config("H100 SXM", 2)
@@ -220,7 +240,7 @@ def extras():
 def main():
     print(f"KV bytes/token = {KV:,}")
     print("\n== KV transfer time for one prompt (no overlap) and EXPOSED time with ideal layer-wise streaming ==")
-    print("tokens   KV size     100 Gb/s   200 Gb/s   400 Gb/s    exposed@400 (prefill 20k tok/s)")
+    print("tokens   KV size     100 Gb/s   200 Gb/s   400 Gb/s    exposed@400 (prefill 20k tok/s, 80 layers)")
     for n in (1024, 4096, 16384, 65536):
         print(f"{n:6d}  {n*KV/1e9:7.2f} GB  {transfer_ms(n,100):8.1f}   {transfer_ms(n,200):8.1f}   {transfer_ms(n,400):8.1f} ms  "
               f"{exposed_ms(n,400,20000):8.1f} ms")

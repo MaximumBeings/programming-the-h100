@@ -56,7 +56,7 @@ E4M3_MIN = E4M3_POS[0]                                      # 2**-9
 
 
 def round_e4m3(x):
-    """Round a positive value to the nearest E4M3 value (ties toward the smaller), saturating at 448. 0 stays 0."""
+    """Teaching scale quantizer: midpoint ties choose the smaller, except the zero/min-subnormal tie chooses min-subnormal. Saturate at 448; 0 stays 0."""
     if x <= 0:
         return 0.0
     if x >= E4M3_MAX:

@@ -57,7 +57,11 @@ class CostModel:
 
 
 def simulate(reqs, max_batch=64, cost=CostModel()):
-    reqs = [Req(r.rid, r.arrival, r.prompt, r.output) for r in reqs]
+    if max_batch <= 0:
+        raise ValueError("max_batch must be positive")
+    if any(r.arrival < 0 or r.prompt < 1 or r.output < 1 for r in reqs):
+        raise ValueError("requests require nonnegative arrival and positive token lengths")
+    reqs = sorted((Req(r.rid, r.arrival, r.prompt, r.output) for r in reqs), key=lambda r: r.arrival)
     waiting, running, now, i = [], [], 0.0, 0
     area, last_t = 0.0, 0.0                                           # for Little's law: integral of in-system count
     done = 0
@@ -77,7 +81,14 @@ def simulate(reqs, max_batch=64, cost=CostModel()):
         in_system = len(running) + len(waiting)
         dt = prefill_t + step_t
         area += in_system * dt
-        now += dt
+        # Arrivals during the iteration are already in the system while queued,
+        # even though admission can only happen at the next iteration boundary.
+        end = now + dt
+        j = i
+        while j < len(reqs) and reqs[j].arrival <= end:
+            area += end - reqs[j].arrival
+            j += 1
+        now = end
         for r in list(running):
             r.generated += 1
             if math.isnan(r.first_token):

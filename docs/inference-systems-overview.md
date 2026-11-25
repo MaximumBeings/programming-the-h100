@@ -40,3 +40,5 @@ Every project is judged with the same instruments, introduced in [Chapter 32](32
 ## The destination: an inference engine
 
 Use Chapters 43–46 as the correctness reference, then [Chapter 47](47-vllm-tuning-lab.md) to connect block-walk attention and the client to real CUDA execution and vLLM serving. The Triton book supplies the next kernel implementations; the multi-GPU book supplies distributed ownership and collectives. Validate each replacement before integrating it. A small single-GPU serving test does not establish MoE, RDMA, KEDA or edge-fallback performance.
+
+The [follow-up agent audit and complete-code guide](inference-adversarial-review-2026-11-25.md) records the subsequent corrections and fresh CPU reruns. Every chapter in this path now prints its complete implementation, with a matching downloadable source bundle.

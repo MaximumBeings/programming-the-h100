@@ -227,8 +227,8 @@ def edge_serve(state, t, req, have):
     return finish
 
 
-def serve(req, idx, pol, scn, state, seed, rng):
-    """-> (ok, latency, source) with source in remote|edge|None."""
+def _serve_events(req, idx, pol, scn, state, seed, rng):
+    """Yield absolute wake-up times; mutate shared state only at that event time."""
     t, deadline, have = req.t, req.t + DEADLINE, 0
     for k in range(pol.attempts):
         if t >= deadline:
@@ -242,6 +242,7 @@ def serve(req, idx, pol, scn, state, seed, rng):
                                            _u(seed, idx, k))
         state.remote_attempts += 1
         t_end = t + dur
+        yield t_end
         if pol.breaker:
             state.br.record(gen, status == "ok", t_end)
         if status == "ok":
@@ -249,6 +250,8 @@ def serve(req, idx, pol, scn, state, seed, rng):
         if pol.resume:
             have = held
         t = t_end + (backoff(rng, k) if pol.backoff else 0.0)
+        if t > t_end:
+            yield t
     if pol.edge and t < deadline:
         fin = edge_serve(state, t, req, have if pol.resume else 0)
         if fin is not None and fin <= deadline:
@@ -256,10 +259,33 @@ def serve(req, idx, pol, scn, state, seed, rng):
     return False, None, None
 
 
+def serve(req, idx, pol, scn, state, seed, rng):
+    """Drive one isolated request synchronously (used by the unit examples)."""
+    task = _serve_events(req, idx, pol, scn, state, seed, rng)
+    while True:
+        try:
+            next(task)
+        except StopIteration as done:
+            return done.value
+
+
 def run_client(pol, scn, seed):
     reqs = make_requests(seed)
     state, rng = ClientState(), Random(seed + 7)
-    res = [serve(r, i, pol, scn, state, seed, rng) for i, r in enumerate(reqs)]
+    # Requests may overlap. Deliver results/backoffs in chronological order;
+    # finishing a request before visiting the next arrival leaks future state.
+    res = [None] * len(reqs)
+    events = [(r.t, i, _serve_events(r, i, pol, scn, state, seed, rng))
+              for i, r in enumerate(reqs)]
+    heapq.heapify(events)
+    while events:
+        now, i, task = heapq.heappop(events)
+        try:
+            wake_at = next(task)
+            assert wake_at >= now
+            heapq.heappush(events, (wake_at, i, task))
+        except StopIteration as done:
+            res[i] = done.value
     n = len(reqs)
     lats = sorted(l for ok, l, s in res if ok)
     p95 = lats[min(len(lats) - 1, int(0.95 * len(lats)))] if lats else float("nan")

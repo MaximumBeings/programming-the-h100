@@ -1,0 +1,13 @@
+PASS 1 every request has exactly one fate; counts add up
+PASS 2 all-large, no cache: quality equals the mean large-model correctness of the drawn intents
+PASS 3 router: tau=-inf routes everything large; cache off gives the all-large quality
+PASS 4 a threshold of 1.0 gives only exact-repeat hits, none of them wrong
+PASS 5 no hit is served before its entry was inserted
+PASS 6 deterministic for a fixed seed
+PASS 7 a request is never served before it arrived; first token before end
+PASS 8 static all-large cost equals replicas x simulated time x price
+PASS 9 no outage: the fallback policy changes nothing
+PASS 10 outage: fallback strictly reduces failures; without it every outage-time large request fails
+PASS 11 SLO attainment never exceeds success rate (failures stay in the denominator)
+PASS 12 cache hits lower the load: fewer requests reach the pools
+12 tests passed

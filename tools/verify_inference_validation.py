@@ -21,9 +21,14 @@ def main():
     for r in baseline:
         assert r['exit_code']==0 and (DATA/'references'/r['log']).stat().st_size>0
         assert sha(DATA/'sources-baseline'/r['source'])==r['sha256']
+    from verify_inference_review import verify as verify_cpu_review
+    rerun_sources=verify_cpu_review()
     for p in (DATA/'sources-current').glob('*.py'):
         current=ROOT/('tools/tests' if p.name.startswith('test_') else 'docs/examples/inference-systems')/p.name
-        assert current.read_bytes()==p.read_bytes(),f'current source needs rerun: {p.name}'
+        if current.read_bytes()!=p.read_bytes():
+            assert p.name in rerun_sources,f'changed GPU probe or unexecuted source needs rerun: {p.name}'
+            # verify_cpu_review already requires exact current-source bytes and successful
+            # focused/full runs. This transition adds new evidence; old logs stay exact.
     for path in ['paged-cuda.exit','probe.exit','corrected/boundaries-final.exit',
                  'corrected/ch33_moe_expert_parallel.exit','corrected/ch43_paged_kv_cache.exit',
                  'corrected/ch36-tests.exit','corrected/ch36-full.exit']:
@@ -40,6 +45,6 @@ def main():
     assert probe['summary']['n']==8 and probe['summary']['failures']==0
     assert 'No broken requirements found.' in (DATA/'pip-check.log').read_text()
     assert json.loads((DATA/'system.json').read_text())['model_revisions']==['7ae557604adf67be50417f59c2c2f167def9a775']
-    print('PASS: immutable CPU reference captures (30 invocations), corrected source reruns, 12 CUDA comparisons and 8 real vLLM streams; current source hashes match. No capacity or model-quality claim.')
+    print('PASS: immutable CPU reference captures (30 invocations), corrected source reruns, 12 CUDA comparisons and 8 real vLLM streams; CPU source revisions have separate verified audit reruns; historical CUDA/serving captures remain exact. No capacity or model-quality claim.')
 
 if __name__=='__main__':main()

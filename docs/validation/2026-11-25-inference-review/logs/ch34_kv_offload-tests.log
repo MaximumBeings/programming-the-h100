@@ -1,0 +1,24 @@
+  [PASS] KV bytes per token is 327,680 and per layer x 80 equals it
+  [PASS] restore time is linear in tokens
+  [PASS] NVMe restore is slower than CPU restore (bandwidth ordering)
+  [PASS] break-even: at prefill = NVMe tokens/s, restore equals recompute
+  [PASS] first access of a session is a miss (None)
+  [PASS] cascade: c on GPU, b demoted to CPU, a demoted to NVMe
+  [PASS] access returns the tier that held it, then it moves to GPU
+  [PASS] immediate re-access hits the GPU
+  [PASS] LRU: with room for 2 on GPU, the oldest (a) is the one demoted
+  [PASS] LRU: touching b makes c the next victim
+  [PASS] a session larger than every bounded tier is dropped, so the next access misses
+  [PASS] a session larger than the GPU tier skips to the CPU tier
+  [PASS] 3000 random accesses: a session is never in two tiers
+  [PASS] 3000 random accesses: no bounded tier exceeds its capacity
+  [PASS] with unbounded NVMe, every session ever seen is still held somewhere
+  [PASS] hit fractions sum to 1
+  [PASS] GPU hit rate does not depend on the lower tiers (exclusive LRU)
+  [PASS] adding a tier never raises the miss rate or the mean resume latency
+  [PASS] determinism: same seed same result, different seed differs
+  [PASS] more popularity skew means a higher GPU hit rate
+  [PASS] decode-stall limit: at the printed token count the fetch time equals the per-layer budget
+  [PASS] with very fast prefill the resume cost is capped by recompute (the min() in run)
+  [PASS] zero requests raises ZeroDivisionError (documented failure)
+23/23 self-tests pass

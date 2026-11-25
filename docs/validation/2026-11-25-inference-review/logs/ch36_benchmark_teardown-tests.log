@@ -1,0 +1,25 @@
+== self-tests ==
+  [PASS] SSE parser, LF/CRLF mix: 200 random chunkings agree and equal ['{"a":1}', '{"b":2}', '[DONE]']
+  [PASS] SSE parser, CRLF only: 200 random chunkings agree and equal ['{"a":1}', '{"b":2}', '[DONE]']
+  [PASS] SSE parser, multi-line data: 200 random chunkings agree and equal ['line1\nline2', '[DONE]']
+  [PASS] SSE parser, partial last event: 200 random chunkings agree and equal ['one']
+  [PASS] percentile matches numpy (p50,p99)
+  [PASS] Pareto frontier correct on 200 random points (6 kept)
+      bootstrap coverage of true value (nominal 0.95): median n=120 -> 0.92; p99 n=160 -> 0.77; p99 n=1000 -> 0.85
+  [PASS] bootstrap median coverage within 0.88-0.995
+  [PASS] bootstrap p99 coverage at n=1000 is at least 0.85 and not worse than at n=160 (minus noise)
+  [PASS] summarize counts failures (4 of 40); attainment uses ALL requests
+  [PASS] warm-up discards the first 10 requests by arrival
+  [PASS] pooled summary: 40 per run kept (80 total), warm-up taken from each run
+  [PASS] pooled throughput uses the sum of run windows, not the 1000 s gap
+  [PASS] knee = highest rate with attainment >= 0.99
+  [PASS] make_payload is a valid OpenAI-style streaming request
+== self-tests needing sockets (mock server on localhost) ==
+  [PASS] read_body_chunks: chunked body and close-delimited body both decode
+  [PASS] normal request succeeds with 20 tokens
+  [PASS] close-delimited (non-chunked) body succeeds
+  [PASS] merged events (4 tokens/event): success judged by server usage, not event count
+  [PASS] HTTP 503 is recorded as a failure with its status
+  [PASS] truncated stream (no [DONE]) is a failure
+  [PASS] client timeout is recorded as a failure
+  [PASS] with 30% injected errors: 15/60 failures counted and attainment = 0.75 < 0.85

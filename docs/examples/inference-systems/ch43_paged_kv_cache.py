@@ -163,6 +163,8 @@ def dense_attention(q, K, V):
 def paged_attention(q, cache, sid):
     """Walk the block table; never materialises a contiguous K/V (online softmax)."""
     s = cache.seqs[sid]
+    if s["len"] == 0:
+        raise ValueError("attention requires at least one visible key")
     q = q.astype(np.float64)
     H, D = q.shape
     m = np.full(H, -np.inf)
