@@ -74,12 +74,51 @@ Open <http://127.0.0.1:8000>.
 
 ## Publishing to GitHub Pages
 
-1. Edit `site_url`, `repo_url` and `repo_name` at the top of `mkdocs.yml` to
-   point at your repository.
-2. Push to `main`. `.github/workflows/ci.yml` runs `mkdocs gh-deploy --force`,
-   which builds the site and pushes it to the `gh-pages` branch.
-3. In the repository settings, set **Pages → Source** to the `gh-pages` branch
-   (GitHub usually does this automatically on the first deploy).
+The publishing workflow is `.github/workflows/ci.yml`. It runs every evidence,
+source, SVG, link and formatting check, builds with `mkdocs build --strict`, and
+uploads only that verified `site/` directory. The deployment job depends on the
+successful build and uses GitHub's Pages artifact deployment. It does not push
+another publishing branch or start a second legacy build.
+
+One-time repository setup: select **Settings → Pages → Build and deployment →
+Source → GitHub Actions**. With an authenticated GitHub CLI and permission to
+manage the repository's Pages settings, the equivalent command is:
+
+```bash
+gh api --method PUT repos/MaximumBeings/programming-the-h100/pages \
+  -f build_type=workflow
+```
+
+The `github-pages` environment must permit deployments from `main`. If it
+previously allowed only `gh-pages`, change that exact branch rule to `main` in
+**Settings → Environments → github-pages → Deployment branches and tags**.
+Retain any reviewer/approval requirements. This repository's workflow publishes
+only `main`; other configured build triggers still run verification.
+
+Push to `main`, or rerun the workflow without another content commit:
+
+```bash
+gh workflow run ci.yml --repo MaximumBeings/programming-the-h100 --ref main
+gh run list --repo MaximumBeings/programming-the-h100 --workflow ci.yml --limit 3
+```
+
+The workflow grants `pages: write` and `id-token: write` only to the deployment
+job. The `github-pages` environment publishes the site URL in the Actions run.
+Concurrent runs are serialized so an older in-flight deployment is not cancelled
+halfway through publishing. The existing `gh-pages` branch is retained as an
+archive; it is no longer the publishing source after the one-time mode change.
+
+To preview the same output locally:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+mkdocs build --strict
+python3 tools/verify_site_links.py
+python3 tools/verify_code_formatting.py --site-dir site
+python3 tools/verify_inline_inference.py --site-dir site
+```
 
 ## About `hooks/fix_anchors.py`
 
