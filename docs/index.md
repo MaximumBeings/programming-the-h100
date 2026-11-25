@@ -190,3 +190,7 @@ For your own fork, set `site_url` and `repo_url` in `mkdocs.yml` to that reposit
 Built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/).
 
 [Separate B200 compatibility results](validation-b200.md) distinguish CPU checks, GPU-using programs and architecture exclusions.
+
+### Build toward an inference engine
+
+The [inference systems path](inference-systems-overview.md) progresses from measurement and serving mechanisms to paged memory, iteration scheduling, exact prefix reuse and a tiny reference engine. Continue with the [working vLLM and CUDA lab](47-vllm-tuning-lab.md); inspect the [November 25 execution record](validation-inference-2026-11-25.md) before comparing measured and simulated results.

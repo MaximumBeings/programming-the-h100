@@ -1,11 +1,19 @@
 # Chapter 39 — Multi-Model Complexity Router: Entropy, Calibration, Cost
 
+[![Chapter 39: Route with a quality budget](images/chapter-openers/39-inference.svg)](images/chapter-openers/39-inference.svg)
+
+
 !!! warning "Evidence status"
     **Run on CPU, in a synthetic world:** the entropy feature, the routing and cost accounting, the calibration procedure, a real-data `calibrate` command, and 21 self-tests (`ch39_complexity_router.py`).
     **Invented:** both "models" and all queries. Each query has a latent difficulty *d*; the small and large models answer correctly with made-up probabilities that depend on *d*; the small model's token logits are synthetic. Every number below is a property of that world, **not of any real model pair**. Section 39.9 is the procedure for measuring the real numbers; it is **UNTESTED** on a real model pair.
     Sample outputs vary with seeds; the self-tests assert properties, not these exact numbers.
 
 A complexity router sends easy queries to a small, cheap model and hard ones to a large, expensive one. The project brief says to route on "entropy". This chapter fixes what that means, shows how to choose the threshold without fooling yourself, and measures when the router actually saves money. In this synthetic world it saves **less than you would hope**, and the reasons are the useful part.
+
+## Worked system map
+
+[![Route with a quality budget: step-by-step hand trace](images/worked/ch39-inference.svg)](images/worked/ch39-inference.svg)
+
 
 ## 39.1 What "entropy" means here
 

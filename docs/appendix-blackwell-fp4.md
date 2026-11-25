@@ -1,5 +1,7 @@
 # Appendix: Native FP4 on Blackwell: NVFP4 and MXFP4
 
+[![FP4 elements, scales and reconstruction](images/chapter-openers/appendix-fp4.svg)](images/chapter-openers/appendix-fp4.svg)
+
 !!! abstract "Goal and prerequisites"
 
     Understand exactly what the two Blackwell 4-bit formats store, how much accuracy each gives up against block-scaled INT4 at the same storage cost, where each one breaks, and how to test a real B200 kernel against a CPU reference you trust. Read the [native B200 appendix](appendix-blackwell-b200.md) for the build environment and the Triton book's INT4 chapter for the weight-only quantization that H100 *can* run.
@@ -11,9 +13,15 @@
     - **Not an H100 feature:** Hopper has no FP4 tensor cores. On an H100 these formats can be stored and dequantized in software before a BF16 or FP8 multiply, or emulated as here; they cannot be *computed* natively.
     - **Synthetic data:** the error study uses Gaussian, Laplace and outlier-injected random vectors, not real model tensors. Treat the ranking as a hypothesis to test on your own weights and activations.
 
+## Worked format map
+
+[![FP4 scale and reconstruction walkthrough](images/worked/appendix-fp4.svg)](images/worked/appendix-fp4.svg)
+
+The [November 25 CPU rerun](validation-inference-2026-11-25.md) executes this emulation again; it does not add native B200 validation. The emulation uses simplified scale selection: positive E4M3 midpoint ties choose the lower value, while the zero/minimum-subnormal midpoint chooses the minimum subnormal. Do not treat it as a bit-exact reproduction of every native conversion mode. Also, FP4 encoding and a particular quantizer’s calibration recipe are separate contracts; a per-tensor scale is part of the recipe described here, not proof that every FP4 API exposes that same tensor field.
+
 ## A.1 Why 4 bits: the decode floor
 
-Decoding a 70B-parameter model streams every weight once per token. The time cannot go below the bytes moved divided by memory bandwidth. Using the H100's 3.35 TB/s purely as a yardstick (a B200 differs) and ignoring the KV cache:
+Under the batch-1, dense HBM-streaming model used here, decoding a 70B-parameter model reads every weight once per step. The modeled memory time is bytes moved divided by the assumed bandwidth. Using the H100's 3.35 TB/s purely as a yardstick (a B200 differs) and ignoring the KV cache:
 
 | Weight format | Bits per weight (incl. scales) | 70B weights | Floor at 3.35 TB/s |
 |---|---|---|---|
@@ -51,7 +59,7 @@ The shared exponent is usually `floor(log2(amax)) - 2` (the exponent of E2M1's l
 
 ## A.3 What the hardware does (documented, not executed here)
 
-NVIDIA's CUTLASS documentation for SM100 lists the block-scaled tensor-core instructions: `tcgen05.mma ... kind::mxf4.block_scale` runs at 4x the Hopper FP8 tensor-core throughput, and `kind::mxf4nvf4.block_scale.scale_vec_size::[2X|4X]` covers both MXFP4 and NVFP4 operands. The scale factors are applied along the K dimension: every 16 or 32 elements of A and B in K have an associated scale factor, and the accumulation is `D = C + sum_k (A x SFA)(B x SFB)`. Two practical points follow that this page does not test:
+NVIDIA's CUTLASS documentation for SM100 lists the block-scaled tensor-core instructions: `tcgen05.mma ... kind::mxf4.block_scale` is listed at 4x Hopper FP8 tensor-core throughput in the instruction comparison, rather than an end-to-end application speedup, and `kind::mxf4nvf4.block_scale.scale_vec_size::[2X|4X]` covers both MXFP4 and NVFP4 operands. The scale factors are applied along the K dimension: every 16 or 32 elements of A and B in K have an associated scale factor, and the accumulation is `D = C + sum_k (A x SFA)(B x SFB)`. Two practical points follow that this page does not test:
 
 1. **Scale factors are separate tensors** with their own shape (`M x ceil(K/block)` for A) and a hardware-specific memory layout. A kernel that quantizes correctly but writes scales in the wrong layout produces wrong results with no error.
 2. **Throughput claims are instruction-level peaks.** Whether a real GEMM reaches them depends on the epilogue, scale loading and the shapes, and must be measured with the Chapter 36 method.
@@ -209,7 +217,7 @@ cmake --build /full/path/build/cutlass-nv --target help | grep -i -E "nvfp4|mxf"
 
 Then validate before measuring speed:
 
-1. **Reference.** Quantize a small random matrix pair on the CPU with `fp4_formats.py`, multiply them exactly in float64 from the *dequantized* values, and compare with the kernel's output on the same quantized codes and scales. The two should agree to accumulation-order rounding (roughly 1e-3 relative in the output dtype), because both compute the same products of the same representable numbers.
+1. **Reference.** Quantize a small random matrix pair on the CPU with `fp4_formats.py`, multiply them exactly in float64 from the *dequantized* values, and compare with the kernel's output on the same quantized codes and scales. The two should agree to accumulation-order rounding (with a tolerance chosen for the output dtype, reduction length and accumulation path; use both absolute and relative tolerances because near-zero cancellation can make relative error misleading), because both compute the same products of the same representable numbers.
 2. **Quantization accuracy.** Separately compare the kernel's result against the unquantized BF16 GEMM. The relative error should be of the order of the dot-product errors in Section A.5 (about 0.0015 to 0.0025 times the vector norms for K=4096); a result an order of magnitude worse points to a scale-layout or clipping bug.
 3. **End-to-end accuracy.** Run your evaluation set in BF16, FP8 and the 4-bit format; report the difference with confidence intervals (the Chapter 36 method).
 4. **Speed.** Only then measure throughput, with the open-loop methodology, against FP8 on the same GPU, and report where the 4x instruction peak is and is not reached.
@@ -244,3 +252,5 @@ NVFP4 and MXFP4 store the same 4-bit E2M1 elements, whose values are 0, 0.5, 1, 
 - Pretraining Large Language Models with NVFP4: <https://arxiv.org/pdf/2509.25149>
 - Golden Ruler, a numeric format catalogue (MXFP4 and NVFP4 block parameters): <https://arxiv.org/pdf/2606.09686>
 - CUTLASS Blackwell SM100 GEMMs (block-scaled `tcgen05.mma` kinds and scale factor layout): <https://docs.nvidia.com/cutlass/media/docs/cpp/blackwell_functionality.html>
+
+- NVIDIA Transformer Engine NVFP4 recipe and scale definitions: <https://docs.nvidia.com/deeplearning/transformer-engine-releases/release-2.16/user-guide/features/low_precision_training/nvfp4/nvfp4.html>

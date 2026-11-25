@@ -1,5 +1,8 @@
 # Chapter 41 — Resilience and Edge Fallback (WebGPU and MLX)
 
+[![Chapter 41: Fail over with limits](images/chapter-openers/41-inference.svg)](images/chapter-openers/41-inference.svg)
+
+
 !!! warning "Evidence status"
     **Run on CPU, in a simulator:** the circuit breaker, retry budget and jittered backoff; a per-client simulation of five outage shapes under six policies; a fleet simulation of a capacity dip with retries; the edge-feasibility arithmetic; 17 self-tests and three experiments (`ch41_edge_fallback.py`, standard library only). Experiment cells show the mean and, in brackets, the minimum–maximum over three seeds.
     **Not run on any device.** No WebGPU page, WebLLM engine or MLX model was executed for this chapter. The remote and edge speeds (remote 0.5 s to first token and 60 tokens/s; edge 300 tokens/s prefill, 25 tokens/s decode, 2048-token context, one request at a time with two waiting) and the fleet numbers (70 req/s offered, 100 req/s capacity) are **assumed**. The browser and Apple-silicon runbooks in 41.10 are **UNTESTED**.
@@ -12,6 +15,11 @@
     - **Correlated clients.** The per-client simulation has one client. The fleet simulation has a single global queue and identical clients.
 
 A remote GPU service fails in ways that a health check does not see: connections refused, requests that hang, responses that are ten times slower, streams that stop halfway. This chapter builds the client-side machinery that keeps the user's request alive through those failures (timeouts, bounded retries, a circuit breaker, a local fallback) and the server-side rule that keeps a recovering service from being buried by its own clients. The central results are about interactions: each mechanism helps in some failures and hurts in others, and retries can turn a 30-second dip into a permanent outage.
+
+## Worked system map
+
+[![Fail over with limits: step-by-step hand trace](images/worked/ch41-inference.svg)](images/worked/ch41-inference.svg)
+
 
 ## 41.1 Five ways a remote endpoint fails
 

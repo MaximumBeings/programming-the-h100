@@ -1,0 +1,24 @@
+KV bytes/token = 327,680 ; per token per layer = 4,096
+
+== restore vs recompute, per context length (assumed: PCIe 55 GB/s, NVMe 10 GB/s, prefill 20k tok/s) ==
+tokens   KV size    restore(CPU)  restore(NVMe)  recompute
+  1024     0.34 GB        6.1 ms        33.6 ms      51.2 ms
+  4096     1.34 GB       24.4 ms       134.2 ms     204.8 ms
+ 16384     5.37 GB       97.6 ms       536.9 ms     819.2 ms
+ 65536    21.47 GB      390.5 ms      2147.5 ms    3276.8 ms
+per token: restore CPU 6.0 us, NVMe 32.8 us, recompute 50.0 us
+NVMe restore beats recompute only if prefill speed < 30,518 tok/s; CPU restore only if prefill speed < 167,847 tok/s
+
+== tier simulation: 400 sessions, 4096-token contexts, Zipf popularity, GPU holds 40 sessions ==
+policy            gpu-hit  cpu-hit  nvme-hit  miss(recompute)  mean resume latency
+gpu                 0.598    0.000     0.000            0.402      82.40 ms
+gpu+cpu             0.598    0.236     0.000            0.166      39.79 ms
+gpu+cpu+nvme        0.598    0.236     0.104            0.062      32.42 ms
+
+== can an ACTIVE sequence's KV be paged in during decode without stalling? ==
+per-layer compute budget in a decode step ~ 0.263 ms (21 ms / 80 layers)
+context   1024: fetching ONE layer's KV over PCIe takes  0.076 ms -> hidden behind compute
+context   4096: fetching ONE layer's KV over PCIe takes  0.305 ms -> STALLS decode
+context   8192: fetching ONE layer's KV over PCIe takes  0.610 ms -> STALLS decode
+context  32768: fetching ONE layer's KV over PCIe takes  2.440 ms -> STALLS decode
+largest per-layer KV fetch that hides behind one layer's compute (one sequence): ~3,525 tokens

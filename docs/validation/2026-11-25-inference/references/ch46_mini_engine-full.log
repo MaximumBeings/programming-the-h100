@@ -1,0 +1,45 @@
+  PASS  1  reference model is causal: changing later tokens leaves earlier logits bit-identical
+  PASS  2  paged chunked forward equals the full forward for B = 1, 4, 8, 16 (max |diff| 6.2e-15)
+  PASS  3  decode attention that walks scattered blocks equals gathered attention
+  PASS  4  one request matches the reference for B in (2, 5, 8, 16) and chunk budgets (none, 3, 16)
+  PASS  5  24 concurrent requests, continuous batching: every output equals the reference
+  PASS  6  tiny pool: 2 preemptions with recomputation, outputs still equal the reference
+  PASS  7  chunked prefill (budget 12 tokens per iteration): outputs equal the reference
+  PASS  8  prefix cache: outputs equal the reference; 600 prompt tokens served from cached blocks
+  PASS  9  cache + pressure + chunking in three configurations: outputs equal the reference, refcounts exact every iteration
+  PASS 10  after the run and a full cache flush every block is back on the free list
+  PASS 11  with the cache off, first-token and finish times, iterations and preemptions equal the Chapter 44 simulator exactly (4 configurations)
+  PASS 12  the engine's block trie matches the Chapter 45 radix tree rounded down to whole blocks (10 sessions x 40 sequences)
+  PASS 13  sanity check of the test itself: corrupting the cached KV blocks makes outputs disagree with the reference
+  PASS 14  a request larger than the pool is rejected; the other one still matches the reference
+  PASS 15  compressing arrival times (a different batch composition) changes no output
+ALL PASS   (3 s)  [15 tests]
+model: 2 layers, d_model 32, 2 heads, vocab 96 (random weights, float64)
+workload: 48 requests, 60% start with one of 3 shared 40-token prompts; prompt tokens 2925, output tokens 546
+
+=== Experiment 1: correctness matrix (every row is checked against the no-cache reference) ===
+                               configuration mismatches  iters  preempt  prefill tok  cache hit tok sim end (s)
+                   B=8, roomy pool, no cache          0     97        0         2925              0        1.71
+        B=8, tiny pool (26 blocks), no cache          0    228        4         3224              0        3.69
+            B=8, chunked prefill (budget 12)          0    299        0         2925              0        4.74
+                    B=8, roomy, prefix cache          0    101        0         1685           1240        1.71
+                B=8, tiny pool, prefix cache          0    211        7         2338           1104        3.39
+     B=4, 60 blocks, budget 10, prefix cache          0    317        5         2276            940        4.98
+    B=16, 14 blocks, budget 20, prefix cache          0    269        6         2486            880        4.27
+
+=== Experiment 2: what the prefix cache buys (roomy pool and tiny pool) ===
+                 configuration  prefill tok  preempt  TTFT p50 (ms)  TTFT p99 (ms)  e2e p50 (s)
+               roomy, no cache         2925        0           31.6           46.6        0.220
+                  roomy, cache         1685        0           30.3           38.7        0.208
+           tiny pool, no cache         3224        4         1136.2         2069.6        1.295
+              tiny pool, cache         2338        7          990.9         1769.5        1.144
+
+=== Experiment 3: block size and cache hits (roomy pool, 40-token shared prompts) ===
+   B  hit tokens  prefill tokens  floor(40/B)*B
+   4        1240            1685             40
+   8        1240            1685             40
+  16         992            1933             32
+  32         992            1933             32
+
+=== Experiment 4: mutation check (a corrupted cached block must be caught) ===
+corrupted 11 cached blocks (K x -3, V + 5) the first time the cache is non-empty; requests whose output differs from the reference: 11 of 48

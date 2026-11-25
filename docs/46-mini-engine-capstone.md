@@ -1,11 +1,19 @@
 # Chapter 46 — Capstone: A Mini Inference Engine
 
+[![Chapter 46: Build the engine core](images/chapter-openers/46-inference.svg)](images/chapter-openers/46-inference.svg)
+
+
 !!! warning "Evidence status"
     **Run on CPU:** a tiny real transformer (2 layers, 32-dimensional, 2 heads, vocabulary 96, random weights, float64) served by an engine that joins the paged KV cache (Chapter 43), the continuous-batching scheduler with preemption and chunked prefill (Chapter 44) and a block-level prefix cache (Chapter 45); 15 self-tests; four experiments (`ch46_mini_engine.py`).
     **What "correct" means here:** every generated token is compared with a *reference* that recomputes the whole sequence with dense causal attention and no cache at every step. In float64 with greedy decoding the comparison is exact.
     **What this does not show:** nothing runs on a GPU, the weights are random so the text is meaningless, sampling is greedy only, and the engine computes one sequence at a time (the "batch" is a scheduling decision; its cost uses the assumed per-iteration model of Chapter 44). It checks that the *machinery* is correct, not that it is fast. The comparison with vLLM and SGLang in 46.9 is **UNTESTED**.
 
 This chapter closes Part XIV. The earlier chapters each tested one piece in isolation. Here the pieces share one set of blocks, and the property to check is the one that matters in production: **sharing, preempting, chunking and caching must never change an answer.**
+
+## Worked system map
+
+[![Build the engine core: step-by-step hand trace](images/worked/ch46-inference.svg)](images/worked/ch46-inference.svg)
+
 
 ## 46.1 What is joined
 

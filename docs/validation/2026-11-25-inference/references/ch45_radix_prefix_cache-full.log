@@ -1,0 +1,72 @@
+  PASS  1  fast lcp equals the naive loop on 300 random pairs
+  PASS  2  insert, match and edge split behave on a hand example (5 + 1 new token = 6 stored)
+  PASS  3  tree stores exactly one token per distinct prefix (20 random sets of 40 sequences)
+  PASS  4  match length equals the brute-force maximum common prefix (20 sessions x 60 queries)
+  PASS  5  a pinned sequence survives pressure; the least recently used unpinned leaf is evicted
+  PASS  6  the eviction victim always has the minimum last-access among evictable leaves (15 sessions)
+  PASS  7  when every token is pinned the request fails with CacheFull and the cache is unchanged
+  PASS  8  pin counts equal the number of live handles through each node (15 random sessions)
+  PASS  9  ten requests sharing a 100-token prefix store it once (300 tokens, not 1200)
+  PASS 10  block-hash match never exceeds the radix match and is within one block of it
+  PASS 11  an 8-bit block hash served wrong KV 373 times in 400 requests; the 64-bit hash 0 times (the radix tree compares tokens)
+  PASS 12  a per-tenant salt as the first token prevents any cross-tenant match
+  PASS 13  with exactly repeated prompts LRU beats FIFO (0.693 vs 0.649 hit rate)
+  PASS 14  same seed, same hit rate
+ALL PASS   (0 s)  [14 tests]
+hit rate = prompt tokens served from cache / prompt tokens; 3 seeds x 1500 requests
+
+=== Experiment 1: hit rate versus cache size, radix (token granularity) ===
+                                workload                   4000                  16000                  64000                 256000                1000000
+    system prompts (20 x 1000 tok, Zipf)    0.297 [0.291-0.302]    0.627 [0.625-0.630]    0.807 [0.804-0.808]    0.822 [0.821-0.823]    0.822 [0.821-0.823]
+      multi-turn chat (40 conversations)    0.050 [0.045-0.052]    0.234 [0.227-0.237]    0.735 [0.734-0.736]    0.928 [0.927-0.928]    0.928 [0.927-0.928]
+          RAG, documents in random order    0.002 [0.002-0.002]    0.009 [0.008-0.010]    0.035 [0.034-0.037]    0.125 [0.122-0.128]    0.262 [0.260-0.264]
+             RAG, documents sorted by id    0.003 [0.003-0.003]    0.018 [0.017-0.019]    0.064 [0.063-0.065]    0.188 [0.186-0.190]    0.285 [0.285-0.285]
+popular exact-repeat prompts (300, Zipf)    0.121 [0.118-0.125]    0.357 [0.347-0.364]    0.614 [0.611-0.617]    0.822 [0.814-0.828]    0.841 [0.836-0.845]
+                    no sharing (control)    0.000 [0.000-0.000]    0.000 [0.000-0.000]    0.000 [0.000-0.000]    0.000 [0.000-0.000]    0.000 [0.000-0.000]
+
+=== Experiment 2: radix versus block-hash, system-prompt workload, cache 64000 tokens ===
+                scheme                 hit rate
+         radix (token)      0.807 [0.804-0.808]
+       block-hash B=16      0.801 [0.798-0.803]
+       block-hash B=64      0.775 [0.772-0.776]
+      block-hash B=256      0.615 [0.613-0.618]
+shared prefix is 1000 tokens: 1000 mod 16 = 8, mod 64 = 40, mod 256 = 232
+
+=== Experiment 3: LRU versus FIFO eviction ===
+                       workload (cache tokens)                      LRU                     FIFO
+  system prompts (20 x 1000 tok, Zipf) (10000)      0.513 [0.510-0.518]      0.513 [0.510-0.518]
+    multi-turn chat (40 conversations) (40000)      0.523 [0.519-0.531]      0.523 [0.519-0.531]
+popular exact-repeat prompts (300, Zipf) (100000)      0.721 [0.715-0.725]      0.677 [0.666-0.685]
+
+=== Experiment 4: pinned sequences under concurrency (multi-turn chat, cache 40000 tokens) ===
+ in flight                 hit rate   requests refused caching
+         1      0.523 [0.519-0.531]                        0.0
+         4      0.523 [0.519-0.531]                        0.0
+        16      0.522 [0.516-0.531]                       17.0
+        32      0.303 [0.297-0.309]                     1303.3
+        64      0.356 [0.352-0.362]                     1370.0
+
+=== Experiment 5: prefill work saved (prefill cost 50.00 ms per 1000 tokens, assumed) ===
+                                workload  mean prompt  hit rate  prefill ms/req, no cache  with cache
+    system prompts (20 x 1000 tok, Zipf)         1199     0.823                      60.0        10.6
+      multi-turn chat (40 conversations)         2051     0.928                     102.6         7.4
+          RAG, documents in random order         2520     0.122                     126.0       110.6
+             RAG, documents sorted by id         2520     0.188                     126.0       102.3
+popular exact-repeat prompts (300, Zipf)         1069     0.823                      53.5         9.5
+                    no sharing (control)          995     0.000                      49.8        49.8
+
+=== Experiment 6: tree shape (cache 256000 tokens) ===
+                                workload   nodes   tokens  mean edge length
+    system prompts (20 x 1000 tok, Zipf)    1503   255918             170.3
+      multi-turn chat (40 conversations)    1693   255938             151.2
+          RAG, documents in random order     237   254660            1074.5
+             RAG, documents sorted by id     257   255180             992.9
+popular exact-repeat prompts (300, Zipf)     885   255914             289.2
+                    no sharing (control)     463   255907             552.7
+
+=== Experiment 7: a scan of unique long prompts (cache 64000 tokens, system-prompt workload) ===
+ unique prompts injected    hit rate on the next 300 requests
+                       0                  0.810 [0.808-0.815]
+                      10                  0.796 [0.792-0.799]
+                      30                  0.767 [0.765-0.769]
+                     100                  0.765 [0.764-0.766]

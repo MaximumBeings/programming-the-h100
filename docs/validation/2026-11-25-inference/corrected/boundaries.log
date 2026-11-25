@@ -1,0 +1,1 @@
+PASS invalid K/V append preserves allocator and fork state; negative indices and unequal-slot placement rejected

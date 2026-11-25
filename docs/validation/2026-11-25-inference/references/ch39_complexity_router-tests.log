@@ -1,0 +1,24 @@
+self-tests:
+  [PASS] entropy of a uniform distribution = ln V = 4.1589 nats
+  [PASS] entropy of a (numerically) one-hot distribution is 0
+  [PASS] 0 <= H <= ln V for 200 random logit vectors
+  [PASS] H is invariant to adding a constant to the logits
+  [PASS] entropy of a fair two-way split is ln 2 = 0.6931
+  [PASS] H is larger for a higher-temperature (flatter) distribution
+  [PASS] synthetic world: correlation(H, d) = 0.782 is positive and not 1
+  [PASS] the large model is more accurate than the small one (0.880 vs 0.628)
+  [PASS] routed fraction is nonincreasing in the threshold [0.01, 0.1, 0.3, 0.5, 0.7, 0.9, 0.99]
+  [PASS] tau = -inf routes everything: quality = always-large exactly
+  [PASS] tau = +inf routes nothing: quality = always-small exactly
+  [PASS] AUC for predicting small-model errors: oracle d 0.712 >= entropy 0.671 > length 0.632 > 0.5
+  [PASS] AUC of a constant score is exactly 0.5 (ties)
+  [PASS] cost ratio by hand, worst case k=1: (0.7*1 + 0.3*(1+15))/15 = 0.3667; function gives 0.3667
+  [PASS] cost ratio by hand, K-token prefix = 20% of a full small answer: (0.7 + 0.3*15.2)/15 = 0.3507; function gives 0.3507
+  [PASS] routing everything costs (k c_s + c_l)/c_l: 1.0667 at k=1 and 1.0133 at k=0.2, never below 1
+  [PASS] break-even price ratio 1 + f k/(1-f) at f=0.84: 6.25 for k=1, 2.05 for k=0.2; the router costs exactly 1.0 of always-large there
+  [PASS] (weak, by construction) the chosen threshold meets its own criterion on validation: gap -0.0173 >= -0.02 (tau=1.320)
+  [PASS] (a theorem, since SE >= 0) the conservative threshold is no higher than the naive one
+  [PASS] GENERALISATION over 100 splits, scored on 100k fresh queries: conservative violates the 2-point target in 8/100 (0.08), naive in 55/100 (0.55); asserted: conservative <= 0.12 and strictly fewer than naive
+  [PASS] calibrate_file() on an exported jsonl: n=3000, tau=1.203, routed 0.88, test gap -0.0167
+
+ALL PASS   (9 s)

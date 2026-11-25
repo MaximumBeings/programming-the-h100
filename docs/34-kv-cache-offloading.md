@@ -1,5 +1,8 @@
 # Chapter 34: Hierarchical KV-Cache Offloading
 
+[![Chapter 34: Memory has a hierarchy](images/chapter-openers/34-inference.svg)](images/chapter-openers/34-inference.svg)
+
+
 !!! abstract "Goal and prerequisites"
 
     Learn when moving KV cache out of GPU memory pays off, and when it is slower than recomputing it. You build a tier simulator (GPU, CPU RAM, NVMe) and a rule for deciding what can be fetched without stalling decode. Read [Chapter 32](32-inference-engine-and-harness.md) (KV size and the decode floor) and [Chapter 5](05-cp-async-bulk-l2-hinting.md) (asynchronous copies) first.
@@ -7,6 +10,11 @@
 !!! warning "Evidence level"
 
     CPU simulation with **assumed** bandwidths (PCIe 55 GB/s, one NVMe drive 10 GB/s) and an **assumed** prefill speed of 20,000 tokens per second. Change those three numbers to your measurements and the conclusions change with them; that sensitivity is the point of the chapter. Nothing here measures a real offload system.
+
+## Worked system map
+
+[![Memory has a hierarchy: step-by-step hand trace](images/worked/ch34-inference.svg)](images/worked/ch34-inference.svg)
+
 
 ## 34.1 Why offload at all
 

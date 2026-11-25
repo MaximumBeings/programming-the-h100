@@ -1,5 +1,8 @@
 # Chapter 42 — Capstone: One Gateway, Four Mechanisms, One Harness
 
+[![Chapter 42: One gateway, shared metrics](images/chapter-openers/42-inference.svg)](images/chapter-openers/42-inference.svg)
+
+
 !!! warning "Evidence status"
     **Run on CPU, in a simulator:** a gateway that chains the semantic cache (Chapter 38), the complexity router (Chapter 39), queue-autoscaled GPU pools (Chapter 40) and the circuit breaker (Chapter 41), measured with the record type and statistics of the Chapter 36 harness. 12 self-tests and three experiments (`ch42_gateway_capstone.py`). Experiment cells show the mean and, in brackets, the minimum–maximum over three seeds.
     **Not run on any GPU, cluster or network.** The request rates, service times, prices, cold start, cache and router behaviour are **assumed** or come from the earlier chapters' synthetic worlds. No number here predicts a real deployment. The runbook in 42.9 is **UNTESTED**.
@@ -13,6 +16,11 @@
     - **Drift.** The router threshold is calibrated once per seed and never re-checked.
 
 The previous four chapters each built one mechanism and tested it alone. A gateway uses them together, and the mechanisms interact: the cache changes the load the autoscaler sees, the router changes the quality the cache is protecting, and the breaker's fallback is the capacity the router starved. This chapter wires them into one simulator and asks the question a portfolio project exists to answer: **what does each mechanism buy once the others are present, and what does it cost?**
+
+## Worked system map
+
+[![One gateway, shared metrics: step-by-step hand trace](images/worked/ch42-inference.svg)](images/worked/ch42-inference.svg)
+
 
 ## 42.1 The pipeline
 

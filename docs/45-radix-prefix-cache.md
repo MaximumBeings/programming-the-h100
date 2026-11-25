@@ -1,10 +1,18 @@
 # Chapter 45 — A Radix-Tree Prefix Cache
 
+[![Chapter 45: Reuse the exact prefix](images/chapter-openers/45-inference.svg)](images/chapter-openers/45-inference.svg)
+
+
 !!! warning "Evidence status"
     **Run on CPU:** a radix-tree prefix cache with pinning and LRU/FIFO eviction, a block-hash cache for comparison, 14 self-tests (including comparisons with brute-force references), and seven experiments (`ch45_radix_prefix_cache.py`). Experiment cells show the mean and, in brackets, the minimum–maximum over 3 seeds of 1500 requests.
     **Nothing here touches a GPU or real KV tensors.** The cache stores *token ids and counts*, not KV blocks; joining the tree to Chapter 43's block pool is left to the capstone. Token ids are random integers and the workloads (system prompts, multi-turn chat, RAG, exact repeats) are **assumed shapes**, not traces. Statements about how SGLang and vLLM organise their caches (token-granular radix tree and full-block hashing respectively) are from memory of their designs; check the current documentation.
 
 Chapter 44's scheduler made every request pay for its whole prompt. Most prompts share a beginning: the same system prompt, the same few-shot examples, the same chat history. A **prefix cache** keeps the KV of past prompts and lets a new request skip the prefill for the part it shares.
+
+## Worked system map
+
+[![Reuse the exact prefix: step-by-step hand trace](images/worked/ch45-inference.svg)](images/worked/ch45-inference.svg)
+
 
 ## 45.1 What can be reused
 

@@ -1,12 +1,22 @@
 # Chapter 43 — A Paged KV Cache from Scratch
 
+[![Chapter 43: Logical tokens, physical blocks](images/chapter-openers/43-inference.svg)](images/chapter-openers/43-inference.svg)
+
+
 !!! warning "Evidence status"
-    **Run on CPU (NumPy):** the block allocator, the paged cache with fork and copy-on-write, paged attention with an online softmax, 17 self-tests including a randomised property test, and four experiments (`ch43_paged_kv_cache.py`).
+    **Run on CPU (NumPy):** the block allocator, the paged cache with fork and copy-on-write, paged attention with an online softmax, 17 original self-tests including a randomised property test, plus boundary regressions, and four experiments (`ch43_paged_kv_cache.py`).
     **Not run on any GPU.** Nothing here measures speed. The memory results are exact counts; the length distribution (lognormal, median 300 tokens, clipped to 2048) is **assumed**, not taken from a real workload. The vLLM commands in 43.9 are **UNTESTED** and written from memory of the CLI: check every flag against `vllm serve --help` for your version.
 
 This is the first chapter of Part XIV, where we build the core of an inference engine in the style of vLLM and SGLang, one piece at a time, with every piece tested on a CPU. The chapter numbers start at 43 because Chapters 41 and 42 are still reserved for Part XIII.
 
 Chapter 32 gave the anatomy of an engine. Here we build its memory manager.
+
+## Worked system map
+
+[![Logical tokens, physical blocks: step-by-step hand trace](images/worked/ch43-inference.svg)](images/worked/ch43-inference.svg)
+
+
+The November 25 correction validates K/V shape and conversion **before** allocation or copy-on-write, and rejects negative/out-of-range block indices. See the [fresh execution record](validation-inference-2026-11-25.md).
 
 ## 43.1 The problem the KV cache creates
 

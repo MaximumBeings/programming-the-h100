@@ -1,11 +1,19 @@
 # Chapter 38 — Semantic Cache: Thresholds, False Hits, Economics
 
+[![Chapter 38: A similar prompt can differ](images/chapter-openers/38-inference.svg)](images/chapter-openers/38-inference.svg)
+
+
 !!! warning "Evidence status"
     **Run on CPU, in a synthetic world:** the cache data structure, the Wilson interval, a cluster bootstrap, the economics formulas and 17 self-tests (`ch38_semantic_cache.py`).
     **Invented:** the embeddings. There is no embedding model in this chapter. Queries are synthetic unit vectors, so every similarity, threshold and rate below is a property of that synthetic world and **does not transfer** to a real model. Section 38.9 is the procedure that measures the real numbers; it is **UNTESTED** against a real embedding model.
     Sample outputs vary with seeds; the self-tests assert properties, not these exact numbers.
 
 A semantic cache returns a stored answer when a new query is "close enough" to an old one, skipping the LLM call. The project brief says "98% similarity". That number means nothing on its own: it depends on the embedding model, and it says nothing about how often the cache returns a *wrong* answer. This chapter builds the cache, measures the wrong-answer rate with a confidence interval, and turns it into dollars.
+
+## Worked system map
+
+[![A similar prompt can differ: step-by-step hand trace](images/worked/ch38-inference.svg)](images/worked/ch38-inference.svg)
+
 
 ## 38.1 What is being cached, and what "same" means
 

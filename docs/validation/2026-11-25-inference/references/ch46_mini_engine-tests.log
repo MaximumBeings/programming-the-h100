@@ -1,0 +1,16 @@
+  PASS  1  reference model is causal: changing later tokens leaves earlier logits bit-identical
+  PASS  2  paged chunked forward equals the full forward for B = 1, 4, 8, 16 (max |diff| 6.2e-15)
+  PASS  3  decode attention that walks scattered blocks equals gathered attention
+  PASS  4  one request matches the reference for B in (2, 5, 8, 16) and chunk budgets (none, 3, 16)
+  PASS  5  24 concurrent requests, continuous batching: every output equals the reference
+  PASS  6  tiny pool: 2 preemptions with recomputation, outputs still equal the reference
+  PASS  7  chunked prefill (budget 12 tokens per iteration): outputs equal the reference
+  PASS  8  prefix cache: outputs equal the reference; 600 prompt tokens served from cached blocks
+  PASS  9  cache + pressure + chunking in three configurations: outputs equal the reference, refcounts exact every iteration
+  PASS 10  after the run and a full cache flush every block is back on the free list
+  PASS 11  with the cache off, first-token and finish times, iterations and preemptions equal the Chapter 44 simulator exactly (4 configurations)
+  PASS 12  the engine's block trie matches the Chapter 45 radix tree rounded down to whole blocks (10 sessions x 40 sequences)
+  PASS 13  sanity check of the test itself: corrupting the cached KV blocks makes outputs disagree with the reference
+  PASS 14  a request larger than the pool is rejected; the other one still matches the reference
+  PASS 15  compressing arrival times (a different batch composition) changes no output
+ALL PASS   (3 s)  [15 tests]

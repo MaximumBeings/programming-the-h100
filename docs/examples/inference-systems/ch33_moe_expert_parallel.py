@@ -33,6 +33,8 @@ def eplb_place(loads, n_gpus, n_redundant):
     """Greedy placement with replicas: replicate the hottest experts, then pack replicas onto the lightest GPU.
     Each replica of an expert takes an equal share of that expert's load."""
     E = len(loads)
+    if n_gpus <= 0 or n_redundant < 0 or E == 0 or (E+n_redundant) % n_gpus:
+        raise ValueError("equal-slot placement requires positive GPUs and divisible expert copies")
     copies = [1] * E
     for _ in range(n_redundant):                                       # give the next copy to the expert with
         e = max(range(E), key=lambda i: loads[i] / copies[i])          # the largest per-copy load

@@ -1,5 +1,8 @@
 # Chapter 32: Inference Engine Anatomy and the Measurement Harness
 
+[![Chapter 32: Measure before tuning](images/chapter-openers/32-inference.svg)](images/chapter-openers/32-inference.svg)
+
+
 !!! abstract "Goal and prerequisites"
 
     Learn what limits an LLM serving engine on a Hopper GPU, how continuous batching works, and how to measure a server honestly. You build a workload generator, a simulated engine and a metrics module that every later project reuses. Read [Chapter 1](01-h100-architecture.md) (memory hierarchy and bandwidth) and [Chapter 14](14-nsight-systems.md) (timelines) first.
@@ -7,6 +10,11 @@
 !!! warning "Evidence level"
 
     The harness and engine below run on a **CPU**. The engine is a **simulation** whose cost constants are illustrative parameters, not H100 measurements. What the run verifies: the metric code (against a hand-computed case), the byte and bandwidth arithmetic, and the simulator's internal consistency (Little's law). What it cannot tell you: how fast any real server is. Replace the simulated engine with a client that talks to a real server, keep the rest.
+
+## Worked system map
+
+[![Measure before tuning: step-by-step hand trace](images/worked/ch32-inference.svg)](images/worked/ch32-inference.svg)
+
 
 ## 32.1 Two phases, two bottlenecks
 
@@ -147,7 +155,7 @@ The metric hand-check and Little's law are two checks. The harness is reused by 
 
 ## 32.8 Experiment A: the batch cap
 
-The engine takes `max_batch`, the most sequences it will run in one iteration. In a real server the equivalent limit is set by KV-cache memory, not a flag, so this experiment shows the shape of the trade, not a tuning guide. Rate 12 requests per second, 300 requests, seed 2 (`--extras`):
+The engine takes `max_batch`, the most sequences it will run in one iteration. In a real server an explicit scheduler limit such as vLLM’s `max_num_seqs` acts alongside KV-cache capacity and the token budget, so this experiment shows the shape of the trade, not a tuning guide. Rate 12 requests per second, 300 requests, seed 2 (`--extras`):
 
 ```
 max_batch  ttft_p50  ttft_p99  tpot_p50  tput(tok/s)  slo_ok
@@ -202,7 +210,7 @@ Nothing in this chapter has been run on a GPU server. These steps are from memor
 1. **Pick the engine and record its version.** For example, `python3 -m pip show vllm` (or the version your container reports) and `nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv`. Write both into the run record.
 2. **Start the server with fixed settings** and write them down: model, tensor-parallel size, maximum sequence length, maximum number of running sequences, GPU memory fraction. A result without these is not comparable.
 3. **Replace `simulate` with a client.** It must send the same `Req` list at the same arrival times, record the time of the first streamed token and of the last, and fill `first_token`, `finish` and `generated`. Then call `summarize` unchanged. Use the same `make_workload` seed so the simulated and real runs see identical requests.
-4. **Check the decode floor.** Run a single request with a long output and no other load. Measure TPOT. It must be at or above `decode_floor_ms` for your model and GPU count; if it is below, something in the arithmetic (bytes per parameter, GPU count, bandwidth) is wrong.
+4. **Check the decode floor.** Run a single request with a long output and no other load. Measure TPOT. Compare it with `decode_floor_ms` only under the model’s assumptions: dense execution of the stated weight precision, batch 1, all weights read from HBM on each step, and the stated GPU bandwidth. A lower result can indicate changed precision, caching, sparsity, different hardware or a timing/counting error; it does not by itself prove a measurement is wrong.
 5. **Sweep the rate** across idle, loaded and overloaded, repeat each point with at least three seeds, and plot TTFT p50 and p99, TPOT p50, throughput and attainment against rate. Find the knee as in section 32.5.
 6. **Fit the cost model.** From the single-request run take `base`, from a batch-of-N run take `per_seq`, and rerun the simulator with those constants. Compare the simulated and real knees. The difference is the part of the model this chapter did not capture.
 7. **Capture a profile** of one decode iteration with Nsight Systems ([Chapter 14](14-nsight-systems.md)) to confirm the iteration is dominated by the weight read, as section 32.1 assumes.
@@ -232,7 +240,7 @@ Serving splits into compute-bound prefill, which sets TTFT, and memory-bound dec
 ## Self-Check Questions
 
 1. Why is decode limited by memory bandwidth while prefill is not?
-2. Why can a 70B BF16 model not decode faster than about 21 ms per token on two H100s at batch 1, whatever the software?
+2. Why can a 70B BF16 model not decode faster than about 21 ms per token on two H100s at batch 1, under the stated dense BF16, HBM-streaming assumptions?
 3. In the sweep, why does cost per million tokens fall as the rate rises, and why is the cheapest row not the best operating point?
 4. Why must a throughput figure always come with a latency figure?
 5. What does Little's law check in the simulator, and what does it not check?
@@ -240,7 +248,7 @@ Serving splits into compute-bound prefill, which sets TTFT, and memory-bound dec
 ## Worked Solutions
 
 1. Prefill multiplies large matrices (many tokens against the weights), so it is arithmetic-heavy. Decode handles one token per sequence and must read all weights and the KV cache for little arithmetic, so time is set by bytes moved.
-2. Each step must read every weight once, so time is at least weight bytes divided by aggregate memory bandwidth: `140 GB / (2 x 3.35 TB/s) = 20.9 ms`. Real systems add KV reads, communication and launch overhead.
+2. Under the stated streaming model, each step reads every weight once, so its modeled time is at least weight bytes divided by aggregate memory bandwidth: `140 GB / (2 x 3.35 TB/s) = 20.9 ms`. Real systems add KV reads, communication and launch overhead.
 3. The GPU bill is fixed per hour, so more tokens per hour means a lower cost per token. At 16 requests per second the server is overloaded, so only 37 percent of requests meet the SLO; the useful operating point is the highest load that still meets it.
 4. A server can raise throughput by letting requests queue into large batches, which makes users wait. Throughput alone hides that.
 5. It checks that the simulator's time-average occupancy equals arrival rate times mean residence time, which catches bookkeeping errors. It does not check that the cost constants resemble a real GPU.

@@ -251,7 +251,8 @@ async def one_request(target, n_in, n_out, rec: Rec, timeout=30.0, payload=None)
                         rec.nevents += 1
             rec.end = time.perf_counter()
             rec.ntok = usage if usage is not None else rec.nevents    # prefer the server's own token count
-            rec.ok = done and rec.ntok == n_out                       # truncated stream or wrong length = FAILURE
+            rec.ok = (done and not rec.err and rec.ntok == n_out and
+                      math.isfinite(rec.first) and rec.end >= rec.first)                       # truncated stream or wrong length = FAILURE
             if not rec.ok:
                 rec.err = f"incomplete or wrong-length stream: {rec.ntok}/{n_out} tokens, done={done}"
             writer.close()
@@ -320,7 +321,7 @@ def _collect(recs, warmup, slo_ttft, slo_tpot, from_intended):
     ok = [r for r in recs if r.ok]
     base = (lambda r: r.intended) if from_intended else (lambda r: r.sent)
     ttft = [r.first - base(r) for r in ok]
-    tpot = [(r.end - r.first) / max(1, r.ntok - 1) for r in ok]
+    tpot = [(r.end - r.first) / (r.ntok - 1) if r.ntok > 1 else 0.0 for r in ok]
     return dict(n=len(recs), ok=len(ok), ttft=ttft, tpot=tpot, e2e=[r.end - base(r) for r in ok],
                 wall=(max(r.end for r in ok) - min(r.intended for r in recs)) if ok else 0.0,
                 toks=sum(r.ntok for r in ok),

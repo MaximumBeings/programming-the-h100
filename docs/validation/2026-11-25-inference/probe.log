@@ -1,0 +1,44 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "scope": "Real single-GPU inference; serial short-request smoke test, not a load sweep",
+  "repeated_greedy_equal": true,
+  "sample_output": "1. **Understanding the Problem:**\n   - We are dealing with an Autoregressive (AR) model, which is a type of time series model where",
+  "usage": [
+    {
+      "prompt_tokens": 170,
+      "total_tokens": 202,
+      "completion_tokens": 32,
+      "prompt_tokens_details": null
+    },
+    {
+      "prompt_tokens": 170,
+      "total_tokens": 202,
+      "completion_tokens": 32,
+      "prompt_tokens_details": null
+    }
+  ],
+  "source_sha256": "37571907a61216203ddb70076b2814e4e664f6157e29fde03ba76570d9c942c4",
+  "summary": {
+    "n": 8,
+    "failures": 0,
+    "success_rate": 1.0,
+    "ttft_p50": 0.01358174002962187,
+    "ttft_p99": 0.03047748946002684,
+    "tpot_p50": 0.006719211048837151,
+    "tpot_p99": 0.006979397259607551,
+    "e2e_p99": 0.24037582122604362,
+    "tok_s": 141.97473100584796,
+    "goodput_rps": 4.436710343932749,
+    "slo_attain": 1.0,
+    "ttft_samples": [
+      0.0317209999775514,
+      0.013956564012914896,
+      0.01371835800819099,
+      0.013416933012194932,
+      0.013196254032664001,
+      0.01344512205105275,
+      0.01385474402923137,
+      0.013226091978140175
+    ]
+  }
+}

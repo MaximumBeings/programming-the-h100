@@ -1,0 +1,64 @@
+self-tests:
+  [PASS] 70B BF16 TP2 weights-only decode floor = 20.9 ms 
+  [PASS] KV bytes/token for a Llama-3-70B shape = 327,680 total, 163,840 per GPU at TP2 
+  [PASS] 80 layers x 2 all-reduces x 12 us = 1.92 ms TP communication 
+  [PASS] compute/memory crossover with no KV is 147.6 tokens (NOT 295: MFU 0.5 halves it) (147.6)
+  [PASS] crossover grows with KV traffic: 24 seqs x 1024 ctx gives a higher ridge 
+  [PASS] BF16 TP2 + 1B draft: max batch at 2k context is small (KV-limited) (max batch 8)
+  [PASS] BF16 TP2 + 8B draft colocated does not fit (70 GB + 16 GB > 77 GB budget) 
+  [PASS] FP8 TP2 + 8B draft colocated fits; max batch at 2k context equals the hand computation (max batch 72)
+  [PASS] E[tokens] closed form agrees with simulating the accept/reject chain (a sanity check of the formula) (max err 0.0052)
+  [PASS] limits: alpha=0 gives 1 token, alpha=1 gives K+1 
+  [PASS] positional formula equals the i.i.d. formula for constant alpha 
+  [PASS] positional formula matches simulation for decaying alpha (3.578)
+  [PASS] acceptance(p,p)=1; disjoint support = 0 
+  [PASS] K=0 gives speedup exactly 1.0 
+  [PASS] speedup strictly increases with alpha 
+  [PASS] best K nondecreasing in alpha ([2, 3, 5, 11])
+  [PASS] FP8 TP2, ctx 256, K=4: speedup nonincreasing in batch (past the crossover it must fall) ([2.21, 2.16, 1.44, 0.89, 0.69, 0.66])
+  [PASS] a draft as expensive as the target loses to plain decoding 
+  [PASS] for batch 1 the 1B draft beats the 8B draft at equal alpha (cheaper cycle) 
+
+== A. Target 70B BF16 on TP2. Draft 1B colocated on GPU0. ctx = 1024 (ASSUMED alpha, mfu 0.5, overhead 1 ms) ==
+   KV budget 17,758 tokens -> max batch 17 at ctx 1024
+   alpha   B=1         B=4         B=8         B=16        B=24        
+   0.5     1.54x K=3  1.54x K=3  1.53x K=3  1.53x K=3  n/a (KV)  
+   0.7     2.16x K=5  2.15x K=5  2.15x K=5  2.13x K=5  n/a (KV)  
+   0.8     2.76x K=7  2.75x K=7  2.74x K=7  2.71x K=7  n/a (KV)  
+   0.9     4.00x K=11 3.98x K=11 3.95x K=11 3.81x K=8  n/a (KV)  
+   base step (ms): B=1: 23.9, B=4: 24.0, B=8: 24.2, B=16: 24.6
+
+== B. Target 70B FP8 on TP2. 1B draft colocated. ctx = 2048. KV budget 231,381 tokens -> max batch 112 ==
+   alpha   B=1         B=8         B=32        B=64        B=96        B=128       
+   0.5     1.39x K=2  1.38x K=2  1.36x K=2  1.34x K=2  1.32x K=2  n/a (KV)  
+   0.7     1.83x K=4  1.81x K=4  1.78x K=3  1.68x K=2  1.65x K=2  n/a (KV)  
+   0.8     2.24x K=5  2.22x K=5  2.16x K=5  1.94x K=3  1.83x K=2  n/a (KV)  
+   0.9     3.02x K=8  2.97x K=8  2.74x K=5  2.27x K=3  2.04x K=2  n/a (KV)  
+   base step (ms): B=1: 13.5, B=8: 14.2, B=32: 16.6, B=64: 19.8, B=96: 23.0
+   ridge (tokens in flight) : B=1: 149, B=8: 159, B=32: 193, B=64: 238, B=96: 284
+
+== B. Target 70B FP8 on TP2. 8B draft colocated. ctx = 2048. KV budget 148,373 tokens -> max batch 72 ==
+   alpha   B=1         B=8         B=32        B=64        B=96        B=128       
+   0.5     1.05x K=1  1.03x K=1  1.00x K=1  0.97x K=1  n/a (KV)  n/a (KV)  
+   0.7     1.18x K=1  1.17x K=1  1.13x K=1  1.10x K=1  n/a (KV)  n/a (KV)  
+   0.8     1.31x K=2  1.28x K=2  1.22x K=2  1.16x K=2  n/a (KV)  n/a (KV)  
+   0.9     1.49x K=4  1.46x K=3  1.37x K=3  1.29x K=2  n/a (KV)  n/a (KV)  
+   base step (ms): B=1: 13.5, B=8: 14.2, B=32: 16.6, B=64: 19.8
+   ridge (tokens in flight) : B=1: 149, B=8: 159, B=32: 193, B=64: 238
+
+== B. Target 70B FP8 on TP2. EAGLE-style head colocated. ctx = 2048. KV budget 235,043 tokens -> max batch 114 ==
+   alpha   B=1         B=8         B=32        B=64        B=96        B=128       
+   0.5     1.42x K=2  1.43x K=2  1.46x K=2  1.49x K=2  1.50x K=2  n/a (KV)  
+   0.7     1.90x K=4  1.93x K=4  1.99x K=4  1.92x K=3  1.87x K=2  n/a (KV)  
+   0.8     2.35x K=5  2.38x K=6  2.48x K=5  2.24x K=3  2.09x K=2  n/a (KV)  
+   0.9     3.21x K=9  3.27x K=9  3.15x K=5  2.60x K=3  2.32x K=2  n/a (KV)  
+   base step (ms): B=1: 13.5, B=8: 14.2, B=32: 16.6, B=64: 19.8, B=96: 23.0
+   ridge (tokens in flight) : B=1: 149, B=8: 159, B=32: 193, B=64: 238, B=96: 284
+
+== C. alpha vs temperature (synthetic noise model; trend is NOT a property of real models) ==
+   T=0.2 : alpha=0.708
+   T=0.5 : alpha=0.726
+   T=1.0 : alpha=0.782
+   T=1.5 : alpha=0.818
+
+ALL PASS

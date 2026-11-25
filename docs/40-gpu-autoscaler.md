@@ -1,5 +1,8 @@
 # Chapter 40 — Queue-Based GPU Autoscaling with KEDA
 
+[![Chapter 40: Scale the queue responsibly](images/chapter-openers/40-inference.svg)](images/chapter-openers/40-inference.svg)
+
+
 !!! warning "Evidence status"
     **Run on CPU, in a simulator:** the scaling rules (modelled on the documented KEDA and Kubernetes HPA behaviour), the queue and billing accounting, 23 self-tests, and seven experiments (`ch40_gpu_autoscaler.py`). Experiment cells show the mean and, in brackets, the minimum–maximum over several seeds.
     **Not run on any cluster.** The workload (arrival rates, service times, cold-start times) and the GPU price ($4/GPU-hour) are **assumed**. The manifest and runbook in 40.9 are **UNTESTED**.
@@ -11,6 +14,11 @@
     - **Fixed cold start**, no image-pull variance, no readiness subtleties, 0.1 s time step.
 
 GPU inference autoscaling is hard for one reason: **a new replica is not capacity until it has loaded its weights**, which takes tens of seconds to minutes, while the scaler decides every 15 seconds. Most of this chapter's results come from that gap, and several of them contradict the folklore "autoscaling saves money".
+
+## Worked system map
+
+[![Scale the queue responsibly: step-by-step hand trace](images/worked/ch40-inference.svg)](images/worked/ch40-inference.svg)
+
 
 ## 40.1 The moving parts (what the documentation says)
 

@@ -1,0 +1,3 @@
+PASS invalid K/V append preserves allocator and fork state; negative indices and unequal-slot placement rejected
+PASS one-token response has zero inter-token intervals
+PASS malformed stream is rejected even when a later event supplies valid usage and DONE

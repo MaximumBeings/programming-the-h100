@@ -1,5 +1,8 @@
 # Chapter 35: Disaggregated Prefill/Decode over RDMA
 
+[![Chapter 35: Split work, count transfers](images/chapter-openers/35-inference.svg)](images/chapter-openers/35-inference.svg)
+
+
 !!! abstract "Goal and prerequisites"
 
     Learn why serving systems sometimes split prefill and decode onto separate GPU pools, what it costs to move the KV cache between them, and how to decide whether the split pays off. Read [Chapter 11](11-multi-gpu-nccl.md) (NVLink, InfiniBand), [Chapter 32](32-inference-engine-and-harness.md) (the harness) and [Chapter 34](34-kv-cache-offloading.md) (KV size and transfer reasoning) first.
@@ -7,6 +10,11 @@
 !!! warning "Evidence level"
 
     CPU arithmetic and a **simulation** that reuses Chapter 32's placeholder cost model. Hardware bandwidths and capacities are datasheet values; check yours. The simulation shows a mechanism, not the performance of a real cluster, and its pool sizes are not tuned. No RDMA transfer was performed.
+
+## Worked system map
+
+[![Split work, count transfers: step-by-step hand trace](images/worked/ch35-inference.svg)](images/worked/ch35-inference.svg)
+
 
 ## 35.1 Why split the phases
 

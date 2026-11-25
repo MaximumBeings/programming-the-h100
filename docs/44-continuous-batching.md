@@ -1,11 +1,19 @@
 # Chapter 44 — A Continuous-Batching Scheduler with Preemption
 
+[![Chapter 44: Refill at every iteration](images/chapter-openers/44-inference.svg)](images/chapter-openers/44-inference.svg)
+
+
 !!! warning "Evidence status"
     **Run on CPU, in a simulator:** a continuous-batching scheduler with paged-block accounting, preemption by recomputation, a memory watermark and chunked prefill; a static-batching baseline; 14 self-tests; five experiments (`ch44_continuous_batching.py`). Experiment cells show the mean and, in brackets, the minimum–maximum over 3 seeds of 600 requests.
     **Nothing here is measured on a GPU.** The cost of one engine iteration (15 ms fixed + 0.05 ms per prefill token + 0.2 ms per decoding sequence) and the workload (prompts with median 256 tokens, outputs with median 128, Poisson arrivals) are **assumed**. The shapes of the curves are the result; the absolute numbers are not predictions for any real model. The vLLM commands in 44.10 are **UNTESTED** and from memory.
     **Choices that favour the baseline (static batching):** it ignores memory limits, and it streams each request's tokens as they are produced instead of returning them when the whole batch ends.
 
 Chapter 43 built the memory manager. This chapter builds the part that decides *what runs in each step*: the scheduler. It is where an engine's throughput, tail latency and behaviour under memory pressure come from.
+
+## Worked system map
+
+[![Refill at every iteration: step-by-step hand trace](images/worked/ch44-inference.svg)](images/worked/ch44-inference.svg)
+
 
 ## 44.1 Why batching must be per iteration
 

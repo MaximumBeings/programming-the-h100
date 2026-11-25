@@ -1,0 +1,12 @@
+{
+  "server": "HF_HUB_ENABLE_HF_TRANSFER=0 /tmp/vllm-env/bin/vllm serve Qwen/Qwen2.5-0.5B-Instruct --host 127.0.0.1 --port 8000 --dtype bfloat16 --max-model-len 2048 --max-num-seqs 16 --max-num-batched-tokens 512 --gpu-memory-utilization 0.25 --enable-prefix-caching --enable-chunked-prefill --enforce-eager --seed 42",
+  "cuda": "python ch47_paged_attention_cuda.py",
+  "probe": "python ch47_vllm_probe.py --model Qwen/Qwen2.5-0.5B-Instruct --output /tmp/book-validation/probe.json",
+  "corrected": [
+    "python tools/tests/test_inference_boundaries.py",
+    "python ch33_moe_expert_parallel.py",
+    "python ch43_paged_kv_cache.py",
+    "python ch36_benchmark_teardown.py --selftest",
+    "python ch36_benchmark_teardown.py"
+  ]
+}

@@ -1,5 +1,8 @@
 # Chapter 33: MoE Expert Parallelism: Sharding, All-to-All and Load Balance
 
+[![Chapter 33: Route. Compute. Combine.](images/chapter-openers/33-inference.svg)](images/chapter-openers/33-inference.svg)
+
+
 !!! abstract "Goal and prerequisites"
 
     Learn how a Mixture-of-Experts (MoE) layer is served across several GPUs: which GPU holds which expert, how tokens travel to their experts and back, how much that costs, and why load imbalance, not arithmetic, is usually the problem. Read [Chapter 11](11-multi-gpu-nccl.md) (collectives, NVLink, InfiniBand) and [Chapter 32](32-inference-engine-and-harness.md) (the measurement harness) first.
@@ -7,6 +10,13 @@
 !!! warning "Evidence level"
 
     Everything here ran on a **CPU**. The routing study is a simulation with a synthetic skew. The all-to-all check uses PyTorch's **gloo** backend on four CPU processes and verifies that the dispatch and combine **logic** returns the right answer. It does not measure NCCL, NVLink or InfiniBand performance. The bandwidth figures are datasheet values turned into lower bounds, not measurements.
+
+## Worked system map
+
+[![Route. Compute. Combine.: step-by-step hand trace](images/worked/ch33-inference.svg)](images/worked/ch33-inference.svg)
+
+
+The equal-slot placement example now rejects expert-copy counts that do not divide evenly across GPUs instead of failing partway through packing. Its default experiments retain the same shapes. [November 25 rerun](validation-inference-2026-11-25.md).
 
 ## 33.1 What an MoE layer does
 

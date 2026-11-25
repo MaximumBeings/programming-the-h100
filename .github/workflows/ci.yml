@@ -83,6 +83,11 @@ jobs:
           python3 tools/verify_blackwell_appendix.py
           python3 tools/tests/test_blackwell_evidence.py
 
+      - name: Verify inference-system captures and current sources
+        run: |
+          python3 tools/verify_inference_validation.py
+          python3 -m py_compile docs/examples/inference-systems/*.py tools/run_inference_references.py
+
       - name: Verify SVG readability
         run: python3 tools/verify_svg_readability.py
 

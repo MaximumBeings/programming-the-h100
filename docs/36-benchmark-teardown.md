@@ -1,5 +1,8 @@
 # Chapter 36: Public Benchmark Teardown: vLLM, SGLang and TensorRT-LLM
 
+[![Chapter 36: Benchmark the whole path](images/chapter-openers/36-inference.svg)](images/chapter-openers/36-inference.svg)
+
+
 !!! abstract "Goal and prerequisites"
 
     Build a benchmark you could defend in public. You will get a load generator and statistics library that avoid the classic measurement errors, a test suite that proves they do, and a runbook for pointing the same client at vLLM, SGLang and TensorRT-LLM on real H100s. Read [Chapter 32](32-inference-engine-and-harness.md) (metrics and the simulated engine) first; this chapter replaces its simulator with a real network client.
@@ -9,7 +12,14 @@
     - **Verified here (CPU):** the client, the streaming parsers, the percentile and bootstrap code, the Pareto and knee logic, the run manifest, and a mock three-engine study. 22 self-tests pass (14 pure, 8 against mock servers on localhost), plus 5 qualitative checks on the demonstrations.
     - **Invented:** the three "engines" in the mock study are made-up servers with made-up parameters. **No number in this chapter is a vLLM, SGLang or TensorRT-LLM result.**
     - **Timing output varies:** the mock servers run on wall-clock `asyncio` timing, so every latency number printed below is a *sample from one execution*. Another execution gives different numbers, and borderline verdicts can flip (Section 36.8 shows one that did). The tests therefore assert qualitative relations, never exact values.
-    - **Untested on H100:** every launch command in Section 36.9 and the real teardown itself. Flags change between versions; confirm each against `--help` for the exact version you run. The client has been exercised only against the mock server, never against a real engine.
+    - **Untested on H100:** every launch command in Section 36.9 and the real teardown itself. Flags change between versions; confirm each against `--help` for the exact version you run. The original capture exercised mock servers. The [Chapter 47 lab](47-vllm-tuning-lab.md) and [dated record](validation-inference-2026-11-25.md) separately exercise its current streaming client against a small real vLLM model; the three-engine comparison remains untested.
+
+## Worked system map
+
+[![Benchmark the whole path: step-by-step hand trace](images/worked/ch36-inference.svg)](images/worked/ch36-inference.svg)
+
+
+The November 25 correction also rejects malformed/no-content streams as failures and defines one-token TPOT as zero, since there are no inter-token intervals. Earlier raw captures remain unchanged.
 
 ## 36.1 Why most published benchmarks cannot be trusted
 

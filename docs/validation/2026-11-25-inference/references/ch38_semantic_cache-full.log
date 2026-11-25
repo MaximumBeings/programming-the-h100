@@ -1,0 +1,83 @@
+self-tests:
+  [PASS] world sanity: mean cosine same-intent (0.962) > sibling (0.884) > unrelated (-0.001)
+  [PASS] all synthetic vectors have unit norm
+  [PASS] an exact repeat of a stored vector hits at threshold 0.999999 with similarity 1
+  [PASS] partition isolation: in 600 random operations (157 of them hits, so the test exercises hits) no lookup returns another partition's entry. By construction of the dict keying; this guards regressions
+  [PASS] TTL: valid at t=99.9, expired at exactly t=100 (strict) and after
+  [PASS] LRU: capacity 3, after touching entry 0 the least recently used (entry 1) is evicted
+  [PASS] replaying the same seeded stream gives identical counts and per-entry tallies
+  [PASS] EMPIRICAL (not a theorem for a streaming cache: a higher threshold means more inserts, which can mean more later hits): hit rate is nonincreasing over this threshold grid [0.98, 0.94, 0.91, 0.9, 0.49, 0.1]
+  [PASS] false-hit rate at threshold 0.99 (0.000) is below that at 0.80 (0.712)
+  [PASS] Wilson upper bound for 0 events in 200 trials is 0.0188 (about 3/n = 0.015 to 0.019)
+  [PASS] Wilson 95% interval, EXACT coverage at n=200, p=0.02 (binomial sum, no simulation): 0.9331; asserted in [0.92, 0.98] (Wilson coverage oscillates with n and p)
+  [PASS] cluster bootstrap: with 5 entries carrying all 40 false hits of 100 hits the interval is wide, and with no events it returns None
+  [PASS] ... and it is wider than the naive Wilson interval on the same 40/100: cluster [0.16,0.64] vs Wilson [0.31,0.50]
+  [PASS] exact-match baseline: 4 queries (v, v, new, v) -> hit rate 0.50 (= 2/4: the 2nd and 4th are repeats; the 3rd is new)
+  [PASS] cost per request by hand: 0.00002 + 0.6*0.004 + 0.01*0.10 = 0.00342; function gives 0.00342
+  [PASS] break-even bad-answer cost = (0.40*0.004 - 0.00002)/0.01 = 0.1580, and at that cost the cache equals no cache
+  [PASS] calibrate() picks tau=0.93: lowest threshold with Wilson upper bound <= 1% on 3000 sibling pairs
+
+== 1. Cosine similarity of query pairs in the synthetic world (NOT a real embedding model) ==
+  pair type                      mean     p1     p5    p50    p95    p99
+  same intent (paraphrase)      0.962  0.945  0.950  0.962  0.972  0.976
+  sibling intent (hard negative)  0.885  0.834  0.850  0.886  0.915  0.925
+  unrelated                    -0.000 -0.278 -0.201 -0.002  0.206  0.282
+
+  threshold   recall of paraphrases   sibling false-match rate
+       0.85                   1.000                      0.952
+       0.90                   1.000                      0.222
+       0.93                   1.000                      0.004
+       0.95                   0.953                      0.000
+       0.97                   0.115                      0.000
+       0.98                   0.001                      0.000
+       0.99                   0.000                      0.000
+
+== 2. Streaming cache: hit rate and false hits versus threshold (3 seeds x 4000 queries, Zipf 1.0, 10% exact repeats) ==
+     tau  hit rate  false/hit   Wilson (iid, too narrow)    cluster bootstrap  bad entries  wrong/request
+   0.850     0.979     0.6390 [ 0.6303, 0.6476]    [ 0.5822, 0.6890]   228/246            0.6257
+   0.900     0.948     0.0563 [ 0.0522, 0.0607]    [ 0.0390, 0.0795]   177/599            0.0533
+   0.930     0.941     0.0003 [ 0.0001, 0.0008]    [ 0.0000, 0.0006]     3/660            0.0003
+   0.950     0.927     0.0000 [ 0.0000, 0.0003]           (0 events)     0/779            0.0000
+   0.970     0.538     0.0000 [ 0.0000, 0.0006]           (0 events)     0/2172           0.0000
+   0.980     0.131     0.0000 [ 0.0000, 0.0024]           (0 events)     0/1213           0.0000
+   0.990     0.101     0.0000 [ 0.0000, 0.0032]           (0 events)     0/973            0.0000
+   0.999     0.101     0.0000 [ 0.0000, 0.0032]           (0 events)     0/973            0.0000
+  at tau=0.95 there were 0 false hits among 779 serving entries: Wilson upper bound on the BAD-ENTRY rate = 0.0049
+  at tau=0.90 the 640 false hits came from only 177 distinct entries (clustering)
+
+  EXACT-MATCH (hash) cache baseline on the same streams: hit rate 0.100, zero false hits. At tau >= 0.98 the semantic cache's whole hit rate is this.
+
+== 3. Economics (ASSUMED costs): c_llm=$0.004, c_emb=$0.00002 per request; sweep the cost of a wrong answer ==
+     tau  c_bad=$0.01   c_bad=$0.05   c_bad=$0.25   c_bad=$1       break-even c_bad
+   0.850     -2.360    -27.387   -152.520   -621.770      0.006
+   0.900      3.237      1.104     -9.563    -49.563      0.071
+   0.930      3.743      3.733      3.683      3.495     14.981
+   0.950      3.689      3.689      3.689      3.689        inf
+   0.970      2.134      2.134      2.134      2.134        inf
+   0.980      0.504      0.504      0.504      0.504        inf
+   0.990      0.382      0.382      0.382      0.382        inf
+   0.999      0.382      0.382      0.382      0.382        inf
+  (cells: net saving in milli-dollars per request versus NO cache; negative = the cache costs money)
+  Exact-match baseline saves 0.402 milli-dollars per request at any c_bad (no false hits). The semantic cache's EXTRA saving over it is the cell minus that.
+  best threshold by c_bad: $0.01: 0.93, $0.05: 0.93, $0.25: 0.95, $1.0: 0.95
+  crossover c_bad between tau=0.93 and 0.95: 0.225  (above it 0.95 wins). tau=0.93 has only 3 false hits in 12000 requests;
+    with 2 false hits instead the crossover would be 0.338
+    with 4 false hits instead the crossover would be 0.169
+
+== 4. Why '98%' is meaningless without the model: the same threshold on two embedding models ==
+  model A (tight paraphrases, s_para=0.20)       tau=0.95: hit rate 0.908  false/hit 0.0000
+  model A (tight paraphrases, s_para=0.20)       tau=0.98: hit rate 0.125  false/hit 0.0000
+  model B (noisier paraphrases, s_para=0.35)     tau=0.95: hit rate 0.107  false/hit 0.0000
+  model B (noisier paraphrases, s_para=0.35)     tau=0.98: hit rate 0.103  false/hit 0.0000
+
+== 5. Cross-tenant leak: same questions, tenant-specific answers; cache keyed with and without the tenant ==
+  one shared partition  : hits  3718  answers belonging to the wrong tenant  1873 (0.504 of hits)
+  partition per tenant  : hits  3489  answers belonging to the wrong tenant     1 (0.000 of hits)
+
+== 6. Staleness: tau=0.97; 25% of answers change at t=2000 (1 request/second, horizon 4000 s, so only 2000 s follow the change; TTL 3600 therefore behaves like infinity) ==
+  ttl=  inf: hit rate 0.493   after the change:   99 stale of 1109 hits (0.089)
+  ttl= 3600: hit rate 0.489   after the change:   98 stale of 1095 hits (0.089)
+  ttl=  600: hit rate 0.333   after the change:    9 stale of  662 hits (0.014)
+  ttl=  120: hit rate 0.176   after the change:    0 stale of  329 hits (0.000)
+
+ALL PASS   (11 s)

@@ -1,0 +1,35 @@
+[Gloo] Rank 0 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 2 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 1 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 3 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 0 is connected to 1 peer ranks. Expected number of connected peer ranks is : 1
+[Gloo] Rank 1 is connected to 1 peer ranks. Expected number of connected peer ranks is : 1
+[Gloo] Rank 1 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank [Gloo] Rank 23 is connected to  is connected to 33 peer ranks.  peer ranks. Expected number of connected peer ranks is : Expected number of connected peer ranks is : 33
+
+[Gloo] Rank 0 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+  [PASS] router: shape [T, k], ids in range
+  [PASS] router: the k experts of one token are distinct
+  [PASS] router: same seed gives the same assignment
+  [PASS] expert loads sum to tokens x k
+  [PASS] contiguous GPU loads conserve the total
+  [PASS] imbalance of a perfectly even load is exactly 1.0
+  [PASS] imbalance is never below 1
+  [PASS] more skew, more contiguous imbalance
+  [PASS] placement conserves total load (8 replicas and 0 replicas)
+  [PASS] replicas improve a skewed load
+  [PASS] skew 1.0: +8 and +16 replicas bring imbalance under 1.02
+  [PASS] hand case, no replicas: loads [100,1,1,1] on 2 GPUs -> [101, 2]
+  [PASS] hand case, 2 replicas: hot expert split 3 ways -> [67.667, 35.333]
+  [PASS] replica count that breaks (E+R) % GPUs == 0 raises ValueError (documented failure)
+  [PASS] dispatch bytes are 0 on one GPU
+  [PASS] dispatch bytes linear in tokens
+  [PASS] EP=8 dispatch is 117.4 MB (chapter figure)
+  [PASS] gloo all-to-all matches reference: 4 ranks, uniform routing, top-2
+  [PASS]   send counts conserve tokens x k per rank: 4 ranks, uniform routing, top-2
+  [PASS] gloo all-to-all matches reference: 2 ranks, top-1
+  [PASS]   send counts conserve tokens x k per rank: 2 ranks, top-1
+  [PASS] gloo all-to-all matches reference: 4 ranks, every copy to rank 0 (3 ranks receive nothing)
+  [PASS]   send counts conserve tokens x k per rank: 4 ranks, every copy to rank 0 (3 ranks receive nothing)
+  [PASS]   all sends target rank 0
+24/24 self-tests pass

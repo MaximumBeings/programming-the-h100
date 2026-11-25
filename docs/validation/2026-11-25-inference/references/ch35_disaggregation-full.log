@@ -1,0 +1,23 @@
+KV bytes/token = 327,680
+
+== KV transfer time for one prompt (no overlap) and EXPOSED time with ideal layer-wise streaming ==
+tokens   KV size     100 Gb/s   200 Gb/s   400 Gb/s    exposed@400 (prefill 20k tok/s)
+  1024     0.34 GB      26.8       13.4        6.7 ms       0.0 ms
+  4096     1.34 GB     107.4       53.7       26.8 ms       0.0 ms
+ 16384     5.37 GB     429.5      214.7      107.4 ms       0.0 ms
+ 65536    21.47 GB    1718.0      859.0      429.5 ms       0.0 ms
+
+== decode hardware mapping: 70B FP8 weights (70 GB), 4096-token sequences (datasheet bandwidth/capacity) ==
+config          decode floor    KV room   max 4K-token seqs (upper bound)
+2 x H100 SXM       10.4 ms/tok    90.0 GB     67
+2 x L40S           40.5 ms/tok    26.0 GB     19
+4 x L40S           20.3 ms/tok   122.0 GB     90
+
+== interference simulation: same total GPUs (2 instances); placeholder cost model ==
+rate  mode          ttft_p99   tpot_p99   slo_ok(ttft<=2s,tpot<=0.1s)
+   6  colocated x2     0.379     0.0364      1.00
+   6  disagg 1+1       0.474     0.0287      1.00
+  10  colocated x2     0.477     0.0508      1.00
+  10  disagg 1+1       0.516     0.0341      1.00
+  14  colocated x2     1.272     0.0736      1.00
+  14  disagg 1+1       1.042     0.1351      0.96

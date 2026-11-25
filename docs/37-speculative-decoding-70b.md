@@ -1,5 +1,8 @@
 # Chapter 37: Speculative Decoding at 70B: Multi-GPU Target, Cost Model and Measured Speedup
 
+[![Chapter 37: Propose, verify, accept](images/chapter-openers/37-inference.svg)](images/chapter-openers/37-inference.svg)
+
+
 !!! abstract "Goal and prerequisites"
 
     Predict, before renting any GPUs, whether speculative decoding will speed up a 70B model on 2 x H100, which draft and which depth K to use, and at what batch the benefit shrinks. Then measure it with the Chapter 36 harness. Read [Chapter 32](32-inference-engine-and-harness.md) (decode floor) and [Chapter 36](36-benchmark-teardown.md) (measurement). The statistics of rejection sampling are derived in the Triton book's speculative decoding chapter; here the focus is the multi-GPU system cost, including the KV cache that decides how large a batch fits at all.
@@ -9,6 +12,11 @@
     - **Verified here (CPU):** the cost model, the expected-tokens formulas (the closed form against a simulation of the accept/reject chain), 19 property tests, and every table below (they are the program's output).
     - **Assumed:** `mfu = 0.5`, 1 ms fixed overhead per step, 12 microseconds per tensor-parallel all-reduce, 90 percent memory utilization, 2 GB reserve per GPU, the model shapes, and every acceptance rate alpha in the tables. **No acceptance rate in this chapter was measured on a real model pair**, and the draft models are shape-only stand-ins. Every speedup is a model prediction, not a benchmark.
     - **Untested on H100:** the launch commands in Section 37.9. Flag names change between releases; check `--help` for your version.
+
+## Worked system map
+
+[![Propose, verify, accept: step-by-step hand trace](images/worked/ch37-inference.svg)](images/worked/ch37-inference.svg)
+
 
 ## 37.1 Why speculation helps, and exactly when
 
