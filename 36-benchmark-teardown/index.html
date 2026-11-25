@@ -2421,6 +2421,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#361-why-most-published-benchmarks-cannot-be-trusted" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3076,6 +3087,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3222,6 +3237,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3390,6 +3461,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#361-why-most-published-benchmarks-cannot-be-trusted" class="md-nav__link">
@@ -3799,6 +3881,7 @@
 
 
 <h1 id="chapter-36-public-benchmark-teardown-vllm-sglang-and-tensorrt-llm">Chapter 36: Public Benchmark Teardown: vLLM, SGLang and TensorRT-LLM<a class="headerlink" href="#chapter-36-public-benchmark-teardown-vllm-sglang-and-tensorrt-llm" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/36-inference.svg?v=313706c02695"><img alt="Chapter 36: Benchmark the whole path" src="../images/chapter-openers/36-inference.svg?v=313706c02695" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">Goal and prerequisites</p>
 <p>Build a benchmark you could defend in public. You will get a load generator and statistics library that avoid the classic measurement errors, a test suite that proves they do, and a runbook for pointing the same client at vLLM, SGLang and TensorRT-LLM on real H100s. Read <a href="../32-inference-engine-and-harness/">Chapter 32</a> (metrics and the simulated engine) first; this chapter replaces its simulator with a real network client.</p>
@@ -3809,9 +3892,12 @@
 <li><strong>Verified here (CPU):</strong> the client, the streaming parsers, the percentile and bootstrap code, the Pareto and knee logic, the run manifest, and a mock three-engine study. 22 self-tests pass (14 pure, 8 against mock servers on localhost), plus 5 qualitative checks on the demonstrations.</li>
 <li><strong>Invented:</strong> the three "engines" in the mock study are made-up servers with made-up parameters. <strong>No number in this chapter is a vLLM, SGLang or TensorRT-LLM result.</strong></li>
 <li><strong>Timing output varies:</strong> the mock servers run on wall-clock <code>asyncio</code> timing, so every latency number printed below is a <em>sample from one execution</em>. Another execution gives different numbers, and borderline verdicts can flip (Section 36.8 shows one that did). The tests therefore assert qualitative relations, never exact values.</li>
-<li><strong>Untested on H100:</strong> every launch command in Section 36.9 and the real teardown itself. Flags change between versions; confirm each against <code>--help</code> for the exact version you run. The client has been exercised only against the mock server, never against a real engine.</li>
+<li><strong>Untested on H100:</strong> every launch command in Section 36.9 and the real teardown itself. Flags change between versions; confirm each against <code>--help</code> for the exact version you run. The original capture exercised mock servers. The <a href="../47-vllm-tuning-lab/">Chapter 47 lab</a> and <a href="../validation-inference-2026-11-25/">dated record</a> separately exercise its current streaming client against a small real vLLM model; the three-engine comparison remains untested.</li>
 </ul>
 </div>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch36-inference.svg?v=a6fbc8e587b4"><img alt="Benchmark the whole path: step-by-step hand trace" src="../images/worked/ch36-inference.svg?v=a6fbc8e587b4" /></a></p>
+<p>The November 25 correction also rejects malformed/no-content streams as failures and defines one-token TPOT as zero, since there are no inter-token intervals. Earlier raw captures remain unchanged.</p>
 <h2 id="361-why-most-published-benchmarks-cannot-be-trusted">36.1 Why most published benchmarks cannot be trusted<a class="headerlink" href="#361-why-most-published-benchmarks-cannot-be-trusted" title="Permanent link">&para;</a></h2>
 <p>A comparison of serving engines fails in predictable ways. Every item below has produced a headline number that did not reproduce.</p>
 <table>

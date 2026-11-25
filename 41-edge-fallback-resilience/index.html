@@ -2634,6 +2634,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#411-five-ways-a-remote-endpoint-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2972,6 +2983,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3118,6 +3133,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3286,6 +3357,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#411-five-ways-a-remote-endpoint-fails" class="md-nav__link">
@@ -3591,6 +3673,7 @@
 
 
 <h1 id="chapter-41-resilience-and-edge-fallback-webgpu-and-mlx">Chapter 41 — Resilience and Edge Fallback (WebGPU and MLX)<a class="headerlink" href="#chapter-41-resilience-and-edge-fallback-webgpu-and-mlx" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/41-inference.svg?v=7dc40afcaa25"><img alt="Chapter 41: Fail over with limits" src="../images/chapter-openers/41-inference.svg?v=7dc40afcaa25" /></a></p>
 <div class="admonition warning">
 <p class="admonition-title">Evidence status</p>
 <p><strong>Run on CPU, in a simulator:</strong> the circuit breaker, retry budget and jittered backoff; a per-client simulation of five outage shapes under six policies; a fleet simulation of a capacity dip with retries; the edge-feasibility arithmetic; 17 self-tests and three experiments (<code>ch41_edge_fallback.py</code>, standard library only). Experiment cells show the mean and, in brackets, the minimum–maximum over three seeds.
@@ -3605,6 +3688,8 @@
 </ul>
 </div>
 <p>A remote GPU service fails in ways that a health check does not see: connections refused, requests that hang, responses that are ten times slower, streams that stop halfway. This chapter builds the client-side machinery that keeps the user's request alive through those failures (timeouts, bounded retries, a circuit breaker, a local fallback) and the server-side rule that keeps a recovering service from being buried by its own clients. The central results are about interactions: each mechanism helps in some failures and hurts in others, and retries can turn a 30-second dip into a permanent outage.</p>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch41-inference.svg?v=bf72389e2ac2"><img alt="Fail over with limits: step-by-step hand trace" src="../images/worked/ch41-inference.svg?v=bf72389e2ac2" /></a></p>
 <h2 id="411-five-ways-a-remote-endpoint-fails">41.1 Five ways a remote endpoint fails<a class="headerlink" href="#411-five-ways-a-remote-endpoint-fails" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

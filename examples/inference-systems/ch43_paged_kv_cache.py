@@ -21,6 +21,8 @@ class OutOfBlocks(Exception):
 # --------------------------------------------------------------------------
 class BlockAllocator:
     def __init__(self, n_blocks):
+        if n_blocks < 0:
+            raise ValueError("n_blocks must be nonnegative")
         self.n = n_blocks
         self.free = deque(range(n_blocks))
         self.ref = [0] * n_blocks
@@ -37,11 +39,15 @@ class BlockAllocator:
         return b
 
     def incref(self, b):
+        if not 0 <= b < self.n:
+            raise ValueError("block index outside pool")
         if self.ref[b] <= 0:
             raise ValueError(f"incref on free block {b}")
         self.ref[b] += 1
 
     def decref(self, b):
+        if not 0 <= b < self.n:
+            raise ValueError("block index outside pool")
         if self.ref[b] <= 0:
             raise ValueError(f"double free of block {b}")
         self.ref[b] -= 1
@@ -54,6 +60,8 @@ class BlockAllocator:
 # --------------------------------------------------------------------------
 class PagedKVCache:
     def __init__(self, n_blocks, block_size, heads, dim, dtype=np.float32):
+        if min(block_size, heads, dim) <= 0:
+            raise ValueError("block size, heads and dimension must be positive")
         self.B, self.H, self.D = block_size, heads, dim
         self.alloc = BlockAllocator(n_blocks)
         self.K = np.zeros((n_blocks, block_size, heads, dim), dtype)
@@ -91,6 +99,10 @@ class PagedKVCache:
     def append(self, sid, k, v):
         """Append one token's K/V (shape (H, D)). Atomic: on OutOfBlocks nothing changes."""
         s = self.seqs[sid]
+        # Validate/cast before allocating or copying: failed input must not leak blocks.
+        k, v = np.asarray(k, dtype=self.K.dtype), np.asarray(v, dtype=self.V.dtype)
+        if k.shape != (self.H, self.D) or v.shape != (self.H, self.D):
+            raise ValueError("K and V must each have shape (heads, dim)")
         pos = s["len"] % self.B
         if pos == 0:
             b = self.alloc.alloc()  # may raise before any mutation

@@ -2649,6 +2649,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2787,6 +2791,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#441-why-batching-must-be-per-iteration" class="md-nav__link">
@@ -3024,6 +3039,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3179,6 +3250,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#441-why-batching-must-be-per-iteration" class="md-nav__link">
@@ -3377,6 +3459,7 @@
 
 
 <h1 id="chapter-44-a-continuous-batching-scheduler-with-preemption">Chapter 44 — A Continuous-Batching Scheduler with Preemption<a class="headerlink" href="#chapter-44-a-continuous-batching-scheduler-with-preemption" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/44-inference.svg?v=b57fcb615381"><img alt="Chapter 44: Refill at every iteration" src="../images/chapter-openers/44-inference.svg?v=b57fcb615381" /></a></p>
 <div class="admonition warning">
 <p class="admonition-title">Evidence status</p>
 <p><strong>Run on CPU, in a simulator:</strong> a continuous-batching scheduler with paged-block accounting, preemption by recomputation, a memory watermark and chunked prefill; a static-batching baseline; 14 self-tests; five experiments (<code>ch44_continuous_batching.py</code>). Experiment cells show the mean and, in brackets, the minimum–maximum over 3 seeds of 600 requests.
@@ -3384,6 +3467,8 @@
 <strong>Choices that favour the baseline (static batching):</strong> it ignores memory limits, and it streams each request's tokens as they are produced instead of returning them when the whole batch ends.</p>
 </div>
 <p>Chapter 43 built the memory manager. This chapter builds the part that decides <em>what runs in each step</em>: the scheduler. It is where an engine's throughput, tail latency and behaviour under memory pressure come from.</p>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch44-inference.svg?v=05882787b893"><img alt="Refill at every iteration: step-by-step hand trace" src="../images/worked/ch44-inference.svg?v=05882787b893" /></a></p>
 <h2 id="441-why-batching-must-be-per-iteration">44.1 Why batching must be per iteration<a class="headerlink" href="#441-why-batching-must-be-per-iteration" title="Permanent link">&para;</a></h2>
 <p>One decode step for one sequence reads all the model weights to produce one token, so the cost is dominated by the weight read, not by arithmetic. Running 64 sequences in the same step reads the weights once and so produces 64 tokens for little more than the cost of one. Batching is how a GPU gets its throughput.</p>
 <p><strong>Static batching</strong> forms a batch, runs it until <em>every</em> member has finished, then forms the next one. Output lengths vary widely, so a finished sequence's slot sits idle (and is still computed, as padding) until the longest member ends, and new requests wait for the whole batch.</p>

@@ -1,0 +1,14 @@
+{
+  "date_utc": "2026-11-25T14:58:47.788836+00:00",
+  "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3 (main, Aug 14 2025, 17:47:21) [GCC 13.3.0]",
+  "base_commit": "1a869514e1bdbf3426d7467d6264b26758b74250",
+  "image": "runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404",
+  "gpu": "name, driver_version, memory.total [MiB]\nNVIDIA H100 80GB HBM3, 595.112.07, 81559 MiB\n",
+  "base": "2.8.0+cu128 12.8",
+  "serving": "2.9.0+cu128 12.8",
+  "model_cache": "/workspace/.cache/huggingface/hub",
+  "model_revisions": [
+    "7ae557604adf67be50417f59c2c2f167def9a775"
+  ]
+}

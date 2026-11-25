@@ -2645,6 +2645,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2791,6 +2795,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -2964,6 +3024,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-format-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked format map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#a1-why-4-bits-the-decode-floor" class="md-nav__link">
@@ -3202,6 +3273,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-format-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked format map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#a1-why-4-bits-the-decode-floor" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3421,6 +3503,7 @@
 
 
 <h1 id="appendix-native-fp4-on-blackwell-nvfp4-and-mxfp4">Appendix: Native FP4 on Blackwell: NVFP4 and MXFP4<a class="headerlink" href="#appendix-native-fp4-on-blackwell-nvfp4-and-mxfp4" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/appendix-fp4.svg?v=bbdc3e6ee501"><img alt="FP4 elements, scales and reconstruction" src="../images/chapter-openers/appendix-fp4.svg?v=bbdc3e6ee501" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">Goal and prerequisites</p>
 <p>Understand exactly what the two Blackwell 4-bit formats store, how much accuracy each gives up against block-scaled INT4 at the same storage cost, where each one breaks, and how to test a real B200 kernel against a CPU reference you trust. Read the <a href="../appendix-blackwell-b200/">native B200 appendix</a> for the build environment and the Triton book's INT4 chapter for the weight-only quantization that H100 <em>can</em> run.</p>
@@ -3434,8 +3517,11 @@
 <li><strong>Synthetic data:</strong> the error study uses Gaussian, Laplace and outlier-injected random vectors, not real model tensors. Treat the ranking as a hypothesis to test on your own weights and activations.</li>
 </ul>
 </div>
+<h2 id="worked-format-map">Worked format map<a class="headerlink" href="#worked-format-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/appendix-fp4.svg?v=c036479e0e86"><img alt="FP4 scale and reconstruction walkthrough" src="../images/worked/appendix-fp4.svg?v=c036479e0e86" /></a></p>
+<p>The <a href="../validation-inference-2026-11-25/">November 25 CPU rerun</a> executes this emulation again; it does not add native B200 validation. The emulation uses simplified scale selection: positive E4M3 midpoint ties choose the lower value, while the zero/minimum-subnormal midpoint chooses the minimum subnormal. Do not treat it as a bit-exact reproduction of every native conversion mode. Also, FP4 encoding and a particular quantizer’s calibration recipe are separate contracts; a per-tensor scale is part of the recipe described here, not proof that every FP4 API exposes that same tensor field.</p>
 <h2 id="a1-why-4-bits-the-decode-floor">A.1 Why 4 bits: the decode floor<a class="headerlink" href="#a1-why-4-bits-the-decode-floor" title="Permanent link">&para;</a></h2>
-<p>Decoding a 70B-parameter model streams every weight once per token. The time cannot go below the bytes moved divided by memory bandwidth. Using the H100's 3.35 TB/s purely as a yardstick (a B200 differs) and ignoring the KV cache:</p>
+<p>Under the batch-1, dense HBM-streaming model used here, decoding a 70B-parameter model reads every weight once per step. The modeled memory time is bytes moved divided by the assumed bandwidth. Using the H100's 3.35 TB/s purely as a yardstick (a B200 differs) and ignoring the KV cache:</p>
 <table>
 <thead>
 <tr>
@@ -3517,7 +3603,7 @@
 <h3 id="the-ocp-rounding-choice-for-mxfp4-scales">The OCP rounding choice for MXFP4 scales<a class="headerlink" href="#the-ocp-rounding-choice-for-mxfp4-scales" title="Permanent link">&para;</a></h3>
 <p>The shared exponent is usually <code>floor(log2(amax)) - 2</code> (the exponent of E2M1's largest value is 2), which puts the block maximum in <code>[4, 8)</code> times the scale. Values in <code>[6, 8)</code> times the scale then <strong>saturate to 6</strong>. A variant rounds the exponent up (<code>ceil(log2(amax/6))</code>) so nothing saturates, at the cost of coarser element resolution; the pretraining paper reports that rounding scale factors up to the next representable UE8M0 value avoids saturations. The emulation implements both.</p>
 <h2 id="a3-what-the-hardware-does-documented-not-executed-here">A.3 What the hardware does (documented, not executed here)<a class="headerlink" href="#a3-what-the-hardware-does-documented-not-executed-here" title="Permanent link">&para;</a></h2>
-<p>NVIDIA's CUTLASS documentation for SM100 lists the block-scaled tensor-core instructions: <code>tcgen05.mma ... kind::mxf4.block_scale</code> runs at 4x the Hopper FP8 tensor-core throughput, and <code>kind::mxf4nvf4.block_scale.scale_vec_size::[2X|4X]</code> covers both MXFP4 and NVFP4 operands. The scale factors are applied along the K dimension: every 16 or 32 elements of A and B in K have an associated scale factor, and the accumulation is <code>D = C + sum_k (A x SFA)(B x SFB)</code>. Two practical points follow that this page does not test:</p>
+<p>NVIDIA's CUTLASS documentation for SM100 lists the block-scaled tensor-core instructions: <code>tcgen05.mma ... kind::mxf4.block_scale</code> is listed at 4x Hopper FP8 tensor-core throughput in the instruction comparison, rather than an end-to-end application speedup, and <code>kind::mxf4nvf4.block_scale.scale_vec_size::[2X|4X]</code> covers both MXFP4 and NVFP4 operands. The scale factors are applied along the K dimension: every 16 or 32 elements of A and B in K have an associated scale factor, and the accumulation is <code>D = C + sum_k (A x SFA)(B x SFB)</code>. Two practical points follow that this page does not test:</p>
 <ol>
 <li><strong>Scale factors are separate tensors</strong> with their own shape (<code>M x ceil(K/block)</code> for A) and a hardware-specific memory layout. A kernel that quantizes correctly but writes scales in the wrong layout produces wrong results with no error.</li>
 <li><strong>Throughput claims are instruction-level peaks.</strong> Whether a real GEMM reaches them depends on the epilogue, scale loading and the shapes, and must be measured with the Chapter 36 method.</li>
@@ -3688,7 +3774,7 @@
 </span></code></pre></div>
 <p>Then validate before measuring speed:</p>
 <ol>
-<li><strong>Reference.</strong> Quantize a small random matrix pair on the CPU with <code>fp4_formats.py</code>, multiply them exactly in float64 from the <em>dequantized</em> values, and compare with the kernel's output on the same quantized codes and scales. The two should agree to accumulation-order rounding (roughly 1e-3 relative in the output dtype), because both compute the same products of the same representable numbers.</li>
+<li><strong>Reference.</strong> Quantize a small random matrix pair on the CPU with <code>fp4_formats.py</code>, multiply them exactly in float64 from the <em>dequantized</em> values, and compare with the kernel's output on the same quantized codes and scales. The two should agree to accumulation-order rounding (with a tolerance chosen for the output dtype, reduction length and accumulation path; use both absolute and relative tolerances because near-zero cancellation can make relative error misleading), because both compute the same products of the same representable numbers.</li>
 <li><strong>Quantization accuracy.</strong> Separately compare the kernel's result against the unquantized BF16 GEMM. The relative error should be of the order of the dot-product errors in Section A.5 (about 0.0015 to 0.0025 times the vector norms for K=4096); a result an order of magnitude worse points to a scale-layout or clipping bug.</li>
 <li><strong>End-to-end accuracy.</strong> Run your evaluation set in BF16, FP8 and the 4-bit format; report the difference with confidence intervals (the Chapter 36 method).</li>
 <li><strong>Speed.</strong> Only then measure throughput, with the open-loop methodology, against FP8 on the same GPU, and report where the 4x instruction peak is and is not reached.</li>
@@ -3720,7 +3806,12 @@
 <li>NVIDIA developer blog, Introducing NVFP4: <a href="https://developer.nvidia.com/blog/introducing-nvfp4-for-efficient-and-accurate-low-precision-inference">https://developer.nvidia.com/blog/introducing-nvfp4-for-efficient-and-accurate-low-precision-inference</a></li>
 <li>Pretraining Large Language Models with NVFP4: <a href="https://arxiv.org/pdf/2509.25149">https://arxiv.org/pdf/2509.25149</a></li>
 <li>Golden Ruler, a numeric format catalogue (MXFP4 and NVFP4 block parameters): <a href="https://arxiv.org/pdf/2606.09686">https://arxiv.org/pdf/2606.09686</a></li>
-<li>CUTLASS Blackwell SM100 GEMMs (block-scaled <code>tcgen05.mma</code> kinds and scale factor layout): <a href="https://docs.nvidia.com/cutlass/media/docs/cpp/blackwell_functionality.html">https://docs.nvidia.com/cutlass/media/docs/cpp/blackwell_functionality.html</a></li>
+<li>
+<p>CUTLASS Blackwell SM100 GEMMs (block-scaled <code>tcgen05.mma</code> kinds and scale factor layout): <a href="https://docs.nvidia.com/cutlass/media/docs/cpp/blackwell_functionality.html">https://docs.nvidia.com/cutlass/media/docs/cpp/blackwell_functionality.html</a></p>
+</li>
+<li>
+<p>NVIDIA Transformer Engine NVFP4 recipe and scale definitions: <a href="https://docs.nvidia.com/deeplearning/transformer-engine-releases/release-2.16/user-guide/features/low_precision_training/nvfp4/nvfp4.html">https://docs.nvidia.com/deeplearning/transformer-engine-releases/release-2.16/user-guide/features/low_precision_training/nvfp4/nvfp4.html</a></p>
+</li>
 </ul>
 
 

@@ -1,0 +1,15 @@
+  PASS  1  fast lcp equals the naive loop on 300 random pairs
+  PASS  2  insert, match and edge split behave on a hand example (5 + 1 new token = 6 stored)
+  PASS  3  tree stores exactly one token per distinct prefix (20 random sets of 40 sequences)
+  PASS  4  match length equals the brute-force maximum common prefix (20 sessions x 60 queries)
+  PASS  5  a pinned sequence survives pressure; the least recently used unpinned leaf is evicted
+  PASS  6  the eviction victim always has the minimum last-access among evictable leaves (15 sessions)
+  PASS  7  when every token is pinned the request fails with CacheFull and the cache is unchanged
+  PASS  8  pin counts equal the number of live handles through each node (15 random sessions)
+  PASS  9  ten requests sharing a 100-token prefix store it once (300 tokens, not 1200)
+  PASS 10  block-hash match never exceeds the radix match and is within one block of it
+  PASS 11  an 8-bit block hash served wrong KV 373 times in 400 requests; the 64-bit hash 0 times (the radix tree compares tokens)
+  PASS 12  a per-tenant salt as the first token prevents any cross-tenant match
+  PASS 13  with exactly repeated prompts LRU beats FIFO (0.693 vs 0.649 hit rate)
+  PASS 14  same seed, same hit rate
+ALL PASS   (0 s)  [14 tests]

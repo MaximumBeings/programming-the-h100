@@ -2393,6 +2393,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#351-why-split-the-phases" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2899,6 +2910,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3045,6 +3060,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3213,6 +3284,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#351-why-split-the-phases" class="md-nav__link">
@@ -3445,6 +3527,7 @@
 
 
 <h1 id="chapter-35-disaggregated-prefilldecode-over-rdma">Chapter 35: Disaggregated Prefill/Decode over RDMA<a class="headerlink" href="#chapter-35-disaggregated-prefilldecode-over-rdma" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/35-inference.svg?v=c7d566df00c5"><img alt="Chapter 35: Split work, count transfers" src="../images/chapter-openers/35-inference.svg?v=c7d566df00c5" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">Goal and prerequisites</p>
 <p>Learn why serving systems sometimes split prefill and decode onto separate GPU pools, what it costs to move the KV cache between them, and how to decide whether the split pays off. Read <a href="../11-multi-gpu-nccl/">Chapter 11</a> (NVLink, InfiniBand), <a href="../32-inference-engine-and-harness/">Chapter 32</a> (the harness) and <a href="../34-kv-cache-offloading/">Chapter 34</a> (KV size and transfer reasoning) first.</p>
@@ -3453,6 +3536,8 @@
 <p class="admonition-title">Evidence level</p>
 <p>CPU arithmetic and a <strong>simulation</strong> that reuses Chapter 32's placeholder cost model. Hardware bandwidths and capacities are datasheet values; check yours. The simulation shows a mechanism, not the performance of a real cluster, and its pool sizes are not tuned. No RDMA transfer was performed.</p>
 </div>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch35-inference.svg?v=fdb83e4393a2"><img alt="Split work, count transfers: step-by-step hand trace" src="../images/worked/ch35-inference.svg?v=fdb83e4393a2" /></a></p>
 <h2 id="351-why-split-the-phases">35.1 Why split the phases<a class="headerlink" href="#351-why-split-the-phases" title="Permanent link">&para;</a></h2>
 <p>Prefill is compute-bound and decode is memory-bound (<a href="../32-inference-engine-and-harness/">Chapter 32</a>). On one GPU they interfere: when a new prompt's prefill runs inside a batch, every decoding user waits for it, so inter-token latency spikes. Disaggregation gives each phase its own pool, so prefill bursts do not stall decode, and each pool can be sized and configured for its own bottleneck.</p>
 <p>The price is that every request's KV cache, built on a prefill GPU, must reach a decode GPU.</p>

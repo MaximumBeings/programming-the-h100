@@ -1,0 +1,74 @@
+  PASS  1  one request: first token and finish times match the closed form
+  PASS  2  a one-token output finishes with its prefill iteration (idle clock jumps to the arrival)
+  PASS  3  continuous with one slot reproduces static batch-size-1 exactly (60 requests)
+  PASS  4  24 runs: every admitted request emits exactly `out` tokens; block accounting invariant holds each iteration (832 preemptions exercised)
+  PASS  5  heavy memory pressure: terminates, all blocks returned (90 preemptions)
+  PASS  6  a request larger than the whole pool is rejected up front; others proceed
+  PASS  7  without preemption, total prefill work equals the sum of prompt lengths
+  PASS  8  with preemption, prefill work exceeds the prompt total (recomputation is real work)
+  PASS  9  chunked prefill: per-iteration work stays inside max_batched_tokens (bounded step time)
+  PASS 10  strict FCFS: first-token times are non-decreasing in arrival order (no preemption)
+  PASS 11  same seed, same result
+  PASS 12  static batch: the short request is done early, but the finished slot still costs compute
+  PASS 13  continuous batching throughput >= static (N=32) on 5 of 5 seeds
+  PASS 14  block count after L tokens equals ceil(L / B), as in the Chapter 43 cache
+ALL PASS   (1 s)  [14 tests]
+assumed cost model: iteration = 15 ms + 50.00 ms per 1000 prefill tokens + 0.20 ms per decoding sequence
+SLO: TTFT <= 2 s and mean time per output token <= 80 ms
+workload: prompt median 256 (mean 351), output median 128 (mean 199)
+decode-only upper bound with 128 sequences (ignores prefill and ramp): 3153 tokens/s = 15.8 requests/s
+
+=== Experiment 1: static versus continuous batching (3 seeds; continuous pool 2048 blocks = 32768 tokens) ===
+ rate         scheme               tokens/s                goodput             TTFT p50             TTFT p99           attain
+  0.5     static N=8         103 [96.6-109]         36 [31.9-39.4]     3.55 [3.22-4.18]       17 [15.6-18.9] 0.346 [0.287-0.392]
+  0.5    static N=32         103 [96.6-109]       38.3 [35.3-40.1]     3.17 [2.83-3.64]     15.1 [14.6-15.9] 0.373 [0.315-0.41]
+  0.5     continuous         103 [96.8-109]         103 [96.8-109] 0.0346 [0.0343-0.0349] 0.104 [0.0934-0.117]          1 [1-1]
+  1.0     static N=8          162 [159-166]       2.61 [2.28-2.88]      83.9 [64.3-106]        155 [122-215] 0.0183 [0.015-0.02]
+  1.0    static N=32          200 [188-210]       29.5 [26.2-31.5]     6.52 [5.96-7.46]     19.2 [19.2-19.3] 0.159 [0.138-0.17]
+  1.0     continuous          204 [191-217]          204 [191-217] 0.0368 [0.0363-0.0375] 0.107 [0.0978-0.117]          1 [1-1]
+  2.0     static N=8          164 [163-168]       2.31 [1.64-3.47]        222 [207-244]        434 [406-485] 0.0133 [0.00667-0.0183]
+  2.0    static N=32          313 [308-322]       8.71 [5.28-11.3]       41.9 [28-56.3]      86.3 [58.5-119] 0.0278 [0.0267-0.0283]
+  2.0     continuous          400 [373-426]          400 [373-426] 0.0387 [0.0382-0.039] 0.108 [0.0949-0.121]          1 [1-1]
+  5.0     static N=8          166 [163-168]      0.855 [0.832-0.9]        311 [299-325]        603 [550-657] 0.00667 [0.00167-0.01]
+  5.0    static N=32          323 [321-325]       4.18 [1.62-5.97]        121 [117-129]        242 [227-260] 0.015 [0.00167-0.0233]
+  5.0     continuous          920 [869-975]          920 [869-975] 0.0448 [0.0433-0.0459]  0.127 [0.114-0.137]          1 [1-1]
+  8.0     static N=8          166 [162-168]      1.12 [0.832-1.29]        338 [310-366]        651 [596-707] 0.00944 [0.00167-0.015]
+  8.0    static N=32          324 [322-325]       4.94 [1.62-6.96]        147 [137-160]        289 [266-315] 0.02 [0.00167-0.03]
+  8.0     continuous 1.35e+03 [1.29e+03-1.42e+03] 1.31e+03 [1.21e+03-1.42e+03] 0.0615 [0.0503-0.0763]    1.85 [0.149-4.11]  0.965 [0.895-1]
+ 12.0     static N=8          164 [162-168]       1.72 [0.832-3.1]        355 [336-379]        684 [645-731] 0.0106 [0.00167-0.015]
+ 12.0    static N=32          323 [317-325]       5.54 [1.62-8.53]        155 [148-160]        314 [286-344] 0.0156 [0.00167-0.0283]
+ 12.0     continuous 1.5e+03 [1.45e+03-1.54e+03]          569 [558-585]     6.67 [5.79-7.51]     15.1 [11.8-17.9] 0.361 [0.337-0.387]
+
+=== Experiment 2: memory pressure and preemption (rate 8/s, 3 seeds) ===
+ blocks   tokens               tokens/s      preemptions  extra prefill %             TTFT p99              e2e p99  rejected
+   4096    65536 1.35e+03 [1.29e+03-1.42e+03]          0 [0-0]          0 [0-0]  0.164 [0.136-0.207]     28.3 [26.8-29.4]   0 [0-0]
+   2048    32768 1.35e+03 [1.29e+03-1.42e+03]      8.67 [0-18]     1.15 [0-2.4]    1.85 [0.149-4.11]     28.6 [26.8-29.9]   0 [0-0]
+   1024    16384 1.07e+03 [1.04e+03-1.09e+03]     93.3 [87-98] 17.7 [13.6-20.1]     25.1 [20.2-29.8]     39.8 [34.6-44.1]   0 [0-0]
+    512     8192          688 [663-700]    190 [178-200] 34.5 [28.7-38.4]     90.2 [82.9-99.8]      96.7 [91.4-104]   0 [0-0]
+    256     4096          377 [359-388]    246 [201-285]   43.3 [38.8-49]        236 [222-251]        241 [229-254]   0 [0-0]
+
+=== Experiment 3: the watermark (blocks kept free at admission), 512 blocks, rate 8/s ===
+ watermark      preemptions               tokens/s              e2e p99
+      0.00    299 [267-324]          682 [659-695]      98.2 [92.8-106]
+      0.01    190 [178-200]          688 [663-700]      96.7 [91.4-104]
+      0.05     39.7 [35-46]          683 [659-697]      97.7 [92.2-105]
+      0.10      6.67 [5-10]          662 [637-677]       103 [97.5-112]
+      0.20      0.333 [0-1]          604 [580-616]        120 [113-129]
+
+=== Experiment 4: chunked prefill (max_batched_tokens), rate 4/s, long prompts, 3 seeds ===
+  budget           ITL p99 (ms)             TTFT p50             TTFT p99               tokens/s           attain
+    None          128 [117-133] 0.0903 [0.0854-0.0934]  0.358 [0.303-0.457]          753 [711-797]          1 [1-1]
+    4096          129 [117-134] 0.0902 [0.0855-0.0928]  0.382 [0.322-0.482]          753 [711-797]          1 [1-1]
+    1024           70.5 [70-71]  0.111 [0.101-0.118]  0.454 [0.375-0.602]          753 [711-797]          1 [1-1]
+     512       45.2 [44.8-45.8]  0.143 [0.131-0.154]  0.633 [0.502-0.876]          753 [711-796]          1 [1-1]
+     256       32.6 [32.3-32.9]  0.256 [0.218-0.295]    1.28 [0.921-1.86]          752 [711-796]          1 [1-1]
+     128       25.2 [25.2-25.3]    5.54 [0.942-9.86]     12.3 [7.03-17.5]          706 [682-748] 0.454 [0.27-0.74]
+
+=== Experiment 5: slot cap (max_num_seqs) at rate 12/s, 3 seeds ===
+ max_seqs               tokens/s             TTFT p99          TPOT p99 (ms)           attain
+        8          450 [446-456]        208 [195-222]       18.8 [18.4-19.4] 0.0261 [0.0217-0.0333]
+       16          770 [757-788]      95.4 [89.8-103]         22 [21.9-22.3] 0.0567 [0.05-0.0617]
+       32 1.17e+03 [1.15e+03-1.2e+03]       39 [37.1-42.8]       26.8 [26.2-27.2] 0.143 [0.128-0.162]
+       64 1.57e+03 [1.53e+03-1.62e+03]     11.2 [8.71-13.5]       37.1 [36.8-37.5] 0.381 [0.345-0.422]
+      128 1.76e+03 [1.72e+03-1.83e+03]    1.15 [0.172-1.71]       51.6 [48.8-54.1]          1 [1-1]
+      256 1.76e+03 [1.72e+03-1.83e+03]    1.15 [0.172-1.71]       51.7 [48.8-54.2]          1 [1-1]

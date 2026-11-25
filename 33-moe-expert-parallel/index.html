@@ -2337,6 +2337,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#331-what-an-moe-layer-does" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2905,6 +2916,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3051,6 +3066,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3219,6 +3290,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#331-what-an-moe-layer-does" class="md-nav__link">
@@ -3457,6 +3539,7 @@
 
 
 <h1 id="chapter-33-moe-expert-parallelism-sharding-all-to-all-and-load-balance">Chapter 33: MoE Expert Parallelism: Sharding, All-to-All and Load Balance<a class="headerlink" href="#chapter-33-moe-expert-parallelism-sharding-all-to-all-and-load-balance" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/33-inference.svg?v=b275daf62753"><img alt="Chapter 33: Route. Compute. Combine." src="../images/chapter-openers/33-inference.svg?v=b275daf62753" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">Goal and prerequisites</p>
 <p>Learn how a Mixture-of-Experts (MoE) layer is served across several GPUs: which GPU holds which expert, how tokens travel to their experts and back, how much that costs, and why load imbalance, not arithmetic, is usually the problem. Read <a href="../11-multi-gpu-nccl/">Chapter 11</a> (collectives, NVLink, InfiniBand) and <a href="../32-inference-engine-and-harness/">Chapter 32</a> (the measurement harness) first.</p>
@@ -3465,6 +3548,9 @@
 <p class="admonition-title">Evidence level</p>
 <p>Everything here ran on a <strong>CPU</strong>. The routing study is a simulation with a synthetic skew. The all-to-all check uses PyTorch's <strong>gloo</strong> backend on four CPU processes and verifies that the dispatch and combine <strong>logic</strong> returns the right answer. It does not measure NCCL, NVLink or InfiniBand performance. The bandwidth figures are datasheet values turned into lower bounds, not measurements.</p>
 </div>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch33-inference.svg?v=485f7679c467"><img alt="Route. Compute. Combine.: step-by-step hand trace" src="../images/worked/ch33-inference.svg?v=485f7679c467" /></a></p>
+<p>The equal-slot placement example now rejects expert-copy counts that do not divide evenly across GPUs instead of failing partway through packing. Its default experiments retain the same shapes. <a href="../validation-inference-2026-11-25/">November 25 rerun</a>.</p>
 <h2 id="331-what-an-moe-layer-does">33.1 What an MoE layer does<a class="headerlink" href="#331-what-an-moe-layer-does" title="Permanent link">&para;</a></h2>
 <p>A dense feed-forward layer sends every token through the same weights. An MoE layer holds many expert networks and a small <strong>router</strong>. For each token the router scores all experts and sends the token to its top-<code>k</code> (often 2). The experts' outputs are combined, weighted by the router scores.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a> token -&gt; router -&gt; top-2 experts: E17 (weight 0.7), E41 (weight 0.3)

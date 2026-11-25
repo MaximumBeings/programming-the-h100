@@ -18,7 +18,7 @@
         <link rel="prev" href="../45-radix-prefix-cache/">
       
       
-        <link rel="next" href="../appendix-blackwell-b200/">
+        <link rel="next" href="../47-vllm-tuning-lab/">
       
       
         
@@ -2649,6 +2649,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2845,6 +2849,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#461-what-is-joined" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3013,6 +3028,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3168,6 +3239,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#461-what-is-joined" class="md-nav__link">
@@ -3355,6 +3437,7 @@
 
 
 <h1 id="chapter-46-capstone-a-mini-inference-engine">Chapter 46 — Capstone: A Mini Inference Engine<a class="headerlink" href="#chapter-46-capstone-a-mini-inference-engine" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/46-inference.svg?v=b603cc90a7ca"><img alt="Chapter 46: Build the engine core" src="../images/chapter-openers/46-inference.svg?v=b603cc90a7ca" /></a></p>
 <div class="admonition warning">
 <p class="admonition-title">Evidence status</p>
 <p><strong>Run on CPU:</strong> a tiny real transformer (2 layers, 32-dimensional, 2 heads, vocabulary 96, random weights, float64) served by an engine that joins the paged KV cache (Chapter 43), the continuous-batching scheduler with preemption and chunked prefill (Chapter 44) and a block-level prefix cache (Chapter 45); 15 self-tests; four experiments (<code>ch46_mini_engine.py</code>).
@@ -3362,6 +3445,8 @@
 <strong>What this does not show:</strong> nothing runs on a GPU, the weights are random so the text is meaningless, sampling is greedy only, and the engine computes one sequence at a time (the "batch" is a scheduling decision; its cost uses the assumed per-iteration model of Chapter 44). It checks that the <em>machinery</em> is correct, not that it is fast. The comparison with vLLM and SGLang in 46.9 is <strong>UNTESTED</strong>.</p>
 </div>
 <p>This chapter closes Part XIV. The earlier chapters each tested one piece in isolation. Here the pieces share one set of blocks, and the property to check is the one that matters in production: <strong>sharing, preempting, chunking and caching must never change an answer.</strong></p>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch46-inference.svg?v=7611987be186"><img alt="Build the engine core: step-by-step hand trace" src="../images/worked/ch46-inference.svg?v=7611987be186" /></a></p>
 <h2 id="461-what-is-joined">46.1 What is joined<a class="headerlink" href="#461-what-is-joined" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a> requests ──► scheduler (Ch 44) ──► per-iteration plan: decode set + prefill chunks
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                 │  admit / preempt / chunk                │
@@ -3819,13 +3904,13 @@
         
         
           
-          <a href="../appendix-blackwell-b200/" class="md-footer__link md-footer__link--next" aria-label="Next: Native B200 — UMMA, GEMM and Attention">
+          <a href="../47-vllm-tuning-lab/" class="md-footer__link md-footer__link--next" aria-label="Next: 47. Working vLLM Server and CUDA Attention Lab">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Native B200 — UMMA, GEMM and Attention
+                47. Working vLLM Server and CUDA Attention Lab
               </div>
             </div>
             <div class="md-footer__button md-icon">

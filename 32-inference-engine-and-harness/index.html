@@ -2309,6 +2309,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#321-two-phases-two-bottlenecks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2949,6 +2960,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3095,6 +3110,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3263,6 +3334,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#321-two-phases-two-bottlenecks" class="md-nav__link">
@@ -3545,6 +3627,7 @@
 
 
 <h1 id="chapter-32-inference-engine-anatomy-and-the-measurement-harness">Chapter 32: Inference Engine Anatomy and the Measurement Harness<a class="headerlink" href="#chapter-32-inference-engine-anatomy-and-the-measurement-harness" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/32-inference.svg?v=b075baf65777"><img alt="Chapter 32: Measure before tuning" src="../images/chapter-openers/32-inference.svg?v=b075baf65777" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">Goal and prerequisites</p>
 <p>Learn what limits an LLM serving engine on a Hopper GPU, how continuous batching works, and how to measure a server honestly. You build a workload generator, a simulated engine and a metrics module that every later project reuses. Read <a href="../01-h100-architecture/">Chapter 1</a> (memory hierarchy and bandwidth) and <a href="../14-nsight-systems/">Chapter 14</a> (timelines) first.</p>
@@ -3553,6 +3636,8 @@
 <p class="admonition-title">Evidence level</p>
 <p>The harness and engine below run on a <strong>CPU</strong>. The engine is a <strong>simulation</strong> whose cost constants are illustrative parameters, not H100 measurements. What the run verifies: the metric code (against a hand-computed case), the byte and bandwidth arithmetic, and the simulator's internal consistency (Little's law). What it cannot tell you: how fast any real server is. Replace the simulated engine with a client that talks to a real server, keep the rest.</p>
 </div>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch32-inference.svg?v=0eed48b5feda"><img alt="Measure before tuning: step-by-step hand trace" src="../images/worked/ch32-inference.svg?v=0eed48b5feda" /></a></p>
 <h2 id="321-two-phases-two-bottlenecks">32.1 Two phases, two bottlenecks<a class="headerlink" href="#321-two-phases-two-bottlenecks" title="Permanent link">&para;</a></h2>
 <p>Generating a reply has two phases.</p>
 <p><strong>Prefill</strong> processes the whole prompt at once. It is a large matrix multiply and is limited by tensor-core throughput. <strong>Decode</strong> produces one token per step. Each step reads every weight and the whole KV cache, does little arithmetic with them, and is limited by memory bandwidth.</p>
@@ -3729,7 +3814,7 @@
 </span></code></pre></div>
 <p><strong>The tests can fail.</strong> Two deliberate breakages were tried on a copy: removing the batch cap from the admission loop fails the <code>max_batch=1</code> test, and dropping the <code>- 1</code> from the TPOT denominator fails the hand case. The second one passed all 20 earlier tests, which is why the hand case is part of the suite and not only a printed line.</p>
 <h2 id="328-experiment-a-the-batch-cap">32.8 Experiment A: the batch cap<a class="headerlink" href="#328-experiment-a-the-batch-cap" title="Permanent link">&para;</a></h2>
-<p>The engine takes <code>max_batch</code>, the most sequences it will run in one iteration. In a real server the equivalent limit is set by KV-cache memory, not a flag, so this experiment shows the shape of the trade, not a tuning guide. Rate 12 requests per second, 300 requests, seed 2 (<code>--extras</code>):</p>
+<p>The engine takes <code>max_batch</code>, the most sequences it will run in one iteration. In a real server an explicit scheduler limit such as vLLM’s <code>max_num_seqs</code> acts alongside KV-cache capacity and the token budget, so this experiment shows the shape of the trade, not a tuning guide. Rate 12 requests per second, 300 requests, seed 2 (<code>--extras</code>):</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>max_batch  ttft_p50  ttft_p99  tpot_p50  tput(tok/s)  slo_ok
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>        4   119.523   225.917    0.0211          184    0.03
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>        8    56.060   106.728    0.0223          340    0.04
@@ -3816,7 +3901,7 @@
 <li><strong>Pick the engine and record its version.</strong> For example, <code>python3 -m pip show vllm</code> (or the version your container reports) and <code>nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv</code>. Write both into the run record.</li>
 <li><strong>Start the server with fixed settings</strong> and write them down: model, tensor-parallel size, maximum sequence length, maximum number of running sequences, GPU memory fraction. A result without these is not comparable.</li>
 <li><strong>Replace <code>simulate</code> with a client.</strong> It must send the same <code>Req</code> list at the same arrival times, record the time of the first streamed token and of the last, and fill <code>first_token</code>, <code>finish</code> and <code>generated</code>. Then call <code>summarize</code> unchanged. Use the same <code>make_workload</code> seed so the simulated and real runs see identical requests.</li>
-<li><strong>Check the decode floor.</strong> Run a single request with a long output and no other load. Measure TPOT. It must be at or above <code>decode_floor_ms</code> for your model and GPU count; if it is below, something in the arithmetic (bytes per parameter, GPU count, bandwidth) is wrong.</li>
+<li><strong>Check the decode floor.</strong> Run a single request with a long output and no other load. Measure TPOT. Compare it with <code>decode_floor_ms</code> only under the model’s assumptions: dense execution of the stated weight precision, batch 1, all weights read from HBM on each step, and the stated GPU bandwidth. A lower result can indicate changed precision, caching, sparsity, different hardware or a timing/counting error; it does not by itself prove a measurement is wrong.</li>
 <li><strong>Sweep the rate</strong> across idle, loaded and overloaded, repeat each point with at least three seeds, and plot TTFT p50 and p99, TPOT p50, throughput and attainment against rate. Find the knee as in section 32.5.</li>
 <li><strong>Fit the cost model.</strong> From the single-request run take <code>base</code>, from a batch-of-N run take <code>per_seq</code>, and rerun the simulator with those constants. Compare the simulated and real knees. The difference is the part of the model this chapter did not capture.</li>
 <li><strong>Capture a profile</strong> of one decode iteration with Nsight Systems (<a href="../14-nsight-systems/">Chapter 14</a>) to confirm the iteration is dominated by the weight read, as section 32.1 assumes.</li>
@@ -3844,7 +3929,7 @@
 <h2 id="self-check-questions">Self-Check Questions<a class="headerlink" href="#self-check-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Why is decode limited by memory bandwidth while prefill is not?</li>
-<li>Why can a 70B BF16 model not decode faster than about 21 ms per token on two H100s at batch 1, whatever the software?</li>
+<li>Why can a 70B BF16 model not decode faster than about 21 ms per token on two H100s at batch 1, under the stated dense BF16, HBM-streaming assumptions?</li>
 <li>In the sweep, why does cost per million tokens fall as the rate rises, and why is the cheapest row not the best operating point?</li>
 <li>Why must a throughput figure always come with a latency figure?</li>
 <li>What does Little's law check in the simulator, and what does it not check?</li>
@@ -3852,7 +3937,7 @@
 <h2 id="worked-solutions">Worked Solutions<a class="headerlink" href="#worked-solutions" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Prefill multiplies large matrices (many tokens against the weights), so it is arithmetic-heavy. Decode handles one token per sequence and must read all weights and the KV cache for little arithmetic, so time is set by bytes moved.</li>
-<li>Each step must read every weight once, so time is at least weight bytes divided by aggregate memory bandwidth: <code>140 GB / (2 x 3.35 TB/s) = 20.9 ms</code>. Real systems add KV reads, communication and launch overhead.</li>
+<li>Under the stated streaming model, each step reads every weight once, so its modeled time is at least weight bytes divided by aggregate memory bandwidth: <code>140 GB / (2 x 3.35 TB/s) = 20.9 ms</code>. Real systems add KV reads, communication and launch overhead.</li>
 <li>The GPU bill is fixed per hour, so more tokens per hour means a lower cost per token. At 16 requests per second the server is overloaded, so only 37 percent of requests meet the SLO; the useful operating point is the highest load that still meets it.</li>
 <li>A server can raise throughput by letting requests queue into large batches, which makes users wait. Throughput alone hides that.</li>
 <li>It checks that the simulator's time-average occupancy equals arrival rate times mean residence time, which catches bookkeeping errors. It does not check that the cost constants resemble a real GPU.</li>

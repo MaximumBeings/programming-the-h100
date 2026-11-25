@@ -2662,6 +2662,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#421-the-pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2899,6 +2910,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3045,6 +3060,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3213,6 +3284,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#421-the-pipeline" class="md-nav__link">
@@ -3445,6 +3527,7 @@
 
 
 <h1 id="chapter-42-capstone-one-gateway-four-mechanisms-one-harness">Chapter 42 — Capstone: One Gateway, Four Mechanisms, One Harness<a class="headerlink" href="#chapter-42-capstone-one-gateway-four-mechanisms-one-harness" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/42-inference.svg?v=4e06d5f92be9"><img alt="Chapter 42: One gateway, shared metrics" src="../images/chapter-openers/42-inference.svg?v=4e06d5f92be9" /></a></p>
 <div class="admonition warning">
 <p class="admonition-title">Evidence status</p>
 <p><strong>Run on CPU, in a simulator:</strong> a gateway that chains the semantic cache (Chapter 38), the complexity router (Chapter 39), queue-autoscaled GPU pools (Chapter 40) and the circuit breaker (Chapter 41), measured with the record type and statistics of the Chapter 36 harness. 12 self-tests and three experiments (<code>ch42_gateway_capstone.py</code>). Experiment cells show the mean and, in brackets, the minimum–maximum over three seeds.
@@ -3460,6 +3543,8 @@
 </ul>
 </div>
 <p>The previous four chapters each built one mechanism and tested it alone. A gateway uses them together, and the mechanisms interact: the cache changes the load the autoscaler sees, the router changes the quality the cache is protecting, and the breaker's fallback is the capacity the router starved. This chapter wires them into one simulator and asks the question a portfolio project exists to answer: <strong>what does each mechanism buy once the others are present, and what does it cost?</strong></p>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch42-inference.svg?v=632ae559ed0c"><img alt="One gateway, shared metrics: step-by-step hand trace" src="../images/worked/ch42-inference.svg?v=632ae559ed0c" /></a></p>
 <h2 id="421-the-pipeline">42.1 The pipeline<a class="headerlink" href="#421-the-pipeline" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                 request
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                    │

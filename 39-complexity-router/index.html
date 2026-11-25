@@ -2578,6 +2578,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#391-what-entropy-means-here" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2854,6 +2865,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3000,6 +3015,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3168,6 +3239,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#391-what-entropy-means-here" class="md-nav__link">
@@ -3355,6 +3437,7 @@
 
 
 <h1 id="chapter-39-multi-model-complexity-router-entropy-calibration-cost">Chapter 39 — Multi-Model Complexity Router: Entropy, Calibration, Cost<a class="headerlink" href="#chapter-39-multi-model-complexity-router-entropy-calibration-cost" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/39-inference.svg?v=1d9ab703cd99"><img alt="Chapter 39: Route with a quality budget" src="../images/chapter-openers/39-inference.svg?v=1d9ab703cd99" /></a></p>
 <div class="admonition warning">
 <p class="admonition-title">Evidence status</p>
 <p><strong>Run on CPU, in a synthetic world:</strong> the entropy feature, the routing and cost accounting, the calibration procedure, a real-data <code>calibrate</code> command, and 21 self-tests (<code>ch39_complexity_router.py</code>).
@@ -3362,6 +3445,8 @@
 Sample outputs vary with seeds; the self-tests assert properties, not these exact numbers.</p>
 </div>
 <p>A complexity router sends easy queries to a small, cheap model and hard ones to a large, expensive one. The project brief says to route on "entropy". This chapter fixes what that means, shows how to choose the threshold without fooling yourself, and measures when the router actually saves money. In this synthetic world it saves <strong>less than you would hope</strong>, and the reasons are the useful part.</p>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch39-inference.svg?v=a74e262fc265"><img alt="Route with a quality budget: step-by-step hand trace" src="../images/worked/ch39-inference.svg?v=a74e262fc265" /></a></p>
 <h2 id="391-what-entropy-means-here">39.1 What "entropy" means here<a class="headerlink" href="#391-what-entropy-means-here" title="Permanent link">&para;</a></h2>
 <p>"Entropy" is ambiguous until you fix five things. We fix them:</p>
 <table>

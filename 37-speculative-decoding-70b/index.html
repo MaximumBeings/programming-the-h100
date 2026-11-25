@@ -2449,6 +2449,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#371-why-speculation-helps-and-exactly-when" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2916,6 +2927,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3062,6 +3077,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3230,6 +3301,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#371-why-speculation-helps-and-exactly-when" class="md-nav__link">
@@ -3479,6 +3561,7 @@
 
 
 <h1 id="chapter-37-speculative-decoding-at-70b-multi-gpu-target-cost-model-and-measured-speedup">Chapter 37: Speculative Decoding at 70B: Multi-GPU Target, Cost Model and Measured Speedup<a class="headerlink" href="#chapter-37-speculative-decoding-at-70b-multi-gpu-target-cost-model-and-measured-speedup" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/37-inference.svg?v=cb403f6b33c8"><img alt="Chapter 37: Propose, verify, accept" src="../images/chapter-openers/37-inference.svg?v=cb403f6b33c8" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">Goal and prerequisites</p>
 <p>Predict, before renting any GPUs, whether speculative decoding will speed up a 70B model on 2 x H100, which draft and which depth K to use, and at what batch the benefit shrinks. Then measure it with the Chapter 36 harness. Read <a href="../32-inference-engine-and-harness/">Chapter 32</a> (decode floor) and <a href="../36-benchmark-teardown/">Chapter 36</a> (measurement). The statistics of rejection sampling are derived in the Triton book's speculative decoding chapter; here the focus is the multi-GPU system cost, including the KV cache that decides how large a batch fits at all.</p>
@@ -3491,6 +3574,8 @@
 <li><strong>Untested on H100:</strong> the launch commands in Section 37.9. Flag names change between releases; check <code>--help</code> for your version.</li>
 </ul>
 </div>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch37-inference.svg?v=47f99d892437"><img alt="Propose, verify, accept: step-by-step hand trace" src="../images/worked/ch37-inference.svg?v=47f99d892437" /></a></p>
 <h2 id="371-why-speculation-helps-and-exactly-when">37.1 Why speculation helps, and exactly when<a class="headerlink" href="#371-why-speculation-helps-and-exactly-when" title="Permanent link">&para;</a></h2>
 <p>Decode of a large model is limited by reading memory, not by arithmetic. For 70B parameters in BF16 on 2 GPUs (tensor parallel 2), each GPU holds 70 GB and one step takes at least <code>70e9 / 3.35e12 = 20.9 ms</code>. The step reads the same weights whether it processes one token or a hundred, until the arithmetic catches up with the memory traffic.</p>
 <p>Speculative decoding exploits that slack. A small <strong>draft</strong> proposes K tokens cheaply; the large <strong>target</strong> checks all K (plus one more position) in a <strong>single</strong> pass. Rejection sampling accepts a prefix of the proposals and always yields one extra token, and the output distribution is exactly the target's. If the pass costs little more than a one-token pass, several tokens are emitted for roughly the price of one.</p>

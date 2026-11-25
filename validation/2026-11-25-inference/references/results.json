@@ -1,0 +1,409 @@
+{
+  "date_utc": "2026-11-25T14:56:15.783887+00:00",
+  "results": [
+    {
+      "source": "ch32_inference_harness.py",
+      "sha256": "07ed2d77edd5fa85ccb732e82b87887e20f7be9e03cb8315e187a9c385ece90f",
+      "command": [
+        "python",
+        "ch32_inference_harness.py",
+        "--test"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.12878084182739258,
+      "log": "ch32_inference_harness-tests.log"
+    },
+    {
+      "source": "ch32_inference_harness.py",
+      "sha256": "07ed2d77edd5fa85ccb732e82b87887e20f7be9e03cb8315e187a9c385ece90f",
+      "command": [
+        "python",
+        "ch32_inference_harness.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.12702631950378418,
+      "log": "ch32_inference_harness-full.log"
+    },
+    {
+      "source": "ch33_moe_expert_parallel.py",
+      "sha256": "bcf88b63087513c125a2fbb13990349b215fd53dc73e9eb210fbdbc234a62a33",
+      "command": [
+        "python",
+        "ch33_moe_expert_parallel.py",
+        "--test"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 6.669149398803711,
+      "log": "ch33_moe_expert_parallel-tests.log"
+    },
+    {
+      "source": "ch33_moe_expert_parallel.py",
+      "sha256": "bcf88b63087513c125a2fbb13990349b215fd53dc73e9eb210fbdbc234a62a33",
+      "command": [
+        "python",
+        "ch33_moe_expert_parallel.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 3.391718626022339,
+      "log": "ch33_moe_expert_parallel-full.log"
+    },
+    {
+      "source": "ch34_kv_offload.py",
+      "sha256": "60acc8861b1a15d4ee5eeb489ba4978d3f541c136ceaf1b5810dbc8d2c9e43f1",
+      "command": [
+        "python",
+        "ch34_kv_offload.py",
+        "--test"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.8558621406555176,
+      "log": "ch34_kv_offload-tests.log"
+    },
+    {
+      "source": "ch34_kv_offload.py",
+      "sha256": "60acc8861b1a15d4ee5eeb489ba4978d3f541c136ceaf1b5810dbc8d2c9e43f1",
+      "command": [
+        "python",
+        "ch34_kv_offload.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.23637151718139648,
+      "log": "ch34_kv_offload-full.log"
+    },
+    {
+      "source": "ch35_disaggregation.py",
+      "sha256": "585ab39508fc55fcb0ea4b47abcd5f286bb2d2f6f4e7f2c8f9b5ebbf129c3e10",
+      "command": [
+        "python",
+        "ch35_disaggregation.py",
+        "--test"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.32245302200317383,
+      "log": "ch35_disaggregation-tests.log"
+    },
+    {
+      "source": "ch35_disaggregation.py",
+      "sha256": "585ab39508fc55fcb0ea4b47abcd5f286bb2d2f6f4e7f2c8f9b5ebbf129c3e10",
+      "command": [
+        "python",
+        "ch35_disaggregation.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.13659453392028809,
+      "log": "ch35_disaggregation-full.log"
+    },
+    {
+      "source": "ch36_benchmark_teardown.py",
+      "sha256": "c723591cceb508ac1a5d10986fad26993a7f183347f1f1c805242902734448b5",
+      "command": [
+        "python",
+        "ch36_benchmark_teardown.py",
+        "--selftest"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 4.875992298126221,
+      "log": "ch36_benchmark_teardown-tests.log"
+    },
+    {
+      "source": "ch36_benchmark_teardown.py",
+      "sha256": "c723591cceb508ac1a5d10986fad26993a7f183347f1f1c805242902734448b5",
+      "command": [
+        "python",
+        "ch36_benchmark_teardown.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 252.52785682678223,
+      "log": "ch36_benchmark_teardown-full.log"
+    },
+    {
+      "source": "ch37_spec_decode_70b.py",
+      "sha256": "ba827d0a56513ea21fa3bc0288f7c235d156b14b77c2042b51c768c0ad258469",
+      "command": [
+        "python",
+        "ch37_spec_decode_70b.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.6213850975036621,
+      "log": "ch37_spec_decode_70b-full.log"
+    },
+    {
+      "source": "ch38_semantic_cache.py",
+      "sha256": "289257470da3a51206e74d4cf01621bf6fbf3118914bb6116a5f837c42cb68d5",
+      "command": [
+        "python",
+        "ch38_semantic_cache.py",
+        "--selftest"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 1.181553840637207,
+      "log": "ch38_semantic_cache-tests.log"
+    },
+    {
+      "source": "ch38_semantic_cache.py",
+      "sha256": "289257470da3a51206e74d4cf01621bf6fbf3118914bb6116a5f837c42cb68d5",
+      "command": [
+        "python",
+        "ch38_semantic_cache.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 11.546736717224121,
+      "log": "ch38_semantic_cache-full.log"
+    },
+    {
+      "source": "ch39_complexity_router.py",
+      "sha256": "7e73cdfdd88b1086a9ddc7b1e42e061fb68f098f0a3a2548d9a97380865eefbe",
+      "command": [
+        "python",
+        "ch39_complexity_router.py",
+        "--selftest"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 8.718729496002197,
+      "log": "ch39_complexity_router-tests.log"
+    },
+    {
+      "source": "ch39_complexity_router.py",
+      "sha256": "7e73cdfdd88b1086a9ddc7b1e42e061fb68f098f0a3a2548d9a97380865eefbe",
+      "command": [
+        "python",
+        "ch39_complexity_router.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 90.74812507629395,
+      "log": "ch39_complexity_router-full.log"
+    },
+    {
+      "source": "ch40_gpu_autoscaler.py",
+      "sha256": "582705b1952d6b3a0fb3d807ae049c6203cc603758434fd33e716a4b219895c5",
+      "command": [
+        "python",
+        "ch40_gpu_autoscaler.py",
+        "--selftest"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.3489654064178467,
+      "log": "ch40_gpu_autoscaler-tests.log"
+    },
+    {
+      "source": "ch40_gpu_autoscaler.py",
+      "sha256": "582705b1952d6b3a0fb3d807ae049c6203cc603758434fd33e716a4b219895c5",
+      "command": [
+        "python",
+        "ch40_gpu_autoscaler.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 15.815478086471558,
+      "log": "ch40_gpu_autoscaler-full.log"
+    },
+    {
+      "source": "ch41_edge_fallback.py",
+      "sha256": "1dbd3d74ebdb1a20aef7aba8aa597c079d2ce69f6b9550987dc9a7cfec4e9d02",
+      "command": [
+        "python",
+        "ch41_edge_fallback.py",
+        "tests"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.3814206123352051,
+      "log": "ch41_edge_fallback-tests.log"
+    },
+    {
+      "source": "ch41_edge_fallback.py",
+      "sha256": "1dbd3d74ebdb1a20aef7aba8aa597c079d2ce69f6b9550987dc9a7cfec4e9d02",
+      "command": [
+        "python",
+        "ch41_edge_fallback.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.8876087665557861,
+      "log": "ch41_edge_fallback-full.log"
+    },
+    {
+      "source": "ch42_gateway_capstone.py",
+      "sha256": "492190e82707c4a2483fd3672743674dba097a10c918e132b6a78d63da6bb272",
+      "command": [
+        "python",
+        "ch42_gateway_capstone.py",
+        "tests"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 8.23109221458435,
+      "log": "ch42_gateway_capstone-tests.log"
+    },
+    {
+      "source": "ch42_gateway_capstone.py",
+      "sha256": "492190e82707c4a2483fd3672743674dba097a10c918e132b6a78d63da6bb272",
+      "command": [
+        "python",
+        "ch42_gateway_capstone.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 35.80694556236267,
+      "log": "ch42_gateway_capstone-full.log"
+    },
+    {
+      "source": "ch43_paged_kv_cache.py",
+      "sha256": "20c7ffd6863ad4e45238a41e7bb4799666796eed22ee5c39b38ee92ec0433036",
+      "command": [
+        "python",
+        "ch43_paged_kv_cache.py",
+        "tests"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 1.0881292819976807,
+      "log": "ch43_paged_kv_cache-tests.log"
+    },
+    {
+      "source": "ch43_paged_kv_cache.py",
+      "sha256": "20c7ffd6863ad4e45238a41e7bb4799666796eed22ee5c39b38ee92ec0433036",
+      "command": [
+        "python",
+        "ch43_paged_kv_cache.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 2.5104820728302,
+      "log": "ch43_paged_kv_cache-full.log"
+    },
+    {
+      "source": "ch44_continuous_batching.py",
+      "sha256": "349871f21e08b11053c631906d53b00f555887a38860bfc681265e15b90b8e75",
+      "command": [
+        "python",
+        "ch44_continuous_batching.py",
+        "tests"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.8033623695373535,
+      "log": "ch44_continuous_batching-tests.log"
+    },
+    {
+      "source": "ch44_continuous_batching.py",
+      "sha256": "349871f21e08b11053c631906d53b00f555887a38860bfc681265e15b90b8e75",
+      "command": [
+        "python",
+        "ch44_continuous_batching.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 5.56536078453064,
+      "log": "ch44_continuous_batching-full.log"
+    },
+    {
+      "source": "ch45_radix_prefix_cache.py",
+      "sha256": "1bd8cddb834003e36de9c75803a0570af996ef68d5697514f146607545384129",
+      "command": [
+        "python",
+        "ch45_radix_prefix_cache.py",
+        "tests"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 0.4785804748535156,
+      "log": "ch45_radix_prefix_cache-tests.log"
+    },
+    {
+      "source": "ch45_radix_prefix_cache.py",
+      "sha256": "1bd8cddb834003e36de9c75803a0570af996ef68d5697514f146607545384129",
+      "command": [
+        "python",
+        "ch45_radix_prefix_cache.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 73.87623834609985,
+      "log": "ch45_radix_prefix_cache-full.log"
+    },
+    {
+      "source": "ch46_mini_engine.py",
+      "sha256": "21c7b7d7866ce832f863f67f57a4452497c59359851fba8ecc720edf91a210a1",
+      "command": [
+        "python",
+        "ch46_mini_engine.py",
+        "tests"
+      ],
+      "mode": "tests",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 2.8305556774139404,
+      "log": "ch46_mini_engine-tests.log"
+    },
+    {
+      "source": "ch46_mini_engine.py",
+      "sha256": "21c7b7d7866ce832f863f67f57a4452497c59359851fba8ecc720edf91a210a1",
+      "command": [
+        "python",
+        "ch46_mini_engine.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 8.561378955841064,
+      "log": "ch46_mini_engine-full.log"
+    },
+    {
+      "source": "fp4_formats.py",
+      "sha256": "ed325cd5ee4915005fe4380dd432f78f7d71a0ce786802cefc2fb7d6fc46f933",
+      "command": [
+        "python",
+        "fp4_formats.py"
+      ],
+      "mode": "full",
+      "scope": "CPU reference/simulation",
+      "exit_code": 0,
+      "seconds": 10.247969627380371,
+      "log": "fp4_formats-full.log"
+    }
+  ]
+}

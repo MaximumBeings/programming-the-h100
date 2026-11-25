@@ -1,0 +1,80 @@
+PASS torch.float32 length=1 max_abs_error=0
+PASS torch.float32 length=3 max_abs_error=1.37e-07
+PASS torch.float32 length=17 max_abs_error=1.04e-07
+PASS torch.float32 length=65 max_abs_error=9.28e-08
+PASS torch.float16 length=1 max_abs_error=0
+PASS torch.float16 length=3 max_abs_error=1.71e-07
+PASS torch.float16 length=17 max_abs_error=1.07e-07
+PASS torch.float16 length=65 max_abs_error=7.77e-08
+PASS torch.bfloat16 length=1 max_abs_error=0
+PASS torch.bfloat16 length=3 max_abs_error=1.04e-07
+PASS torch.bfloat16 length=17 max_abs_error=8.07e-08
+PASS torch.bfloat16 length=65 max_abs_error=5.64e-08
+PASS empty-visible-key input rejected
+{
+  "device": "NVIDIA H100 80GB HBM3",
+  "torch": "2.8.0+cu128",
+  "cases": [
+    {
+      "dtype": "torch.float32",
+      "length": 1,
+      "max_abs_error": 0.0
+    },
+    {
+      "dtype": "torch.float32",
+      "length": 3,
+      "max_abs_error": 1.3722610958666337e-07
+    },
+    {
+      "dtype": "torch.float32",
+      "length": 17,
+      "max_abs_error": 1.0405995870543805e-07
+    },
+    {
+      "dtype": "torch.float32",
+      "length": 65,
+      "max_abs_error": 9.284041702084522e-08
+    },
+    {
+      "dtype": "torch.float16",
+      "length": 1,
+      "max_abs_error": 0.0
+    },
+    {
+      "dtype": "torch.float16",
+      "length": 3,
+      "max_abs_error": 1.710362791396136e-07
+    },
+    {
+      "dtype": "torch.float16",
+      "length": 17,
+      "max_abs_error": 1.0661736374317776e-07
+    },
+    {
+      "dtype": "torch.float16",
+      "length": 65,
+      "max_abs_error": 7.771146970370069e-08
+    },
+    {
+      "dtype": "torch.bfloat16",
+      "length": 1,
+      "max_abs_error": 0.0
+    },
+    {
+      "dtype": "torch.bfloat16",
+      "length": 3,
+      "max_abs_error": 1.0391148164146102e-07
+    },
+    {
+      "dtype": "torch.bfloat16",
+      "length": 17,
+      "max_abs_error": 8.073996649038406e-08
+    },
+    {
+      "dtype": "torch.bfloat16",
+      "length": 65,
+      "max_abs_error": 5.6355400790408794e-08
+    }
+  ],
+  "scope": "12 CUDA PyTorch block-walk comparisons; no fused-kernel speed claim"
+}

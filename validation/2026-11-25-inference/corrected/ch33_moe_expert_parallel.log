@@ -1,0 +1,19 @@
+== load imbalance (max GPU load / mean), 64 experts on 8 GPUs, top-2 routing ==
+skew  contiguous  +8 replicas  +16 replicas
+ 0.0       1.021        1.002         1.002
+ 0.5       2.224        1.004         1.005
+ 1.0       3.935        1.001         1.000
+
+== all-to-all dispatch volume per GPU per layer (hidden 4096, BF16, top-2, 8192 tokens/GPU) ==
+EP= 8:   117.4 MB dispatch (+ same combine) -> floor    522.0 us over NVLink 450 GB/s one-way (datasheet)
+EP=16:   125.8 MB dispatch (+ same combine) -> floor   5033.2 us over InfiniBand 50 GB/s (400 Gb/s)
+
+== gloo all-to-all dispatch/combine vs single-process reference (4 ranks) ==
+[Gloo] Rank 1 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 0 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 2 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+[Gloo] Rank 3 is connected to 3 peer ranks. Expected number of connected peer ranks is : 3
+rank 0: matches reference? True   tokens sent to ranks 0..3 = [39, 26, 30, 33]
+rank 1: matches reference? True   tokens sent to ranks 0..3 = [27, 30, 41, 30]
+rank 2: matches reference? True   tokens sent to ranks 0..3 = [39, 27, 35, 27]
+rank 3: matches reference? True   tokens sent to ranks 0..3 = [34, 33, 32, 29]

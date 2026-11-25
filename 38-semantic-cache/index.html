@@ -2550,6 +2550,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#381-what-is-being-cached-and-what-same-means" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2843,6 +2854,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2989,6 +3004,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3157,6 +3228,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#381-what-is-being-cached-and-what-same-means" class="md-nav__link">
@@ -3333,6 +3415,7 @@
 
 
 <h1 id="chapter-38-semantic-cache-thresholds-false-hits-economics">Chapter 38 — Semantic Cache: Thresholds, False Hits, Economics<a class="headerlink" href="#chapter-38-semantic-cache-thresholds-false-hits-economics" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/38-inference.svg?v=c8fd99c36479"><img alt="Chapter 38: A similar prompt can differ" src="../images/chapter-openers/38-inference.svg?v=c8fd99c36479" /></a></p>
 <div class="admonition warning">
 <p class="admonition-title">Evidence status</p>
 <p><strong>Run on CPU, in a synthetic world:</strong> the cache data structure, the Wilson interval, a cluster bootstrap, the economics formulas and 17 self-tests (<code>ch38_semantic_cache.py</code>).
@@ -3340,6 +3423,8 @@
 Sample outputs vary with seeds; the self-tests assert properties, not these exact numbers.</p>
 </div>
 <p>A semantic cache returns a stored answer when a new query is "close enough" to an old one, skipping the LLM call. The project brief says "98% similarity". That number means nothing on its own: it depends on the embedding model, and it says nothing about how often the cache returns a <em>wrong</em> answer. This chapter builds the cache, measures the wrong-answer rate with a confidence interval, and turns it into dollars.</p>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch38-inference.svg?v=cf13e28786a1"><img alt="A similar prompt can differ: step-by-step hand trace" src="../images/worked/ch38-inference.svg?v=cf13e28786a1" /></a></p>
 <h2 id="381-what-is-being-cached-and-what-same-means">38.1 What is being cached, and what "same" means<a class="headerlink" href="#381-what-is-being-cached-and-what-same-means" title="Permanent link">&para;</a></h2>
 <p>A cache hit is correct only if the stored answer is also a correct answer to the new query. Embedding similarity is a proxy for that. The proxy fails in a specific way: queries that differ in one decisive token ("refund within 30 days" vs "within 3 days", "enable" vs "disable", a different account number) embed <em>very</em> close together. We call these <strong>sibling intents</strong> (hard negatives). Paraphrases of one intent should be close; siblings should not be, and often are.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a> same intent (paraphrase)      cosine ~ high

@@ -2649,6 +2649,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2815,6 +2819,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#451-what-can-be-reused" class="md-nav__link">
@@ -3085,6 +3100,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3240,6 +3311,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#worked-system-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worked system map
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#451-what-can-be-reused" class="md-nav__link">
@@ -3499,12 +3581,15 @@
 
 
 <h1 id="chapter-45-a-radix-tree-prefix-cache">Chapter 45 — A Radix-Tree Prefix Cache<a class="headerlink" href="#chapter-45-a-radix-tree-prefix-cache" title="Permanent link">&para;</a></h1>
+<p><a href="../images/chapter-openers/45-inference.svg?v=533c8c0d4760"><img alt="Chapter 45: Reuse the exact prefix" src="../images/chapter-openers/45-inference.svg?v=533c8c0d4760" /></a></p>
 <div class="admonition warning">
 <p class="admonition-title">Evidence status</p>
 <p><strong>Run on CPU:</strong> a radix-tree prefix cache with pinning and LRU/FIFO eviction, a block-hash cache for comparison, 14 self-tests (including comparisons with brute-force references), and seven experiments (<code>ch45_radix_prefix_cache.py</code>). Experiment cells show the mean and, in brackets, the minimum–maximum over 3 seeds of 1500 requests.
 <strong>Nothing here touches a GPU or real KV tensors.</strong> The cache stores <em>token ids and counts</em>, not KV blocks; joining the tree to Chapter 43's block pool is left to the capstone. Token ids are random integers and the workloads (system prompts, multi-turn chat, RAG, exact repeats) are <strong>assumed shapes</strong>, not traces. Statements about how SGLang and vLLM organise their caches (token-granular radix tree and full-block hashing respectively) are from memory of their designs; check the current documentation.</p>
 </div>
 <p>Chapter 44's scheduler made every request pay for its whole prompt. Most prompts share a beginning: the same system prompt, the same few-shot examples, the same chat history. A <strong>prefix cache</strong> keeps the KV of past prompts and lets a new request skip the prefill for the part it shares.</p>
+<h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
+<p><a href="../images/worked/ch45-inference.svg?v=748b07fd8fbe"><img alt="Reuse the exact prefix: step-by-step hand trace" src="../images/worked/ch45-inference.svg?v=748b07fd8fbe" /></a></p>
 <h2 id="451-what-can-be-reused">45.1 What can be reused<a class="headerlink" href="#451-what-can-be-reused" title="Permanent link">&para;</a></h2>
 <p>The KV entries of token <code>i</code> depend only on tokens <code>0..i</code>, so two requests with the same first <code>m</code> tokens have identical KV for those <code>m</code> tokens, and only the first <code>m</code>. That is why the unit is the <strong>prefix</strong>: sharing stops at the first token that differs, even if the rest is identical.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>request 1:  [ system prompt (1000 tokens) ][ user A ]

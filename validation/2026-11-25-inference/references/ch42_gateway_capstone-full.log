@@ -1,0 +1,37 @@
+PASS 1 every request has exactly one fate; counts add up
+PASS 2 all-large, no cache: quality equals the mean large-model correctness of the drawn intents
+PASS 3 router: tau=-inf routes everything large; cache off gives the all-large quality
+PASS 4 a threshold of 1.0 gives only exact-repeat hits, none of them wrong
+PASS 5 no hit is served before its entry was inserted
+PASS 6 deterministic for a fixed seed
+PASS 7 a request is never served before it arrived; first token before end
+PASS 8 static all-large cost equals replicas x simulated time x price
+PASS 9 no outage: the fallback policy changes nothing
+PASS 10 outage: fallback strictly reduces failures; without it every outage-time large request fails
+PASS 11 SLO attainment never exceeds success rate (failures stay in the denominator)
+PASS 12 cache hits lower the load: fewer requests reach the pools
+12 tests passed
+
+=== Experiment 1: the ladder, no outage (mean [min-max], 3 seeds) ===
+config                             $/1k req     SLO attain %     ttft p50 s       ttft p99 s        quality %    hit %  large %
+A all-large, static 12     3.271 [3.238-3.326] 100.0 [100.0-100.0] 0.45 [0.45-0.45] 0.52 [0.50-0.55] 87.6 [86.9-88.7]      0.0    100.0
+B +cache, static 12        3.281 [3.248-3.336] 100.0 [100.0-100.0] 0.41 [0.41-0.41] 0.50 [0.50-0.50] 86.6 [85.8-87.8]     46.2     53.8
+B2 +cache, static 7        1.918 [1.899-1.950] 100.0 [100.0-100.0] 0.41 [0.41-0.41] 0.50 [0.50-0.50] 86.6 [85.8-87.8]     46.2     53.8
+C +router, static 12+2     3.417 [3.383-3.474] 100.0 [100.0-100.0] 0.20 [0.19-0.22] 0.65 [0.65-0.65] 85.5 [85.0-86.4]     46.3     47.2
+C2 +router, static 6+1     1.713 [1.697-1.742] 100.0 [100.0-100.0] 0.20 [0.19-0.22] 0.65 [0.65-0.65] 85.5 [85.0-86.4]     46.3     47.2
+F autoscaler only          5.451 [5.420-5.475] 89.8 [88.5-91.2] 0.46 [0.46-0.46] 53.13 [48.44-58.59] 87.6 [86.9-88.7]      0.0    100.0
+D cache+router+autoscale   4.544 [4.449-4.601] 93.3 [92.6-94.1] 0.20 [0.19-0.22] 39.43 [34.24-44.59] 85.5 [85.0-86.4]     46.3     47.2
+
+TTFT p50, D minus A, pooled: 95% bootstrap CI [-0.26, -0.23] s
+
+=== Experiment 2: large pool unreachable for 120 s (t = 600-720), config D ===
+policy                           failures     SLO attain %        quality %         $/1k req    fallbacks
+no fallback                 187 [177-205] 89.1 [88.0-89.9] 82.1 [81.8-82.5] 4.539 [4.449-4.601]      0 [0-0]
+breaker + small-pool fallback        0 [0-0] 93.3 [92.6-94.1] 84.5 [84.0-85.2] 4.539 [4.449-4.601] 187 [180-199]
+
+=== Experiment 3: cache threshold, end to end (config D) ===
+ threshold          hit %    wrong-hit % of hits        quality %         $/1k req
+      0.85 69.7 [69.6-69.8]       64.2 [61.6-67.6] 48.2 [45.8-50.1] 3.830 [3.113-4.302]
+      0.92 46.2 [45.5-46.7]          2.8 [2.3-3.3] 85.5 [85.0-86.4] 4.544 [4.449-4.601]
+      0.97 17.5 [16.7-18.2]          0.0 [0.0-0.0] 86.6 [86.1-87.3] 5.096 [4.909-5.240]
+  no cache            0.0                      - 86.6 [86.1-87.3] 5.314 [5.204-5.377]

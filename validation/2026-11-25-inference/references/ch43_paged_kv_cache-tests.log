@@ -1,0 +1,18 @@
+  PASS  1  allocator hands out each block once and takes all back
+  PASS  2  double free and incref of a free block raise
+  PASS  3  allocation fails cleanly when empty
+  PASS  4  gather returns exactly what was appended (B = 1, 3, 4, 16)
+  PASS  5  freeing a sequence returns every block
+  PASS  6  fork allocates nothing; both tables point at the same blocks
+  PASS  7  child append copies the shared partial block; parent unchanged
+  PASS  8  parent append after fork leaves the child unchanged
+  PASS  9  fork at a block boundary shares all blocks; append adds one fresh block
+  PASS 10  after the parent is freed the child appends in place
+  PASS 11  append that hits OutOfBlocks changes nothing
+  PASS 12  copy-on-write that hits OutOfBlocks changes nothing
+  PASS 13  paged attention matches dense attention (max abs diff 4.4e-16)
+  PASS 14  attention is correct when a sequence's blocks are not contiguous
+  PASS 15  fork attends identically to its parent before any divergence
+  PASS 16  20 random sessions (add/append/fork/free, with OOM) match a reference and never leak
+  PASS 17  first-fit contiguous allocator reuses freed holes
+ALL PASS   (1 s)  [17 tests]

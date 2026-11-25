@@ -2302,6 +2302,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#the-destination-an-inference-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The destination: an inference engine
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2716,6 +2727,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2862,6 +2877,62 @@
     
   
     46. Capstone — A Mini Inference Engine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../47-vllm-tuning-lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    47. Working vLLM Server and CUDA Attention Lab
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-inference-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    November 25 Inference Execution Record
   
 
     
@@ -3053,6 +3124,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#the-destination-an-inference-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The destination: an inference engine
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3079,6 +3161,7 @@
 
 
 <h1 id="part-xii-inference-systems-on-hopper">Part XII: Inference Systems on Hopper<a class="headerlink" href="#part-xii-inference-systems-on-hopper" title="Permanent link">&para;</a></h1>
+<p><a href="../images/worked/inference-roadmap.svg?v=923e9b7256f1"><img alt="Cross-book inference engine roadmap" src="../images/worked/inference-roadmap.svg?v=923e9b7256f1" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">What this part is</p>
 <p>Chapters 1 to 31 teach the machine: how a Hopper GPU moves and multiplies data. Part XII asks what happens when those kernels become a <strong>serving system</strong>: many users, long contexts, several GPUs, and a bill. Each chapter is one buildable project that ends in a number you can publish.</p>
@@ -3086,7 +3169,7 @@
 <p>The project list comes from a public LinkedIn post by Ravi A Samy listing twelve inference-engineering portfolio projects. The descriptions, numbers and code in this book are original to it.</p>
 <div class="admonition warning">
 <p class="admonition-title">How to read the evidence in this part</p>
-<p>Every program in Part XII was run on a <strong>CPU</strong> only. That validates logic (routing, accounting, queueing, correctness of a communication pattern) and arithmetic (byte counts, bandwidth floors). It does <strong>not</strong> validate GPU speed, NCCL or InfiniBand throughput, or real-model quality. Each chapter separates "checked on CPU" from "untested on H100", and where a number is a datasheet value rather than a measurement it says so. Results from a real H100 cluster should replace the simulated tables.</p>
+<p>The original Part XII programs use CPU references and simulations. Their <a href="../validation-inference-2026-11-25/">November 25 rerun</a> is separate from the new <a href="../47-vllm-tuning-lab/">Chapter 47 GPU/serving lab</a>. That validates logic (routing, accounting, queueing, correctness of a communication pattern) and arithmetic (byte counts, bandwidth floors). It does <strong>not</strong> validate GPU speed, NCCL or InfiniBand throughput, or real-model quality. Each chapter separates "checked on CPU" from "untested on H100", and where a number is a datasheet value rather than a measurement it says so. Keep real measurements alongside the simulated tables with separate labels; hardware results do not retroactively validate assumed simulation constants.</p>
 </div>
 <h2 id="the-twelve-projects-and-where-they-live">The twelve projects and where they live<a class="headerlink" href="#the-twelve-projects-and-where-they-live" title="Permanent link">&para;</a></h2>
 <table>
@@ -3164,6 +3247,8 @@
 <p>The Triton book is at <a href="https://maximumbeings.github.io/triton-from-first-principles/">https://maximumbeings.github.io/triton-from-first-principles/</a>.</p>
 <h2 id="the-shared-harness">The shared harness<a class="headerlink" href="#the-shared-harness" title="Permanent link">&para;</a></h2>
 <p>Every project is judged with the same instruments, introduced in <a href="../32-inference-engine-and-harness/">Chapter 32</a>: a fixed workload with Poisson arrivals, time to first token (TTFT), time per output token (TPOT), percentile latencies, goodput under a service-level objective (SLO), and dollars per million tokens. Report a number only alongside the workload, software versions and hardware that produced it.</p>
+<h2 id="the-destination-an-inference-engine">The destination: an inference engine<a class="headerlink" href="#the-destination-an-inference-engine" title="Permanent link">&para;</a></h2>
+<p>Use Chapters 43–46 as the correctness reference, then <a href="../47-vllm-tuning-lab/">Chapter 47</a> to connect block-walk attention and the client to real CUDA execution and vLLM serving. The Triton book supplies the next kernel implementations; the multi-GPU book supplies distributed ownership and collectives. Validate each replacement before integrating it. A small single-GPU serving test does not establish MoE, RDMA, KEDA or edge-fallback performance.</p>
 
 
 
