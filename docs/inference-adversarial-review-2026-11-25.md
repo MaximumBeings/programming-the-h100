@@ -62,7 +62,7 @@ This is consistent with the [NumPy M4 warning report](https://github.com/numpy/n
 
 The [earlier November 25 H100 record](validation-inference-2026-11-25.md) is preserved unchanged at the raw-file level. Its CUDA comparisons and real-vLLM streams still establish what ran with those archived sources. The follow-up CPU fixes are supported by their separate current-source captures.
 
-**No CUDA kernel changed in this review.** The updated shared Chapter 36 HTTP client has fresh CPU protocol, accounting and complete mock-server validation. Its exact-current integration with real vLLM has **not** been repeated after those client changes. Do not treat the archived serving capture as that later integration run.
+**No CUDA kernel changed in this review.** The updated shared Chapter 36 HTTP client has fresh CPU protocol, accounting and complete mock-server validation. Its exact-current integration with real vLLM subsequently passed in the [post-review real-vLLM rerun](validation-client-rerun-2026-11-25.md): eight serial streams, 16 open-loop requests and the expected HTTP-error/timeout cases. The original serving capture retains its archived source identity.
 
 Real multi-GPU MoE, RDMA disaggregation, 70B speculative decoding, native B200 FP4, production offload, a live autoscaling cluster and real cache/router quality studies still need their own hardware/workload validation. They are not represented by these CPU simulations.
 

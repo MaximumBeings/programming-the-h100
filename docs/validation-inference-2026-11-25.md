@@ -3,7 +3,7 @@
 The [inference-engine path](inference-systems-overview.md) now has fresh reference runs and a working [CUDA/vLLM lab](47-vllm-tuning-lab.md). All final test commands below completed successfully. The two failed server startups are preserved, with their setup corrections explained below.
 
 !!! note "Follow-up adversarial review"
-    The current Python listings include later CPU corrections from the [agent audit](inference-adversarial-review-2026-11-25.md). That review has separate fresh CPU captures. This original dataset remains unchanged and proves only its archived source revisions. The shared HTTP client changed after the real-vLLM capture; its current version has CPU/mock validation, while exact-current real-vLLM integration has not been repeated. No CUDA kernel source changed in that review.
+    The current Python listings include later CPU corrections from the [agent audit](inference-adversarial-review-2026-11-25.md). That review has separate fresh CPU captures. This original dataset remains unchanged and proves only its archived source revisions. The shared HTTP client changed after this original real-vLLM capture; its current version now has both fresh CPU/mock validation and a separate [post-review real-vLLM rerun](validation-client-rerun-2026-11-25.md). No CUDA kernel source changed in that review.
 
 ## System and source identity
 

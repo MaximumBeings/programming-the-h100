@@ -87,6 +87,7 @@ jobs:
         run: |
           python3 tools/verify_inference_validation.py
           python3 tools/verify_inference_review.py
+          python3 tools/verify_client_rerun.py
           python3 tools/embed_inference_sources.py --check
           python3 -m py_compile docs/examples/inference-systems/*.py tools/run_inference_references.py
 

@@ -1,0 +1,88 @@
+{
+  "server": {
+    "command": [
+      "vllm",
+      "serve",
+      "Qwen/Qwen2.5-0.5B-Instruct",
+      "--revision",
+      "7ae557604adf67be50417f59c2c2f167def9a775",
+      "--tokenizer-revision",
+      "7ae557604adf67be50417f59c2c2f167def9a775",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "8000",
+      "--dtype",
+      "bfloat16",
+      "--max-model-len",
+      "2048",
+      "--max-num-seqs",
+      "16",
+      "--max-num-batched-tokens",
+      "512",
+      "--gpu-memory-utilization",
+      "0.25",
+      "--enable-prefix-caching",
+      "--enable-chunked-prefill",
+      "--enforce-eager",
+      "--seed",
+      "42"
+    ],
+    "start_utc": "2026-11-25T15:49:01.968350+00:00",
+    "shutdown_signal": "SIGTERM",
+    "shutdown_signal_utc": "2026-11-25T15:50:46.493996+00:00"
+  },
+  "probe": {
+    "command": [
+      "/usr/bin/python3",
+      "ch47_vllm_probe.py",
+      "--model",
+      "Qwen/Qwen2.5-0.5B-Instruct",
+      "--output",
+      "/tmp/client-rerun/probe.json"
+    ],
+    "start_utc": "2026-11-25T15:49:59.570004+00:00",
+    "end_utc": "2026-11-25T15:50:02.494021+00:00",
+    "exit_code": 0,
+    "log": "probe.log"
+  },
+  "open_loop": {
+    "command": [
+      "/usr/bin/python3",
+      "ch36_benchmark_teardown.py",
+      "run",
+      "--url",
+      "http://127.0.0.1:8000/v1/completions",
+      "--model",
+      "Qwen/Qwen2.5-0.5B-Instruct",
+      "--rate",
+      "2",
+      "--n",
+      "16",
+      "--warmup",
+      "2",
+      "--seed",
+      "1",
+      "--n-in",
+      "64",
+      "--n-out",
+      "16",
+      "--out",
+      "/tmp/client-rerun/open-loop.jsonl"
+    ],
+    "start_utc": "2026-11-25T15:50:02.495031+00:00",
+    "end_utc": "2026-11-25T15:50:09.752053+00:00",
+    "exit_code": 0,
+    "log": "open_loop.log"
+  },
+  "negative": {
+    "command": [
+      "/usr/bin/python3",
+      "real_client_negative_checks.py"
+    ],
+    "start_utc": "2026-11-25T15:50:09.754042+00:00",
+    "end_utc": "2026-11-25T15:50:09.867349+00:00",
+    "exit_code": 0,
+    "log": "negative.log"
+  }
+}

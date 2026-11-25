@@ -5,14 +5,14 @@
 
 !!! abstract "Goal and prerequisites"
 
-    Build a benchmark you could defend in public. You will get a load generator and statistics library that avoid the classic measurement errors, a test suite that proves they do, and a runbook for pointing the same client at vLLM, SGLang and TensorRT-LLM on real H100s. Read [Chapter 32](32-inference-engine-and-harness.md) (metrics and the simulated engine) first; this chapter replaces its simulator with a real network client.
+    Build a benchmark you could defend in public. You will get a load generator and statistics library that avoid the classic measurement errors, a test suite covering those failure modes, and a runbook for pointing the same client at vLLM, SGLang and TensorRT-LLM on real H100s. Read [Chapter 32](32-inference-engine-and-harness.md) (metrics and the simulated engine) first; this chapter replaces its simulator with a real network client.
 
 !!! warning "Evidence level: read this first"
 
     - **Verified here (CPU):** the client, the streaming parsers, the percentile and bootstrap code, the Pareto and knee logic, the run manifest, and a mock three-engine study. 22 self-tests pass (14 pure, 8 against mock servers on localhost), plus 5 qualitative checks on the demonstrations.
-    - **Invented:** the three "engines" in the mock study are made-up servers with made-up parameters. **No number in this chapter is a vLLM, SGLang or TensorRT-LLM result.**
+    - **Invented:** the three "engines" in the mock study are made-up servers with made-up parameters. **The mock-study timing tables are not vLLM, SGLang or TensorRT-LLM measurements.**
     - **Timing output varies:** the mock servers run on wall-clock `asyncio` timing, so every latency number printed below is a *sample from one execution*. Another execution gives different numbers, and borderline verdicts can flip (Section 36.8 shows one that did). The tests therefore assert qualitative relations, never exact values.
-    - **Untested on H100:** every launch command in Section 36.9 and the real teardown itself. Flags change between versions; confirm each against `--help` for the exact version you run. The original capture exercised mock servers. The [Chapter 47 lab](47-vllm-tuning-lab.md) and [dated record](validation-inference-2026-11-25.md) separately exercise its current streaming client against a small real vLLM model; the three-engine comparison remains untested.
+    - **Real-server scope:** the corrected current client passed the [post-review real-vLLM rerun](validation-client-rerun-2026-11-25.md) with a small model: 16 open-loop requests, the Chapter 47 serial probe and expected HTTP-error/timeout cases. The full three-engine teardown and the larger configurations in Section 36.9 remain untested. Confirm version-specific flags with `--help` before using those separate runbooks.
 
 ## Worked system map
 

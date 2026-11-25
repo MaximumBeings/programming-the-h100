@@ -145,7 +145,7 @@ The CPU mini engine remains a correctness oracle. Do not replace its simple test
 
 !!! note "Archived real-server result and current client scope"
 
-    The H100/vLLM output below belongs to the archived November 25 client revision. The follow-up audit corrected the shared Chapter 36 client's protocol and accounting paths; that current client has fresh CPU/mock regression and full-program reruns, but its exact-current integration with real vLLM has not been repeated. The successful archived serving run remains valid for its captured source. The CUDA attention probe is unchanged by those client corrections.
+    The H100/vLLM output below belongs to the archived November 25 client revision. The follow-up audit corrected the shared Chapter 36 client's protocol and accounting paths; that current client now has fresh CPU/mock regression and full-program reruns **and** a separate [post-review real-vLLM rerun](validation-client-rerun-2026-11-25.md). The successful archived serving run remains valid for its captured source. The CUDA attention probe is unchanged by those client corrections.
 
 On one H100 80GB HBM3, driver 595.112.07, the CUDA program completed all 12 numerical comparisons. The real vLLM 0.11.2 server completed both repeated greedy requests, a streaming warm-up and all eight measured 32-token streams without failures. The serial smoke test reported TTFT p50 13.58 ms and TPOT p50 6.72 ms; these are short-run observations, not peak performance or a load-capacity result. See the [complete dated record and raw logs](validation-inference-2026-11-25.md).
 
@@ -158,6 +158,12 @@ PASS torch.float32 length=17 max_abs_error=1.04e-07
 PASS torch.float32 length=65 max_abs_error=9.28e-08
 ```
 
+
+## 47.11 Post-review client integration — November 25, 2026
+
+The corrected Chapter 36 client and this chapter's probe passed against real vLLM 0.11.2 on an H100 using the official versioned image. Two repeated greedy completions matched, all eight measured 32-token streams succeeded, and all 16 open-loop requests succeeded. The deliberately invalid model and short deadline were correctly recorded as failures with terminal timestamps.
+
+The serial smoke test reported TTFT p50 **16.80 ms** and TPOT p50 **7.39 ms**. These short-run observations are not a capacity benchmark. The [complete current-source record](validation-client-rerun-2026-11-25.md) includes the image digest, CUDA 12.9 stack, pinned model/tokenizer revision, exact source hashes, raw outputs and per-request data. The RunPod instance was stopped after export and verification.
 
 <!-- BEGIN COMPLETE INFERENCE SOURCE -->
 ## Complete runnable code
