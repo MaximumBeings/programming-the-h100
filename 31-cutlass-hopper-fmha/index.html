@@ -3380,7 +3380,7 @@
 
 <h1 id="chapter-31-building-fused-attention-with-cutlass-on-hopper">Chapter 31: Building Fused Attention with CUTLASS on Hopper<a class="headerlink" href="#chapter-31-building-fused-attention-with-cutlass-on-hopper" title="Permanent link">&para;</a></h1>
 <h2 id="from-two-gemms-to-a-complete-attention-kernel">From two GEMMs to a complete attention kernel<a class="headerlink" href="#from-two-gemms-to-a-complete-attention-kernel" title="Permanent link">&para;</a></h2>
-<p><a href="../images/chapter-openers/31-workshop.svg?v=143b46b04ad6"><img alt="CUTLASS Hopper fused-attention workshop" src="../images/chapter-openers/31-workshop.svg?v=143b46b04ad6" /></a></p>
+<p><a href="../images/chapter-openers/31-workshop.svg?v=dc9ca097ac62"><img alt="CUTLASS Hopper fused-attention workshop" src="../images/chapter-openers/31-workshop.svg?v=dc9ca097ac62" /></a></p>
 <div class="admonition abstract">
 <p class="admonition-title">Goal and prerequisites</p>
 <p>Connect <a href="../30-cutlass-attention-foundations/">Chapter 30's online-softmax arithmetic</a> to a complete, pinned NVIDIA implementation. You will trace tensor layouts, TMA loads, WGMMA consumers, normalization, output/LSE stores and the verification boundary. Read <a href="../18-cute-tensors-tiling/">tensor views</a>, <a href="../20-tiled-copy/">copy ownership</a>, <a href="../21-mma-atoms/">MMA fragments</a> and <a href="../25-cutlass-pipelines/">pipeline lifetimes</a> first; this chapter uses their objects rather than replacing them with pseudocode.</p>
