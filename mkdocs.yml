@@ -187,6 +187,8 @@ nav:
       - 44. A Continuous-Batching Scheduler with Preemption: 44-continuous-batching.md
       - 45. A Radix-Tree Prefix Cache: 45-radix-prefix-cache.md
       - 46. Capstone — A Mini Inference Engine: 46-mini-engine-capstone.md
+      - 47. Working vLLM Server and CUDA Attention Lab: 47-vllm-tuning-lab.md
+      - November 25 Inference Execution Record: validation-inference-2026-11-25.md
   - Blackwell Appendix:
       - Native B200 — UMMA, GEMM and Attention: appendix-blackwell-b200.md
       - Native FP4 — NVFP4 and MXFP4 Formats and Emulation: appendix-blackwell-fp4.md
