@@ -1,6 +1,6 @@
 # Asynchronicity, Barriers & the mbarrier Pipeline
 
-## Lesson 3 Companion Guide — Programming the H100
+## Chapter 3 Companion Guide — Programming the H100
 
 [![CHAPTER 03: When is the data ready?](images/chapter-openers/03-barriers.svg)](images/chapter-openers/03-barriers.svg)
 

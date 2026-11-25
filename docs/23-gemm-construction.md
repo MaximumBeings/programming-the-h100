@@ -1,6 +1,6 @@
 # 23. Build and Validate a Complete Tiled GEMM
 
-## Lesson 23 Companion Guide — Build a Complete Reference-Checked SIMT Baseline
+## Chapter 23 Companion Guide — Build a Complete Reference-Checked SIMT Baseline
 
 [![CHAPTER 23: 23. Build and Validate a Complete Tiled GEMM — conceptual chapter illustration](images/chapter-openers/23-workshop.svg)](images/chapter-openers/23-workshop.svg)
 

@@ -1,6 +1,6 @@
 # 29. CuTe and CUTLASS Workbook — From Coordinates to Evidence
 
-## Lesson 29 Companion Guide — Progress from Coordinate Proofs to a Reproducible Capstone
+## Chapter 29 Companion Guide — Progress from Coordinate Proofs to a Reproducible Capstone
 
 [![CHAPTER 29: 29. CuTe and CUTLASS Workbook — From Coordinates to Evidence — conceptual chapter illustration](images/chapter-openers/29-workshop.svg)](images/chapter-openers/29-workshop.svg)
 

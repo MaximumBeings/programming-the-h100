@@ -6,7 +6,7 @@
     [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
-## Lesson 5 Companion Guide — Programming the H100
+## Chapter 5 Companion Guide — Programming the H100
 
 [![CHAPTER 05: Move bytes. Keep computing.](images/chapter-openers/05-tma.svg)](images/chapter-openers/05-tma.svg)
 

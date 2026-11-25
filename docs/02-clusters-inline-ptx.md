@@ -6,7 +6,7 @@
     [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
-## Lesson 2 Companion Guide — Programming the H100 & Beyond
+## Chapter 2 Companion Guide — Programming the H100 & Beyond
 
 [![CHAPTER 02: Blocks that work together](images/chapter-openers/02-clusters.svg)](images/chapter-openers/02-clusters.svg)
 

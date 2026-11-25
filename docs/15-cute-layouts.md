@@ -1,6 +1,6 @@
 # 15. CuTe — Layout Algebra You Can Check by Hand
 
-## Lesson 15 Companion Guide — From Address Arithmetic to CuTe Foundations
+## Chapter 15 Companion Guide — From Address Arithmetic to CuTe Foundations
 
 [![CHAPTER 15: 15. CuTe — Layout Algebra You Can Check by Hand — conceptual chapter illustration](images/chapter-openers/15-workshop.svg)](images/chapter-openers/15-workshop.svg)
 

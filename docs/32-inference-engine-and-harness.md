@@ -126,6 +126,105 @@ The $4 per GPU-hour is an assumed price for the arithmetic, not a quote.
 
 For a real server, replace `simulate` with a client that sends the same requests and records first-token and last-token timestamps, and keep `summarize` unchanged.
 
+## 32.7 Self-tests (21, all pass)
+
+The metric hand-check and Little's law are two checks. The harness is reused by Chapters 33 to 46, so it gets a wider net. Run `python3 /Users/oluwaseyiawoga/Developer/programming-the-h100/docs/examples/inference-systems/ch32_inference_harness.py --test`:
+
+| Group | What is checked |
+|---|---|
+| Arithmetic (4) | KV bytes per token is 327,680 for the 70B shape and linear in layers; the decode floor halves when GPUs double and is linear in bytes per parameter |
+| Percentile (4) | `q=0` is the minimum and `q=1` the maximum; the median of `[1,2,3,4]` is 2.5; a single element returns itself; the function is monotone in `q` |
+| Workload (3) | the same seed gives identical requests and a different seed does not; arrivals never decrease and lengths are at least 1 |
+| Engine (4) | `simulate` does not change its input; every request finishes with exactly `output` tokens and ordered timestamps; `max_batch=1` never overlaps two requests; at 10 times the arrival rate with the same lengths, p99 TTFT does not fall |
+| Metrics (4) | the hand case (TPOT 0.10, TTFT p50 0.35, goodput 1/1.4); a tighter SLO never raises attainment; a one-token reply does not divide by zero; the cost formula gives $8,000 per million tokens for 1,000 tokens in one hour on two GPUs at $4 |
+| Conservation (2) | Little's law within 2 percent on five seeds; `pct([])` raises `IndexError`, a documented failure |
+
+```
+21/21 self-tests pass
+```
+
+**The tests can fail.** Two deliberate breakages were tried on a copy: removing the batch cap from the admission loop fails the `max_batch=1` test, and dropping the `- 1` from the TPOT denominator fails the hand case. The second one passed all 20 earlier tests, which is why the hand case is part of the suite and not only a printed line.
+
+## 32.8 Experiment A: the batch cap
+
+The engine takes `max_batch`, the most sequences it will run in one iteration. In a real server the equivalent limit is set by KV-cache memory, not a flag, so this experiment shows the shape of the trade, not a tuning guide. Rate 12 requests per second, 300 requests, seed 2 (`--extras`):
+
+```
+max_batch  ttft_p50  ttft_p99  tpot_p50  tput(tok/s)  slo_ok
+        4   119.523   225.917    0.0211          184    0.03
+        8    56.060   106.728    0.0223          340    0.04
+       16    25.106    47.547    0.0247          585    0.09
+       32     8.853    18.507    0.0295          899    0.21
+       64     2.125     3.507    0.0388         1189    0.49
+      128     0.077     0.160    0.0442         1246    1.00
+```
+
+- Throughput rises with the cap and TPOT also rises: each step carries more sequences, so each token takes longer, but more tokens leave per second.
+- TTFT falls by three orders of magnitude, because the cap is what keeps arrivals waiting.
+- Caps of 96, 112, 128 and 192 give the same result (TTFT p99 0.160 to 0.166 or lower, attainment 1.00). The cap stops mattering once it exceeds the number of sequences that are ever running at once, which here is between 81 and 96.
+- The 64 row equals the 12 req/s row of the section 32.5 sweep. That is a consistency check: same seed, same default cap.
+
+## 32.9 Experiment B: prefill interference
+
+In the engine, a newly admitted prompt's prefill time is added to the iteration, so every running sequence waits for it. Rate 4 requests per second, 300 requests, seed 2, output median 128, prompt median varied:
+
+```
+prompt_median  ttft_p50  tpot_p50  tpot_p99  tput(tok/s)
+          128     0.038    0.0238    0.0250          575
+          512     0.051    0.0252    0.0279          574
+         2048     0.105    0.0328    0.0458          573
+         8192    13.962    0.1335    0.2249          426
+```
+
+- From 128 to 2048 the median TPOT rises from 23.8 to 32.8 ms even though the generated output is identical: the decode steps are stalled by other users' prefills.
+- The 8192 row breaks the pattern. Throughput falls from about 575 to 426 tokens per second at the same offered rate, and TTFT p50 is 14 seconds. Prefill alone is saturating the server. The mean of a log-normal is `median x exp(sigma^2/2)` = `8192 x 1.2776` ≈ 10,466 tokens, which is 0.262 s of prefill per request at 40,000 tokens per second, and four requests per second need 1.05 s of prefill per second of wall time. Offered load exceeds capacity.
+- Real engines mitigate this by splitting a long prefill into chunks and mixing them with decode steps (Chapter 44). The simulator does not, which is why this is the baseline that chapter improves on.
+
+## 32.10 Failure modes and edge cases
+
+| Situation | What happens | Where it shows |
+|---|---|---|
+| Offered load above capacity | the queue grows without bound during the run; wall time includes draining the tail, so measured throughput falls below offered load | Experiment A at cap 4; Experiment B at 8192 |
+| Near the knee, few requests | results depend heavily on the seed: at 12 req/s, five seeds give TTFT p50 of 1.623, 0.762, 2.125, 0.752 and 0.108 s and SLO attainment of 0.58, 1.00, 0.49, 0.85 and 0.97. At 8 req/s the same seeds all give 0.058 to 0.063 s | report several seeds or a confidence interval near the knee |
+| p99 from few samples | with 300 requests, p99 is the third-largest value; with 20 it is nearly the maximum | `pct` interpolates, it does not warn |
+| Empty request list | `pct` raises `IndexError` | self-test 21 |
+| Reply of one token | TPOT is defined as 0 (division guarded) | self-test 18 |
+| SLO thresholds chosen after seeing the data | attainment can be made to look good by tuning the SLO | fix the SLO before the run |
+| Cost computed from wall time | an overloaded run has a long drain, which raises cost per token for a reason that is not the engine's efficiency | compare at equal attainment |
+| Little's law passes | says the bookkeeping is consistent for **any** cost constants, including absurd ones | do not read it as validation of the cost model |
+
+**Not modelled:** KV-cache memory and the preemption it forces (Chapters 43 and 44); chunked prefill; prefix reuse (Chapter 45); more than one GPU, communication, and pipeline bubbles; speculative decoding; request cancellation, timeouts and retries; tokenizer, network and queueing outside the engine; variation in step time (the model uses a constant); GPU clock and thermal behaviour; streaming back-pressure from slow clients.
+
+## 32.11 On real hardware (UNTESTED)
+
+Nothing in this chapter has been run on a GPU server. These steps are from memory and must be checked against the version you install; flag names change between releases.
+
+1. **Pick the engine and record its version.** For example, `python3 -m pip show vllm` (or the version your container reports) and `nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv`. Write both into the run record.
+2. **Start the server with fixed settings** and write them down: model, tensor-parallel size, maximum sequence length, maximum number of running sequences, GPU memory fraction. A result without these is not comparable.
+3. **Replace `simulate` with a client.** It must send the same `Req` list at the same arrival times, record the time of the first streamed token and of the last, and fill `first_token`, `finish` and `generated`. Then call `summarize` unchanged. Use the same `make_workload` seed so the simulated and real runs see identical requests.
+4. **Check the decode floor.** Run a single request with a long output and no other load. Measure TPOT. It must be at or above `decode_floor_ms` for your model and GPU count; if it is below, something in the arithmetic (bytes per parameter, GPU count, bandwidth) is wrong.
+5. **Sweep the rate** across idle, loaded and overloaded, repeat each point with at least three seeds, and plot TTFT p50 and p99, TPOT p50, throughput and attainment against rate. Find the knee as in section 32.5.
+6. **Fit the cost model.** From the single-request run take `base`, from a batch-of-N run take `per_seq`, and rerun the simulator with those constants. Compare the simulated and real knees. The difference is the part of the model this chapter did not capture.
+7. **Capture a profile** of one decode iteration with Nsight Systems ([Chapter 14](14-nsight-systems.md)) to confirm the iteration is dominated by the weight read, as section 32.1 assumes.
+
+## 32.12 Programming exercises
+
+1. In Experiment A, which caps among 64, 80, 96 meet at least 95 percent attainment at 12 req/s? What does the cost per million tokens do between them (default 2 GPUs at $4 per hour)?
+2. Compute the decode floor for an 8-billion-parameter model on one H100 in BF16 and in FP8, and its KV bytes per token for 32 layers, 8 KV heads and head dimension 128.
+3. At 4 req/s, at what prompt median does prefill alone saturate the simulator? Compare with Experiment B.
+4. Chunked prefill: change `simulate` so each iteration charges at most `chunk` prompt tokens of prefill and keeps the rest of a prompt waiting for later iterations. State, before running, what happens to TPOT p99 and to TTFT p50 in Experiment B at prompt median 2048.
+5. Show that Little's law cannot detect a wrong `per_kv_token` constant, by changing it by a factor of 100 and rerunning the check.
+6. Add a test that two runs of `simulate` on the same workload give identical results, and one that scaling all cost constants by 2 does not reduce any request's latency.
+
+### Solutions
+
+1. Caps 80 and 96 both reach attainment 1.00, and 64 does not (0.49). Cost per million tokens: $1.87 at 64, $1.79 at 80, $1.78 at 96. The cap that is cheapest per token is also the one that meets the SLO, because a cap that is too low leaves the GPU idle behind a queue while its fixed cost keeps accruing. Past 96 nothing changes, since the cap is no longer the binding limit.
+2. `8e9 x 2 B / 3.35e12 B/s` = 4.78 ms in BF16 and 2.39 ms in FP8 (weights only, batch 1). KV per token: `2 x 32 x 8 x 128 x 2` = 131,072 bytes = 128 KiB.
+3. Prefill demand is `rate x median x exp(sigma^2/2) / prefill_tps`. Setting it to 1 with sigma 0.7 gives `median = 40,000 / (4 x 1.2776)` ≈ 7,827 tokens. Decode steps also take time, so the true saturation point is lower. Experiment B shows 2048 healthy (about 26 percent prefill load) and 8192 overloaded (about 105 percent), which is consistent.
+4. Prediction, not a measurement: TPOT p99 should fall, because a decode step no longer waits for a whole long prompt, only for one chunk. TTFT p50 should rise slightly, because a prompt is now finished over several iterations. Chapter 44 builds this and tests it.
+5. The check compares `area/wall` with `lambda x W`; both are computed from the same simulated timeline. Any per-iteration cost, however wrong, produces a consistent timeline, so the two sides agree. Rerunning with `per_kv_token = 1e-6` (workload of 300 requests at 4 req/s, seed 1) leaves the relative difference at 0.316 percent (0.322 percent at the default), while the mean request latency goes from 3.955 s to 8.165 s. The conclusion in section 32.5 stands: it validates bookkeeping only.
+6. For identical runs, compare every `(first_token, finish)` pair. For the scaling test, multiply `base`, `per_seq`, `per_kv_token` by 2 and divide `prefill_tps` by 2; every `finish - arrival` must not decrease. This held for all 4,500 request comparisons in 30 runs (10 seeds, rates 2, 6 and 10 req/s, 150 requests each), but it is an empirical property of this simulator, not a theorem: if it ever fails, check first for a cost term applied with the wrong sign.
+
 ## Chapter Summary
 
 Serving splits into compute-bound prefill, which sets TTFT, and memory-bound decode, which sets TPOT. The decode floor is weight bytes over bandwidth, about 21 ms per token for a 70B BF16 model across two H100s at batch 1, before KV reads and communication. Continuous batching refills the batch every iteration, and shared weight reads make throughput rise with load until the batch is full. A fair measurement fixes and publishes the workload, reports TTFT, TPOT, percentiles, goodput under an SLO and cost, and sweeps the load. The simulator in this chapter reproduces those shapes and passes a hand-computed metric check and Little's law, but its numbers are illustrative.
@@ -145,3 +244,8 @@ Serving splits into compute-bound prefill, which sets TTFT, and memory-bound dec
 3. The GPU bill is fixed per hour, so more tokens per hour means a lower cost per token. At 16 requests per second the server is overloaded, so only 37 percent of requests meet the SLO; the useful operating point is the highest load that still meets it.
 4. A server can raise throughput by letting requests queue into large batches, which makes users wait. Throughput alone hides that.
 5. It checks that the simulator's time-average occupancy equals arrival rate times mean residence time, which catches bookkeeping errors. It does not check that the cost constants resemble a real GPU.
+
+## Files and sources
+
+- Code: `docs/examples/inference-systems/ch32_inference_harness.py` (`--test` for the self-tests, `--extras` for Experiments A and B)
+- The decode floor uses the NVIDIA H100 SXM datasheet bandwidth (3.35 TB/s). The KV formula is the standard `2 x layers x kv_heads x head_dim x bytes`. The cost model constants are placeholders.

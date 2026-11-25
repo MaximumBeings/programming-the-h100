@@ -6,7 +6,7 @@
     [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
-## Lesson 6 Companion Guide — Programming the H100
+## Chapter 6 Companion Guide — Programming the H100
 
 [![CHAPTER 06: Meet the Tensor Cores](images/chapter-openers/06-wgmma.svg)](images/chapter-openers/06-wgmma.svg)
 

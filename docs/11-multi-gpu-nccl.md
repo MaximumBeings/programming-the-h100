@@ -17,7 +17,7 @@
     [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
-## Lesson 5 Companion Guide — Hardware Topology to Collective Primitives
+## Chapter 11 Companion Guide — Hardware Topology to Collective Primitives
 
 > **Validation — November 17–18, 2026.** The [two-H100 follow-up audit](final-audit.md) compiled all three complete programs and executed the corrected peer-transfer benchmark and NCCL AllReduce with full-buffer checks. The revised portable training program subsequently passed on [eight A100 GPUs](eight-gpu-validation.md), targeting `sm_80`, with full final-weight and per-step loss comparisons against a CPU reference. This was not an eight-H100 run. All three programs have successful execution records linked below; earlier raw archives remain downloadable from the validation page.
 > **Execution system:** 1× H100 PCIe, 114 SMs, 80 GB class; Ubuntu 24.04.5 LTS; driver 580.105.08; CUDA Toolkit 12.8.93; `sm_90a`, C++17, `-O2`.

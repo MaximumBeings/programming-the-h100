@@ -11,7 +11,7 @@
     [Chapter 9](09-kernel-design-part-2.md) covers persistent work assignment; [Chapter 13](13-nsight-compute.md) distinguishes improved scheduling from improved measured time.
 <!-- learning:end -->
 
-## Lesson 4 Companion Guide — Advanced Scheduling and Dependent Grid Execution
+## Chapter 10 Companion Guide — Advanced Scheduling and Dependent Grid Execution
 
 > **Validation — November 17, 2026.** 2 complete CUDA programs compiled and executed successfully.
 > **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.

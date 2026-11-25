@@ -7,7 +7,7 @@
     formulas and check storage bounds separately. A grid of 32×16 contains
     512 CTAs; the individual coordinate (5,3) is one CTA, not 512.
 
-## Lesson 19 Companion Guide — Trace Every GEMM Operand from CTA to Byte Address
+## Chapter 19 Companion Guide — Trace Every GEMM Operand from CTA to Byte Address
 
 [![CHAPTER 19: 19. CTA Indexing — Rectangular GEMM Offsets and the K Loop — conceptual chapter illustration](images/chapter-openers/19-workshop.svg)](images/chapter-openers/19-workshop.svg)
 

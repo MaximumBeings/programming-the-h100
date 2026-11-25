@@ -11,7 +11,7 @@
     stream or graph-capture integration. The separately versioned CuTe DSL
     documentation is not evidence that its API matches this C++ v4.3.6 pin.
 
-## Lesson 28 Companion Guide — Measure the Useful Operation and Preserve Framework Semantics
+## Chapter 28 Companion Guide — Measure the Useful Operation and Preserve Framework Semantics
 
 [![CHAPTER 28: 28. Benchmarking and Framework Integration Without Changing the Question — conceptual chapter illustration](images/chapter-openers/28-workshop.svg)](images/chapter-openers/28-workshop.svg)
 

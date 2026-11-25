@@ -1,6 +1,6 @@
 # cuTensorMap, TMA & Swizzling
 
-## Lesson 4 Companion Guide — Programming the H100
+## Chapter 4 Companion Guide — Programming the H100
 
 [![CHAPTER 04: Describe a tile. Choose its layout.](images/chapter-openers/04-descriptors.svg)](images/chapter-openers/04-descriptors.svg)
 

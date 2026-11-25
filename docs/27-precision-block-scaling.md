@@ -1,6 +1,6 @@
 # 27. Precision, Block Scaling and the Hopper–Blackwell Boundary
 
-## Lesson 27 Companion Guide — Separate Stored Codes, Scale Layouts and Executed Arithmetic
+## Chapter 27 Companion Guide — Separate Stored Codes, Scale Layouts and Executed Arithmetic
 
 [![CHAPTER 27: 27. Precision, Block Scaling and the Hopper–Blackwell Boundary — conceptual chapter illustration](images/chapter-openers/27-workshop.svg)](images/chapter-openers/27-workshop.svg)
 

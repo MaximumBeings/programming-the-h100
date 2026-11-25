@@ -1,6 +1,6 @@
 # Hopper Pipelines and Scheduling
 
-## Lesson 25 Companion Guide — Trace Readiness, Reuse and the Cost of More Stages
+## Chapter 25 Companion Guide — Trace Readiness, Reuse and the Cost of More Stages
 
 [![CHAPTER 25: 25. Read Hopper CUTLASS Pipelines, Fusion and Tuning — conceptual chapter illustration](images/chapter-openers/25-workshop.svg)](images/chapter-openers/25-workshop.svg)
 

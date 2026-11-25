@@ -1,6 +1,6 @@
 # WGMMA Part 2 — Groups, stmatrix, FP8 & Sparse
 
-## Lesson 7 Companion Guide — Programming the H100
+## Chapter 7 Companion Guide — Programming the H100
 
 [![CHAPTER 07: Queue the math. Collect the result.](images/chapter-openers/07-groups.svg)](images/chapter-openers/07-groups.svg)
 

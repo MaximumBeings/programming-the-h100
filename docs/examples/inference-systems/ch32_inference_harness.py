@@ -1,6 +1,8 @@
 """Chapter 32: inference-engine anatomy and a measurement harness (CPU simulation).
 
-Run:  python3 ch32_inference_harness.py
+Run:  python3 ch32_inference_harness.py          (the chapter's numbers)
+      python3 ch32_inference_harness.py --test   (self-tests)
+      python3 ch32_inference_harness.py --extras (batch-cap and prefill-interference experiments)
 The engine below is a SIMULATION driven by an illustrative cost model. Its constants are parameters you
 replace with measurements from a real server; none of its timings is an H100 measurement.
 """
@@ -105,6 +107,87 @@ def summarize(reqs, wall, gpu_hour_usd=None, n_gpus=1, slo_ttft=2.0, slo_tpot=0.
     return out
 
 
+# ------------------------------------------------------------- self-tests (properties, not just one hand case)
+def run_tests():
+    """Twenty-one checks. Each is an invariant the harness must keep; none depends on the cost constants being realistic."""
+    results = []
+
+    def check(name, cond):
+        results.append((name, bool(cond)))
+
+    # arithmetic
+    check("kv bytes/token for the 70B shape is 327680", kv_bytes_per_token(80, 8, 128) == 327680)
+    check("kv bytes scale linearly with layers", kv_bytes_per_token(160, 8, 128) == 2 * kv_bytes_per_token(80, 8, 128))
+    check("decode floor halves when GPUs double", abs(decode_floor_ms(70e9, 2, 2) * 2 - decode_floor_ms(70e9, 2, 1)) < 1e-9)
+    check("decode floor is linear in bytes/param", abs(decode_floor_ms(70e9, 1, 2) * 2 - decode_floor_ms(70e9, 2, 2)) < 1e-9)
+    # percentile
+    check("pct: q=0 is min, q=1 is max", pct([3, 1, 2], 0) == 1 and pct([3, 1, 2], 1) == 3)
+    check("pct: median of [1,2,3,4] is 2.5", pct([1, 2, 3, 4], .5) == 2.5)
+    check("pct: one element", pct([7.0], .99) == 7.0)
+    check("pct: monotone in q", all(pct(list(range(20)), a / 10) <= pct(list(range(20)), (a + 1) / 10) for a in range(10)))
+    # workload
+    w1, w2, w3 = make_workload(50, 4.0, 7), make_workload(50, 4.0, 7), make_workload(50, 4.0, 8)
+    check("workload: same seed gives identical requests", [(r.arrival, r.prompt, r.output) for r in w1] == [(r.arrival, r.prompt, r.output) for r in w2])
+    check("workload: different seed differs", [r.arrival for r in w1] != [r.arrival for r in w3])
+    check("workload: arrivals non-decreasing, lengths >= 1",
+          all(a.arrival <= b.arrival for a, b in zip(w1, w1[1:])) and all(r.prompt >= 1 and r.output >= 1 for r in w1))
+    # engine
+    src = make_workload(120, 6.0, 3)
+    before = [(r.first_token, r.finish, r.generated) for r in src]
+    reqs, wall, _ = simulate(src)
+    check("simulate: does not mutate its input", before == [(r.first_token, r.finish, r.generated) for r in src])
+    check("simulate: every request finishes with exactly `output` tokens, ordered times",
+          all(r.generated == r.output and r.arrival <= r.first_token <= r.finish <= wall + 1e-9 for r in reqs))
+    one, _, _ = simulate(make_workload(30, 50.0, 4), max_batch=1)
+    check("max_batch=1 serves strictly one at a time (no overlap)", all(b.first_token > a.finish for a, b in zip(one, one[1:])))
+    lo, wlo, _ = simulate(make_workload(200, 2.0, 5))
+    hi, whi, _ = simulate(make_workload(200, 20.0, 5))
+    check("same lengths, 10x the arrival rate: p99 TTFT does not fall",
+          summarize(hi, whi)["ttft_p99"] >= summarize(lo, wlo)["ttft_p99"])
+    # metrics
+    loose, tight = summarize(reqs, wall, slo_ttft=5.0, slo_tpot=1.0), summarize(reqs, wall, slo_ttft=0.05, slo_tpot=0.02)
+    toy = [Req(0, 0.0, 10, 5, first_token=0.5, finish=0.9), Req(1, 1.0, 10, 3, first_token=1.2, finish=1.4)]
+    st = summarize(toy, 1.4, slo_ttft=0.4, slo_tpot=0.15)
+    check("hand case: TPOT = (finish-first)/(output-1) = 0.10 for both, TTFT p50 = 0.35, goodput = 1/1.4",
+          abs(st["tpot_p50"] - 0.10) < 1e-12 and abs(st["ttft_p50"] - 0.35) < 1e-12 and abs(st["goodput_req_s"] - 1 / 1.4) < 1e-12)
+    check("tighter SLO never raises attainment", tight["slo_attainment"] <= loose["slo_attainment"])
+    one_tok = [Req(0, 0.0, 5, 1, first_token=0.3, finish=0.3)]
+    check("a 1-token reply does not divide by zero", summarize(one_tok, 0.3)["tpot_p50"] == 0.0)
+    cost = summarize([Req(0, 0, 1, 1000, first_token=1.0, finish=2.0)], 3600.0, gpu_hour_usd=4.0, n_gpus=2)
+    check("cost: $4 x 2 GPUs x 1 h / 1000 tokens = $8000 per million", abs(cost["usd_per_million_tokens"] - 8000.0) < 1e-6)
+    ok = True
+    for seed in range(5):
+        rr, ww, aa = simulate(make_workload(300, 4.0, seed))
+        L, lamW = aa / ww, len(rr) / ww * sum(r.finish - r.arrival for r in rr) / len(rr)
+        ok &= abs(L - lamW) / L < 0.02
+    check("Little's law within 2% on five seeds", ok)
+    try:
+        pct([], .5); empty_raises = False
+    except IndexError:
+        empty_raises = True
+    check("pct([]) raises IndexError (documented failure mode)", empty_raises)
+    for name, good in results:
+        print(f"  [{'PASS' if good else 'FAIL'}] {name}")
+    print(f"{sum(g for _, g in results)}/{len(results)} self-tests pass")
+    return all(g for _, g in results)
+
+
+def extras():
+    """Two experiments the chapter discusses: the batch cap, and prefill interference with running decodes."""
+    print("Experiment A: batch cap at 12 req/s (300 requests, seed 2)")
+    print("max_batch  ttft_p50  ttft_p99  tpot_p50  tput(tok/s)  slo_ok")
+    for mb in (4, 8, 16, 32, 64, 128):
+        r, w, _ = simulate(make_workload(300, rate=12, seed=2), max_batch=mb)
+        m = summarize(r, w)
+        print(f"{mb:>9}  {m['ttft_p50']:8.3f}  {m['ttft_p99']:8.3f}  {m['tpot_p50']:8.4f}  {m['throughput_tok_s']:11.0f}  {m['slo_attainment']:6.2f}")
+    print("\nExperiment B: prefill interference at 4 req/s (300 requests, seed 2, output median 128)")
+    print("prompt_median  ttft_p50  tpot_p50  tpot_p99  tput(tok/s)")
+    for pm in (128, 512, 2048, 8192):
+        r, w, _ = simulate(make_workload(300, rate=4, seed=2, prompt_med=pm))
+        m = summarize(r, w)
+        print(f"{pm:>13}  {m['ttft_p50']:8.3f}  {m['tpot_p50']:8.4f}  {m['tpot_p99']:8.4f}  {m['throughput_tok_s']:11.0f}")
+
+
 def main():
     kv = kv_bytes_per_token(**{k: LLAMA70B[k] for k in ("layers", "kv_heads", "head_dim")})
     print(f"KV bytes/token (Llama-3-70B-shaped, BF16) = {kv} ({kv/1024:.0f} KiB); 4096-token prompt = {kv*4096/1e9:.2f} GB")
@@ -135,4 +218,9 @@ def main():
 
 
 if __name__ == "__main__":
+    import sys
+    if "--extras" in sys.argv:
+        extras(); sys.exit(0)
+    if "--test" in sys.argv:
+        sys.exit(0 if run_tests() else 1)
     main()

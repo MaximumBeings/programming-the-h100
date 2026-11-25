@@ -1,6 +1,6 @@
 # 18. CuTe Tensors — Views, Slicing, Tiling and Predication
 
-## Lesson 18 Companion Guide — Connect Tensor Engines, Tile Views and Safe Access
+## Chapter 18 Companion Guide — Connect Tensor Engines, Tile Views and Safe Access
 
 [![CHAPTER 18: 18. CuTe Tensors — Views, Slicing, Tiling and Predication — conceptual chapter illustration](images/chapter-openers/18-workshop.svg)](images/chapter-openers/18-workshop.svg)
 

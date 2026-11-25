@@ -7,7 +7,7 @@
     labels are fixed text. The recorded run establishes that the script ran;
     it does not establish a GPU memory-access experiment.
 
-## Lesson 16 Companion Guide — Read Every Dimension, Unit and Storage Gap
+## Chapter 16 Companion Guide — Read Every Dimension, Unit and Storage Gap
 
 [![Trace a coordinate through element strides to a physical address](images/chapter-openers/16-workshop.svg)](images/chapter-openers/16-workshop.svg)
 

@@ -1,6 +1,6 @@
 # NVIDIA H100 GPU Architecture
 
-## Lesson 1 Companion Guide — A Deep Dive into Hopper
+## Chapter 1 Companion Guide — A Deep Dive into Hopper
 
 [![CHAPTER 01: Inside the Hopper machine](images/chapter-openers/01-architecture.svg)](images/chapter-openers/01-architecture.svg)
 

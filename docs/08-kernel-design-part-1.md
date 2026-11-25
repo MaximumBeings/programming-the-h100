@@ -17,7 +17,7 @@
     [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
-## Lesson 3 Companion Guide — High-Performance CUDA Kernels on the H100
+## Chapter 8 Companion Guide — High-Performance CUDA Kernels on the H100
 
 > **Validation — November 17, 2026.** 4 complete CUDA programs compiled and executed successfully.
 > **Follow-up:** the [final two-H100 audit](final-audit.md) records a fresh run of the complete programs. The original dated transcripts below remain available for provenance.

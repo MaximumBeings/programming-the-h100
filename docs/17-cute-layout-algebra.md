@@ -8,7 +8,7 @@
     The composition can therefore be valid algebra while being unsafe for a
     particular allocation. Do not expect CuTe to reject it at x=3.
 
-## Lesson 17 Companion Guide — Derive Hierarchical Layouts Before Composing Them
+## Chapter 17 Companion Guide — Derive Hierarchical Layouts Before Composing Them
 
 [![CHAPTER 17: 17. CuTe Layout Algebra — Hierarchy, Composition and Tiling — conceptual chapter illustration](images/chapter-openers/17-workshop.svg)](images/chapter-openers/17-workshop.svg)
 

@@ -11,7 +11,7 @@
     plain GEMM selected Cooperative with seven stages under CUDA 12.8.
     CUDA 12.0 can resolve Auto differently.
 
-## Lesson 24 Companion Guide — Assemble a Pinned Hopper Kernel and Its Launch Contract
+## Chapter 24 Companion Guide — Assemble a Pinned Hopper Kernel and Its Launch Contract
 
 [![CHAPTER 24: 24. CUTLASS — Build a Hopper GEMM You Can Verify — conceptual chapter illustration](images/chapter-openers/24-workshop.svg)](images/chapter-openers/24-workshop.svg)
 

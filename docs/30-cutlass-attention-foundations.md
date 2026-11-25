@@ -6,7 +6,7 @@
     [new dated results](validation-2026-11-21.md) for exact scope and sample output.
 
 
-## Lesson 30 Companion Guide — From Two GEMMs to One Streaming Attention Contract
+## Chapter 30 Companion Guide — From Two GEMMs to One Streaming Attention Contract
 
 [![Chapter 30: CUTLASS attention foundations](images/chapter-openers/30-workshop.svg)](images/chapter-openers/30-workshop.svg)
 
