@@ -15,10 +15,10 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
-from ch36_benchmark_teardown import Rec, summarize_runs, diff_ci, percentile
+from ch36_benchmark_teardown import Rec, summarize_runs, percentile
 from ch38_semantic_cache import World, SemanticCache
 from ch39_complexity_router import make_data, calibrate_tau
-from ch40_gpu_autoscaler import Scaler, simulate, make_arrivals, lognormal_service
+from ch40_gpu_autoscaler import Scaler, make_arrivals, lognormal_service
 from ch41_edge_fallback import CircuitBreaker
 
 # ---------------------------------------------------------------- assumed constants
@@ -28,7 +28,6 @@ THRESH = 0.92                       # cache cosine threshold
 FAMILIES, ZIPF = 1500, 0.6          # cache workload (6000 intents)
 CACHE_LAT = 0.02                    # s, embedding + lookup on a hit
 C_EMB = 1e-5                        # $ per request for the embedding model (assumed)
-ROUTER_DELAY = 0.15                 # s added to a request routed to the large pool
 PREFIX_FRAC = 0.2                   # the router's K-token prefix costs this fraction of a small answer
 OUTAGE = (600.0, 720.0)             # the large pool is unreachable
 HANG = 3.0                          # client waits this long for a hung large pool
@@ -60,23 +59,17 @@ def _scaler():
     return Scaler(target=3.0, min_replicas=1, max_replicas=40)
 
 
-def run_pool(name, jobs, svc_all, cfg, simh):
-    """jobs: list of (pool_arrival, key). Returns (per-key result dict, gpu_s)."""
-    P = POOLS[name]
-    jobs = sorted(jobs)
-    arrs = np.array([a for a, _ in jobs])
-    svc = np.array([svc_all[name][k] for _, k in jobs])
-    static = cfg.large_static if name == "large" else cfg.small_static
-    kw = dict(scaler=_scaler()) if cfg.autoscale else dict(static=static)
-    res = simulate(arrs, svc, simh, slots=P["slots"], cold=COLD, **kw)
-    out = {}
-    for pos, (a, k) in enumerate(jobs):
-        if res["started"][pos]:
-            out[k] = (res["started_at"][pos], res["finished"][pos])
-    return out, res["gpu_s"], res
-
-
 def gateway(cfg, seed, outage=False):
+    """Causal discrete-event simulation: decisions see only completed prior events.
+
+    Pool admission/scaling is sampled every 0.1 s as in Chapter 40. Service
+    completions, request arrivals, prefix completions and breaker timeouts are
+    separate ordered events. In particular, only a successful completed model
+    request may publish a semantic-cache entry.
+    """
+    import heapq
+    from collections import deque
+
     rng = np.random.default_rng(seed)
     arr = make_arrivals(SEGS, rng)
     n = len(arr)
@@ -92,109 +85,178 @@ def gateway(cfg, seed, outage=False):
                for j, p in enumerate(("small", "large"))}
     cache = SemanticCache(world.dim, cfg.thresh) if cfg.cache else None
     breaker = CircuitBreaker(3, 10.0) if cfg.fallback else None
-    pending, seq = [], 0
-    kind = [None] * n          # hit | large | small | fail
+    simh, dt = HORIZON + DRAIN, 0.1
+    recs = [Rec(intended=t, sent=t) for t in arr]
+    kind = [None] * n
     correct = np.zeros(n, bool)
-    jobs = {"small": [], "large": []}
-    t_in = np.array(arr, float)    # time the request enters its pool
-    fail_end = {}
     fallbacks = hit_wrong = 0
-    insert_log = []                # (insert_time, hit_time) pairs for the ordering invariant
-    import heapq
-    for i in range(n):
-        t = arr[i]
-        while pending and pending[0][0] <= t:
-            ts, _s, key, vec, ans, ok = heapq.heappop(pending)
-            cache.insert(key, vec, ans, now=ts, correct=ok)
-        intent = int(intents[i])
-        if cache is not None:
-            entry, _sim = cache.lookup("k", vecs[i], now=t)
-            if entry is not None:
-                kind[i] = "hit"
-                correct[i] = (entry["answer"] == intent) and entry["correct"]
-                hit_wrong += int(entry["answer"] != intent)
-                insert_log.append((entry["created"], t))
-                continue
-        pool = "large" if (not cfg.router or data["H"][intent] > tau) else "small"
-        delay = 0.0
-        if pool == "large" and cfg.router:
-            delay += ROUTER_DELAY
-            jobs["small"].append((t, ("prefix", i)))       # the router's K-token prefix runs on the small pool
-        if pool == "large":
-            down = outage and in_outage(t)
-            if breaker is not None:
-                mode, gen = breaker.allow(t)
-                if mode is None:
-                    pool, fallbacks = "small", fallbacks + 1
+    insert_log, cache_hit_events, prefix_log = [], [], []
+    direct_small = set()
+    pools, gpu_s = {}, {p: 0.0 for p in POOLS}
+    events, serial = [], 0
+
+    def event(at, priority, action, payload):
+        nonlocal serial
+        serial += 1
+        heapq.heappush(events, (at, priority, serial, action, payload))
+
+    for p in POOLS:
+        active = p == "large" or cfg.router or cfg.fallback
+        count = (1 if cfg.autoscale else
+                 cfg.large_static if p == "large" else cfg.small_static) if active else 0
+        scaler = _scaler() if cfg.autoscale and active else None
+        if scaler is not None:
+            scaler.history.append((0.0, count))
+        pools[p] = dict(queue=deque(), reps=[dict(ready_at=0.0, running={}, draining=False)
+                                            for _ in range(count)],
+                        scaler=scaler, next_poll=0.0,
+                        next_hpa=scaler.poll if scaler else 0.0)
+
+    def enqueue(pool, rid, at, prefix=False, gen=None):
+        pools[pool]["queue"].append((rid, at, prefix, gen))
+
+    def resize(state, new, now):
+        live = [r for r in state["reps"] if not r["draining"]]
+        if new > len(live):
+            state["reps"].extend(dict(ready_at=now+COLD, running={}, draining=False)
+                                  for _ in range(new-len(live)))
+        else:
+            live.sort(key=lambda r: (r["ready_at"] <= now, len(r["running"])))
+            for replica in live[:len(live)-new]:
+                if replica["ready_at"] > now:
+                    state["reps"].remove(replica)
                 else:
-                    breaker.record(gen, not down, t + (HANG if down else 0.0))
-                    if down:
-                        pool, delay, fallbacks = "small", delay + HANG, fallbacks + 1
-            elif down:
-                kind[i] = "fail"
-                fail_end[i] = t + HANG
-                continue
-        kind[i] = pool
-        t_in[i] = t + delay
-        jobs[pool].append((t + delay, ("req", i)))
-        correct[i] = bool(data["cl" if pool == "large" else "cs"][intent])
-        if cache is not None:
-            seq += 1
-            heapq.heappush(pending, (t + delay + POOLS[pool]["mean"], seq, "k", vecs[i], intent,
-                                     bool(correct[i])))
-    # pools
-    simh = HORIZON + DRAIN
-    key_svc = {p: _KeySvc(svc_all[p], POOLS["small"]["mean"] * PREFIX_FRAC / POOLS["small"]["mean"])
-               for p in svc_all}
-    results, gpu_s = {}, {}
-    for p in ("small", "large"):
-        exists = bool(jobs[p]) or cfg.autoscale and (p == "large" or cfg.router or cfg.fallback)
-        if p == "small" and not (cfg.router or cfg.fallback):
-            exists = False
-        if exists:
-            results[p], gpu_s[p], _ = run_pool(p, jobs[p], key_svc, cfg, simh)
+                    replica["draining"] = True
+
+    def large_decision(rid, now):
+        nonlocal fallbacks
+        down = outage and in_outage(now)
+        gen = None
+        if breaker is not None:
+            mode, gen = breaker.allow(now)
+            if mode is None:
+                kind[rid] = "small"
+                fallbacks += 1
+                enqueue("small", rid, now)
+                return
+        if down:
+            # Deliver this result only after the timeout; no future-state mutation.
+            event(now+HANG, 0, "timeout", (rid, gen))
         else:
-            results[p], gpu_s[p] = {}, 0.0
-    recs = []
-    for i in range(n):
-        r = Rec(intended=arr[i], sent=arr[i])
-        if kind[i] == "hit":
-            r.first = r.end = arr[i] + CACHE_LAT
-            r.ntok, r.ok = 100, True
-        elif kind[i] == "fail":
-            r.err, r.end = "timeout", fail_end[i]
-        else:
-            res = results[kind[i]].get(("req", i))
-            if res is None:
-                r.err = "unserved"
+            kind[rid] = "large"
+            enqueue("large", rid, now, gen=gen)
+
+    for rid, at in enumerate(arr):
+        event(float(at), 1, "arrival", rid)
+    for step in range(int(round(simh/dt))):
+        event(step*dt, 2, "tick", None)
+
+    while events:
+        now, _priority, _serial, action, payload = heapq.heappop(events)
+        if now > simh:
+            break
+        if action == "arrival":
+            rid = payload
+            if cache is not None:
+                entry, _sim = cache.lookup("k", vecs[rid], now=now)
+                if entry is not None:
+                    kind[rid] = "hit"
+                    correct[rid] = entry["answer"] == int(intents[rid]) and entry["correct"]
+                    hit_wrong += int(entry["answer"] != int(intents[rid]))
+                    recs[rid].first = recs[rid].end = now+CACHE_LAT
+                    recs[rid].ntok, recs[rid].ok = 100, True
+                    insert_log.append((entry["created"], now))
+                    cache_hit_events.append((entry["producer"], entry["created"], now))
+                    continue
+            route_large = not cfg.router or data["H"][intents[rid]] > tau
+            if route_large and cfg.router:
+                enqueue("small", rid, now, prefix=True)
+            elif route_large:
+                large_decision(rid, now)
             else:
-                P = POOLS[kind[i]]
-                st, fin = res
-                svc = fin - st
-                r.first = st + min(P["prefill"], svc * 0.5)
-                r.end = fin
-                r.ntok = max(2, int(svc * P["tok"]))
-                r.ok = True
-        recs.append(r)
+                kind[rid] = "small"
+                direct_small.add(rid)
+                enqueue("small", rid, now)
+        elif action == "timeout":
+            rid, gen = payload
+            if breaker is not None:
+                breaker.record(gen, False, now)
+                kind[rid] = "small"
+                fallbacks += 1
+                enqueue("small", rid, now)
+            else:
+                kind[rid] = "fail"
+                recs[rid].err, recs[rid].end = "timeout", now
+        elif action == "complete":
+            pool, replica, rid, prefix, gen, started, jobid = payload
+            replica["running"].pop(jobid)
+            if prefix:
+                prefix_log.append((rid, started, now))
+                large_decision(rid, now)
+                continue
+            r, P = recs[rid], POOLS[pool]
+            duration = now-started
+            r.first = started+min(P["prefill"], duration*0.5)
+            if rid in direct_small:
+                # The single full-small job includes its routing prefix. Do not
+                # release that prefix before the small/large decision is ready.
+                decision_at = started+PREFIX_FRAC*duration
+                prefix_log.append((rid, started, decision_at))
+                r.first = max(r.first, decision_at)
+            r.end, r.ntok, r.ok = now, max(2, int(duration*P["tok"])), True
+            correct[rid] = bool(data["cl" if pool == "large" else "cs"][intents[rid]])
+            if breaker is not None and pool == "large":
+                breaker.record(gen, True, now)
+            if cache is not None:
+                cache.insert("k", vecs[rid], int(intents[rid]), now=now,
+                             correct=bool(correct[rid]), producer=rid)
+        else:  # pool scheduler / scaler tick
+            for pool, state in pools.items():
+                state["reps"][:] = [r for r in state["reps"]
+                                         if not (r["draining"] and not r["running"])]
+                for replica in state["reps"]:
+                    if replica["draining"] or replica["ready_at"] > now:
+                        continue
+                    while state["queue"] and len(replica["running"]) < POOLS[pool]["slots"]:
+                        rid, at, prefix, gen = state["queue"].popleft()
+                        assert at <= now
+                        duration = float(svc_all[pool][rid])*(PREFIX_FRAC if prefix else 1.0)
+                        jobid = (rid, prefix)
+                        replica["running"][jobid] = now+duration
+                        event(now+duration, 0, "complete",
+                              (pool, replica, rid, prefix, gen, now, jobid))
+                scaler = state["scaler"]
+                if scaler is not None:
+                    outstanding = len(state["queue"])+sum(len(r["running"]) for r in state["reps"])
+                    current = sum(not r["draining"] for r in state["reps"])
+                    if now >= state["next_poll"]:
+                        state["next_poll"] += scaler.poll
+                        new = scaler.keda_poll(now, outstanding, current)
+                        if new is not None and new != current:
+                            resize(state, new, now)
+                            current = new
+                    if now >= state["next_hpa"]:
+                        state["next_hpa"] += scaler.hpa_period
+                        if current:
+                            if not scaler.cached_metrics:
+                                scaler.sample = outstanding
+                            new = scaler.hpa(now, current)
+                            if new != current:
+                                resize(state, new, now)
+                gpu_s[pool] += len(state["reps"])*dt
+
+    for rid, r in enumerate(recs):
         if not r.ok:
-            correct[i] = False
-    cost = sum(gpu_s[p] / 3600.0 * POOLS[p]["price"] for p in gpu_s) + (n * C_EMB if cache else 0.0)
+            correct[rid] = False
+            if kind[rid] is None:
+                kind[rid] = "fail"
+            if not r.err:
+                r.err = "unserved by drain horizon"
+    cost = sum(gpu_s[p]/3600.0*POOLS[p]["price"] for p in gpu_s)+(n*C_EMB if cache else 0.0)
     return dict(recs=recs, n=n, kind=kind, correct=correct, cost=cost, gpu_s=gpu_s, tau=tau,
-                hits=sum(1 for k in kind if k == "hit"), hit_wrong=hit_wrong,
-                fallbacks=fallbacks, insert_log=insert_log, arr=arr,
-                quality=float(correct.mean()),
-                failures=sum(1 for r in recs if not r.ok))
-
-
-class _KeySvc(dict):
-    """Service time lookup by ('req', i) or ('prefix', i); the prefix is a fraction of a small answer."""
-    def __init__(self, arr, frac):
-        super().__init__()
-        self.arr, self.frac = arr, frac
-
-    def __getitem__(self, k):
-        kind, i = k
-        return self.arr[i] * (PREFIX_FRAC if kind == "prefix" else 1.0)
+                hits=kind.count("hit"), hit_wrong=hit_wrong, fallbacks=fallbacks,
+                insert_log=insert_log, cache_hit_events=cache_hit_events, prefix_log=prefix_log,
+                arr=arr, quality=float(correct.mean()), failures=sum(not r.ok for r in recs))
 
 
 def summarize_cfg(runs):
@@ -332,8 +394,11 @@ def experiments():
               f"{100 * sum(r['hits'] for r in runs) / sum(n):8.1f} "
               f"{100 * sum(r['kind'].count('large') for r in runs) / sum(n):8.1f}")
     sa = summarize_cfg(store[CA.name]); sd = summarize_cfg(store[CD.name])
-    lo, hi = diff_ci(sd["ttft_samples"], sa["ttft_samples"], lambda x: percentile(x, 0.5))
-    print(f"\nTTFT p50, D minus A, pooled: 95% bootstrap CI [{lo:.2f}, {hi:.2f}] s")
+    paired_diffs = [percentile(summarize_cfg([d])["ttft_samples"], 0.5) -
+                    percentile(summarize_cfg([a])["ttft_samples"], 0.5)
+                    for d, a in zip(store[CD.name], store[CA.name])]
+    print(f"\nTTFT p50, D minus A, paired per-run mean [min-max]: {fmt(paired_diffs, '.2f')} s; "
+          "3 runs do not establish a precise confidence interval")
 
     print("\n=== Experiment 2: large pool unreachable for 120 s (t = 600-720), config D ===")
     D = CD

@@ -1,0 +1,92 @@
+PASS 1 breaker opens after N consecutive failures, a success resets the count
+PASS 2 open rejects until open_for, then exactly one probe
+PASS 3 a failed probe reopens; a lost probe is replaced after open_for
+PASS 4 stale results are ignored (slow call cannot close an open breaker)
+PASS 5 retry budget: granted retries never exceed initial + ratio*requests
+PASS 6 full-jitter backoff stays in [0, min(cap, base*2^k)], mean about half
+PASS 7 no outage: every policy succeeds on all requests, one remote try each
+PASS 8 simulation is deterministic for a fixed seed
+PASS 9 refused: edge policy beats single try; breaker cuts remote load vs P1
+PASS 10 edge never serves beyond its context window, never exceeds its queue
+PASS 11 edge cannot rescue prompts longer than its context
+PASS 12 resume lowers mean latency vs restarting after a mid-stream drop
+PASS 13 fleet, no dip: goodput about equals arrival rate for every policy
+PASS 14 fleet conservation: served <= capacity, ok <= arrivals
+PASS 15 fleet: shedding recovers sooner than the naive-server retry storm
+PASS 16 retry budget bounds fleet retries to initial + 10% of arrivals
+PASS 17 edge arithmetic hand checks
+17 tests passed
+
+=== Experiment 1: per-client outage shapes (mean [min-max], 3 seeds) ===
+
+scenario: refused
+policy                            success %            p95 s         edge %     remote/req
+P0 single try              57.3 [54.2-60.7]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 1.00 [1.00-1.00]
+P1 retry x3, no backoff    57.3 [54.2-60.7]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 2.28 [2.18-2.38]
+P2 +jittered backoff       57.3 [54.2-60.7]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 2.28 [2.18-2.38]
+P3 +circuit breaker        54.6 [52.4-57.1]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 0.88 [0.86-0.90]
+P4 +edge fallback          95.8 [95.2-96.4] 20.6 [16.2-26.8] 41.3 [39.3-42.9] 0.88 [0.86-0.90]
+P5 +mid-stream resume      95.8 [95.2-96.4] 20.6 [16.2-26.8] 41.3 [39.3-42.9] 0.88 [0.86-0.90]
+
+scenario: hang
+policy                            success %            p95 s         edge %     remote/req
+P0 single try              57.3 [54.2-60.7]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 1.00 [1.00-1.00]
+P1 retry x3, no backoff    60.3 [58.3-61.9]   8.1 [5.1-13.6]  0.0 [0.0-0.0] 2.25 [2.18-2.29]
+P2 +jittered backoff       60.3 [58.3-61.9]   8.3 [5.1-14.2]  0.0 [0.0-0.0] 2.25 [2.18-2.29]
+P3 +circuit breaker        54.6 [52.4-57.1]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 0.89 [0.86-0.96]
+P4 +edge fallback          95.8 [95.2-96.4] 21.1 [19.2-23.8] 41.3 [39.3-42.9] 0.89 [0.86-0.96]
+P5 +mid-stream resume      95.8 [95.2-96.4] 21.1 [19.2-23.8] 41.3 [39.3-42.9] 0.89 [0.86-0.96]
+
+scenario: brownout
+policy                            success %            p95 s         edge %     remote/req
+P0 single try              90.9 [85.7-95.2]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 1.00 [1.00-1.00]
+P1 retry x3, no backoff    100.0 [100.0-100.0]    7.1 [5.5-9.6]  0.0 [0.0-0.0] 1.14 [1.05-1.25]
+P2 +jittered backoff       100.0 [100.0-100.0]    7.2 [5.5-9.8]  0.0 [0.0-0.0] 1.14 [1.05-1.25]
+P3 +circuit breaker        100.0 [100.0-100.0]    7.2 [5.5-9.8]  0.0 [0.0-0.0] 1.14 [1.05-1.25]
+P4 +edge fallback          100.0 [100.0-100.0]    7.2 [5.5-9.8]  0.0 [0.0-0.0] 1.14 [1.05-1.25]
+P5 +mid-stream resume      100.0 [100.0-100.0]    7.2 [5.5-9.8]  0.0 [0.0-0.0] 1.14 [1.05-1.25]
+
+scenario: flapping
+policy                            success %            p95 s         edge %     remote/req
+P0 single try              81.5 [76.2-89.3]    5.2 [5.0-5.5]  0.0 [0.0-0.0] 1.00 [1.00-1.00]
+P1 retry x3, no backoff    98.4 [95.2-100.0]  11.2 [8.4-12.9]  0.0 [0.0-0.0] 1.40 [1.14-1.54]
+P2 +jittered backoff       100.0 [100.0-100.0]  11.6 [8.6-13.4]  0.0 [0.0-0.0] 1.40 [1.14-1.54]
+P3 +circuit breaker        84.5 [75.0-92.9]   7.9 [5.2-11.4]  0.0 [0.0-0.0] 1.13 [1.07-1.24]
+P4 +edge fallback          98.4 [95.2-100.0] 17.4 [11.7-21.6] 13.9 [7.1-25.0] 1.13 [1.07-1.24]
+P5 +mid-stream resume      98.4 [95.2-100.0] 17.4 [11.7-21.6] 13.9 [7.1-25.0] 1.13 [1.07-1.24]
+
+scenario: middrop
+policy                            success %            p95 s         edge %     remote/req
+P0 single try              57.3 [54.2-60.7]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 1.00 [1.00-1.00]
+P1 retry x3, no backoff    60.3 [58.3-61.9]   7.7 [5.1-12.3]  0.0 [0.0-0.0] 2.27 [2.18-2.33]
+P2 +jittered backoff       60.3 [58.3-61.9]   8.0 [5.1-12.8]  0.0 [0.0-0.0] 2.27 [2.18-2.33]
+P3 +circuit breaker        54.6 [52.4-57.1]    5.3 [5.1-5.5]  0.0 [0.0-0.0] 0.89 [0.86-0.92]
+P4 +edge fallback          95.8 [95.2-96.4] 22.2 [18.5-28.7] 41.3 [39.3-42.9] 0.89 [0.86-0.92]
+P5 +mid-stream resume      97.4 [95.8-100.0] 16.0 [11.7-23.4] 42.9 [39.3-47.6] 0.89 [0.86-0.92]
+
+=== Experiment 2: fleet retry storm (lam=70/s, mu=100/s, dip to 30% for 30 s, timeout 5 s) ===
+policy                             recovery s       peak queue           wasted           ok %
+F0 no retries                      30 [30-30] 1188 [1142-1220] 3475 [3346-3658] 67.1 [65.5-68.3]
+F1 immediate retries x3                 never 22837 [22644-22990] 10636 [10627-10642] 15.6 [15.4-15.8]
+F2 +jittered backoff                    never 22445 [22255-22613] 10636 [10627-10642] 15.6 [15.4-15.8]
+F3 +retry budget 10%               52 [50-55] 1582 [1532-1616] 5769 [5661-5884] 52.5 [51.7-53.5]
+F4 +expired-request shedding          0 [0-0]    622 [607-649]    610 [600-623] 86.6 [86.4-86.9]
+F5 shedding only                      0 [0-0]    384 [378-390]    582 [574-587] 86.5 [86.3-86.8]
+
+goodput per 5 s window, seed 0 (req/s):
+F1 immediate retries x3         68  71  71  67  30  22   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+F4 +expired-request shedding    68  71  71  67  30  23   4   1   2   2  99 100  83  74  63  69  70  73  71  66  74  70  76  66  71  78  75  77  76  67
+
+=== Experiment 3: edge feasibility arithmetic (upper bounds) ===
+device (assumed GB/s)      model         weights GB  tok/s bound
+phone 60                   3B @ 4-bit           1.5         40.0
+phone 60                   8B @ 4-bit           4.0         15.0
+phone 60                   8B @ 8-bit           8.0          7.5
+laptop 100                 3B @ 4-bit           1.5         66.7
+laptop 100                 8B @ 4-bit           4.0         25.0
+laptop 100                 8B @ 8-bit           8.0         12.5
+M-Pro 200                  3B @ 4-bit           1.5        133.3
+M-Pro 200                  8B @ 4-bit           4.0         50.0
+M-Pro 200                  8B @ 8-bit           8.0         25.0
+1.5 GB of weights needs >= 12 bindings at the 128 MiB default
+4.0 GB of weights needs >= 30 bindings at the 128 MiB default

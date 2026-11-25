@@ -42,13 +42,24 @@ def crossover_tokens(m, batch, ctx, mfu=0.5):
     return mem / (2.0 * m.params / (m.gpus * m.peak * mfu))
 
 def kv_budget_tokens(target, draft_on_gpu0=None):
-    """Max tokens of KV cache the worst-loaded target GPU can hold (draft weights colocated on that GPU)."""
+    """Equivalent target-KV token capacity on the worst-loaded rank.
+
+    The draft's weights AND KV occupy GPU0. Express their combined KV cost
+    in target-token equivalents so max_batch remains floor(capacity/context).
+    Speculative temporary slots/metadata must fit the explicit RESERVE; this
+    remains a modeled upper bound, not an engine-reported admission limit.
+    """
     extra = draft_on_gpu0.weights_per_gpu() if draft_on_gpu0 else 0.0
     free = MEM_UTIL * GPU_MEM - target.weights_per_gpu() - extra - RESERVE
-    return max(0.0, free / target.kv_per_gpu_token())
+    combined_kv = target.kv_per_gpu_token() + (draft_on_gpu0.kv_per_gpu_token() if draft_on_gpu0 else 0.0)
+    return max(0.0, free / combined_kv)
+
 
 def max_batch(target, ctx, draft_m=None):
+    if ctx <= 0:
+        raise ValueError("context length must be positive")
     return int(kv_budget_tokens(target, draft_m) // ctx)
+
 
 def expected_tokens(alpha, K):
     """E[tokens per verify pass], i.i.d. per-position acceptance alpha."""
@@ -128,7 +139,7 @@ def selftests():
     chk("BF16 TP2 + 8B draft colocated does not fit (70 GB + 16 GB > 77 GB budget)", kv_budget_tokens(t, D8B) == 0.0)
     free = MEM_UTIL * GPU_MEM - 35e9 - 16e9 - RESERVE                 # independent hand computation
     chk("FP8 TP2 + 8B draft colocated fits; max batch at 2k context equals the hand computation",
-        max_batch(t8, 2048, D8B) == int(free / 163840 // 2048) and max_batch(t8, 2048, D8B) > 0,
+        max_batch(t8, 2048, D8B) == int(free / (163840 + D8B.kv_per_gpu_token()) // 2048) and max_batch(t8, 2048, D8B) > 0,
         f"(max batch {max_batch(t8, 2048, D8B)})")
     # math identities
     errs = [abs(simulate_tokens_per_pass(a, K) - expected_tokens(a, K)) for a in (0.3, .6, .8, .9) for K in (1, 3, 5, 8)]

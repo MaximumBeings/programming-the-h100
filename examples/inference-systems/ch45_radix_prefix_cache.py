@@ -60,7 +60,10 @@ class Handle:
 
 class RadixCache:
     def __init__(self, capacity, policy="lru"):
-        assert policy in ("lru", "fifo")
+        if not isinstance(capacity, (int, np.integer)) or capacity < 0:
+            raise ValueError("capacity must be a nonnegative integer")
+        if policy not in ("lru", "fifo"):
+            raise ValueError("policy must be lru or fifo")
         self.capacity = capacity
         self.policy = policy
         self._ids = 0
@@ -236,6 +239,12 @@ class RadixCache:
 # --------------------------------------------------------------------------
 class BlockHashCache:
     def __init__(self, capacity_tokens, B=16, hash_bits=64):
+        if not isinstance(B, (int, np.integer)) or B <= 0:
+            raise ValueError("B must be a positive integer")
+        if not isinstance(capacity_tokens, (int, np.integer)) or capacity_tokens < B:
+            raise ValueError("capacity_tokens must hold at least one full block")
+        if not isinstance(hash_bits, (int, np.integer)) or hash_bits <= 0:
+            raise ValueError("hash_bits must be a positive integer")
         self.B, self.cap = B, capacity_tokens // B
         self.mask = (1 << hash_bits) - 1
         self.table = {}      # chain hash -> (last, depth)

@@ -24,6 +24,10 @@ class Req:
                  "first_token", "done", "preempts", "rejected")
 
     def __init__(self, id, arrival, prompt, out):
+        if not math.isfinite(arrival) or arrival < 0:
+            raise ValueError("arrival must be finite and nonnegative")
+        if any(not isinstance(x, (int, np.integer)) or x <= 0 for x in (prompt, out)):
+            raise ValueError("prompt and output lengths must be positive integers")
         self.id, self.arrival, self.prompt, self.out = id, arrival, prompt, out
         self.generated = 0
         self.computed = 0
@@ -52,6 +56,14 @@ def clone(reqs):
 # --------------------------------------------------------------------------
 def simulate_continuous(reqs, n_blocks=2048, B=16, max_seqs=128, max_batched_tokens=None,
                         watermark=0.01, debug=False, t0=T0, cp=CP, cd=CD):
+    if any(not isinstance(x, (int, np.integer)) or x <= 0 for x in (n_blocks, B, max_seqs)):
+        raise ValueError("n_blocks, B and max_seqs must be positive integers")
+    if max_batched_tokens is not None and (not isinstance(max_batched_tokens, (int, np.integer)) or max_batched_tokens <= 0):
+        raise ValueError("max_batched_tokens must be None or a positive integer")
+    if not math.isfinite(watermark) or not 0 <= watermark < 1:
+        raise ValueError("watermark must be finite and in [0, 1)")
+    if any(not math.isfinite(x) or x < 0 for x in (t0, cp, cd)):
+        raise ValueError("cost constants must be finite and nonnegative")
     wm = int(math.ceil(watermark * n_blocks))
     budget_cap = max_batched_tokens if max_batched_tokens else 10 ** 12
     free = n_blocks

@@ -205,8 +205,10 @@ def make_payload(t: Target, n_in, n_out):
 async def one_request(target, n_in, n_out, rec: Rec, timeout=30.0, payload=None):
     if isinstance(target, int):                                       # backwards compatible: bare port
         target = Target(port=target)
+    writer = None
     try:
         async def go():
+            nonlocal writer
             reader, writer = await asyncio.open_connection(target.host, target.port)
             body = payload or make_payload(target, n_in, n_out)
             rec.sent = time.perf_counter()
@@ -250,8 +252,8 @@ async def one_request(target, n_in, n_out, rec: Rec, timeout=30.0, payload=None)
                         last = now
                         rec.nevents += 1
             rec.end = time.perf_counter()
-            rec.ntok = usage if usage is not None else rec.nevents    # prefer the server's own token count
-            rec.ok = (done and not rec.err and rec.ntok == n_out and
+            rec.ntok = usage if usage is not None else 0             # SSE events are not token counts
+            rec.ok = (done and not rec.err and usage is not None and rec.ntok == n_out and
                       math.isfinite(rec.first) and rec.end >= rec.first)                       # truncated stream or wrong length = FAILURE
             if not rec.ok:
                 rec.err = f"incomplete or wrong-length stream: {rec.ntok}/{n_out} tokens, done={done}"
@@ -261,6 +263,13 @@ async def one_request(target, n_in, n_out, rec: Rec, timeout=30.0, payload=None)
         rec.err = "timeout"
     except Exception as e:                                           # noqa: BLE001 - benchmark must not crash
         rec.err = f"{type(e).__name__}: {e}"
+    finally:
+        # Failures consume elapsed/billed time too, including connection failures
+        # and timeouts. Always retain a terminal timestamp and close the socket.
+        if not math.isfinite(rec.end):
+            rec.end = time.perf_counter()
+        if writer is not None:
+            writer.close()
     return rec
 
 
@@ -323,7 +332,7 @@ def _collect(recs, warmup, slo_ttft, slo_tpot, from_intended):
     ttft = [r.first - base(r) for r in ok]
     tpot = [(r.end - r.first) / (r.ntok - 1) if r.ntok > 1 else 0.0 for r in ok]
     return dict(n=len(recs), ok=len(ok), ttft=ttft, tpot=tpot, e2e=[r.end - base(r) for r in ok],
-                wall=(max(r.end for r in ok) - min(r.intended for r in recs)) if ok else 0.0,
+                wall=(max(r.end for r in recs) - min(r.intended for r in recs)) if recs else 0.0,
                 toks=sum(r.ntok for r in ok),
                 good=sum(1 for a, b in zip(ttft, tpot) if a <= slo_ttft and b <= slo_tpot))
 

@@ -1,0 +1,6 @@
+PASS masked entropy uses 0 log 0 and rejects undefined distributions
+PASS invalid cache input leaves state unchanged; zero-wrong unprofitable cache is not an infinite win
+PASS unstarted censored requests stay in SLO denominator and cannot count as successes
+PASS overlapping breaker results are delivered chronologically
+PASS cached answers follow actual producing completions and routed responses follow prefix completion
+PASS direct-small first content waits for its routing prefix (0.5s, not 0.25s)

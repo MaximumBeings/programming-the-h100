@@ -1,0 +1,26 @@
+  [PASS] KV bytes per token is 327,680
+  [PASS] transfer: 4096 tokens at 400 Gb/s is 26.8 ms (chapter figure)
+  [PASS] transfer is linear in tokens and inverse in bandwidth
+  [PASS] fast link still exposes the final layer transfer; fast prefill exposes the backlog
+  [PASS] exposed never exceeds the full transfer time
+  [PASS] decode floor halves when the GPU count doubles
+  [PASS] chapter figures: 2xH100 10.4 ms / 90.0 GB / 67 seqs; 4xL40S 20.3 ms / 122.0 GB / 90 seqs
+  [PASS] weights that do not fit (70 GB on one 48 GB card): KV room negative, sequences 0, floor still printed (documented failure)
+  [PASS] one colocated replica equals the plain simulator
+  [PASS] colocated x2 returns every request exactly once
+  [PASS] disagg does not modify its input
+  [PASS] disagg returns every request exactly once
+  [PASS] TTFT is at least the request's own prefill time
+  [PASS] decode cannot start before the KV arrives: finish - first >= transfer time
+  [PASS] single prefill server is FIFO: first tokens come in arrival order
+  [PASS] determinism
+  [PASS] a faster link never raises median TPOT (100 Gb/s >= 400 Gb/s >= ~free)
+  [PASS] a one-token reply finishes at its first token (no extra decode step)
+  [PASS] hand case: one request, prompt 1000, output 3: first = prefill time, finish = prefill + transfer + 2 decode steps
+  [PASS] hand case: a 4x slower link delays that request's finish by exactly the extra transfer time
+  [PASS] pool(1,1) equals the original 1+1 function
+  [PASS] 2+2 completes every request and total generated work equals 1+1
+  [PASS] claim 1: at 6 and 10 req/s the split has lower TPOT p99
+  [PASS] claim 2: at 6 req/s the split has higher TTFT p99
+  [PASS] claim 3: at 14 req/s the split's TPOT p99 is worse and its SLO attainment lower
+25/25 self-tests pass

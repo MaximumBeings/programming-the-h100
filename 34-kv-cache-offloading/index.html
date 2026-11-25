@@ -2443,10 +2443,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#344-what-cannot-be-offloaded-the-active-sequence" class="md-nav__link">
+  <a href="#344-active-sequence-offload-is-an-overlap-budget-not-an-impossibility" class="md-nav__link">
     <span class="md-ellipsis">
       
-        34.4 What cannot be offloaded: the active sequence
+        34.4 Active-sequence offload is an overlap budget, not an impossibility
       
     </span>
   </a>
@@ -2494,6 +2494,34 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-runnable-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete runnable code
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete runnable code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ch34_kv_offloadpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ch34_kv_offload.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2903,6 +2931,8 @@
       
         
       
+        
+      
     
     
     
@@ -3105,6 +3135,34 @@
     
   
     November 25 Inference Execution Record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-adversarial-review-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference Agent Audit and Complete Code
   
 
     
@@ -3353,10 +3411,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#344-what-cannot-be-offloaded-the-active-sequence" class="md-nav__link">
+  <a href="#344-active-sequence-offload-is-an-overlap-budget-not-an-impossibility" class="md-nav__link">
     <span class="md-ellipsis">
       
-        34.4 What cannot be offloaded: the active sequence
+        34.4 Active-sequence offload is an overlap budget, not an impossibility
       
     </span>
   </a>
@@ -3404,6 +3462,34 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-runnable-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete runnable code
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete runnable code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ch34_kv_offloadpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ch34_kv_offload.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3515,7 +3601,7 @@
 <p>CPU simulation with <strong>assumed</strong> bandwidths (PCIe 55 GB/s, one NVMe drive 10 GB/s) and an <strong>assumed</strong> prefill speed of 20,000 tokens per second. Change those three numbers to your measurements and the conclusions change with them; that sensitivity is the point of the chapter. Nothing here measures a real offload system.</p>
 </div>
 <h2 id="worked-system-map">Worked system map<a class="headerlink" href="#worked-system-map" title="Permanent link">&para;</a></h2>
-<p><a href="../images/worked/ch34-inference.svg?v=a35dc04f25ba"><img alt="Memory has a hierarchy: step-by-step hand trace" src="../images/worked/ch34-inference.svg?v=a35dc04f25ba" /></a></p>
+<p><a href="../images/worked/ch34-inference.svg?v=eeb346cbd1d6"><img alt="Memory has a hierarchy: step-by-step hand trace" src="../images/worked/ch34-inference.svg?v=eeb346cbd1d6" /></a></p>
 <h2 id="341-why-offload-at-all">34.1 Why offload at all<a class="headerlink" href="#341-why-offload-at-all" title="Permanent link">&para;</a></h2>
 <p>The KV cache is the largest per-user object in a serving system: about 320 KiB per token for a Llama-3-70B-shaped model, so a 4,096-token conversation holds 1.34 GB. A GPU has tens of gigabytes to spare, so it holds tens of idle conversations. Chat and agent workloads keep many sessions that pause between turns and come back. Throwing the cache away forces a full prefill when the user returns; keeping all of it on the GPU does not fit.</p>
 <p>A tiered design keeps hot sessions on the GPU, warm ones in host RAM and cold ones on NVMe:</p>
@@ -3560,51 +3646,53 @@
 <p>The hit rates depend on the popularity skew, the tier sizes and the reuse pattern. Measure them from real traffic traces before sizing tiers.</p>
 <div class="admonition warning">
 <p class="admonition-title">Where offload wins in practice</p>
-<p>The reliable wins are <strong>reuse</strong>: multi-turn chat, shared system prompts and documents, and preempted requests that are swapped out and back. Offload does not make a single long conversation cheaper to run. Production systems built around this idea include LMCache and the KV-transfer layers in vLLM and similar engines.</p>
+<p>The reliable wins are <strong>reuse</strong>: multi-turn chat, shared system prompts and documents, and preempted requests that are swapped out and back. Offload does not automatically make a continuously decoded long conversation faster or cheaper; it may instead trade latency for feasible context capacity. Production systems built around this idea include LMCache and the KV-transfer layers in vLLM and similar engines.</p>
 </div>
-<h2 id="344-what-cannot-be-offloaded-the-active-sequence">34.4 What cannot be offloaded: the active sequence<a class="headerlink" href="#344-what-cannot-be-offloaded-the-active-sequence" title="Permanent link">&para;</a></h2>
-<p>One might hope to keep a long context in host RAM and stream it in for every decode step. The arithmetic says otherwise. A decode step is bounded by reading weights (21 ms on two H100s, Chapter 32), and with 80 layers that is about 0.26 ms of compute per layer. To hide a fetch behind that, the next layer's KV must arrive within 0.26 ms:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>per-layer compute budget in a decode step ~ 0.263 ms (21 ms / 80 layers)
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>context   1024: fetching ONE layer's KV over PCIe takes  0.076 ms -&gt; hidden behind compute
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>context   4096: fetching ONE layer's KV over PCIe takes  0.305 ms -&gt; STALLS decode
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>context   8192: fetching ONE layer's KV over PCIe takes  0.610 ms -&gt; STALLS decode
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>context  32768: fetching ONE layer's KV over PCIe takes  2.440 ms -&gt; STALLS decode
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>largest per-layer KV fetch that hides behind one layer's compute (one sequence): ~3,525 tokens
+<h2 id="344-active-sequence-offload-is-an-overlap-budget-not-an-impossibility">34.4 Active-sequence offload is an overlap budget, not an impossibility<a class="headerlink" href="#344-active-sequence-offload-is-an-overlap-budget-not-an-impossibility" title="Permanent link">&para;</a></h2>
+<p>An active sequence needs its visible K/V repeatedly, so offloading trades GPU capacity for transfer work on the decode path. Whether that work can be hidden depends on the batch, per-rank KV ownership, available compute window, memory bandwidth and copy/compute scheduling. Systems such as <a href="https://arxiv.org/abs/2303.06865">FlexGen</a> demonstrate that active-cache offload is possible; their throughput and latency objectives differ from a low-latency resident-cache server.</p>
+<p>The earlier whole-session restore tables assume a single <strong>effective aggregate</strong> 55 GB/s restore path for the complete cache. The following is a separate per-rank overlap scenario with two independent links (110 GB/s aggregate); use the same topology and achieved bandwidth assumptions when comparing deployments.</p>
+<p>Use the two-H100 example consistently. Assume the 8 GQA KV heads are evenly sharded across TP2, and <strong>each GPU has its own independent 55 GB/s host-to-device link</strong>. One rank owns <code>4096/2 = 2048</code> KV bytes per token per layer. Assume an evenly distributed 21 ms step, giving an ideal per-layer overlap window of <code>21/80 = 0.2625 ms</code>. These are model assumptions, not a measured copy pipeline:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>assumed per-layer overlap window in a decode step ~ 0.263 ms (21 ms / 80 layers)
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>context   1024: fetching ONE rank's layer KV over its PCIe link takes  0.038 ms -&gt; fits ideal overlap window
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>context   4096: fetching ONE rank's layer KV over its PCIe link takes  0.153 ms -&gt; fits ideal overlap window
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>context   8192: fetching ONE rank's layer KV over its PCIe link takes  0.305 ms -&gt; exceeds ideal overlap window
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>context  32768: fetching ONE rank's layer KV over its PCIe link takes  1.220 ms -&gt; exceeds ideal overlap window
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>ideal per-rank threshold with TP2 KV-head sharding (one sequence): ~7,050 tokens
 </span></code></pre></div>
-<p>A single sequence of about 3,500 tokens is the limit for fetching its KV a layer ahead, and a real batch holds many sequences all competing for the same PCIe link. So the rule is:</p>
+<p>Hand check: <code>0.0002625 * 55e9 / 2048 = 7049.56</code> tokens. If all 8 heads instead traverse one shared 55 GB/s link, use 4096 bytes and the threshold halves to about 3,525. The old chapter combined the TP2 step time with unsharded bytes without stating that shared-link assumption. For a batch, sum each rank's active contexts over the link it actually shares; do not multiply available bandwidth merely because there are two GPUs.</p>
 <table>
 <thead>
 <tr>
 <th>Case</th>
-<th>Offloadable?</th>
+<th>What to establish</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Idle session between turns</td>
-<td>Yes: restore before the next request, off the critical path</td>
+<td>Restore before reuse; its latency still matters to the returning request.</td>
 </tr>
 <tr>
 <td>Preempted request</td>
-<td>Yes: swap out and back</td>
+<td>Account for both swap-out and swap-in, or compare recomputation.</td>
 </tr>
 <tr>
-<td>Shared prefix reused by many requests</td>
-<td>Yes: restore once, serve many</td>
+<td>Shared exact prefix</td>
+<td>Restore reusable blocks once while preserving reference counts.</td>
 </tr>
 <tr>
-<td>Active sequence read every decode step</td>
-<td>No: keep on the GPU</td>
+<td>Active sequence</td>
+<td>Measure whether per-rank fetches fit available overlap windows and whether contention slows compute.</td>
 </tr>
 <tr>
 <td>Long active sequence</td>
-<td>Reduce the KV itself (quantized cache, fewer KV heads, sparse or windowed attention)</td>
+<td>Consider a capacity/latency tradeoff, quantized KV or an attention scheme with a smaller visible cache.</td>
 </tr>
 </tbody>
 </table>
-<p>"Without stalling decode" is achievable only by restoring <strong>ahead</strong> of need, using pinned host memory and a separate copy stream so the transfer overlaps other requests' compute (<a href="../14-nsight-systems/">Chapter 14</a> shows how to see whether it does), and never by paging in the sequence being decoded.</p>
+<p>Pinned memory, asynchronous copies and enough staging space are prerequisites for useful overlap, not guarantees of it. A fetch that takes longer than its overlap window exposes a stall in this simple model. A shorter fetch only <em>could</em> be hidden: dependency ordering, initial pipeline fill, other transfers and HBM contention must also be measured. See <a href="../14-nsight-systems/">Chapter 14</a> for the timeline checks.</p>
 <h2 id="345-self-tests-23-all-pass">34.5 Self-tests (23, all pass)<a class="headerlink" href="#345-self-tests-23-all-pass" title="Permanent link">&para;</a></h2>
-<p>Run <code>python3 /Users/oluwaseyiawoga/Developer/programming-the-h100/docs/examples/inference-systems/ch34_kv_offload.py --test</code>.</p>
+<p>Run <code>python3 docs/examples/inference-systems/ch34_kv_offload.py --test</code>.</p>
 <table>
 <thead>
 <tr>
@@ -3720,7 +3808,7 @@
 </tr>
 <tr>
 <td>Active sequence read every step</td>
-<td>cannot be offloaded; PCIe fetch exceeds the per-layer compute budget beyond about 3,500 tokens for one sequence</td>
+<td>feasibility depends on per-rank bytes, shared-link bandwidth and the measured overlap window; this ideal TP2 example gives about 7,050 tokens per sequence</td>
 <td>section 34.4</td>
 </tr>
 </tbody>
@@ -3774,6 +3862,487 @@
 </table>
 <p>Replace the three constants in <code>ch34_kv_offload.py</code> (<code>PCIE_BW</code>, <code>NVME_BW</code>, <code>PREFILL_TPS</code>) with your measurements and rerun <code>--extras</code>.</p>
 </div>
+<!-- BEGIN COMPLETE INFERENCE SOURCE -->
+<h2 id="complete-runnable-code">Complete runnable code<a class="headerlink" href="#complete-runnable-code" title="Permanent link">&para;</a></h2>
+<p>The complete implementation is shown below, including its checks and entry point. The listing and downloadable <code>.py</code> file contain exactly the same source. Copy the file under the displayed filename; keep supporting files in the same directory.</p>
+<p><a href="../examples/inference-systems/inference-systems.zip">Download all inference examples and supporting modules</a> or read the <a href="../examples/inference-systems/">environment and command guide</a>.</p>
+<p>The <a href="../inference-adversarial-review-2026-11-25/">follow-up agent audit</a> records the corrections, fresh CPU captures and hardware limits for this source.</p>
+<p>Read it in three passes: start with <code>restore_seconds</code> and <code>recompute_seconds</code> to identify the state; trace <code>TierCache</code> for one request or token; then follow <code>run_tests</code> and <code>extras</code> to see how the result is checked.</p>
+<p>From the repository root:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>python3<span class="w"> </span>docs/examples/inference-systems/ch34_kv_offload.py<span class="w"> </span>--test
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="c1"># Run the full chapter demonstrations:</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>python3<span class="w"> </span>docs/examples/inference-systems/ch34_kv_offload.py
+</span></code></pre></div>
+<h3 id="ch34_kv_offloadpy">ch34_kv_offload.py<a class="headerlink" href="#ch34_kv_offloadpy" title="Permanent link">&para;</a></h3>
+<p><a href="../examples/inference-systems/ch34_kv_offload.py">Download ch34_kv_offload.py</a></p>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">ch34_kv_offload.py</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">  1</a></span>
+<span class="normal"><a href="#__codelineno-10-2">  2</a></span>
+<span class="normal"><a href="#__codelineno-10-3">  3</a></span>
+<span class="normal"><a href="#__codelineno-10-4">  4</a></span>
+<span class="normal"><a href="#__codelineno-10-5">  5</a></span>
+<span class="normal"><a href="#__codelineno-10-6">  6</a></span>
+<span class="normal"><a href="#__codelineno-10-7">  7</a></span>
+<span class="normal"><a href="#__codelineno-10-8">  8</a></span>
+<span class="normal"><a href="#__codelineno-10-9">  9</a></span>
+<span class="normal"><a href="#__codelineno-10-10"> 10</a></span>
+<span class="normal"><a href="#__codelineno-10-11"> 11</a></span>
+<span class="normal"><a href="#__codelineno-10-12"> 12</a></span>
+<span class="normal"><a href="#__codelineno-10-13"> 13</a></span>
+<span class="normal"><a href="#__codelineno-10-14"> 14</a></span>
+<span class="normal"><a href="#__codelineno-10-15"> 15</a></span>
+<span class="normal"><a href="#__codelineno-10-16"> 16</a></span>
+<span class="normal"><a href="#__codelineno-10-17"> 17</a></span>
+<span class="normal"><a href="#__codelineno-10-18"> 18</a></span>
+<span class="normal"><a href="#__codelineno-10-19"> 19</a></span>
+<span class="normal"><a href="#__codelineno-10-20"> 20</a></span>
+<span class="normal"><a href="#__codelineno-10-21"> 21</a></span>
+<span class="normal"><a href="#__codelineno-10-22"> 22</a></span>
+<span class="normal"><a href="#__codelineno-10-23"> 23</a></span>
+<span class="normal"><a href="#__codelineno-10-24"> 24</a></span>
+<span class="normal"><a href="#__codelineno-10-25"> 25</a></span>
+<span class="normal"><a href="#__codelineno-10-26"> 26</a></span>
+<span class="normal"><a href="#__codelineno-10-27"> 27</a></span>
+<span class="normal"><a href="#__codelineno-10-28"> 28</a></span>
+<span class="normal"><a href="#__codelineno-10-29"> 29</a></span>
+<span class="normal"><a href="#__codelineno-10-30"> 30</a></span>
+<span class="normal"><a href="#__codelineno-10-31"> 31</a></span>
+<span class="normal"><a href="#__codelineno-10-32"> 32</a></span>
+<span class="normal"><a href="#__codelineno-10-33"> 33</a></span>
+<span class="normal"><a href="#__codelineno-10-34"> 34</a></span>
+<span class="normal"><a href="#__codelineno-10-35"> 35</a></span>
+<span class="normal"><a href="#__codelineno-10-36"> 36</a></span>
+<span class="normal"><a href="#__codelineno-10-37"> 37</a></span>
+<span class="normal"><a href="#__codelineno-10-38"> 38</a></span>
+<span class="normal"><a href="#__codelineno-10-39"> 39</a></span>
+<span class="normal"><a href="#__codelineno-10-40"> 40</a></span>
+<span class="normal"><a href="#__codelineno-10-41"> 41</a></span>
+<span class="normal"><a href="#__codelineno-10-42"> 42</a></span>
+<span class="normal"><a href="#__codelineno-10-43"> 43</a></span>
+<span class="normal"><a href="#__codelineno-10-44"> 44</a></span>
+<span class="normal"><a href="#__codelineno-10-45"> 45</a></span>
+<span class="normal"><a href="#__codelineno-10-46"> 46</a></span>
+<span class="normal"><a href="#__codelineno-10-47"> 47</a></span>
+<span class="normal"><a href="#__codelineno-10-48"> 48</a></span>
+<span class="normal"><a href="#__codelineno-10-49"> 49</a></span>
+<span class="normal"><a href="#__codelineno-10-50"> 50</a></span>
+<span class="normal"><a href="#__codelineno-10-51"> 51</a></span>
+<span class="normal"><a href="#__codelineno-10-52"> 52</a></span>
+<span class="normal"><a href="#__codelineno-10-53"> 53</a></span>
+<span class="normal"><a href="#__codelineno-10-54"> 54</a></span>
+<span class="normal"><a href="#__codelineno-10-55"> 55</a></span>
+<span class="normal"><a href="#__codelineno-10-56"> 56</a></span>
+<span class="normal"><a href="#__codelineno-10-57"> 57</a></span>
+<span class="normal"><a href="#__codelineno-10-58"> 58</a></span>
+<span class="normal"><a href="#__codelineno-10-59"> 59</a></span>
+<span class="normal"><a href="#__codelineno-10-60"> 60</a></span>
+<span class="normal"><a href="#__codelineno-10-61"> 61</a></span>
+<span class="normal"><a href="#__codelineno-10-62"> 62</a></span>
+<span class="normal"><a href="#__codelineno-10-63"> 63</a></span>
+<span class="normal"><a href="#__codelineno-10-64"> 64</a></span>
+<span class="normal"><a href="#__codelineno-10-65"> 65</a></span>
+<span class="normal"><a href="#__codelineno-10-66"> 66</a></span>
+<span class="normal"><a href="#__codelineno-10-67"> 67</a></span>
+<span class="normal"><a href="#__codelineno-10-68"> 68</a></span>
+<span class="normal"><a href="#__codelineno-10-69"> 69</a></span>
+<span class="normal"><a href="#__codelineno-10-70"> 70</a></span>
+<span class="normal"><a href="#__codelineno-10-71"> 71</a></span>
+<span class="normal"><a href="#__codelineno-10-72"> 72</a></span>
+<span class="normal"><a href="#__codelineno-10-73"> 73</a></span>
+<span class="normal"><a href="#__codelineno-10-74"> 74</a></span>
+<span class="normal"><a href="#__codelineno-10-75"> 75</a></span>
+<span class="normal"><a href="#__codelineno-10-76"> 76</a></span>
+<span class="normal"><a href="#__codelineno-10-77"> 77</a></span>
+<span class="normal"><a href="#__codelineno-10-78"> 78</a></span>
+<span class="normal"><a href="#__codelineno-10-79"> 79</a></span>
+<span class="normal"><a href="#__codelineno-10-80"> 80</a></span>
+<span class="normal"><a href="#__codelineno-10-81"> 81</a></span>
+<span class="normal"><a href="#__codelineno-10-82"> 82</a></span>
+<span class="normal"><a href="#__codelineno-10-83"> 83</a></span>
+<span class="normal"><a href="#__codelineno-10-84"> 84</a></span>
+<span class="normal"><a href="#__codelineno-10-85"> 85</a></span>
+<span class="normal"><a href="#__codelineno-10-86"> 86</a></span>
+<span class="normal"><a href="#__codelineno-10-87"> 87</a></span>
+<span class="normal"><a href="#__codelineno-10-88"> 88</a></span>
+<span class="normal"><a href="#__codelineno-10-89"> 89</a></span>
+<span class="normal"><a href="#__codelineno-10-90"> 90</a></span>
+<span class="normal"><a href="#__codelineno-10-91"> 91</a></span>
+<span class="normal"><a href="#__codelineno-10-92"> 92</a></span>
+<span class="normal"><a href="#__codelineno-10-93"> 93</a></span>
+<span class="normal"><a href="#__codelineno-10-94"> 94</a></span>
+<span class="normal"><a href="#__codelineno-10-95"> 95</a></span>
+<span class="normal"><a href="#__codelineno-10-96"> 96</a></span>
+<span class="normal"><a href="#__codelineno-10-97"> 97</a></span>
+<span class="normal"><a href="#__codelineno-10-98"> 98</a></span>
+<span class="normal"><a href="#__codelineno-10-99"> 99</a></span>
+<span class="normal"><a href="#__codelineno-10-100">100</a></span>
+<span class="normal"><a href="#__codelineno-10-101">101</a></span>
+<span class="normal"><a href="#__codelineno-10-102">102</a></span>
+<span class="normal"><a href="#__codelineno-10-103">103</a></span>
+<span class="normal"><a href="#__codelineno-10-104">104</a></span>
+<span class="normal"><a href="#__codelineno-10-105">105</a></span>
+<span class="normal"><a href="#__codelineno-10-106">106</a></span>
+<span class="normal"><a href="#__codelineno-10-107">107</a></span>
+<span class="normal"><a href="#__codelineno-10-108">108</a></span>
+<span class="normal"><a href="#__codelineno-10-109">109</a></span>
+<span class="normal"><a href="#__codelineno-10-110">110</a></span>
+<span class="normal"><a href="#__codelineno-10-111">111</a></span>
+<span class="normal"><a href="#__codelineno-10-112">112</a></span>
+<span class="normal"><a href="#__codelineno-10-113">113</a></span>
+<span class="normal"><a href="#__codelineno-10-114">114</a></span>
+<span class="normal"><a href="#__codelineno-10-115">115</a></span>
+<span class="normal"><a href="#__codelineno-10-116">116</a></span>
+<span class="normal"><a href="#__codelineno-10-117">117</a></span>
+<span class="normal"><a href="#__codelineno-10-118">118</a></span>
+<span class="normal"><a href="#__codelineno-10-119">119</a></span>
+<span class="normal"><a href="#__codelineno-10-120">120</a></span>
+<span class="normal"><a href="#__codelineno-10-121">121</a></span>
+<span class="normal"><a href="#__codelineno-10-122">122</a></span>
+<span class="normal"><a href="#__codelineno-10-123">123</a></span>
+<span class="normal"><a href="#__codelineno-10-124">124</a></span>
+<span class="normal"><a href="#__codelineno-10-125">125</a></span>
+<span class="normal"><a href="#__codelineno-10-126">126</a></span>
+<span class="normal"><a href="#__codelineno-10-127">127</a></span>
+<span class="normal"><a href="#__codelineno-10-128">128</a></span>
+<span class="normal"><a href="#__codelineno-10-129">129</a></span>
+<span class="normal"><a href="#__codelineno-10-130">130</a></span>
+<span class="normal"><a href="#__codelineno-10-131">131</a></span>
+<span class="normal"><a href="#__codelineno-10-132">132</a></span>
+<span class="normal"><a href="#__codelineno-10-133">133</a></span>
+<span class="normal"><a href="#__codelineno-10-134">134</a></span>
+<span class="normal"><a href="#__codelineno-10-135">135</a></span>
+<span class="normal"><a href="#__codelineno-10-136">136</a></span>
+<span class="normal"><a href="#__codelineno-10-137">137</a></span>
+<span class="normal"><a href="#__codelineno-10-138">138</a></span>
+<span class="normal"><a href="#__codelineno-10-139">139</a></span>
+<span class="normal"><a href="#__codelineno-10-140">140</a></span>
+<span class="normal"><a href="#__codelineno-10-141">141</a></span>
+<span class="normal"><a href="#__codelineno-10-142">142</a></span>
+<span class="normal"><a href="#__codelineno-10-143">143</a></span>
+<span class="normal"><a href="#__codelineno-10-144">144</a></span>
+<span class="normal"><a href="#__codelineno-10-145">145</a></span>
+<span class="normal"><a href="#__codelineno-10-146">146</a></span>
+<span class="normal"><a href="#__codelineno-10-147">147</a></span>
+<span class="normal"><a href="#__codelineno-10-148">148</a></span>
+<span class="normal"><a href="#__codelineno-10-149">149</a></span>
+<span class="normal"><a href="#__codelineno-10-150">150</a></span>
+<span class="normal"><a href="#__codelineno-10-151">151</a></span>
+<span class="normal"><a href="#__codelineno-10-152">152</a></span>
+<span class="normal"><a href="#__codelineno-10-153">153</a></span>
+<span class="normal"><a href="#__codelineno-10-154">154</a></span>
+<span class="normal"><a href="#__codelineno-10-155">155</a></span>
+<span class="normal"><a href="#__codelineno-10-156">156</a></span>
+<span class="normal"><a href="#__codelineno-10-157">157</a></span>
+<span class="normal"><a href="#__codelineno-10-158">158</a></span>
+<span class="normal"><a href="#__codelineno-10-159">159</a></span>
+<span class="normal"><a href="#__codelineno-10-160">160</a></span>
+<span class="normal"><a href="#__codelineno-10-161">161</a></span>
+<span class="normal"><a href="#__codelineno-10-162">162</a></span>
+<span class="normal"><a href="#__codelineno-10-163">163</a></span>
+<span class="normal"><a href="#__codelineno-10-164">164</a></span>
+<span class="normal"><a href="#__codelineno-10-165">165</a></span>
+<span class="normal"><a href="#__codelineno-10-166">166</a></span>
+<span class="normal"><a href="#__codelineno-10-167">167</a></span>
+<span class="normal"><a href="#__codelineno-10-168">168</a></span>
+<span class="normal"><a href="#__codelineno-10-169">169</a></span>
+<span class="normal"><a href="#__codelineno-10-170">170</a></span>
+<span class="normal"><a href="#__codelineno-10-171">171</a></span>
+<span class="normal"><a href="#__codelineno-10-172">172</a></span>
+<span class="normal"><a href="#__codelineno-10-173">173</a></span>
+<span class="normal"><a href="#__codelineno-10-174">174</a></span>
+<span class="normal"><a href="#__codelineno-10-175">175</a></span>
+<span class="normal"><a href="#__codelineno-10-176">176</a></span>
+<span class="normal"><a href="#__codelineno-10-177">177</a></span>
+<span class="normal"><a href="#__codelineno-10-178">178</a></span>
+<span class="normal"><a href="#__codelineno-10-179">179</a></span>
+<span class="normal"><a href="#__codelineno-10-180">180</a></span>
+<span class="normal"><a href="#__codelineno-10-181">181</a></span>
+<span class="normal"><a href="#__codelineno-10-182">182</a></span>
+<span class="normal"><a href="#__codelineno-10-183">183</a></span>
+<span class="normal"><a href="#__codelineno-10-184">184</a></span>
+<span class="normal"><a href="#__codelineno-10-185">185</a></span>
+<span class="normal"><a href="#__codelineno-10-186">186</a></span>
+<span class="normal"><a href="#__codelineno-10-187">187</a></span>
+<span class="normal"><a href="#__codelineno-10-188">188</a></span>
+<span class="normal"><a href="#__codelineno-10-189">189</a></span>
+<span class="normal"><a href="#__codelineno-10-190">190</a></span>
+<span class="normal"><a href="#__codelineno-10-191">191</a></span>
+<span class="normal"><a href="#__codelineno-10-192">192</a></span>
+<span class="normal"><a href="#__codelineno-10-193">193</a></span>
+<span class="normal"><a href="#__codelineno-10-194">194</a></span>
+<span class="normal"><a href="#__codelineno-10-195">195</a></span>
+<span class="normal"><a href="#__codelineno-10-196">196</a></span>
+<span class="normal"><a href="#__codelineno-10-197">197</a></span>
+<span class="normal"><a href="#__codelineno-10-198">198</a></span>
+<span class="normal"><a href="#__codelineno-10-199">199</a></span>
+<span class="normal"><a href="#__codelineno-10-200">200</a></span>
+<span class="normal"><a href="#__codelineno-10-201">201</a></span>
+<span class="normal"><a href="#__codelineno-10-202">202</a></span>
+<span class="normal"><a href="#__codelineno-10-203">203</a></span>
+<span class="normal"><a href="#__codelineno-10-204">204</a></span>
+<span class="normal"><a href="#__codelineno-10-205">205</a></span>
+<span class="normal"><a href="#__codelineno-10-206">206</a></span>
+<span class="normal"><a href="#__codelineno-10-207">207</a></span>
+<span class="normal"><a href="#__codelineno-10-208">208</a></span>
+<span class="normal"><a href="#__codelineno-10-209">209</a></span>
+<span class="normal"><a href="#__codelineno-10-210">210</a></span>
+<span class="normal"><a href="#__codelineno-10-211">211</a></span>
+<span class="normal"><a href="#__codelineno-10-212">212</a></span>
+<span class="normal"><a href="#__codelineno-10-213">213</a></span>
+<span class="normal"><a href="#__codelineno-10-214">214</a></span>
+<span class="normal"><a href="#__codelineno-10-215">215</a></span>
+<span class="normal"><a href="#__codelineno-10-216">216</a></span>
+<span class="normal"><a href="#__codelineno-10-217">217</a></span>
+<span class="normal"><a href="#__codelineno-10-218">218</a></span>
+<span class="normal"><a href="#__codelineno-10-219">219</a></span>
+<span class="normal"><a href="#__codelineno-10-220">220</a></span>
+<span class="normal"><a href="#__codelineno-10-221">221</a></span>
+<span class="normal"><a href="#__codelineno-10-222">222</a></span>
+<span class="normal"><a href="#__codelineno-10-223">223</a></span>
+<span class="normal"><a href="#__codelineno-10-224">224</a></span>
+<span class="normal"><a href="#__codelineno-10-225">225</a></span>
+<span class="normal"><a href="#__codelineno-10-226">226</a></span>
+<span class="normal"><a href="#__codelineno-10-227">227</a></span>
+<span class="normal"><a href="#__codelineno-10-228">228</a></span>
+<span class="normal"><a href="#__codelineno-10-229">229</a></span>
+<span class="normal"><a href="#__codelineno-10-230">230</a></span>
+<span class="normal"><a href="#__codelineno-10-231">231</a></span>
+<span class="normal"><a href="#__codelineno-10-232">232</a></span>
+<span class="normal"><a href="#__codelineno-10-233">233</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="sd">"""Chapter 34: hierarchical KV-cache offloading -- tier simulator, restore-vs-recompute, and the decode-stall test.</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="sd">Run:  python3 ch34_kv_offload.py          (the chapter's numbers)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="sd">      python3 ch34_kv_offload.py --test   (self-tests)</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="sd">      python3 ch34_kv_offload.py --extras (four extra experiments)</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="sd">CPU simulation. Bandwidths are assumed round numbers (parameters). Nothing here is a measurement.</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7"></a><span class="sd">"""</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8"></a><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10"></a>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11"></a><span class="c1"># ---- model shape (Llama-3-70B-like) and assumed hardware parameters</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12"></a><span class="n">LAYERS</span><span class="p">,</span> <span class="n">KV_HEADS</span><span class="p">,</span> <span class="n">HEAD_DIM</span><span class="p">,</span> <span class="n">BYTES</span> <span class="o">=</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">2</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13"></a><span class="n">KV_PER_TOKEN</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">LAYERS</span> <span class="o">*</span> <span class="n">KV_HEADS</span> <span class="o">*</span> <span class="n">HEAD_DIM</span> <span class="o">*</span> <span class="n">BYTES</span>              <span class="c1"># 327,680</span>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14"></a><span class="n">KV_PER_TOKEN_LAYER</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">KV_HEADS</span> <span class="o">*</span> <span class="n">HEAD_DIM</span> <span class="o">*</span> <span class="n">BYTES</span>                 <span class="c1"># 4,096 globally</span>
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15"></a><span class="n">KV_SHARDS</span> <span class="o">=</span> <span class="mi">2</span>                    <span class="c1"># evenly sharded GQA heads across the two H100 ranks</span>
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16"></a><span class="n">KV_PER_TOKEN_LAYER_PER_RANK</span> <span class="o">=</span> <span class="n">KV_PER_TOKEN_LAYER</span> <span class="o">//</span> <span class="n">KV_SHARDS</span>         <span class="c1"># 2,048 per rank/link</span>
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17"></a><span class="n">PCIE_BW</span> <span class="o">=</span> <span class="mf">55e9</span>                   <span class="c1"># B/s host&lt;-&gt;GPU, PCIe Gen5 x16 practical (assumption)</span>
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18"></a><span class="n">NVME_BW</span> <span class="o">=</span> <span class="mf">10e9</span>                   <span class="c1"># B/s one NVMe drive (assumption; drives range ~7-14 GB/s)</span>
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19"></a><span class="n">PREFILL_TPS</span> <span class="o">=</span> <span class="mf">20000.0</span>            <span class="c1"># prompt tokens/s the cluster recomputes at (assumption; measure yours)</span>
+</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20"></a><span class="n">DECODE_STEP_S</span> <span class="o">=</span> <span class="mf">0.021</span>            <span class="c1"># s, bandwidth floor from Chapter 32 (weights only)</span>
+</span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21"></a>
+</span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22"></a>
+</span><span id="__span-10-23"><a id="__codelineno-10-23" name="__codelineno-10-23"></a><span class="k">def</span><span class="w"> </span><span class="nf">restore_seconds</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">tier</span><span class="p">):</span>
+</span><span id="__span-10-24"><a id="__codelineno-10-24" name="__codelineno-10-24"></a>    <span class="n">bw</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cpu"</span><span class="p">:</span> <span class="n">PCIE_BW</span><span class="p">,</span> <span class="s2">"nvme"</span><span class="p">:</span> <span class="n">NVME_BW</span><span class="p">}[</span><span class="n">tier</span><span class="p">]</span>
+</span><span id="__span-10-25"><a id="__codelineno-10-25" name="__codelineno-10-25"></a>    <span class="k">return</span> <span class="n">tokens</span> <span class="o">*</span> <span class="n">KV_PER_TOKEN</span> <span class="o">/</span> <span class="n">bw</span>
+</span><span id="__span-10-26"><a id="__codelineno-10-26" name="__codelineno-10-26"></a>
+</span><span id="__span-10-27"><a id="__codelineno-10-27" name="__codelineno-10-27"></a>
+</span><span id="__span-10-28"><a id="__codelineno-10-28" name="__codelineno-10-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">recompute_seconds</span><span class="p">(</span><span class="n">tokens</span><span class="p">):</span>
+</span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29"></a>    <span class="k">return</span> <span class="n">tokens</span> <span class="o">/</span> <span class="n">PREFILL_TPS</span>
+</span><span id="__span-10-30"><a id="__codelineno-10-30" name="__codelineno-10-30"></a>
+</span><span id="__span-10-31"><a id="__codelineno-10-31" name="__codelineno-10-31"></a>
+</span><span id="__span-10-32"><a id="__codelineno-10-32" name="__codelineno-10-32"></a><span class="k">class</span><span class="w"> </span><span class="nc">TierCache</span><span class="p">:</span>
+</span><span id="__span-10-33"><a id="__codelineno-10-33" name="__codelineno-10-33"></a><span class="w">    </span><span class="sd">"""Exclusive LRU hierarchy of whole sessions: a session lives in exactly one tier, and evictions demote it one</span>
+</span><span id="__span-10-34"><a id="__codelineno-10-34" name="__codelineno-10-34"></a><span class="sd">    tier down. cap is in tokens per tier (None = unbounded; a tier of 0 holds nothing and passes sessions down)."""</span>
+</span><span id="__span-10-35"><a id="__codelineno-10-35" name="__codelineno-10-35"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gpu_tok</span><span class="p">,</span> <span class="n">cpu_tok</span><span class="p">,</span> <span class="n">nvme_tok</span><span class="p">):</span>
+</span><span id="__span-10-36"><a id="__codelineno-10-36" name="__codelineno-10-36"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cap</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"gpu"</span><span class="p">:</span> <span class="n">gpu_tok</span><span class="p">,</span> <span class="s2">"cpu"</span><span class="p">:</span> <span class="n">cpu_tok</span><span class="p">,</span> <span class="s2">"nvme"</span><span class="p">:</span> <span class="n">nvme_tok</span><span class="p">}</span>
+</span><span id="__span-10-37"><a id="__codelineno-10-37" name="__codelineno-10-37"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tier</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cap</span><span class="p">}</span>                    <span class="c1"># session -&gt; tokens</span>
+</span><span id="__span-10-38"><a id="__codelineno-10-38" name="__codelineno-10-38"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="s2">"cpu"</span><span class="p">,</span> <span class="s2">"nvme"</span><span class="p">]</span>
+</span><span id="__span-10-39"><a id="__codelineno-10-39" name="__codelineno-10-39"></a>
+</span><span id="__span-10-40"><a id="__codelineno-10-40" name="__codelineno-10-40"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">used</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+</span><span id="__span-10-41"><a id="__codelineno-10-41" name="__codelineno-10-41"></a>        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+</span><span id="__span-10-42"><a id="__codelineno-10-42" name="__codelineno-10-42"></a>
+</span><span id="__span-10-43"><a id="__codelineno-10-43" name="__codelineno-10-43"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">sid</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+</span><span id="__span-10-44"><a id="__codelineno-10-44" name="__codelineno-10-44"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cap</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-10-45"><a id="__codelineno-10-45" name="__codelineno-10-45"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">sid</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">;</span> <span class="k">return</span>
+</span><span id="__span-10-46"><a id="__codelineno-10-46" name="__codelineno-10-46"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cap</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">tokens</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">cap</span><span class="p">[</span><span class="n">t</span><span class="p">]:</span>
+</span><span id="__span-10-47"><a id="__codelineno-10-47" name="__codelineno-10-47"></a>            <span class="n">nxt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="__span-10-48"><a id="__codelineno-10-48" name="__codelineno-10-48"></a>            <span class="k">if</span> <span class="n">nxt</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="n">nxt</span><span class="p">],</span> <span class="n">sid</span><span class="p">,</span> <span class="n">tokens</span><span class="p">)</span>
+</span><span id="__span-10-49"><a id="__codelineno-10-49" name="__codelineno-10-49"></a>            <span class="k">return</span>
+</span><span id="__span-10-50"><a id="__codelineno-10-50" name="__codelineno-10-50"></a>        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">used</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">+</span> <span class="n">tokens</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">cap</span><span class="p">[</span><span class="n">t</span><span class="p">]:</span>
+</span><span id="__span-10-51"><a id="__codelineno-10-51" name="__codelineno-10-51"></a>            <span class="n">vid</span><span class="p">,</span> <span class="n">vtok</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">popitem</span><span class="p">(</span><span class="n">last</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>                   <span class="c1"># evict LRU, demote it</span>
+</span><span id="__span-10-52"><a id="__codelineno-10-52" name="__codelineno-10-52"></a>            <span class="n">nxt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="__span-10-53"><a id="__codelineno-10-53" name="__codelineno-10-53"></a>            <span class="k">if</span> <span class="n">nxt</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">_insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">[</span><span class="n">nxt</span><span class="p">],</span> <span class="n">vid</span><span class="p">,</span> <span class="n">vtok</span><span class="p">)</span>
+</span><span id="__span-10-54"><a id="__codelineno-10-54" name="__codelineno-10-54"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">sid</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokens</span>
+</span><span id="__span-10-55"><a id="__codelineno-10-55" name="__codelineno-10-55"></a>
+</span><span id="__span-10-56"><a id="__codelineno-10-56" name="__codelineno-10-56"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">access</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sid</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+</span><span id="__span-10-57"><a id="__codelineno-10-57" name="__codelineno-10-57"></a><span class="w">        </span><span class="sd">"""Return the tier that held the session ('gpu','cpu','nvme') or None; then place it on the GPU tier."""</span>
+</span><span id="__span-10-58"><a id="__codelineno-10-58" name="__codelineno-10-58"></a>        <span class="n">found</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-10-59"><a id="__codelineno-10-59" name="__codelineno-10-59"></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">:</span>
+</span><span id="__span-10-60"><a id="__codelineno-10-60" name="__codelineno-10-60"></a>            <span class="k">if</span> <span class="n">sid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="n">t</span><span class="p">]:</span>
+</span><span id="__span-10-61"><a id="__codelineno-10-61" name="__codelineno-10-61"></a>                <span class="n">found</span> <span class="o">=</span> <span class="n">t</span>
+</span><span id="__span-10-62"><a id="__codelineno-10-62" name="__codelineno-10-62"></a>                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">sid</span><span class="p">]</span>
+</span><span id="__span-10-63"><a id="__codelineno-10-63" name="__codelineno-10-63"></a>                <span class="k">break</span>
+</span><span id="__span-10-64"><a id="__codelineno-10-64" name="__codelineno-10-64"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_insert</span><span class="p">(</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="n">sid</span><span class="p">,</span> <span class="n">tokens</span><span class="p">)</span>
+</span><span id="__span-10-65"><a id="__codelineno-10-65" name="__codelineno-10-65"></a>        <span class="k">return</span> <span class="n">found</span>
+</span><span id="__span-10-66"><a id="__codelineno-10-66" name="__codelineno-10-66"></a>
+</span><span id="__span-10-67"><a id="__codelineno-10-67" name="__codelineno-10-67"></a>
+</span><span id="__span-10-68"><a id="__codelineno-10-68" name="__codelineno-10-68"></a><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span> <span class="n">n_sessions</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">n_requests</span><span class="o">=</span><span class="mi">6000</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">zipf</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span> <span class="n">gpu_sessions</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">cpu_sessions</span><span class="o">=</span><span class="mi">120</span><span class="p">):</span>
+</span><span id="__span-10-69"><a id="__codelineno-10-69" name="__codelineno-10-69"></a>    <span class="n">gpu_tok</span> <span class="o">=</span> <span class="n">gpu_sessions</span> <span class="o">*</span> <span class="n">tokens</span>
+</span><span id="__span-10-70"><a id="__codelineno-10-70" name="__codelineno-10-70"></a>    <span class="n">cpu_tok</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"gpu"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"gpu+cpu"</span><span class="p">:</span> <span class="n">cpu_sessions</span> <span class="o">*</span> <span class="n">tokens</span><span class="p">,</span> <span class="s2">"gpu+cpu+nvme"</span><span class="p">:</span> <span class="n">cpu_sessions</span> <span class="o">*</span> <span class="n">tokens</span><span class="p">}[</span><span class="n">policy</span><span class="p">]</span>
+</span><span id="__span-10-71"><a id="__codelineno-10-71" name="__codelineno-10-71"></a>    <span class="n">nvme_tok</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">policy</span> <span class="o">==</span> <span class="s2">"gpu+cpu+nvme"</span> <span class="k">else</span> <span class="mi">0</span>
+</span><span id="__span-10-72"><a id="__codelineno-10-72" name="__codelineno-10-72"></a>    <span class="n">cache</span> <span class="o">=</span> <span class="n">TierCache</span><span class="p">(</span><span class="n">gpu_tok</span><span class="p">,</span> <span class="n">cpu_tok</span><span class="p">,</span> <span class="n">nvme_tok</span><span class="p">)</span>
+</span><span id="__span-10-73"><a id="__codelineno-10-73" name="__codelineno-10-73"></a>    <span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+</span><span id="__span-10-74"><a id="__codelineno-10-74" name="__codelineno-10-74"></a>    <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="n">zipf</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_sessions</span><span class="p">)]</span>              <span class="c1"># a few sessions are very popular</span>
+</span><span id="__span-10-75"><a id="__codelineno-10-75" name="__codelineno-10-75"></a>    <span class="n">hits</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"gpu"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"cpu"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"nvme"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+</span><span id="__span-10-76"><a id="__codelineno-10-76" name="__codelineno-10-76"></a>    <span class="n">lat</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="__span-10-77"><a id="__codelineno-10-77" name="__codelineno-10-77"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_requests</span><span class="p">):</span>
+</span><span id="__span-10-78"><a id="__codelineno-10-78" name="__codelineno-10-78"></a>        <span class="n">sid</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">choices</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_sessions</span><span class="p">),</span> <span class="n">weights</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-10-79"><a id="__codelineno-10-79" name="__codelineno-10-79"></a>        <span class="n">found</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="n">tokens</span><span class="p">)</span>
+</span><span id="__span-10-80"><a id="__codelineno-10-80" name="__codelineno-10-80"></a>        <span class="n">hits</span><span class="p">[</span><span class="n">found</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-10-81"><a id="__codelineno-10-81" name="__codelineno-10-81"></a>        <span class="k">if</span> <span class="n">found</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,):</span>
+</span><span id="__span-10-82"><a id="__codelineno-10-82" name="__codelineno-10-82"></a>            <span class="n">lat</span> <span class="o">+=</span> <span class="n">recompute_seconds</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+</span><span id="__span-10-83"><a id="__codelineno-10-83" name="__codelineno-10-83"></a>        <span class="k">elif</span> <span class="n">found</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="s2">"nvme"</span><span class="p">):</span>
+</span><span id="__span-10-84"><a id="__codelineno-10-84" name="__codelineno-10-84"></a>            <span class="n">lat</span> <span class="o">+=</span> <span class="nb">min</span><span class="p">(</span><span class="n">restore_seconds</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">found</span><span class="p">),</span> <span class="n">recompute_seconds</span><span class="p">(</span><span class="n">tokens</span><span class="p">))</span>   <span class="c1"># use whichever is cheaper</span>
+</span><span id="__span-10-85"><a id="__codelineno-10-85" name="__codelineno-10-85"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="o">/</span> <span class="n">n_requests</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">hits</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span> <span class="n">lat</span> <span class="o">/</span> <span class="n">n_requests</span>
+</span><span id="__span-10-86"><a id="__codelineno-10-86" name="__codelineno-10-86"></a>
+</span><span id="__span-10-87"><a id="__codelineno-10-87" name="__codelineno-10-87"></a>
+</span><span id="__span-10-88"><a id="__codelineno-10-88" name="__codelineno-10-88"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_tests</span><span class="p">():</span>
+</span><span id="__span-10-89"><a id="__codelineno-10-89" name="__codelineno-10-89"></a>    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-10-90"><a id="__codelineno-10-90" name="__codelineno-10-90"></a>
+</span><span id="__span-10-91"><a id="__codelineno-10-91" name="__codelineno-10-91"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cond</span><span class="p">):</span>
+</span><span id="__span-10-92"><a id="__codelineno-10-92" name="__codelineno-10-92"></a>        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">cond</span><span class="p">)))</span>
+</span><span id="__span-10-93"><a id="__codelineno-10-93" name="__codelineno-10-93"></a>
+</span><span id="__span-10-94"><a id="__codelineno-10-94" name="__codelineno-10-94"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">invariants</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+</span><span id="__span-10-95"><a id="__codelineno-10-95" name="__codelineno-10-95"></a>        <span class="n">seen</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="__span-10-96"><a id="__codelineno-10-96" name="__codelineno-10-96"></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">order</span><span class="p">:</span>
+</span><span id="__span-10-97"><a id="__codelineno-10-97" name="__codelineno-10-97"></a>            <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="n">t</span><span class="p">]:</span>
+</span><span id="__span-10-98"><a id="__codelineno-10-98" name="__codelineno-10-98"></a>                <span class="n">seen</span><span class="p">[</span><span class="n">sid</span><span class="p">]</span> <span class="o">=</span> <span class="n">seen</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="__span-10-99"><a id="__codelineno-10-99" name="__codelineno-10-99"></a>        <span class="n">within</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">cap</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">c</span><span class="o">.</span><span class="n">used</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">c</span><span class="o">.</span><span class="n">cap</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">order</span><span class="p">)</span>
+</span><span id="__span-10-100"><a id="__codelineno-10-100" name="__codelineno-10-100"></a>        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">v</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">seen</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">within</span>
+</span><span id="__span-10-101"><a id="__codelineno-10-101" name="__codelineno-10-101"></a>
+</span><span id="__span-10-102"><a id="__codelineno-10-102" name="__codelineno-10-102"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"KV bytes per token is 327,680 and per layer x 80 equals it"</span><span class="p">,</span> <span class="n">KV_PER_TOKEN</span> <span class="o">==</span> <span class="mi">327680</span> <span class="ow">and</span> <span class="n">KV_PER_TOKEN_LAYER</span> <span class="o">*</span> <span class="n">LAYERS</span> <span class="o">==</span> <span class="n">KV_PER_TOKEN</span><span class="p">)</span>
+</span><span id="__span-10-103"><a id="__codelineno-10-103" name="__codelineno-10-103"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"restore time is linear in tokens"</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">restore_seconds</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="s2">"cpu"</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">restore_seconds</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="s2">"cpu"</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)</span>
+</span><span id="__span-10-104"><a id="__codelineno-10-104" name="__codelineno-10-104"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"NVMe restore is slower than CPU restore (bandwidth ordering)"</span><span class="p">,</span> <span class="n">restore_seconds</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="s2">"nvme"</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">restore_seconds</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="s2">"cpu"</span><span class="p">))</span>
+</span><span id="__span-10-105"><a id="__codelineno-10-105" name="__codelineno-10-105"></a>    <span class="n">be</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">KV_PER_TOKEN</span> <span class="o">/</span> <span class="n">NVME_BW</span><span class="p">)</span>
+</span><span id="__span-10-106"><a id="__codelineno-10-106" name="__codelineno-10-106"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"break-even: at prefill = NVMe tokens/s, restore equals recompute"</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">restore_seconds</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="s2">"nvme"</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">be</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)</span>
+</span><span id="__span-10-107"><a id="__codelineno-10-107" name="__codelineno-10-107"></a>    <span class="c1"># tier mechanics on a hand case: GPU holds 1 session, CPU 1, NVMe unbounded</span>
+</span><span id="__span-10-108"><a id="__codelineno-10-108" name="__codelineno-10-108"></a>    <span class="n">c</span> <span class="o">=</span> <span class="n">TierCache</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-10-109"><a id="__codelineno-10-109" name="__codelineno-10-109"></a>    <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">,</span> <span class="n">r3</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"a"</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"b"</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"c"</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-10-110"><a id="__codelineno-10-110" name="__codelineno-10-110"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"first access of a session is a miss (None)"</span><span class="p">,</span> <span class="p">(</span><span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">,</span> <span class="n">r3</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+</span><span id="__span-10-111"><a id="__codelineno-10-111" name="__codelineno-10-111"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"cascade: c on GPU, b demoted to CPU, a demoted to NVMe"</span><span class="p">,</span> <span class="p">(</span><span class="s2">"c"</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"gpu"</span><span class="p">],</span> <span class="s2">"b"</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"cpu"</span><span class="p">],</span> <span class="s2">"a"</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"nvme"</span><span class="p">])</span> <span class="o">==</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+</span><span id="__span-10-112"><a id="__codelineno-10-112" name="__codelineno-10-112"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"access returns the tier that held it, then it moves to GPU"</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"a"</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"nvme"</span> <span class="ow">and</span> <span class="s2">"a"</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"gpu"</span><span class="p">]</span> <span class="ow">and</span> <span class="s2">"c"</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"cpu"</span><span class="p">])</span>
+</span><span id="__span-10-113"><a id="__codelineno-10-113" name="__codelineno-10-113"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"immediate re-access hits the GPU"</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"a"</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"gpu"</span><span class="p">)</span>
+</span><span id="__span-10-114"><a id="__codelineno-10-114" name="__codelineno-10-114"></a>    <span class="c1"># LRU order inside a tier</span>
+</span><span id="__span-10-115"><a id="__codelineno-10-115" name="__codelineno-10-115"></a>    <span class="n">c</span> <span class="o">=</span> <span class="n">TierCache</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-10-116"><a id="__codelineno-10-116" name="__codelineno-10-116"></a>    <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="s2">"abc"</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-10-117"><a id="__codelineno-10-117" name="__codelineno-10-117"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"LRU: with room for 2 on GPU, the oldest (a) is the one demoted"</span><span class="p">,</span> <span class="s2">"a"</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"cpu"</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"gpu"</span><span class="p">])</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"b"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">})</span>
+</span><span id="__span-10-118"><a id="__codelineno-10-118" name="__codelineno-10-118"></a>    <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"b"</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"d"</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-10-119"><a id="__codelineno-10-119" name="__codelineno-10-119"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"LRU: touching b makes c the next victim"</span><span class="p">,</span> <span class="s2">"c"</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"cpu"</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"gpu"</span><span class="p">])</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"b"</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">})</span>
+</span><span id="__span-10-120"><a id="__codelineno-10-120" name="__codelineno-10-120"></a>    <span class="c1"># oversize sessions</span>
+</span><span id="__span-10-121"><a id="__codelineno-10-121" name="__codelineno-10-121"></a>    <span class="n">c</span> <span class="o">=</span> <span class="n">TierCache</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-10-122"><a id="__codelineno-10-122" name="__codelineno-10-122"></a>    <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"big"</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+</span><span id="__span-10-123"><a id="__codelineno-10-123" name="__codelineno-10-123"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"a session larger than every bounded tier is dropped, so the next access misses"</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"big"</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-10-124"><a id="__codelineno-10-124" name="__codelineno-10-124"></a>    <span class="n">c</span> <span class="o">=</span> <span class="n">TierCache</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-10-125"><a id="__codelineno-10-125" name="__codelineno-10-125"></a>    <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"mid"</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+</span><span id="__span-10-126"><a id="__codelineno-10-126" name="__codelineno-10-126"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"a session larger than the GPU tier skips to the CPU tier"</span><span class="p">,</span> <span class="s2">"mid"</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="s2">"cpu"</span><span class="p">]</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="s2">"mid"</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"cpu"</span><span class="p">)</span>
+</span><span id="__span-10-127"><a id="__codelineno-10-127" name="__codelineno-10-127"></a>    <span class="c1"># random-walk invariants</span>
+</span><span id="__span-10-128"><a id="__codelineno-10-128" name="__codelineno-10-128"></a>    <span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-10-129"><a id="__codelineno-10-129" name="__codelineno-10-129"></a>    <span class="n">c</span> <span class="o">=</span> <span class="n">TierCache</span><span class="p">(</span><span class="mi">5</span> <span class="o">*</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">12</span> <span class="o">*</span> <span class="mi">64</span><span class="p">)</span>
+</span><span id="__span-10-130"><a id="__codelineno-10-130" name="__codelineno-10-130"></a>    <span class="n">ok1</span> <span class="o">=</span> <span class="n">ok2</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-10-131"><a id="__codelineno-10-131" name="__codelineno-10-131"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3000</span><span class="p">):</span>
+</span><span id="__span-10-132"><a id="__codelineno-10-132" name="__codelineno-10-132"></a>        <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">60</span><span class="p">),</span> <span class="mi">64</span><span class="p">)</span>
+</span><span id="__span-10-133"><a id="__codelineno-10-133" name="__codelineno-10-133"></a>        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">invariants</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+</span><span id="__span-10-134"><a id="__codelineno-10-134" name="__codelineno-10-134"></a>        <span class="n">ok1</span> <span class="o">&amp;=</span> <span class="n">a</span><span class="p">;</span> <span class="n">ok2</span> <span class="o">&amp;=</span> <span class="n">b</span>
+</span><span id="__span-10-135"><a id="__codelineno-10-135" name="__codelineno-10-135"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"3000 random accesses: a session is never in two tiers"</span><span class="p">,</span> <span class="n">ok1</span><span class="p">)</span>
+</span><span id="__span-10-136"><a id="__codelineno-10-136" name="__codelineno-10-136"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"3000 random accesses: no bounded tier exceeds its capacity"</span><span class="p">,</span> <span class="n">ok2</span><span class="p">)</span>
+</span><span id="__span-10-137"><a id="__codelineno-10-137" name="__codelineno-10-137"></a>    <span class="c1"># nothing is lost while NVMe is unbounded</span>
+</span><span id="__span-10-138"><a id="__codelineno-10-138" name="__codelineno-10-138"></a>    <span class="n">c</span> <span class="o">=</span> <span class="n">TierCache</span><span class="p">(</span><span class="mi">5</span> <span class="o">*</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">64</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-10-139"><a id="__codelineno-10-139" name="__codelineno-10-139"></a>    <span class="n">ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span id="__span-10-140"><a id="__codelineno-10-140" name="__codelineno-10-140"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2000</span><span class="p">):</span>
+</span><span id="__span-10-141"><a id="__codelineno-10-141" name="__codelineno-10-141"></a>        <span class="n">sid</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">60</span><span class="p">);</span> <span class="n">ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sid</span><span class="p">);</span> <span class="n">c</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">sid</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>
+</span><span id="__span-10-142"><a id="__codelineno-10-142" name="__codelineno-10-142"></a>    <span class="n">held</span> <span class="o">=</span> <span class="p">{</span><span class="n">sid</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">order</span> <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">tier</span><span class="p">[</span><span class="n">t</span><span class="p">]}</span>
+</span><span id="__span-10-143"><a id="__codelineno-10-143" name="__codelineno-10-143"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"with unbounded NVMe, every session ever seen is still held somewhere"</span><span class="p">,</span> <span class="n">held</span> <span class="o">==</span> <span class="n">ids</span><span class="p">)</span>
+</span><span id="__span-10-144"><a id="__codelineno-10-144" name="__codelineno-10-144"></a>    <span class="c1"># whole-run properties</span>
+</span><span id="__span-10-145"><a id="__codelineno-10-145" name="__codelineno-10-145"></a>    <span class="n">runs</span> <span class="o">=</span> <span class="p">{</span><span class="n">pol</span><span class="p">:</span> <span class="n">run</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span> <span class="k">for</span> <span class="n">pol</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="s2">"gpu+cpu"</span><span class="p">,</span> <span class="s2">"gpu+cpu+nvme"</span><span class="p">)}</span>
+</span><span id="__span-10-146"><a id="__codelineno-10-146" name="__codelineno-10-146"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"hit fractions sum to 1"</span><span class="p">,</span> <span class="nb">all</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span> <span class="k">for</span> <span class="n">h</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">runs</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+</span><span id="__span-10-147"><a id="__codelineno-10-147" name="__codelineno-10-147"></a>    <span class="n">g</span> <span class="o">=</span> <span class="p">[</span><span class="n">runs</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"gpu"</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">]</span>
+</span><span id="__span-10-148"><a id="__codelineno-10-148" name="__codelineno-10-148"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"GPU hit rate does not depend on the lower tiers (exclusive LRU)"</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">)</span>
+</span><span id="__span-10-149"><a id="__codelineno-10-149" name="__codelineno-10-149"></a>    <span class="n">m</span> <span class="o">=</span> <span class="p">[</span><span class="n">runs</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="kc">None</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">]</span>
+</span><span id="__span-10-150"><a id="__codelineno-10-150" name="__codelineno-10-150"></a>    <span class="n">lat</span> <span class="o">=</span> <span class="p">[</span><span class="n">runs</span><span class="p">[</span><span class="n">p</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">]</span>
+</span><span id="__span-10-151"><a id="__codelineno-10-151" name="__codelineno-10-151"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"adding a tier never raises the miss rate or the mean resume latency"</span><span class="p">,</span> <span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">m</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">and</span> <span class="n">lat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">lat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">lat</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</span><span id="__span-10-152"><a id="__codelineno-10-152" name="__codelineno-10-152"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"determinism: same seed same result, different seed differs"</span><span class="p">,</span> <span class="n">run</span><span class="p">(</span><span class="s2">"gpu+cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span> <span class="o">==</span> <span class="n">run</span><span class="p">(</span><span class="s2">"gpu+cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span> <span class="ow">and</span> <span class="n">run</span><span class="p">(</span><span class="s2">"gpu+cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span> <span class="o">!=</span> <span class="n">run</span><span class="p">(</span><span class="s2">"gpu+cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+</span><span id="__span-10-153"><a id="__codelineno-10-153" name="__codelineno-10-153"></a>    <span class="n">gh</span> <span class="o">=</span> <span class="p">[</span><span class="n">run</span><span class="p">(</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="n">zipf</span><span class="o">=</span><span class="n">z</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"gpu"</span><span class="p">]</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)]</span>
+</span><span id="__span-10-154"><a id="__codelineno-10-154" name="__codelineno-10-154"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"more popularity skew means a higher GPU hit rate"</span><span class="p">,</span> <span class="n">gh</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">gh</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">gh</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</span><span id="__span-10-155"><a id="__codelineno-10-155" name="__codelineno-10-155"></a>    <span class="n">hidden</span> <span class="o">=</span> <span class="p">(</span><span class="n">DECODE_STEP_S</span> <span class="o">/</span> <span class="n">LAYERS</span><span class="p">)</span> <span class="o">*</span> <span class="n">PCIE_BW</span> <span class="o">/</span> <span class="n">KV_PER_TOKEN_LAYER_PER_RANK</span>
+</span><span id="__span-10-156"><a id="__codelineno-10-156" name="__codelineno-10-156"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"decode-stall limit: at the printed token count the fetch time equals the per-layer budget"</span><span class="p">,</span>
+</span><span id="__span-10-157"><a id="__codelineno-10-157" name="__codelineno-10-157"></a>          <span class="nb">abs</span><span class="p">(</span><span class="n">hidden</span> <span class="o">*</span> <span class="n">KV_PER_TOKEN_LAYER_PER_RANK</span> <span class="o">/</span> <span class="n">PCIE_BW</span> <span class="o">-</span> <span class="n">DECODE_STEP_S</span> <span class="o">/</span> <span class="n">LAYERS</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span> <span class="ow">and</span> <span class="mi">7000</span> <span class="o">&lt;</span> <span class="n">hidden</span> <span class="o">&lt;</span> <span class="mi">7100</span><span class="p">)</span>
+</span><span id="__span-10-158"><a id="__codelineno-10-158" name="__codelineno-10-158"></a>    <span class="k">global</span> <span class="n">PREFILL_TPS</span>
+</span><span id="__span-10-159"><a id="__codelineno-10-159" name="__codelineno-10-159"></a>    <span class="n">saved</span><span class="p">,</span> <span class="n">PREFILL_TPS</span> <span class="o">=</span> <span class="n">PREFILL_TPS</span><span class="p">,</span> <span class="mf">500000.0</span>                  <span class="c1"># prefill so fast that recomputing beats any restore</span>
+</span><span id="__span-10-160"><a id="__codelineno-10-160" name="__codelineno-10-160"></a>    <span class="n">h_fast</span><span class="p">,</span> <span class="n">lat_fast</span> <span class="o">=</span> <span class="n">run</span><span class="p">(</span><span class="s2">"gpu+cpu+nvme"</span><span class="p">)</span>
+</span><span id="__span-10-161"><a id="__codelineno-10-161" name="__codelineno-10-161"></a>    <span class="n">cap</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">h_fast</span><span class="p">[</span><span class="s2">"gpu"</span><span class="p">])</span> <span class="o">*</span> <span class="n">recompute_seconds</span><span class="p">(</span><span class="mi">4096</span><span class="p">)</span>
+</span><span id="__span-10-162"><a id="__codelineno-10-162" name="__codelineno-10-162"></a>    <span class="n">PREFILL_TPS</span> <span class="o">=</span> <span class="n">saved</span>
+</span><span id="__span-10-163"><a id="__codelineno-10-163" name="__codelineno-10-163"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"with very fast prefill the resume cost is capped by recompute (the min() in run)"</span><span class="p">,</span> <span class="n">lat_fast</span> <span class="o">&lt;=</span> <span class="n">cap</span> <span class="o">+</span> <span class="mf">1e-12</span><span class="p">)</span>
+</span><span id="__span-10-164"><a id="__codelineno-10-164" name="__codelineno-10-164"></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-10-165"><a id="__codelineno-10-165" name="__codelineno-10-165"></a>        <span class="n">run</span><span class="p">(</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="n">n_requests</span><span class="o">=</span><span class="mi">0</span><span class="p">);</span> <span class="n">raised</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-10-166"><a id="__codelineno-10-166" name="__codelineno-10-166"></a>    <span class="k">except</span> <span class="ne">ZeroDivisionError</span><span class="p">:</span>
+</span><span id="__span-10-167"><a id="__codelineno-10-167" name="__codelineno-10-167"></a>        <span class="n">raised</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-10-168"><a id="__codelineno-10-168" name="__codelineno-10-168"></a>    <span class="n">check</span><span class="p">(</span><span class="s2">"zero requests raises ZeroDivisionError (documented failure)"</span><span class="p">,</span> <span class="n">raised</span><span class="p">)</span>
+</span><span id="__span-10-169"><a id="__codelineno-10-169" name="__codelineno-10-169"></a>    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">good</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+</span><span id="__span-10-170"><a id="__codelineno-10-170" name="__codelineno-10-170"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  [</span><span class="si">{</span><span class="s1">'PASS'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">good</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'FAIL'</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-10-171"><a id="__codelineno-10-171" name="__codelineno-10-171"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">g</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> self-tests pass"</span><span class="p">)</span>
+</span><span id="__span-10-172"><a id="__codelineno-10-172" name="__codelineno-10-172"></a>    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">g</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">results</span><span class="p">)</span>
+</span><span id="__span-10-173"><a id="__codelineno-10-173" name="__codelineno-10-173"></a>
+</span><span id="__span-10-174"><a id="__codelineno-10-174" name="__codelineno-10-174"></a>
+</span><span id="__span-10-175"><a id="__codelineno-10-175" name="__codelineno-10-175"></a><span class="k">def</span><span class="w"> </span><span class="nf">extras</span><span class="p">():</span>
+</span><span id="__span-10-176"><a id="__codelineno-10-176" name="__codelineno-10-176"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"Experiment A: popularity skew (gpu+cpu+nvme, 400 sessions, 6000 requests, seed 0)"</span><span class="p">)</span>
+</span><span id="__span-10-177"><a id="__codelineno-10-177" name="__codelineno-10-177"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"zipf  gpu-hit  cpu-hit  nvme-hit  miss   mean resume latency"</span><span class="p">)</span>
+</span><span id="__span-10-178"><a id="__codelineno-10-178" name="__codelineno-10-178"></a>    <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">):</span>
+</span><span id="__span-10-179"><a id="__codelineno-10-179" name="__codelineno-10-179"></a>        <span class="n">h</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">run</span><span class="p">(</span><span class="s2">"gpu+cpu+nvme"</span><span class="p">,</span> <span class="n">zipf</span><span class="o">=</span><span class="n">z</span><span class="p">)</span>
+</span><span id="__span-10-180"><a id="__codelineno-10-180" name="__codelineno-10-180"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">z</span><span class="si">:</span><span class="s2">4.1f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="s1">'gpu'</span><span class="p">]</span><span class="si">:</span><span class="s2">7.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="s1">'cpu'</span><span class="p">]</span><span class="si">:</span><span class="s2">7.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="s1">'nvme'</span><span class="p">]</span><span class="si">:</span><span class="s2">8.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="si">:</span><span class="s2">5.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">lat</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2"> ms"</span><span class="p">)</span>
+</span><span id="__span-10-181"><a id="__codelineno-10-181" name="__codelineno-10-181"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Experiment B: CPU tier size (gpu+cpu, GPU 40 sessions)"</span><span class="p">)</span>
+</span><span id="__span-10-182"><a id="__codelineno-10-182" name="__codelineno-10-182"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"cpu sessions  gpu-hit  cpu-hit  miss   mean resume latency"</span><span class="p">)</span>
+</span><span id="__span-10-183"><a id="__codelineno-10-183" name="__codelineno-10-183"></a>    <span class="k">for</span> <span class="n">cs</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">240</span><span class="p">,</span> <span class="mi">360</span><span class="p">):</span>
+</span><span id="__span-10-184"><a id="__codelineno-10-184" name="__codelineno-10-184"></a>        <span class="n">h</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">run</span><span class="p">(</span><span class="s2">"gpu+cpu"</span><span class="p">,</span> <span class="n">cpu_sessions</span><span class="o">=</span><span class="n">cs</span><span class="p">)</span>
+</span><span id="__span-10-185"><a id="__codelineno-10-185" name="__codelineno-10-185"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cs</span><span class="si">:</span><span class="s2">12d</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="s1">'gpu'</span><span class="p">]</span><span class="si">:</span><span class="s2">7.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="s1">'cpu'</span><span class="p">]</span><span class="si">:</span><span class="s2">7.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="si">:</span><span class="s2">5.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">lat</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">8.2f</span><span class="si">}</span><span class="s2"> ms"</span><span class="p">)</span>
+</span><span id="__span-10-186"><a id="__codelineno-10-186" name="__codelineno-10-186"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Experiment C: break-even against prefill speed, 4096-token session"</span><span class="p">)</span>
+</span><span id="__span-10-187"><a id="__codelineno-10-187" name="__codelineno-10-187"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"prefill tok/s  recompute   restore CPU   restore NVMe   cheapest"</span><span class="p">)</span>
+</span><span id="__span-10-188"><a id="__codelineno-10-188" name="__codelineno-10-188"></a>    <span class="k">for</span> <span class="n">tps</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">5000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">20000</span><span class="p">,</span> <span class="mi">30000</span><span class="p">,</span> <span class="mi">50000</span><span class="p">,</span> <span class="mi">100000</span><span class="p">,</span> <span class="mi">200000</span><span class="p">):</span>
+</span><span id="__span-10-189"><a id="__codelineno-10-189" name="__codelineno-10-189"></a>        <span class="n">rc</span><span class="p">,</span> <span class="n">rcpu</span><span class="p">,</span> <span class="n">rnv</span> <span class="o">=</span> <span class="mi">4096</span> <span class="o">/</span> <span class="n">tps</span><span class="p">,</span> <span class="n">restore_seconds</span><span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="s2">"cpu"</span><span class="p">),</span> <span class="n">restore_seconds</span><span class="p">(</span><span class="mi">4096</span><span class="p">,</span> <span class="s2">"nvme"</span><span class="p">)</span>
+</span><span id="__span-10-190"><a id="__codelineno-10-190" name="__codelineno-10-190"></a>        <span class="n">best</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">rc</span><span class="p">,</span> <span class="s2">"recompute"</span><span class="p">),</span> <span class="p">(</span><span class="n">rcpu</span><span class="p">,</span> <span class="s2">"CPU restore"</span><span class="p">),</span> <span class="p">(</span><span class="n">rnv</span><span class="p">,</span> <span class="s2">"NVMe restore"</span><span class="p">))[</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-10-191"><a id="__codelineno-10-191" name="__codelineno-10-191"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">tps</span><span class="si">:</span><span class="s2">13d</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">rc</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">8.1f</span><span class="si">}</span><span class="s2"> ms  </span><span class="si">{</span><span class="n">rcpu</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">9.1f</span><span class="si">}</span><span class="s2"> ms  </span><span class="si">{</span><span class="n">rnv</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">10.1f</span><span class="si">}</span><span class="s2"> ms   </span><span class="si">{</span><span class="n">best</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-10-192"><a id="__codelineno-10-192" name="__codelineno-10-192"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Experiment D: seed spread of mean resume latency (gpu+cpu)"</span><span class="p">)</span>
+</span><span id="__span-10-193"><a id="__codelineno-10-193" name="__codelineno-10-193"></a>    <span class="n">v</span> <span class="o">=</span> <span class="p">[</span><span class="n">run</span><span class="p">(</span><span class="s2">"gpu+cpu"</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">s</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1e3</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">)]</span>
+</span><span id="__span-10-194"><a id="__codelineno-10-194" name="__codelineno-10-194"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"ms per seed:"</span><span class="p">,</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">v</span><span class="p">),</span> <span class="sa">f</span><span class="s2">" (min </span><span class="si">{</span><span class="nb">min</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">, max </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</span><span id="__span-10-195"><a id="__codelineno-10-195" name="__codelineno-10-195"></a>
+</span><span id="__span-10-196"><a id="__codelineno-10-196" name="__codelineno-10-196"></a>
+</span><span id="__span-10-197"><a id="__codelineno-10-197" name="__codelineno-10-197"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+</span><span id="__span-10-198"><a id="__codelineno-10-198" name="__codelineno-10-198"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"KV bytes/token = </span><span class="si">{</span><span class="n">KV_PER_TOKEN</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> ; per token per layer = </span><span class="si">{</span><span class="n">KV_PER_TOKEN_LAYER</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-10-199"><a id="__codelineno-10-199" name="__codelineno-10-199"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">== restore vs recompute, per context length (assumed: PCIe 55 GB/s, NVMe 10 GB/s, prefill 20k tok/s) =="</span><span class="p">)</span>
+</span><span id="__span-10-200"><a id="__codelineno-10-200" name="__codelineno-10-200"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"tokens   KV size    restore(CPU)  restore(NVMe)  recompute"</span><span class="p">)</span>
+</span><span id="__span-10-201"><a id="__codelineno-10-201" name="__codelineno-10-201"></a>    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">16384</span><span class="p">,</span> <span class="mi">65536</span><span class="p">):</span>
+</span><span id="__span-10-202"><a id="__codelineno-10-202" name="__codelineno-10-202"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="s2">6d</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">n</span><span class="o">*</span><span class="n">KV_PER_TOKEN</span><span class="o">/</span><span class="mf">1e9</span><span class="si">:</span><span class="s2">7.2f</span><span class="si">}</span><span class="s2"> GB  </span><span class="si">{</span><span class="n">restore_seconds</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="s1">'cpu'</span><span class="p">)</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">9.1f</span><span class="si">}</span><span class="s2"> ms  "</span>
+</span><span id="__span-10-203"><a id="__codelineno-10-203" name="__codelineno-10-203"></a>              <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">restore_seconds</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="s1">'nvme'</span><span class="p">)</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">10.1f</span><span class="si">}</span><span class="s2"> ms  </span><span class="si">{</span><span class="n">recompute_seconds</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">8.1f</span><span class="si">}</span><span class="s2"> ms"</span><span class="p">)</span>
+</span><span id="__span-10-204"><a id="__codelineno-10-204" name="__codelineno-10-204"></a>    <span class="n">per_tok_cpu</span> <span class="o">=</span> <span class="n">KV_PER_TOKEN</span> <span class="o">/</span> <span class="n">PCIE_BW</span>
+</span><span id="__span-10-205"><a id="__codelineno-10-205" name="__codelineno-10-205"></a>    <span class="n">per_tok_nvme</span> <span class="o">=</span> <span class="n">KV_PER_TOKEN</span> <span class="o">/</span> <span class="n">NVME_BW</span>
+</span><span id="__span-10-206"><a id="__codelineno-10-206" name="__codelineno-10-206"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"per token: restore CPU </span><span class="si">{</span><span class="n">per_tok_cpu</span><span class="o">*</span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> us, NVMe </span><span class="si">{</span><span class="n">per_tok_nvme</span><span class="o">*</span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> us, recompute </span><span class="si">{</span><span class="mf">1e6</span><span class="o">/</span><span class="n">PREFILL_TPS</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> us"</span><span class="p">)</span>
+</span><span id="__span-10-207"><a id="__codelineno-10-207" name="__codelineno-10-207"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"NVMe restore beats recompute only if prefill speed &lt; </span><span class="si">{</span><span class="mi">1</span><span class="o">/</span><span class="n">per_tok_nvme</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2"> tok/s; "</span>
+</span><span id="__span-10-208"><a id="__codelineno-10-208" name="__codelineno-10-208"></a>          <span class="sa">f</span><span class="s2">"CPU restore only if prefill speed &lt; </span><span class="si">{</span><span class="mi">1</span><span class="o">/</span><span class="n">per_tok_cpu</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2"> tok/s"</span><span class="p">)</span>
+</span><span id="__span-10-209"><a id="__codelineno-10-209" name="__codelineno-10-209"></a>
+</span><span id="__span-10-210"><a id="__codelineno-10-210" name="__codelineno-10-210"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">== tier simulation: 400 sessions, 4096-token contexts, Zipf popularity, GPU holds 40 sessions =="</span><span class="p">)</span>
+</span><span id="__span-10-211"><a id="__codelineno-10-211" name="__codelineno-10-211"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"policy            gpu-hit  cpu-hit  nvme-hit  miss(recompute)  mean resume latency"</span><span class="p">)</span>
+</span><span id="__span-10-212"><a id="__codelineno-10-212" name="__codelineno-10-212"></a>    <span class="k">for</span> <span class="n">pol</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"gpu"</span><span class="p">,</span> <span class="s2">"gpu+cpu"</span><span class="p">,</span> <span class="s2">"gpu+cpu+nvme"</span><span class="p">):</span>
+</span><span id="__span-10-213"><a id="__codelineno-10-213" name="__codelineno-10-213"></a>        <span class="n">h</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">run</span><span class="p">(</span><span class="n">pol</span><span class="p">)</span>
+</span><span id="__span-10-214"><a id="__codelineno-10-214" name="__codelineno-10-214"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">pol</span><span class="si">:</span><span class="s2">16s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="s1">'gpu'</span><span class="p">]</span><span class="si">:</span><span class="s2">7.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="s1">'cpu'</span><span class="p">]</span><span class="si">:</span><span class="s2">7.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="s1">'nvme'</span><span class="p">]</span><span class="si">:</span><span class="s2">8.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="si">:</span><span class="s2">15.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">lat</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">9.2f</span><span class="si">}</span><span class="s2"> ms"</span><span class="p">)</span>
+</span><span id="__span-10-215"><a id="__codelineno-10-215" name="__codelineno-10-215"></a>
+</span><span id="__span-10-216"><a id="__codelineno-10-216" name="__codelineno-10-216"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">== can an ACTIVE sequence's KV be paged in during decode without stalling? =="</span><span class="p">)</span>
+</span><span id="__span-10-217"><a id="__codelineno-10-217" name="__codelineno-10-217"></a>    <span class="n">per_layer_compute</span> <span class="o">=</span> <span class="n">DECODE_STEP_S</span> <span class="o">/</span> <span class="n">LAYERS</span>
+</span><span id="__span-10-218"><a id="__codelineno-10-218" name="__codelineno-10-218"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"assumed per-layer overlap window in a decode step ~ </span><span class="si">{</span><span class="n">per_layer_compute</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> ms (21 ms / 80 layers)"</span><span class="p">)</span>
+</span><span id="__span-10-219"><a id="__codelineno-10-219" name="__codelineno-10-219"></a>    <span class="k">for</span> <span class="n">ctx</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">8192</span><span class="p">,</span> <span class="mi">32768</span><span class="p">):</span>
+</span><span id="__span-10-220"><a id="__codelineno-10-220" name="__codelineno-10-220"></a>        <span class="n">need</span> <span class="o">=</span> <span class="n">ctx</span> <span class="o">*</span> <span class="n">KV_PER_TOKEN_LAYER_PER_RANK</span> <span class="o">/</span> <span class="n">PCIE_BW</span>
+</span><span id="__span-10-221"><a id="__codelineno-10-221" name="__codelineno-10-221"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"context </span><span class="si">{</span><span class="n">ctx</span><span class="si">:</span><span class="s2">6d</span><span class="si">}</span><span class="s2">: fetching ONE rank's layer KV over its PCIe link takes </span><span class="si">{</span><span class="n">need</span><span class="o">*</span><span class="mf">1e3</span><span class="si">:</span><span class="s2">6.3f</span><span class="si">}</span><span class="s2"> ms -&gt; "</span>
+</span><span id="__span-10-222"><a id="__codelineno-10-222" name="__codelineno-10-222"></a>              <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'fits ideal overlap window'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">need</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">per_layer_compute</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'exceeds ideal overlap window'</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-10-223"><a id="__codelineno-10-223" name="__codelineno-10-223"></a>    <span class="n">hidden_tokens</span> <span class="o">=</span> <span class="n">per_layer_compute</span> <span class="o">*</span> <span class="n">PCIE_BW</span> <span class="o">/</span> <span class="n">KV_PER_TOKEN_LAYER_PER_RANK</span>
+</span><span id="__span-10-224"><a id="__codelineno-10-224" name="__codelineno-10-224"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ideal per-rank threshold with TP2 KV-head sharding (one sequence): ~</span><span class="si">{</span><span class="n">hidden_tokens</span><span class="si">:</span><span class="s2">,.0f</span><span class="si">}</span><span class="s2"> tokens"</span><span class="p">)</span>
+</span><span id="__span-10-225"><a id="__codelineno-10-225" name="__codelineno-10-225"></a>
+</span><span id="__span-10-226"><a id="__codelineno-10-226" name="__codelineno-10-226"></a>
+</span><span id="__span-10-227"><a id="__codelineno-10-227" name="__codelineno-10-227"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+</span><span id="__span-10-228"><a id="__codelineno-10-228" name="__codelineno-10-228"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="__span-10-229"><a id="__codelineno-10-229" name="__codelineno-10-229"></a>    <span class="k">if</span> <span class="s2">"--extras"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">:</span>
+</span><span id="__span-10-230"><a id="__codelineno-10-230" name="__codelineno-10-230"></a>        <span class="n">extras</span><span class="p">();</span> <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-10-231"><a id="__codelineno-10-231" name="__codelineno-10-231"></a>    <span class="k">if</span> <span class="s2">"--test"</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">:</span>
+</span><span id="__span-10-232"><a id="__codelineno-10-232" name="__codelineno-10-232"></a>        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">run_tests</span><span class="p">()</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-10-233"><a id="__codelineno-10-233" name="__codelineno-10-233"></a>    <span class="n">main</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+<!-- END COMPLETE INFERENCE SOURCE -->
+
 <h2 id="349-exercises">34.9 Exercises<a class="headerlink" href="#349-exercises" title="Permanent link">&para;</a></h2>
 <ol>
 <li>The break-even prefill speed for a CPU restore is about 167,800 tokens per second at 55 GB/s. What is it for a PCIe link that actually delivers 25 GB/s?</li>
@@ -3790,16 +4359,16 @@
 <li>With unbounded NVMe nothing is ever evicted for good, so a request misses only the first time its session appears. At zipf 0.6 almost all 400 sessions appear (399 of them), giving 399/6000 = 0.0665; at zipf 1.4 only 287 distinct sessions appear in 6,000 requests, giving 0.048. The rate cannot reach zero, because the first visit to each session has nothing to restore.</li>
 <li>240 sessions lowers mean resume latency from 39.8 ms to 25.4 ms, saving 14.4 ms for 120 more sessions (161 GB of host memory). Whether that is worth it depends on the price of that memory against the value of latency and, because the GPU's saved prefill capacity is also freed, on how loaded the prefill pool is. Neither number is in the chapter.</li>
 <li>The GPU tier is an LRU over the request sequence. A session is on the GPU if it was accessed recently enough, regardless of where it was demoted to. Lower tiers affect only what happens after a GPU miss, not what the GPU holds.</li>
-<li>Eight sequences need <code>8 x 0.305</code> = 2.44 ms per layer against a 0.263 ms budget: about nine times too slow. With 64 KV heads (no grouped-query attention) each token's per-layer KV is eight times larger, so the largest single sequence that can be fetched in time falls from about 3,525 to about 441 tokens.</li>
+<li>With TP2 head sharding and independent per-rank links, eight sequences need <code>8 x 0.153</code> ≈ 1.22 ms per rank per layer against a 0.263 ms window, about 4.6 times too long. With 64 KV heads, the per-rank bytes are eight times larger, and the ideal single-sequence threshold falls from about 7,050 to about 881 tokens. A shared host link needs its combined traffic budget instead.</li>
 </ol>
 <h2 id="chapter-summary">Chapter Summary<a class="headerlink" href="#chapter-summary" title="Permanent link">&para;</a></h2>
-<p>KV cache costs about 320 KiB per token, so idle sessions crowd out active ones, and tiering them into GPU, CPU RAM and NVMe can avoid recomputation. Whether a tier helps depends on one comparison: restoring KV from the tier against re-running prefill. With an assumed 55 GB/s PCIe link, 10 GB/s NVMe and 20,000 tokens per second prefill, a CPU restore beats recompute by about eight times but one NVMe drive by only about 1.5, and NVMe loses outright if prefill exceeds about 30,000 tokens per second. A Zipf-popularity simulation cut mean resume latency from 82 ms to 40 ms with a CPU tier and to 32 ms with NVMe added; returns diminish with tier size, and popularity skew matters more than any single constant. 23 self-tests check the tier mechanics and invariants. The active sequence cannot be paged in each step: one layer's fetch over PCIe exceeds the 0.26 ms per-layer compute budget beyond about 3,500 tokens. Offloading therefore serves idle, preempted and shared-prefix sessions, not the sequence being decoded.</p>
+<p>KV cache costs about 320 KiB per token, so idle sessions crowd out active ones, and tiering them into GPU, CPU RAM and NVMe can avoid recomputation. Whether a tier helps depends on one comparison: restoring KV from the tier against re-running prefill. With an assumed 55 GB/s PCIe link, 10 GB/s NVMe and 20,000 tokens per second prefill, a CPU restore beats recompute by about eight times but one NVMe drive by only about 1.5, and NVMe loses outright if prefill exceeds about 30,000 tokens per second. A Zipf-popularity simulation cut mean resume latency from 82 ms to 40 ms with a CPU tier and to 32 ms with NVMe added; returns diminish with tier size, and popularity skew matters more than any single constant. 23 self-tests check the tier mechanics and invariants. Active-cache offload is possible but costs recurring bandwidth. In the ideal TP2-sharded example a single rank's fetch exceeds the assumed 0.26 ms window beyond about 7,050 tokens; larger batches and shared links reduce that budget. Idle, preempted and shared-prefix sessions avoid this recurring cost and are often easier offload targets.</p>
 <h2 id="self-check-questions">Self-Check Questions<a class="headerlink" href="#self-check-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Why is the restore-versus-recompute comparison independent of context length in this model?</li>
 <li>At what prefill speed does the NVMe tier stop paying for itself, and why does a faster prefill move the answer in that direction?</li>
 <li>Why does adding NVMe to a CPU tier help less than adding the CPU tier did?</li>
-<li>Why can't an active sequence's KV be streamed from host memory every decode step?</li>
+<li>When can active-sequence KV transfers fit a decode overlap window, and why is fitting that window not a guarantee?</li>
 <li>Name two kinds of workload where offloading clearly helps and one where it does not.</li>
 </ol>
 <h2 id="worked-solutions">Worked Solutions<a class="headerlink" href="#worked-solutions" title="Permanent link">&para;</a></h2>
@@ -3807,8 +4376,8 @@
 <li>Both restore time and recompute time grow in proportion to the number of tokens, so the per-token costs (6.0, 32.8 and 50.0 microseconds) decide the question at any length.</li>
 <li>At about 30,500 tokens per second. Recompute cost per token falls as prefill speeds up, and once it drops below the 32.8 microseconds per token an NVMe read costs, rebuilding is cheaper than reading.</li>
 <li>The CPU tier restores in 24 ms against a 205 ms recompute, a large gain on a large share of requests. The NVMe tier restores in 134 ms, only modestly faster than recompute, and serves a smaller share.</li>
-<li>Each layer's KV for a 4,096-token sequence takes about 0.3 ms to fetch over PCIe, longer than the 0.26 ms of compute available per layer, and every sequence in the batch would need the same link at once, so the fetch cannot be hidden.</li>
-<li>Multi-turn chat or agent sessions that resume after a pause, and shared system prompts or documents reused across requests, benefit. A single long conversation being decoded continuously does not, because its KV is needed every step.</li>
+<li>In the stated TP2-sharded case each rank's layer KV for 4,096 tokens takes about 0.153 ms over its independent 55 GB/s link, below the ideal 0.263 ms window. That suggests possible overlap for one sequence, not a guarantee: more sequences, shared links, dependency stalls and copy/compute contention can exceed the budget.</li>
+<li>Multi-turn chat or agent sessions that resume after a pause, and shared system prompts or documents reused across requests, benefit. A continuously decoded conversation is a harder offload target because its KV is needed every step; offload may enable a larger context, but its recurring transfer cost must meet the chosen latency or throughput objective.</li>
 </ol>
 <h2 id="files-and-sources">Files and sources<a class="headerlink" href="#files-and-sources" title="Permanent link">&para;</a></h2>
 <ul>

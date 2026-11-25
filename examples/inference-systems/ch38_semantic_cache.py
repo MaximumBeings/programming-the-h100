@@ -65,6 +65,10 @@ class SemanticCache:
     an entry created at t is valid for now < t + ttl). Vectors must be unit length; lookup returns the best match
     at or above the threshold, or None."""
     def __init__(self, dim, threshold, ttl=math.inf, max_entries=100000):
+        if dim <= 0 or max_entries <= 0 or ttl <= 0 or math.isnan(ttl):
+            raise ValueError("dimension, capacity and TTL must be positive")
+        if not math.isfinite(threshold) or not -1 <= threshold <= 1:
+            raise ValueError("cosine threshold must be finite and in [-1, 1]")
         self.dim, self.threshold, self.ttl, self.max_entries = dim, threshold, ttl, max_entries
         self.parts = {}                                           # key -> dict(mat, n, meta[list of dict])
 
@@ -73,7 +77,16 @@ class SemanticCache:
             self.parts[key] = dict(mat=np.zeros((64, self.dim)), n=0, meta=[])
         return self.parts[key]
 
+    def _vector(self, vec):
+        vec = np.asarray(vec, dtype=float)
+        if vec.shape != (self.dim,) or not np.isfinite(vec).all():
+            raise ValueError("cache vector must have the declared dimension and finite values")
+        if not np.isclose(np.linalg.norm(vec), 1.0, rtol=1e-5, atol=1e-7):
+            raise ValueError("cosine cache requires unit-length vectors")
+        return vec
+
     def lookup(self, key, vec, now=0.0):
+        vec = self._vector(vec)
         p = self.parts.get(key)
         if p is None or p["n"] == 0:
             return None, -1.0
@@ -87,6 +100,7 @@ class SemanticCache:
         return None, float(sims[j]) if np.isfinite(sims[j]) else -1.0
 
     def insert(self, key, vec, answer, now=0.0, **extra):
+        vec = self._vector(vec)
         p = self._part(key)
         meta = dict(answer=answer, created=now, last_used=now, **extra)
         if p["n"] < self.max_entries:
@@ -158,7 +172,12 @@ def cost_per_request(hit_rate, wrong_rate, c_llm, c_emb, c_bad):
 
 def breakeven_bad_cost(hit_rate, wrong_rate, c_llm, c_emb):
     """Largest c_bad at which the cache is still no worse than no cache: c_llm = cost_per_request(...)."""
-    return (hit_rate * c_llm - c_emb) / wrong_rate if wrong_rate > 0 else math.inf
+    net_saved = hit_rate * c_llm - c_emb
+    if wrong_rate > 0:
+        return net_saved / wrong_rate
+    # With no wrong answers c_bad is irrelevant, but a cache with insufficient
+    # hits may still fail to pay for its embedding cost even when c_bad=0.
+    return math.inf if net_saved >= 0 else -math.inf
 
 
 # =============================================================== 4. experiments

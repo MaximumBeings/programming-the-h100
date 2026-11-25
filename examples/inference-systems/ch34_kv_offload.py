@@ -11,7 +11,9 @@ from collections import OrderedDict
 # ---- model shape (Llama-3-70B-like) and assumed hardware parameters
 LAYERS, KV_HEADS, HEAD_DIM, BYTES = 80, 8, 128, 2
 KV_PER_TOKEN = 2 * LAYERS * KV_HEADS * HEAD_DIM * BYTES              # 327,680
-KV_PER_TOKEN_LAYER = 2 * KV_HEADS * HEAD_DIM * BYTES                 # 4,096
+KV_PER_TOKEN_LAYER = 2 * KV_HEADS * HEAD_DIM * BYTES                 # 4,096 globally
+KV_SHARDS = 2                    # evenly sharded GQA heads across the two H100 ranks
+KV_PER_TOKEN_LAYER_PER_RANK = KV_PER_TOKEN_LAYER // KV_SHARDS         # 2,048 per rank/link
 PCIE_BW = 55e9                   # B/s host<->GPU, PCIe Gen5 x16 practical (assumption)
 NVME_BW = 10e9                   # B/s one NVMe drive (assumption; drives range ~7-14 GB/s)
 PREFILL_TPS = 20000.0            # prompt tokens/s the cluster recomputes at (assumption; measure yours)
@@ -150,9 +152,9 @@ def run_tests():
     check("determinism: same seed same result, different seed differs", run("gpu+cpu", seed=3) == run("gpu+cpu", seed=3) and run("gpu+cpu", seed=3) != run("gpu+cpu", seed=4))
     gh = [run("gpu", zipf=z)[0]["gpu"] for z in (0.5, 1.1, 1.5)]
     check("more popularity skew means a higher GPU hit rate", gh[0] < gh[1] < gh[2])
-    hidden = (DECODE_STEP_S / LAYERS) * PCIE_BW / KV_PER_TOKEN_LAYER
+    hidden = (DECODE_STEP_S / LAYERS) * PCIE_BW / KV_PER_TOKEN_LAYER_PER_RANK
     check("decode-stall limit: at the printed token count the fetch time equals the per-layer budget",
-          abs(hidden * KV_PER_TOKEN_LAYER / PCIE_BW - DECODE_STEP_S / LAYERS) < 1e-12 and 3500 < hidden < 3550)
+          abs(hidden * KV_PER_TOKEN_LAYER_PER_RANK / PCIE_BW - DECODE_STEP_S / LAYERS) < 1e-12 and 7000 < hidden < 7100)
     global PREFILL_TPS
     saved, PREFILL_TPS = PREFILL_TPS, 500000.0                  # prefill so fast that recomputing beats any restore
     h_fast, lat_fast = run("gpu+cpu+nvme")
@@ -213,13 +215,13 @@ def main():
 
     print("\n== can an ACTIVE sequence's KV be paged in during decode without stalling? ==")
     per_layer_compute = DECODE_STEP_S / LAYERS
-    print(f"per-layer compute budget in a decode step ~ {per_layer_compute*1e3:.3f} ms (21 ms / 80 layers)")
+    print(f"assumed per-layer overlap window in a decode step ~ {per_layer_compute*1e3:.3f} ms (21 ms / 80 layers)")
     for ctx in (1024, 4096, 8192, 32768):
-        need = ctx * KV_PER_TOKEN_LAYER / PCIE_BW
-        print(f"context {ctx:6d}: fetching ONE layer's KV over PCIe takes {need*1e3:6.3f} ms -> "
-              f"{'hidden behind compute' if need <= per_layer_compute else 'STALLS decode'}")
-    hidden_tokens = per_layer_compute * PCIE_BW / KV_PER_TOKEN_LAYER
-    print(f"largest per-layer KV fetch that hides behind one layer's compute (one sequence): ~{hidden_tokens:,.0f} tokens")
+        need = ctx * KV_PER_TOKEN_LAYER_PER_RANK / PCIE_BW
+        print(f"context {ctx:6d}: fetching ONE rank's layer KV over its PCIe link takes {need*1e3:6.3f} ms -> "
+              f"{'fits ideal overlap window' if need <= per_layer_compute else 'exceeds ideal overlap window'}")
+    hidden_tokens = per_layer_compute * PCIE_BW / KV_PER_TOKEN_LAYER_PER_RANK
+    print(f"ideal per-rank threshold with TP2 KV-head sharding (one sequence): ~{hidden_tokens:,.0f} tokens")
 
 
 if __name__ == "__main__":

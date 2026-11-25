@@ -1,0 +1,18 @@
+PASS 1 breaker opens after N consecutive failures, a success resets the count
+PASS 2 open rejects until open_for, then exactly one probe
+PASS 3 a failed probe reopens; a lost probe is replaced after open_for
+PASS 4 stale results are ignored (slow call cannot close an open breaker)
+PASS 5 retry budget: granted retries never exceed initial + ratio*requests
+PASS 6 full-jitter backoff stays in [0, min(cap, base*2^k)], mean about half
+PASS 7 no outage: every policy succeeds on all requests, one remote try each
+PASS 8 simulation is deterministic for a fixed seed
+PASS 9 refused: edge policy beats single try; breaker cuts remote load vs P1
+PASS 10 edge never serves beyond its context window, never exceeds its queue
+PASS 11 edge cannot rescue prompts longer than its context
+PASS 12 resume lowers mean latency vs restarting after a mid-stream drop
+PASS 13 fleet, no dip: goodput about equals arrival rate for every policy
+PASS 14 fleet conservation: served <= capacity, ok <= arrivals
+PASS 15 fleet: shedding recovers sooner than the naive-server retry storm
+PASS 16 retry budget bounds fleet retries to initial + 10% of arrivals
+PASS 17 edge arithmetic hand checks
+17 tests passed

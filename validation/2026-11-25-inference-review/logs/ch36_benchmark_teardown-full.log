@@ -1,0 +1,81 @@
+== self-tests ==
+  [PASS] SSE parser, LF/CRLF mix: 200 random chunkings agree and equal ['{"a":1}', '{"b":2}', '[DONE]']
+  [PASS] SSE parser, CRLF only: 200 random chunkings agree and equal ['{"a":1}', '{"b":2}', '[DONE]']
+  [PASS] SSE parser, multi-line data: 200 random chunkings agree and equal ['line1\nline2', '[DONE]']
+  [PASS] SSE parser, partial last event: 200 random chunkings agree and equal ['one']
+  [PASS] percentile matches numpy (p50,p99)
+  [PASS] Pareto frontier correct on 200 random points (6 kept)
+      bootstrap coverage of true value (nominal 0.95): median n=120 -> 0.92; p99 n=160 -> 0.77; p99 n=1000 -> 0.85
+  [PASS] bootstrap median coverage within 0.88-0.995
+  [PASS] bootstrap p99 coverage at n=1000 is at least 0.85 and not worse than at n=160 (minus noise)
+  [PASS] summarize counts failures (4 of 40); attainment uses ALL requests
+  [PASS] warm-up discards the first 10 requests by arrival
+  [PASS] pooled summary: 40 per run kept (80 total), warm-up taken from each run
+  [PASS] pooled throughput uses the sum of run windows, not the 1000 s gap
+  [PASS] knee = highest rate with attainment >= 0.99
+  [PASS] make_payload is a valid OpenAI-style streaming request
+== self-tests needing sockets (mock server on localhost) ==
+  [PASS] read_body_chunks: chunked body and close-delimited body both decode
+  [PASS] normal request succeeds with 20 tokens
+  [PASS] close-delimited (non-chunked) body succeeds
+  [PASS] merged events (4 tokens/event): success judged by server usage, not event count
+  [PASS] HTTP 503 is recorded as a failure with its status
+  [PASS] truncated stream (no [DONE]) is a failure
+  [PASS] client timeout is recorded as a failure
+  [PASS] with 30% injected errors: 15/60 failures counted and attainment = 0.75 < 0.85
+
+== coordinated omission demonstrations (mock servers; SAMPLE OUTPUT, varies per run) ==
+  open-loop, Poisson arrivals, capacity of the mock server about 9 req/s:
+    below capacity          : ttft_p99 =    662.0 ms   e2e_p99 =   1603.9 ms   (n=87)
+    2x overload, short run  : ttft_p99 =   2483.2 ms   e2e_p99 =   2786.0 ms   (n=37)
+    2x overload, long run   : ttft_p99 =  10367.7 ms   e2e_p99 =  10676.3 ms   (n=157)
+  closed-loop, 4 workers    : ttft_p99 =     41.6 ms   e2e_p99 =   1089.8 ms   (n=87)
+  0.6 s client stall at request 40 (of 100, 40 req/s offered):
+    share with TTFT > 300 ms measured from SEND time     =  3.2%
+    share with TTFT > 300 ms measured from INTENDED time = 12.6%
+    mean TTFT: from send   38.6 ms   from intended  108.3 ms
+  [PASS] below capacity, open-loop TTFT p99 is within 30x of closed-loop (a real but bounded gap)
+  [PASS] under overload, open-loop TTFT p99 is at least 5x the closed-loop figure
+  [PASS] under overload, p99 keeps growing with run length (no steady state)
+  [PASS] stall: intended-time measurement counts more slow requests than send-time
+  [PASS] stall: intended-time mean TTFT exceeds send-time mean TTFT
+
+== mock three-engine teardown (engines are INVENTED; shows the method, not any real result) ==
+
+  SAMPLE OUTPUT (wall-clock timing: your numbers will differ, and borderline verdicts can flip)
+  engine     rate     n  ttft_p99(ms)  [95% CI]            tpot_p99(ms)  tok/s  fail  attain  $/Mtok  per-run p99 (ms)
+  engine-A    15   420         45.9  [  39.2,   97.2]          7.9    684     0    1.00    3.25  38 / 40 / 88
+  engine-A    35   420         59.8  [  46.5,  106.6]          6.8   1587     0    1.00    1.40  42 / 57 / 93
+  engine-A    70   420       1105.5  [1077.6, 1153.5]          6.9   2068     0    0.47    1.07  969 / 1096 / 1138
+  engine-B    15   420         46.7  [  40.9,  110.9]          7.3    687     0    1.00    3.23  37 / 46 / 111
+  engine-B    35   420         38.9  [  37.1,   47.6]         12.3   1557     0    1.00    1.43  37 / 44 / 38
+  engine-B    70   420       1201.5  [1134.9, 1257.4]         15.1   1883     0    0.53    1.18  1016 / 1144 / 1256
+  engine-C    15   420        148.0  [ 102.6,  159.2]          6.6    678     0    1.00    1.64  133 / 149 / 126
+  engine-C    35   420       1968.3  [1955.6, 2026.1]          7.1   1148     0    0.22    0.97  1482 / 1944 / 2017
+  engine-C    70   420       3951.0  [3827.3, 4059.9]          6.6   1141     0    0.10    0.97  3854 / 3745 / 4057
+
+  knee (highest offered rate with >=99% SLO attainment, failures counted):
+    engine-A: 35 req/s
+    engine-B: 35 req/s
+    engine-C: 15 req/s
+
+  p99 TTFT difference A-B at 35 req/s: 95% CI [3.7, 61.3] ms -> engines differ beyond resampling noise
+  SLO-feasible Pareto-optimal (cost, p99 TTFT, throughput): engine-A@35, engine-B@35
+  excluded as infeasible (SLO attainment < 99%): engine-A@70, engine-B@70, engine-C@35, engine-C@70
+  note: the lowest $/Mtok anywhere is engine-C@35 (0.97); it is NOT SLO-feasible
+
+== run manifest ==
+{
+  "python": "3.12.14",
+  "platform": "macOS-26.6-arm64-arm-64bit",
+  "machine": "arm64",
+  "argv": [
+    "/private/tmp/h100-inference-review-20261125/docs/examples/inference-systems/ch36_benchmark_teardown.py"
+  ],
+  "time_utc": "2026-11-25T15:31:05Z",
+  "nvidia_smi": null,
+  "note": "mock run",
+  "config_hash": "c675f266dc89"
+}
+
+ALL PASS

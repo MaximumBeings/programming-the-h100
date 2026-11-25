@@ -23,11 +23,22 @@ K = 8             # number of generated tokens the feature averages over
 def token_entropy_nats(logits):
     """Shannon entropy H = -sum_v p_v ln p_v, in NATS, of softmax(logits) over the vocabulary (last axis), at temperature 1.
     Numerically stable (log-sum-exp), invariant to adding a constant to the logits, bounded by 0 <= H <= ln V."""
-    z = logits - logits.max(axis=-1, keepdims=True)
+    logits = np.asarray(logits, dtype=float)
+    if logits.ndim == 0 or logits.shape[-1] == 0:
+        raise ValueError("logits must have a nonempty vocabulary axis")
+    if np.isnan(logits).any() or np.isposinf(logits).any():
+        raise ValueError("logits may contain finite values or negative-infinity masks only")
+    maximum = logits.max(axis=-1, keepdims=True)
+    if not np.isfinite(maximum).all():
+        raise ValueError("each row needs at least one unmasked token")
+    z = logits - maximum
     lse = np.log(np.exp(z).sum(axis=-1, keepdims=True))
     logp = z - lse
     p = np.exp(logp)
-    return -(p * logp).sum(axis=-1)
+    # lim(p*log(p), p->0) = 0, including exactly masked logits.
+    terms = np.zeros_like(p)
+    np.multiply(p, logp, out=terms, where=p > 0)
+    return -terms.sum(axis=-1)
 
 
 def router_feature(logits_kv):

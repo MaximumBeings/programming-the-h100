@@ -2731,6 +2731,8 @@
       
         
       
+        
+      
     
     
     
@@ -2933,6 +2935,34 @@
     
   
     November 25 Inference Execution Record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-adversarial-review-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference Agent Audit and Complete Code
   
 
     
@@ -3249,6 +3279,7 @@
 <p>Every project is judged with the same instruments, introduced in <a href="../32-inference-engine-and-harness/">Chapter 32</a>: a fixed workload with Poisson arrivals, time to first token (TTFT), time per output token (TPOT), percentile latencies, goodput under a service-level objective (SLO), and dollars per million tokens. Report a number only alongside the workload, software versions and hardware that produced it.</p>
 <h2 id="the-destination-an-inference-engine">The destination: an inference engine<a class="headerlink" href="#the-destination-an-inference-engine" title="Permanent link">&para;</a></h2>
 <p>Use Chapters 43–46 as the correctness reference, then <a href="../47-vllm-tuning-lab/">Chapter 47</a> to connect block-walk attention and the client to real CUDA execution and vLLM serving. The Triton book supplies the next kernel implementations; the multi-GPU book supplies distributed ownership and collectives. Validate each replacement before integrating it. A small single-GPU serving test does not establish MoE, RDMA, KEDA or edge-fallback performance.</p>
+<p>The <a href="../inference-adversarial-review-2026-11-25/">follow-up agent audit and complete-code guide</a> records the subsequent corrections and fresh CPU reruns. Every chapter in this path now prints its complete implementation, with a matching downloadable source bundle.</p>
 
 
 

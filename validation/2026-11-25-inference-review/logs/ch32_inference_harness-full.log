@@ -1,0 +1,12 @@
+KV bytes/token (Llama-3-70B-shaped, BF16) = 327680 (320 KiB); 4096-token prompt = 1.34 GB
+decode floor, 70B BF16 on 2 H100: 20.9 ms/token at batch 1 (weights only; ignores KV reads, all-reduce and launch cost)
+decode floor, 70B FP8  on 1 H100: 20.9 ms/token at batch 1
+hand-check: ttft_p50=0.350 (expect 0.350)  tpot_p50=0.100 (expect 0.100)  goodput=0.714 req/s (expect 0.714: only req 1 meets TTFT<=0.4)
+Little's law: L=14.105  lambda*W=14.105  rel.diff=0.000%
+
+rate(req/s)  ttft_p50  ttft_p99  tpot_p50  tput(tok/s)  slo_ok  $/Mtok(@$4/GPU-h, 2 GPUs)
+         1     0.046     0.082    0.0211          158    1.00     14.05
+         4     0.051     0.099    0.0252          574    1.00      3.87
+         8     0.061     0.121    0.0324         1009    1.00      2.20
+        12     2.125     3.507    0.0388         1189    0.49      1.87
+        16     4.176     8.611    0.0390         1225    0.37      1.81

@@ -8,6 +8,9 @@ It says nothing about NCCL/NVLink/InfiniBand performance.
 import os
 import random
 import tempfile
+import math
+import queue
+import time
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
@@ -111,16 +114,64 @@ def _worker(rank, world, init_file, n_tokens, hidden, n_experts, topk, result_q,
     dist.destroy_process_group()
 
 
-def check_alltoall(world=4, mode="uniform", topk=2, n_tokens=64, n_experts=16):
+def check_alltoall(world=4, mode="uniform", topk=2, n_tokens=64, n_experts=16, worker_timeout=120.0):
+    """Run CPU/Gloo ranks with a shared deadline and deterministic cleanup.
+
+    A child that fails before writing a result must not leave the parent waiting
+    forever on Queue.get(), or leave its collective peers blocked indefinitely.
+    """
+    if not all(isinstance(x, int) and not isinstance(x, bool) for x in (world, topk, n_tokens, n_experts)):
+        raise ValueError("world, topk, n_tokens and n_experts must be integers")
+    if world <= 0 or n_experts <= 0 or n_experts % world or not 1 <= topk <= n_experts or n_tokens <= 0:
+        raise ValueError("positive sizes, topk <= n_experts, and equal expert ownership required")
+    if mode not in ("uniform", "all_to_rank0") or not math.isfinite(worker_timeout) or worker_timeout <= 0:
+        raise ValueError("supported mode and positive finite worker timeout required")
     with tempfile.TemporaryDirectory() as d:
         init = os.path.join(d, "rdv")
-        q = mp.get_context("spawn").Queue()
-        procs = [mp.get_context("spawn").Process(target=_worker, args=(r, world, init, n_tokens, 8, n_experts, topk, q, mode))
+        ctx = mp.get_context("spawn")
+        q = ctx.Queue()
+        procs = [ctx.Process(target=_worker, args=(r, world, init, n_tokens, 8, n_experts, topk, q, mode))
                  for r in range(world)]
-        [p.start() for p in procs]
-        res = sorted(q.get() for _ in procs)
-        [p.join() for p in procs]
-    return res
+        deadline = time.monotonic() + worker_timeout
+        try:
+            for proc in procs:
+                proc.start()
+            res = []
+            while len(res) < world:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("Gloo worker deadline exceeded while collecting results")
+                try:
+                    res.append(q.get(timeout=min(0.2, remaining)))
+                except queue.Empty:
+                    failures = [(r, p.exitcode) for r, p in enumerate(procs)
+                                if p.exitcode is not None and p.exitcode != 0]
+                    if failures:
+                        raise RuntimeError(f"Gloo workers failed before returning results: {failures}")
+                    if all(p.exitcode is not None for p in procs):
+                        raise RuntimeError("Gloo workers exited without all required results")
+            for proc in procs:
+                proc.join(timeout=max(0.0, deadline-time.monotonic()))
+            if any(proc.is_alive() for proc in procs):
+                raise TimeoutError("Gloo workers did not exit before their deadline")
+            if any(proc.exitcode != 0 for proc in procs):
+                raise RuntimeError(f"Gloo worker exit codes: {[p.exitcode for p in procs]}")
+            if sorted(r[0] for r in res) != list(range(world)):
+                raise RuntimeError("Gloo results have missing or duplicate rank ownership")
+            if not all(bool(row[1]) for row in res):
+                raise AssertionError("Gloo numerical or expert-ownership check failed")
+            return sorted(res)
+        finally:
+            for proc in procs:
+                if proc.pid is not None:
+                    if proc.is_alive():
+                        proc.terminate()
+                    proc.join(timeout=5.0)
+                    if proc.is_alive():
+                        proc.kill()
+                        proc.join(timeout=5.0)
+            q.close()
+            q.join_thread()
 
 
 # ------------------------------------------------------------- self-tests

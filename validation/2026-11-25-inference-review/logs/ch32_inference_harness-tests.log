@@ -1,0 +1,22 @@
+  [PASS] kv bytes/token for the 70B shape is 327680
+  [PASS] kv bytes scale linearly with layers
+  [PASS] decode floor halves when GPUs double
+  [PASS] decode floor is linear in bytes/param
+  [PASS] pct: q=0 is min, q=1 is max
+  [PASS] pct: median of [1,2,3,4] is 2.5
+  [PASS] pct: one element
+  [PASS] pct: monotone in q
+  [PASS] workload: same seed gives identical requests
+  [PASS] workload: different seed differs
+  [PASS] workload: arrivals non-decreasing, lengths >= 1
+  [PASS] simulate: does not mutate its input
+  [PASS] simulate: every request finishes with exactly `output` tokens, ordered times
+  [PASS] max_batch=1 serves strictly one at a time (no overlap)
+  [PASS] same lengths, 10x the arrival rate: p99 TTFT does not fall
+  [PASS] hand case: TPOT = (finish-first)/(output-1) = 0.10 for both, TTFT p50 = 0.35, goodput = 1/1.4
+  [PASS] tighter SLO never raises attainment
+  [PASS] a 1-token reply does not divide by zero
+  [PASS] cost: $4 x 2 GPUs x 1 h / 1000 tokens = $8000 per million
+  [PASS] Little's law within 2% on five seeds
+  [PASS] pct([]) raises IndexError (documented failure mode)
+21/21 self-tests pass
