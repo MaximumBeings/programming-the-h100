@@ -1,0 +1,21 @@
+{
+  "start_utc": "2026-11-25T15:49:01.968350+00:00",
+  "python": "3.12.12 (main, Oct 10 2025, 08:52:57) [GCC 11.4.0]",
+  "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.35",
+  "image": "vllm/vllm-openai:v0.11.2",
+  "image_digest": "sha256:2c908d5a84ed251b6a17d179f42d06df1aff353007779ac5eecd8a0ea3fe9331",
+  "vllm": "0.11.2",
+  "torch": "2.9.0+cu129",
+  "numpy": "2.2.0",
+  "torch_cuda": "12.9",
+  "cuda_available": true,
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "sm_count": 132,
+  "source_commit": "a9ed5561a518a5f646686cad6610f597721e90f9",
+  "source_hashes": {
+    "ch36_benchmark_teardown.py": "cc75fa2ce6dc4e4e1bb6377f32e747b3720b925d021696fc118acfd996545609",
+    "ch47_vllm_probe.py": "37571907a61216203ddb70076b2814e4e664f6157e29fde03ba76570d9c942c4"
+  },
+  "model_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "nvidia_smi": "name, driver_version, memory.total [MiB]\nNVIDIA H100 80GB HBM3, 595.112.07, 81559 MiB\n"
+}

@@ -18,7 +18,7 @@
         <link rel="prev" href="../validation-inference-2026-11-25/">
       
       
-        <link rel="next" href="../appendix-blackwell-b200/">
+        <link rel="next" href="../validation-client-rerun-2026-11-25/">
       
       
         
@@ -2655,6 +2655,8 @@
       
         
       
+        
+      
     
     
     
@@ -2993,6 +2995,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-client-rerun-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Corrected Client — Real vLLM Rerun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -3387,7 +3417,7 @@
 <p>This is consistent with the <a href="https://github.com/numpy/numpy/issues/28687">NumPy M4 warning report</a> and <a href="https://github.com/numpy/numpy/issues/29820">follow-up report</a>. Warnings were not globally suppressed, and the finite-output/independent-path regression remains in the test suite. This is an environment observation, not a claim that every overflow warning is harmless.</p>
 <h2 id="evidence-boundaries-and-remaining-hardware-work">Evidence boundaries and remaining hardware work<a class="headerlink" href="#evidence-boundaries-and-remaining-hardware-work" title="Permanent link">&para;</a></h2>
 <p>The <a href="../validation-inference-2026-11-25/">earlier November 25 H100 record</a> is preserved unchanged at the raw-file level. Its CUDA comparisons and real-vLLM streams still establish what ran with those archived sources. The follow-up CPU fixes are supported by their separate current-source captures.</p>
-<p><strong>No CUDA kernel changed in this review.</strong> The updated shared Chapter 36 HTTP client has fresh CPU protocol, accounting and complete mock-server validation. Its exact-current integration with real vLLM has <strong>not</strong> been repeated after those client changes. Do not treat the archived serving capture as that later integration run.</p>
+<p><strong>No CUDA kernel changed in this review.</strong> The updated shared Chapter 36 HTTP client has fresh CPU protocol, accounting and complete mock-server validation. Its exact-current integration with real vLLM subsequently passed in the <a href="../validation-client-rerun-2026-11-25/">post-review real-vLLM rerun</a>: eight serial streams, 16 open-loop requests and the expected HTTP-error/timeout cases. The original serving capture retains its archived source identity.</p>
 <p>Real multi-GPU MoE, RDMA disaggregation, 70B speculative decoding, native B200 FP4, production offload, a live autoscaling cluster and real cache/router quality studies still need their own hardware/workload validation. They are not represented by these CPU simulations.</p>
 <h2 id="reproduce-and-keep-the-pages-in-sync">Reproduce and keep the pages in sync<a class="headerlink" href="#reproduce-and-keep-the-pages-in-sync" title="Permanent link">&para;</a></h2>
 <p>From the repository root, use the <a href="../examples/inference-systems/">reference environment guide</a>. To collect new CPU evidence, choose a new output directory; the collector refuses to overwrite an existing run:</p>
@@ -3453,13 +3483,13 @@
         
         
           
-          <a href="../appendix-blackwell-b200/" class="md-footer__link md-footer__link--next" aria-label="Next: Native B200 — UMMA, GEMM and Attention">
+          <a href="../validation-client-rerun-2026-11-25/" class="md-footer__link md-footer__link--next" aria-label="Next: Corrected Client — Real vLLM Rerun">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Native B200 — UMMA, GEMM and Attention
+                Corrected Client — Real vLLM Rerun
               </div>
             </div>
             <div class="md-footer__button md-icon">

@@ -2655,6 +2655,8 @@
       
         
       
+        
+      
     
     
     
@@ -2989,6 +2991,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#4711-post-review-client-integration-november-25-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        47.11 Post-review client integration — November 25, 2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#complete-runnable-code" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3101,6 +3114,34 @@
     
   
     Inference Agent Audit and Complete Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-client-rerun-2026-11-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Corrected Client — Real vLLM Rerun
   
 
     
@@ -3381,6 +3422,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#4711-post-review-client-integration-november-25-2026" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        47.11 Post-review client integration — November 25, 2026
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#complete-runnable-code" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3654,7 +3706,7 @@
 <h2 id="4710-captured-h100-run-november-25-2026">47.10 Captured H100 run — November 25, 2026<a class="headerlink" href="#4710-captured-h100-run-november-25-2026" title="Permanent link">&para;</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Archived real-server result and current client scope</p>
-<p>The H100/vLLM output below belongs to the archived November 25 client revision. The follow-up audit corrected the shared Chapter 36 client's protocol and accounting paths; that current client has fresh CPU/mock regression and full-program reruns, but its exact-current integration with real vLLM has not been repeated. The successful archived serving run remains valid for its captured source. The CUDA attention probe is unchanged by those client corrections.</p>
+<p>The H100/vLLM output below belongs to the archived November 25 client revision. The follow-up audit corrected the shared Chapter 36 client's protocol and accounting paths; that current client now has fresh CPU/mock regression and full-program reruns <strong>and</strong> a separate <a href="../validation-client-rerun-2026-11-25/">post-review real-vLLM rerun</a>. The successful archived serving run remains valid for its captured source. The CUDA attention probe is unchanged by those client corrections.</p>
 </div>
 <p>On one H100 80GB HBM3, driver 595.112.07, the CUDA program completed all 12 numerical comparisons. The real vLLM 0.11.2 server completed both repeated greedy requests, a streaming warm-up and all eight measured 32-token streams without failures. The serial smoke test reported TTFT p50 13.58 ms and TPOT p50 6.72 ms; these are short-run observations, not peak performance or a load-capacity result. See the <a href="../validation-inference-2026-11-25/">complete dated record and raw logs</a>.</p>
 <p>Beginning of the CUDA stdout:</p>
@@ -3663,6 +3715,9 @@
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>PASS torch.float32 length=17 max_abs_error=1.04e-07
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>PASS torch.float32 length=65 max_abs_error=9.28e-08
 </span></code></pre></div>
+<h2 id="4711-post-review-client-integration-november-25-2026">47.11 Post-review client integration — November 25, 2026<a class="headerlink" href="#4711-post-review-client-integration-november-25-2026" title="Permanent link">&para;</a></h2>
+<p>The corrected Chapter 36 client and this chapter's probe passed against real vLLM 0.11.2 on an H100 using the official versioned image. Two repeated greedy completions matched, all eight measured 32-token streams succeeded, and all 16 open-loop requests succeeded. The deliberately invalid model and short deadline were correctly recorded as failures with terminal timestamps.</p>
+<p>The serial smoke test reported TTFT p50 <strong>16.80 ms</strong> and TPOT p50 <strong>7.39 ms</strong>. These short-run observations are not a capacity benchmark. The <a href="../validation-client-rerun-2026-11-25/">complete current-source record</a> includes the image digest, CUDA 12.9 stack, pinned model/tokenizer revision, exact source hashes, raw outputs and per-request data. The RunPod instance was stopped after export and verification.</p>
 <!-- BEGIN COMPLETE INFERENCE SOURCE -->
 <h2 id="complete-runnable-code">Complete runnable code<a class="headerlink" href="#complete-runnable-code" title="Permanent link">&para;</a></h2>
 <p>The complete implementation is shown below, including its checks and entry point. The listing and downloadable <code>.py</code> file contain exactly the same source. Copy the file under the displayed filename; keep supporting files in the same directory.</p>

@@ -1,0 +1,34 @@
+[
+  {
+    "case": "unknown_model",
+    "expected_failure": true,
+    "passed": true,
+    "record": {
+      "intended": 732497.369975303,
+      "sent": 732497.370345518,
+      "first": null,
+      "end": 732497.373130093,
+      "ntok": 0,
+      "nevents": 0,
+      "ok": false,
+      "err": "HTTP/1.1 404 Not Found",
+      "itl": []
+    }
+  },
+  {
+    "case": "client_deadline",
+    "expected_failure": true,
+    "passed": true,
+    "record": {
+      "intended": 732497.373158385,
+      "sent": 732497.373401689,
+      "first": null,
+      "end": 732497.378511099,
+      "ntok": 0,
+      "nevents": 0,
+      "ok": false,
+      "err": "timeout",
+      "itl": []
+    }
+  }
+]

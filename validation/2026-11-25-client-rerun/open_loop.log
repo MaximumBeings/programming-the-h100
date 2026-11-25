@@ -1,0 +1,50 @@
+{
+  "n": 14,
+  "failures": 0,
+  "success_rate": 1.0,
+  "ttft_p50": 0.021258791792206466,
+  "ttft_p99": 0.03631004371447488,
+  "tpot_p50": 0.00720829369583317,
+  "tpot_p99": 0.009427498349323285,
+  "e2e_p99": 0.2464161905366927,
+  "tok_s": 44.36329307228553,
+  "goodput_rps": 2.308870271420065,
+  "slo_attain": 1.0
+}
+failure reasons: none
+raw per-request records written to /tmp/client-rerun/open-loop.jsonl
+{
+  "python": "3.12.12",
+  "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.35",
+  "machine": "x86_64",
+  "argv": [
+    "ch36_benchmark_teardown.py",
+    "run",
+    "--url",
+    "http://127.0.0.1:8000/v1/completions",
+    "--model",
+    "Qwen/Qwen2.5-0.5B-Instruct",
+    "--rate",
+    "2",
+    "--n",
+    "16",
+    "--warmup",
+    "2",
+    "--seed",
+    "1",
+    "--n-in",
+    "64",
+    "--n-out",
+    "16",
+    "--out",
+    "/tmp/client-rerun/open-loop.jsonl"
+  ],
+  "time_utc": "2026-11-25T15:50:09Z",
+  "nvidia_smi": "NVIDIA H100 80GB HBM3, 595.112.07, 1980 MHz, 2619 MHz, Enabled, 700.00 W, 0x0000000000000000",
+  "url": "http://127.0.0.1:8000/v1/completions",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "rate": 2.0,
+  "n": 16,
+  "seed": 1,
+  "config_hash": "281bc0988d41"
+}
